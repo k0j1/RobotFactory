@@ -10,8 +10,8 @@ import { FaRobot, FaBox, FaWrench, FaShoePrints, FaStar } from 'react-icons/fa';
 import { MaterialIcon } from '../components/ui/MaterialIcon';
 
 const SinglePart: React.FC<{ grid: string[], color: string, rarityLabel?: number }> = ({ grid, color, rarityLabel }) => {
-  const size = 32;
-  const pixelSize = size / 8;
+  const size = 64;
+  const pixelSize = size / 32;
   return (
     <div className="bg-stone-100 rounded p-1 inline-flex flex-col items-center border border-stone-200">
       {rarityLabel !== undefined && (
@@ -118,26 +118,26 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
                 <div className="grid grid-cols-4 gap-2 text-center text-xs font-bold text-stone-600">
                   <div className="flex flex-col items-center">
                     <p className="mb-2 flex items-center justify-center gap-1"><FaRobot size={14} />アタマ</p>
-                    <div className="flex flex-col gap-2">
-                      {HEADS.slice(0, mat.rarity).map((grid, idx) => <SinglePart key={idx} grid={grid} color={color} rarityLabel={idx + 1} />)}
+                    <div className="grid grid-cols-2 gap-2">
+                      {HEADS.slice(0, mat.rarity * 8).map((grid, idx) => <SinglePart key={idx} grid={grid} color={color} rarityLabel={Math.floor(idx / 8) + 1} />)}
                     </div>
                   </div>
                   <div className="flex flex-col items-center">
                     <p className="mb-2 flex items-center justify-center gap-1"><FaBox size={14} />ボディ</p>
-                    <div className="flex flex-col gap-2">
-                      {BODIES.slice(0, mat.rarity).map((grid, idx) => <SinglePart key={idx} grid={grid} color={color} rarityLabel={idx + 1} />)}
+                    <div className="grid grid-cols-2 gap-2">
+                      {BODIES.slice(0, mat.rarity * 8).map((grid, idx) => <SinglePart key={idx} grid={grid} color={color} rarityLabel={Math.floor(idx / 8) + 1} />)}
                     </div>
                   </div>
                   <div className="flex flex-col items-center">
                     <p className="mb-2 flex items-center justify-center gap-1"><FaWrench size={14} />ウデ</p>
-                    <div className="flex flex-col gap-2">
-                      {ARMS.slice(0, mat.rarity).map((grid, idx) => <SinglePart key={idx} grid={grid} color={color} rarityLabel={idx + 1} />)}
+                    <div className="grid grid-cols-2 gap-2">
+                      {ARMS.slice(0, mat.rarity * 8).map((grid, idx) => <SinglePart key={idx} grid={grid} color={color} rarityLabel={Math.floor(idx / 8) + 1} />)}
                     </div>
                   </div>
                   <div className="flex flex-col items-center">
                     <p className="mb-2 flex items-center justify-center gap-1"><FaShoePrints size={14} />アシ</p>
-                    <div className="flex flex-col gap-2">
-                      {LEGS.slice(0, mat.rarity).map((grid, idx) => <SinglePart key={idx} grid={grid} color={color} rarityLabel={idx + 1} />)}
+                    <div className="grid grid-cols-2 gap-2">
+                      {LEGS.slice(0, mat.rarity * 8).map((grid, idx) => <SinglePart key={idx} grid={grid} color={color} rarityLabel={Math.floor(idx / 8) + 1} />)}
                     </div>
                   </div>
                 </div>

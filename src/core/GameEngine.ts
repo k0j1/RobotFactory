@@ -156,10 +156,10 @@ export class GameEngine {
         hp: totalHp, power: totalPow, defense: totalDef, agility: totalAgi, dexterity: totalDex
       },
       visuals: {
-        head: Math.floor(Math.random() * maxRarity),
-        body: Math.floor(Math.random() * maxRarity),
-        arms: Math.floor(Math.random() * maxRarity),
-        legs: Math.floor(Math.random() * maxRarity),
+        head: Math.floor(Math.random() * (maxRarity * 8)),
+        body: Math.floor(Math.random() * (maxRarity * 8)),
+        arms: Math.floor(Math.random() * (maxRarity * 8)),
+        legs: Math.floor(Math.random() * (maxRarity * 8)),
         color: AttributeColors[mainAttr]
       },
       createdAt: Date.now(),
