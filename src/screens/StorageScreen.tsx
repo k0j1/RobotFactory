@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { GameState } from '../core/models';
 import { GameEngine } from '../core/GameEngine';
 import { Card, Button, Badge } from '../components/ui/core';
-import { RobotVisual } from '../components/robot/RobotVisual';
+import { RobotVisual, PartVisual } from '../components/robot/RobotVisual';
 import { theme } from '../styles/theme';
 import { MATERIALS, STORAGE_UPGRADE_COST, MAX_STORAGE_LEVELS } from '../core/data';
 import { MaterialIcon } from '../components/ui/MaterialIcon';
 
 export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> = ({ state, engine }) => {
-  const [tab, setTab] = useState<'robots'|'materials'>('robots');
+  const [tab, setTab] = useState<'robots'|'parts'|'materials'>('robots');
+
   const currentSizeIndex = MAX_STORAGE_LEVELS.indexOf(state.storageSize);
   const nextSize = MAX_STORAGE_LEVELS[currentSizeIndex + 1];
   const upgradeCost = STORAGE_UPGRADE_COST[currentSizeIndex + 1];
@@ -36,6 +37,13 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
           ロボット
         </Button>
         <Button 
+          variant={tab === 'parts' ? 'primary' : 'secondary'} 
+          className="flex-1" 
+          onClick={() => setTab('parts')}
+        >
+          パーツ
+        </Button>
+        <Button 
           variant={tab === 'materials' ? 'primary' : 'secondary'} 
           className="flex-1" 
           onClick={() => setTab('materials')}
@@ -49,46 +57,56 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
           {nextSize && (
             <Card className="flex justify-between items-center bg-stone-100">
               <div>
-                <h3 className="font-bold text-sm">倉庫を拡張する</h3>
-                <p className="text-xs text-stone-500">容量を {nextSize} に増やします</p>
+                <p className="font-bold">倉庫を拡張する</p>
+                <p className="text-sm text-stone-600">最大容量: {nextSize}</p>
               </div>
               <Button 
                 size="sm" 
                 disabled={state.gold < upgradeCost}
-                onClick={() => engine.upgradeStorage(upgradeCost, nextSize)}
+                onClick={() => {
+                  try { engine.upgradeStorage(upgradeCost, nextSize); } 
+                  catch(e: any) { alert(e.message); }
+                }}
               >
-                {upgradeCost} G で拡張
+                {upgradeCost} G
               </Button>
             </Card>
           )}
-
+          
           {state.robots.length === 0 ? (
-            <p className="text-center text-stone-500 py-12">倉庫は空っぽです。</p>
+            <p className="text-center text-stone-500 py-8">ロボットがいません</p>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {state.robots.map(r => (
-                <Card key={r.id} className="flex flex-col">
-                  <div className="flex justify-center mb-4 bg-stone-100 rounded-lg p-4">
-                    <RobotVisual robot={r} size={100} />
+                <Card key={r.id} className="relative pt-6">
+                  <div className="absolute top-2 right-2 flex gap-1">
+                    <Button size="sm" variant="secondary" onClick={() => handleShare(r.name)}>Share</Button>
                   </div>
-                  <h3 className="font-bold text-lg text-center mb-2">{r.name}</h3>
-                  <div className="grid grid-cols-2 gap-2 text-xs mb-4 bg-stone-50 p-2 rounded">
-                    <span className="text-stone-500">属性: <b className="text-stone-800">{r.attribute}</b></span>
-                    <span className="text-stone-500">体力: <b className="text-stone-800">{r.stats.hp}</b></span>
-                    <span className="text-stone-500">パワー: <b className="text-stone-800">{r.stats.power}</b></span>
-                    <span className="text-stone-500">防御: <b className="text-stone-800">{r.stats.defense}</b></span>
-                    <span className="text-stone-500">敏捷: <b className="text-stone-800">{r.stats.agility}</b></span>
-                    <span className="text-stone-500">器用: <b className="text-stone-800">{r.stats.dexterity}</b></span>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className={theme.typography.h3}>{r.name}</h3>
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 text-sm text-stone-600">
+                        <span>HP: {r.stats.hp}</span>
+                        <span>Pow: {r.stats.power}</span>
+                        <span>Def: {r.stats.defense}</span>
+                        <span>Agi: {r.stats.agility}</span>
+                        <span>Dex: {r.stats.dexterity}</span>
+                      </div>
+                      <p className="mt-2 font-bold text-amber-700">価値: {r.value} G</p>
+                    </div>
+                    <RobotVisual robot={r} size={80} />
                   </div>
-                  <div className="flex gap-2 mt-auto flex-wrap">
-                    <Button className="flex-1 min-w-[80px]" variant="success" size="sm" onClick={() => engine.sellRobot(r.id)}>
-                      売却 ({r.value}G)
-                    </Button>
-                    <Button className="flex-1 min-w-[80px]" variant="danger" size="sm" onClick={() => engine.scrapRobot(r.id)}>
-                      解体 (素材化)
-                    </Button>
-                    <Button className="w-full" variant="secondary" size="sm" onClick={() => handleShare(r.name)}>
-                      Xでシェア
+                  <div className="mt-4 flex justify-end">
+                    <Button 
+                      size="sm" 
+                      variant="danger" 
+                      onClick={() => {
+                        if (confirm('本当に売却しますか？')) {
+                          engine.sellRobot(r.id);
+                        }
+                      }}
+                    >
+                      売却する
                     </Button>
                   </div>
                 </Card>
@@ -98,26 +116,51 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
         </>
       )}
 
-      {tab === 'materials' && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-          {MATERIALS.filter(m => (state.materials[m.id] || 0) > 0).length === 0 ? (
-            <p className="col-span-full text-center text-stone-500 py-12">所持している素材はありません。</p>
+      {tab === 'parts' && (
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+          {state.parts.length === 0 ? (
+            <p className="text-stone-500 col-span-full">パーツがありません</p>
           ) : (
-            MATERIALS.filter(m => (state.materials[m.id] || 0) > 0).map(m => (
-              <Card key={m.id} className="text-center flex flex-col items-center justify-between">
-                <div className="flex flex-col items-center">
-                  <p className="font-bold text-sm mb-1 flex items-center justify-center gap-1">
-                    <MaterialIcon materialId={m.id} size={18} />
-                    {m.name}
-                  </p>
-                  <p className="text-xs text-stone-500 mb-3">属性: {m.attribute}</p>
+            state.parts.map(p => (
+              <Card key={p.id} className="p-3">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="font-bold text-sm">{p.name}</p>
+                    <p className="text-[10px] text-stone-500">属性: {p.attribute}</p>
+                    <div className="mt-1 text-[10px] text-stone-600">
+                      <p>HP: {p.stats.hp}</p>
+                      <p>Pow: {p.stats.power}</p>
+                      <p>Def: {p.stats.defense}</p>
+                    </div>
+                  </div>
+                  <div className="bg-stone-100 rounded-md p-1 border border-stone-200">
+                    <PartVisual part={p} size={48} />
+                  </div>
                 </div>
-                <Badge className="bg-stone-200 text-stone-700 font-bold text-lg px-4 py-1 mt-auto">
-                  x {state.materials[m.id]}
-                </Badge>
               </Card>
             ))
           )}
+        </div>
+      )}
+
+      {tab === 'materials' && (
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+          {MATERIALS.map(mat => {
+            const count = state.materials[mat.id] || 0;
+            if (count === 0) return null;
+            return (
+              <Card key={mat.id} className="flex justify-between items-center p-3">
+                <div>
+                  <p className="font-bold text-sm flex items-center gap-1">
+                    <MaterialIcon materialId={mat.id} />
+                    {mat.name}
+                  </p>
+                  <p className="text-xs text-stone-500">属性: {mat.attribute}</p>
+                </div>
+                <Badge>x{count}</Badge>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>

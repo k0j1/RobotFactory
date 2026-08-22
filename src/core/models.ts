@@ -6,6 +6,18 @@ export const AttributeColors: Record<Attribute, string> = {
   Fire: '#ef4444', Water: '#3b82f6', Wind: '#10b981', Earth: '#d97706', Light: '#eab308', Dark: '#8b5cf6'
 };
 
+export type PartType = 'head' | 'body' | 'arms' | 'legs';
+
+export interface RobotPart {
+  id: string;
+  type: PartType;
+  name: string;
+  attribute: Attribute;
+  rarity: number;
+  stats: { hp: number; power: number; defense: number; agility: number; dexterity: number; };
+  visualIndex: number;
+}
+
 export interface Material {
   id: string;
   name: string;
@@ -18,9 +30,8 @@ export interface Material {
 export interface Robot {
   id: string;
   name: string;
-  attribute: Attribute;
+  parts: { head: RobotPart; body: RobotPart; arms: RobotPart; legs: RobotPart; };
   stats: { hp: number; power: number; defense: number; agility: number; dexterity: number; };
-  visuals: { head: number; body: number; arms: number; legs: number; color: string; };
   createdAt: number;
   value: number;
 }
@@ -59,16 +70,16 @@ export interface ClientRequest {
 export interface DeliveredLog {
   id: string;
   name: string;
-  attribute: Attribute;
   deliveredAt: number;
+  parts: { head: RobotPart; body: RobotPart; arms: RobotPart; legs: RobotPart; };
   stats: { hp: number; power: number; defense: number; agility: number; dexterity: number; };
-  visuals: { head: number; body: number; arms: number; legs: number; color: string; };
 }
 
 export interface GameState {
   gold: number;
   storageSize: number;
   materials: Record<string, number>;
+  parts: RobotPart[];
   robots: Robot[];
   unlockedLocations: string[];
   activeQuest: ActiveQuest | null;
@@ -78,4 +89,6 @@ export interface GameState {
   tutorialStep: number;
   lastRequestGeneratedAt: number;
   availableRequests: ClientRequest[];
+  unlockedInteriors: string[];
+  currentInterior: string;
 }

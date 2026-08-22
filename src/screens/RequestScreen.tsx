@@ -7,12 +7,22 @@ import { theme } from '../styles/theme';
 
 export const RequestScreen: React.FC<{ state: GameState, engine: GameEngine }> = ({ state, engine }) => {
   const [selectedRobotId, setSelectedRobotId] = useState<string>('');
+  const [now, setNow] = useState(Date.now());
+
+  React.useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const formatTime = (ms: number) => {
     if (ms <= 0) return '期限切れ';
-    const h = Math.floor(ms / (1000 * 60 * 60));
+    const d = Math.floor(ms / (1000 * 60 * 60 * 24));
+    const h = Math.floor((ms % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
     const m = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
-    return `${h}時間${m}分`;
+    const s = Math.floor((ms % (1000 * 60)) / 1000);
+    if (d > 0) return `${d}日と${h}時間`;
+    if (h > 0) return `${h}時間${m}分`;
+    return `${m}分${s.toString().padStart(2, '0')}秒`;
   };
 
   const handleDeliver = () => {
@@ -44,7 +54,7 @@ export const RequestScreen: React.FC<{ state: GameState, engine: GameEngine }> =
           
           <div className="flex justify-between items-center mb-6">
             <span className="font-bold text-amber-600 text-lg">報酬: {state.currentRequest.rewardG} G</span>
-            <span className="text-red-600 font-bold">残り: {formatTime(state.currentRequest.deadline - Date.now())}</span>
+            <span className="text-red-600 font-bold">残り: {formatTime(state.currentRequest.deadline - now)}</span>
           </div>
 
           <h4 className="font-bold mb-2">納品するロボットを選ぶ</h4>
@@ -88,7 +98,7 @@ export const RequestScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                 </div>
                 <p className="mb-4 text-sm">{req.description}</p>
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-stone-500">制限時間: {Math.floor((req.deadline - Date.now())/(1000*60*60))}時間</span>
+                  <span className="text-xs text-stone-500">更新まで: {formatTime(req.deadline - now)}</span>
                   <Button onClick={() => engine.acceptRequest(req.id)}>この依頼を受ける</Button>
                 </div>
               </Card>

@@ -5,7 +5,6 @@ import { theme } from '../styles/theme';
 import { RobotVisual, PixelGrid } from '../components/robot/RobotVisual';
 import { MATERIALS } from '../core/data';
 import { HEADS, BODIES, ARMS, LEGS } from '../core/pixelArt';
-
 import { FaRobot, FaBox, FaWrench, FaShoePrints, FaStar } from 'react-icons/fa';
 import { MaterialIcon } from '../components/ui/MaterialIcon';
 
@@ -74,7 +73,7 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
               {state.deliveredLogs.slice().reverse().map(log => (
                 <Card key={`${log.id}-${log.deliveredAt}`} className="flex items-center gap-4">
                   <div className="bg-stone-100 rounded p-2">
-                    <RobotVisual robot={{ visuals: log.visuals } as any} size={64} />
+                    <RobotVisual robot={{ parts: log.parts } as any} size={64} />
                   </div>
                   <div>
                     <p className="font-bold text-lg">{log.name}</p>
@@ -92,8 +91,9 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
       {tab === 'parts' && (
         <div className="space-y-4">
           <p className="text-sm text-stone-600 mb-4 bg-stone-100 p-4 rounded-md">
-            クラフトに使用した素材の<strong>レア度（★）</strong>と<strong>属性</strong>によって、完成するロボットの見た目が変化します。高レアな素材を使うほど、珍しいパーツが選ばれる可能性が高くなります。
+            クラフトに使用した素材の<strong>レア度（★）</strong>と<strong>属性</strong>によって、完成するパーツの見た目が変化します。高レアな素材を使うほど、珍しいパーツが選ばれる可能性が高くなります。
           </p>
+
           {MATERIALS.map(mat => {
             const color = AttributeColors[mat.attribute];
             return (
@@ -106,7 +106,7 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
                   <div className="flex gap-2">
                     <Badge style={{ backgroundColor: color, color: '#fff' }}>{mat.attribute}</Badge>
                     <Badge className="bg-stone-800 text-stone-100 flex items-center gap-1">
-                      <FaStar size={12} className="text-amber-400" /> {mat.rarity}
+                      <FaStar size={12} color="#fbbf24" /> {mat.rarity}
                     </Badge>
                   </div>
                 </div>

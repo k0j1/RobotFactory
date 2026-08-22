@@ -34,7 +34,7 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
         >
           <option value="">ロボットなし (成功率 50%)</option>
           {state.robots.map(r => (
-            <option key={r.id} value={r.id}>{r.name} (属性: {r.attribute})</option>
+            <option key={r.id} value={r.id}>{r.name} (HP: {r.stats.hp} Pow: {r.stats.power})</option>
           ))}
         </select>
       </div>
