@@ -14,7 +14,7 @@ export const Layout: React.FC<{ children: React.ReactNode; onNavigate: (view: st
       <header className={`${theme.colors.secondary} ${theme.colors.textLight} ${theme.spacing.sm} sticky top-0 z-10 ${theme.shadow.sm}`}>
         <div className="max-w-4xl mx-auto flex justify-between items-center">
           <h1 className={theme.typography.h2}>ポンコツロボット工房</h1>
-          <div className="text-sm">v1.0.3</div>
+          <div className="text-sm">v1.0.5</div>
         </div>
       </header>
 

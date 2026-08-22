@@ -4,7 +4,13 @@ import path from 'path';
 import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
+  // GitHub Actions環境ではリポジトリ名をbaseに設定、それ以外は相対パス
+  const base = process.env.GITHUB_REPOSITORY 
+    ? `/${process.env.GITHUB_REPOSITORY.split('/')[1]}/` 
+    : './';
+
   return {
+    base, // GitHub Pagesでのパス解決
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
