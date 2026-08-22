@@ -1,0 +1,158 @@
+import React, { useState } from 'react';
+import { GameState, AttributeNames } from '../core/models';
+import { GameEngine } from '../core/GameEngine';
+import { Card, Button, Badge } from '../components/ui/core';
+import { theme } from '../styles/theme';
+import { LOCATIONS, MATERIALS } from '../core/data';
+import { MaterialIcon } from '../components/ui/MaterialIcon';
+
+const formatTime = (ms: number) => {
+  if (ms <= 0) return '00:00';
+  const totalSec = Math.ceil(ms / 1000);
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+};
+
+export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavigate: (v: string) => void }> = ({ state, engine, onNavigate }) => {
+  const [questResult, setQuestResult] = useState<{success: boolean, drops: string[]} | null>(null);
+
+  const handleCompleteQuest = () => {
+    const result = engine.completeQuest();
+    if (result) {
+      setQuestResult(result);
+    }
+  };
+
+  const activeQuestLoc = state.activeQuest ? LOCATIONS.find(l => l.id === state.activeQuest?.locationId) : null;
+  const timeRemaining = state.activeQuest ? state.activeQuest.endTime - Date.now() : 0;
+  const questDone = timeRemaining <= 0;
+
+  return (
+    <div className="space-y-6">
+      {/* Status Bar */}
+      <div className={`flex gap-4 p-4 ${theme.colors.surface} ${theme.radius.md} ${theme.shadow.sm}`}>
+        <div className="flex-1">
+          <p className={theme.typography.small}>所持金</p>
+          <p className={`${theme.typography.h2} text-amber-600`}>{state.gold} G</p>
+        </div>
+        <div className="flex-1">
+          <p className={theme.typography.small}>ロボット倉庫</p>
+          <p className={theme.typography.h2}>{state.robots.length} / {state.storageSize}</p>
+        </div>
+        <div className="flex-1">
+          <p className={theme.typography.small}>納品実績</p>
+          <p className={theme.typography.h2}>{state.deliveredRobotsCount}体</p>
+        </div>
+      </div>
+
+      {/* Tutorial Banner */}
+      {state.tutorialStep < 5 && (
+        <Card className="bg-blue-100 border-2 border-blue-400 text-blue-900">
+          <h3 className={`${theme.typography.h3} text-blue-800`}>チュートリアル進行中！</h3>
+          <p className="mt-2 font-bold font-sans">
+            {state.tutorialStep === 0 && 'まずは下のメニューから「遠征」に行き、素材を集めてこよう。'}
+            {state.tutorialStep === 1 && '遠征から帰還するのを待って、素材を受け取ろう。'}
+            {state.tutorialStep === 2 && '素材が集まったら「製造」メニューでロボットを作ってみよう！'}
+            {state.tutorialStep === 3 && 'ロボットが完成！「依頼板」を見て、納品できそうな依頼を受けよう。'}
+            {state.tutorialStep === 4 && '依頼を受けたら、依頼詳細からロボットを「納品」しよう。'}
+          </p>
+        </Card>
+      )}
+
+      {/* Navigation Buttons for Shop, Encyclopedia, Litepaper */}
+      <div className="grid grid-cols-3 gap-2 sm:gap-4">
+        <Button variant="secondary" onClick={() => onNavigate('shop')} className="py-6 flex flex-col gap-2 px-1">
+          <span className="text-2xl">🏪</span>
+          <span className="text-xs sm:text-base">商店</span>
+        </Button>
+        <Button variant="secondary" onClick={() => onNavigate('encyclopedia')} className="py-6 flex flex-col gap-2 px-1">
+          <span className="text-2xl">📖</span>
+          <span className="text-xs sm:text-base">図鑑・実績</span>
+        </Button>
+        <Button variant="secondary" onClick={() => onNavigate('litepaper')} className="py-6 flex flex-col gap-2 px-1">
+          <span className="text-2xl">📜</span>
+          <span className="text-xs sm:text-base">仕様書</span>
+        </Button>
+      </div>
+
+      {/* Active Quest */}
+      <h2 className={`${theme.typography.h2} border-b-2 ${theme.colors.border} pb-2`}>現在の状況</h2>
+      
+      {state.activeQuest ? (
+        <Card>
+          <div className="flex justify-between items-center mb-2">
+            <h3 className={theme.typography.h3}>遠征中: {activeQuestLoc?.name}</h3>
+            {questDone ? (
+              <Badge className="bg-emerald-100 text-emerald-800">帰還完了</Badge>
+            ) : (
+              <Badge className="bg-amber-100 text-amber-800">探索中...</Badge>
+            )}
+          </div>
+          {!questDone && <p className="text-2xl text-center my-4 font-mono">{formatTime(timeRemaining)}</p>}
+          <Button 
+            className="w-full mt-4" 
+            variant={questDone ? 'success' : 'secondary'} 
+            disabled={!questDone}
+            onClick={handleCompleteQuest}
+          >
+            {questDone ? '素材を回収する' : '探索を待つ'}
+          </Button>
+        </Card>
+      ) : (
+        <Card className="text-center p-8 bg-stone-100 border-dashed border-2 border-stone-300">
+          <p className="mb-4 text-stone-500">現在、遠征中のチームはありません。</p>
+          <Button onClick={() => onNavigate('quest')}>遠征へ向かう</Button>
+        </Card>
+      )}
+
+      {/* Current Request */}
+      {state.currentRequest && (
+        <Card>
+          <div className="flex justify-between items-center mb-2">
+            <h3 className={theme.typography.h3}>受諾中の依頼</h3>
+            <Badge className="bg-blue-100 text-blue-800">{state.currentRequest.clientName}</Badge>
+          </div>
+          <p className="mb-4">{state.currentRequest.description}</p>
+          <div className="flex justify-between items-center">
+            <span className="font-bold text-amber-600">報酬: {state.currentRequest.rewardG} G</span>
+            <span className={theme.typography.small}>
+              期限: {formatTime(state.currentRequest.deadline - Date.now())}
+            </span>
+          </div>
+          <Button className="w-full mt-4" onClick={() => onNavigate('requests')}>納品へ進む</Button>
+        </Card>
+      )}
+
+      {/* Quest Result Modal */}
+      {questResult && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <Card className="max-w-md w-full bg-stone-50 text-center shadow-2xl">
+            <h2 className={`${theme.typography.h2} mb-4 ${questResult.success ? 'text-emerald-600' : 'text-stone-500'}`}>
+              {questResult.success ? '遠征成功！' : '遠征失敗…'}
+            </h2>
+            {questResult.success ? (
+              <>
+                <p className="mb-4 font-bold">以下の素材を獲得しました！</p>
+                <div className="flex flex-wrap justify-center gap-2 mb-6">
+                  {questResult.drops.map((dropId, i) => {
+                    const mat = MATERIALS.find(m => m.id === dropId);
+                    return (
+                      <Badge key={i} className="bg-amber-100 text-amber-900 border border-amber-300 p-2 text-sm flex items-center gap-1">
+                        <MaterialIcon materialId={mat?.id || ''} />
+                        {mat?.name}
+                      </Badge>
+                    );
+                  })}
+                </div>
+              </>
+            ) : (
+              <p className="mb-6 font-bold text-stone-600">素材は見つかりませんでした…<br/>（ロボットを派遣すると成功率が上がります！）</p>
+            )}
+            <Button onClick={() => setQuestResult(null)} className="w-full" size="lg">閉じる</Button>
+          </Card>
+        </div>
+      )}
+    </div>
+  );
+};

@@ -1,0 +1,47 @@
+export const theme = {
+  colors: {
+    primary: "bg-amber-600 text-white",
+    primaryHover: "hover:bg-amber-700",
+    secondary: "bg-stone-700 text-white",
+    secondaryHover: "hover:bg-stone-800",
+    background: "bg-stone-200",
+    surface: "bg-stone-50",
+    surfaceDark: "bg-stone-800",
+    text: "text-stone-900",
+    textLight: "text-stone-100",
+    textMuted: "text-stone-500",
+    border: "border-stone-300",
+    borderDark: "border-stone-600",
+    accent: "text-amber-600",
+    danger: "bg-red-600 text-white",
+    dangerHover: "hover:bg-red-700",
+    success: "bg-emerald-600 text-white",
+  },
+  spacing: {
+    xs: "p-2",
+    sm: "p-4",
+    md: "p-6",
+    lg: "p-8",
+    gapSm: "gap-2",
+    gapMd: "gap-4",
+    gapLg: "gap-6",
+  },
+  radius: {
+    sm: "rounded-sm",
+    md: "rounded-md",
+    lg: "rounded-xl",
+    full: "rounded-full",
+  },
+  shadow: {
+    sm: "shadow-sm",
+    md: "shadow-md",
+    lg: "shadow-xl",
+  },
+  typography: {
+    h1: "text-2xl font-bold font-['DotGothic16',_sans-serif]",
+    h2: "text-xl font-bold font-['DotGothic16',_sans-serif]",
+    h3: "text-lg font-bold font-['DotGothic16',_sans-serif]",
+    body: "text-base font-['DotGothic16',_sans-serif]",
+    small: "text-xs font-['DotGothic16',_sans-serif]",
+  }
+};
