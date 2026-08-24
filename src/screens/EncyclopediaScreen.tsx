@@ -8,7 +8,12 @@ import { MATERIALS } from '../core/data';
 import { FaRobot, FaBox, FaWrench, FaShoePrints, FaStar } from 'react-icons/fa';
 import { MaterialIcon } from '../components/ui/MaterialIcon';
 
-const SinglePart: React.FC<{ Comp: React.FC<{color: string}>, color: string, rarityLabel?: number }> = ({ Comp, color, rarityLabel }) => {
+const SinglePart: React.FC<{ Comp: React.FC<{color: string, viewBox?: string}>, color: string, type: 'head'|'body'|'arms'|'legs', rarityLabel?: number }> = ({ Comp, color, type, rarityLabel }) => {
+  const viewBox = type === 'head' ? '20 0 60 45' :
+                  type === 'body' ? '25 32 50 48' :
+                  type === 'arms' ? '5 38 90 42' :
+                  '20 68 60 32';
+
   return (
     <div className="bg-stone-100 rounded p-1 flex flex-col items-center border border-stone-200 overflow-hidden w-full aspect-square justify-center">
       {rarityLabel !== undefined && (
@@ -17,7 +22,7 @@ const SinglePart: React.FC<{ Comp: React.FC<{color: string}>, color: string, rar
         </span>
       )}
       <div className="flex-1 w-full flex items-center justify-center p-1">
-        <Comp color={color} />
+        <Comp color={color} viewBox={viewBox} />
       </div>
     </div>
   );
@@ -117,25 +122,25 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
                   <div className="flex flex-col items-center">
                     <p className="mb-2 flex items-center justify-center gap-1"><FaRobot size={14} />アタマ</p>
                     <div className="grid grid-cols-2 gap-2">
-                      {SVG_HEADS.map((Comp, idx) => <SinglePart key={idx} Comp={Comp} color={color} rarityLabel={1} />)}
+                      {SVG_HEADS.map((Comp, idx) => <SinglePart key={idx} Comp={Comp} color={color} type="head" rarityLabel={1} />)}
                     </div>
                   </div>
                   <div className="flex flex-col items-center">
                     <p className="mb-2 flex items-center justify-center gap-1"><FaBox size={14} />ボディ</p>
                     <div className="grid grid-cols-2 gap-2">
-                      {SVG_BODIES.map((Comp, idx) => <SinglePart key={idx} Comp={Comp} color={color} rarityLabel={1} />)}
+                      {SVG_BODIES.map((Comp, idx) => <SinglePart key={idx} Comp={Comp} color={color} type="body" rarityLabel={1} />)}
                     </div>
                   </div>
                   <div className="flex flex-col items-center">
                     <p className="mb-2 flex items-center justify-center gap-1"><FaWrench size={14} />ウデ</p>
                     <div className="grid grid-cols-2 gap-2">
-                      {SVG_ARMS.map((Comp, idx) => <SinglePart key={idx} Comp={Comp} color={color} rarityLabel={1} />)}
+                      {SVG_ARMS.map((Comp, idx) => <SinglePart key={idx} Comp={Comp} color={color} type="arms" rarityLabel={1} />)}
                     </div>
                   </div>
                   <div className="flex flex-col items-center">
                     <p className="mb-2 flex items-center justify-center gap-1"><FaShoePrints size={14} />アシ</p>
                     <div className="grid grid-cols-2 gap-2">
-                      {SVG_LEGS.map((Comp, idx) => <SinglePart key={idx} Comp={Comp} color={color} rarityLabel={1} />)}
+                      {SVG_LEGS.map((Comp, idx) => <SinglePart key={idx} Comp={Comp} color={color} type="legs" rarityLabel={1} />)}
                     </div>
                   </div>
                 </div>

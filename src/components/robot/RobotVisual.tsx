@@ -18,11 +18,26 @@ export const PartVisual: React.FC<{ part: any, size?: number }> = ({ part, size 
   else if (part.type === 'legs') Comp = SVG_LEGS[part.visualIndex % SVG_LEGS.length];
 
   const color = AttributeColors[part.attribute] || '#000';
+  
+  const viewBox = part.type === 'head' ? '20 0 60 45' :
+                  part.type === 'body' ? '25 32 50 48' :
+                  part.type === 'arms' ? '5 38 90 42' :
+                  '20 68 60 32';
+
+  const bgGridSize = Math.max(8, size / 6);
+  const bgStyle = {
+    width: size, height: size,
+    backgroundColor: '#e7e5e4',
+    backgroundImage: `linear-gradient(#d6d3d1 2px, transparent 2px), linear-gradient(90deg, #d6d3d1 2px, transparent 2px)`,
+    backgroundSize: `${bgGridSize}px ${bgGridSize}px`,
+    backgroundPosition: 'center center',
+    boxShadow: 'inset 0 0 10px rgba(0,0,0,0.05)'
+  };
 
   return (
-    <div className={`flex justify-center items-center ${theme.colors.surfaceDark} ${theme.radius.md} overflow-hidden`} style={{ width: size, height: size }}>
-      <div style={{ width: '80%', height: '80%', position: 'relative' }}>
-        {Comp && <Comp color={color} />}
+    <div className={`flex justify-center items-center ${theme.radius.md} overflow-hidden border border-stone-300`} style={bgStyle}>
+      <div className="w-[80%] h-[80%] relative flex justify-center items-center">
+        {Comp && <Comp color={color} viewBox={viewBox} className="w-full h-full" />}
       </div>
     </div>
   );
@@ -43,31 +58,22 @@ export const RobotVisual: React.FC<{ robot: any, size?: number }> = ({ robot, si
   const armsColor = arms ? AttributeColors[arms.attribute] : '#000';
   const legsColor = legs ? AttributeColors[legs.attribute] : '#000';
 
+  const bgGridSize = Math.max(10, size / 8);
+  const bgStyle = {
+    width: size, height: size,
+    backgroundColor: '#e7e5e4',
+    backgroundImage: `linear-gradient(#d6d3d1 2px, transparent 2px), linear-gradient(90deg, #d6d3d1 2px, transparent 2px)`,
+    backgroundSize: `${bgGridSize}px ${bgGridSize}px`,
+    backgroundPosition: 'center center',
+    boxShadow: 'inset 0 0 20px rgba(0,0,0,0.05)'
+  };
+
   return (
-    <div className={`relative flex justify-center items-center ${theme.colors.surfaceDark} ${theme.radius.md} overflow-hidden`} style={{ width: size, height: size }}>
-      {LegsComp && (
-        <div className="absolute" style={{ bottom: '5%', left: '25%', width: '50%', height: '40%', zIndex: 10 }}>
-          <LegsComp color={legsColor} />
-        </div>
-      )}
-      
-      {ArmsComp && (
-        <div className="absolute" style={{ top: '35%', left: '5%', width: '90%', height: '40%', zIndex: 15 }}>
-          <ArmsComp color={armsColor} />
-        </div>
-      )}
-
-      {BodyComp && (
-        <div className="absolute" style={{ top: '30%', left: '25%', width: '50%', height: '45%', zIndex: 20 }}>
-          <BodyComp color={bodyColor} />
-        </div>
-      )}
-
-      {HeadComp && (
-        <div className="absolute" style={{ top: '5%', left: '25%', width: '50%', height: '40%', zIndex: 30 }}>
-          <HeadComp color={headColor} />
-        </div>
-      )}
+    <div className={`relative flex justify-center items-center ${theme.radius.md} overflow-hidden border-2 border-stone-300`} style={bgStyle}>
+      {LegsComp && <LegsComp color={legsColor} className="absolute inset-0 w-full h-full z-10" />}
+      {ArmsComp && <ArmsComp color={armsColor} className="absolute inset-0 w-full h-full z-20" />}
+      {BodyComp && <BodyComp color={bodyColor} className="absolute inset-0 w-full h-full z-30" />}
+      {HeadComp && <HeadComp color={headColor} className="absolute inset-0 w-full h-full z-40" />}
     </div>
   );
 };

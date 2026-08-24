@@ -1,286 +1,277 @@
 import React from 'react';
 
-// === HEAD SVGs (8 patterns) ===
+export interface SVGProps { color: string; viewBox?: string; className?: string; }
 
-export const HeadBasicSVG = ({ color }: { color: string }) => (
-  <svg width="100%" height="100%" viewBox="0 0 100 100">
-    <path d="M25 40 L75 40 L75 90 L25 90 Z" fill={color} stroke="#333" strokeWidth="4" />
-    <circle cx="35" cy="65" r="8" fill="#fff" /><circle cx="35" cy="65" r="3" fill="#000" />
-    <circle cx="65" cy="65" r="8" fill="#fff" /><circle cx="65" cy="65" r="3" fill="#000" />
-    <rect x="45" y="10" width="10" height="30" fill="#999" stroke="#333" strokeWidth="3" />
-    <circle cx="50" cy="10" r="6" fill="#ef4444" />
+// === HEAD SVGs (y: 5~40, x: 25~75) ===
+export const HeadBasicSVG = ({ color, viewBox="0 0 100 100", className }: SVGProps) => (
+  <svg width="100%" height="100%" viewBox={viewBox} className={className}>
+    <path d="M35 15 L65 15 L65 40 L35 40 Z" fill={color} stroke="#333" strokeWidth="3" />
+    <circle cx="42" cy="25" r="4" fill="#fff" /><circle cx="42" cy="25" r="1.5" fill="#000" />
+    <circle cx="58" cy="25" r="4" fill="#fff" /><circle cx="58" cy="25" r="1.5" fill="#000" />
+    <rect x="47" y="5" width="6" height="10" fill="#999" stroke="#333" strokeWidth="2" />
+    <circle cx="50" cy="5" r="4" fill="#ef4444" />
   </svg>
 );
 
-export const HeadRoundSVG = ({ color }: { color: string }) => (
-  <svg width="100%" height="100%" viewBox="0 0 100 100">
-    <circle cx="50" cy="60" r="35" fill={color} stroke="#333" strokeWidth="4" />
-    <rect x="25" y="45" width="50" height="20" rx="10" fill="#222" />
-    <circle cx="50" cy="55" r="6" fill="#0ff" />
+export const HeadRoundSVG = ({ color, viewBox="0 0 100 100", className }: SVGProps) => (
+  <svg width="100%" height="100%" viewBox={viewBox} className={className}>
+    <circle cx="50" cy="25" r="18" fill={color} stroke="#333" strokeWidth="3" />
+    <rect x="38" y="18" width="24" height="10" rx="4" fill="#222" />
+    <circle cx="50" cy="23" r="3" fill="#0ff" />
   </svg>
 );
 
-export const HeadTVSVG = ({ color }: { color: string }) => (
-  <svg width="100%" height="100%" viewBox="0 0 100 100">
-    <rect x="15" y="30" width="70" height="60" rx="10" fill={color} stroke="#333" strokeWidth="4" />
-    <rect x="25" y="40" width="50" height="40" rx="5" fill="#e0f2fe" stroke="#333" strokeWidth="4" />
-    <path d="M30 10 L50 30 L70 10" fill="none" stroke="#333" strokeWidth="4" />
-    <circle cx="40" cy="60" r="4" fill="#0284c7" />
-    <circle cx="60" cy="60" r="4" fill="#0284c7" />
-    <path d="M45 70 Q 50 75 55 70" fill="none" stroke="#0284c7" strokeWidth="3" />
+export const HeadTVSVG = ({ color, viewBox="0 0 100 100", className }: SVGProps) => (
+  <svg width="100%" height="100%" viewBox={viewBox} className={className}>
+    <rect x="30" y="12" width="40" height="28" rx="4" fill={color} stroke="#333" strokeWidth="3" />
+    <rect x="35" y="16" width="30" height="18" rx="2" fill="#e0f2fe" stroke="#333" strokeWidth="2" />
+    <path d="M40 4 L50 12 L60 4" fill="none" stroke="#333" strokeWidth="2" />
   </svg>
 );
 
-export const HeadHornSVG = ({ color }: { color: string }) => (
-  <svg width="100%" height="100%" viewBox="0 0 100 100">
-    <path d="M30 40 L70 40 L80 90 L20 90 Z" fill={color} stroke="#333" strokeWidth="4" />
-    <path d="M20 50 Q 5 30 15 15 Q 25 30 30 40" fill="#facc15" stroke="#333" strokeWidth="3" />
-    <path d="M80 50 Q 95 30 85 15 Q 75 30 70 40" fill="#facc15" stroke="#333" strokeWidth="3" />
-    <line x1="35" y1="65" x2="65" y2="65" stroke="#333" strokeWidth="4" />
-    <line x1="40" y1="75" x2="60" y2="75" stroke="#333" strokeWidth="4" />
+export const HeadHornSVG = ({ color, viewBox="0 0 100 100", className }: SVGProps) => (
+  <svg width="100%" height="100%" viewBox={viewBox} className={className}>
+    <path d="M35 20 L65 20 L70 40 L30 40 Z" fill={color} stroke="#333" strokeWidth="3" />
+    <path d="M30 25 Q 20 15 25 5 Q 30 15 35 20" fill="#facc15" stroke="#333" strokeWidth="2" />
+    <path d="M70 25 Q 80 15 75 5 Q 70 15 65 20" fill="#facc15" stroke="#333" strokeWidth="2" />
+    <line x1="40" y1="30" x2="60" y2="30" stroke="#333" strokeWidth="2" />
+    <line x1="42" y1="35" x2="58" y2="35" stroke="#333" strokeWidth="2" />
   </svg>
 );
 
-export const HeadCylinderSVG = ({ color }: { color: string }) => (
-  <svg width="100%" height="100%" viewBox="0 0 100 100">
-    <rect x="30" y="20" width="40" height="70" rx="20" fill={color} stroke="#333" strokeWidth="4" />
-    <rect x="35" y="40" width="30" height="15" fill="#fff" stroke="#333" strokeWidth="3" />
-    <line x1="30" y1="70" x2="70" y2="70" stroke="#333" strokeWidth="4" />
-    <line x1="30" y1="80" x2="70" y2="80" stroke="#333" strokeWidth="4" />
+export const HeadCylinderSVG = ({ color, viewBox="0 0 100 100", className }: SVGProps) => (
+  <svg width="100%" height="100%" viewBox={viewBox} className={className}>
+    <rect x="38" y="10" width="24" height="30" rx="8" fill={color} stroke="#333" strokeWidth="3" />
+    <rect x="40" y="20" width="20" height="8" fill="#fff" stroke="#333" strokeWidth="2" />
+    <line x1="38" y1="32" x2="62" y2="32" stroke="#333" strokeWidth="2" />
   </svg>
 );
 
-export const HeadVisorSVG = ({ color }: { color: string }) => (
-  <svg width="100%" height="100%" viewBox="0 0 100 100">
-    <path d="M20 30 L80 30 L90 80 L10 80 Z" fill={color} stroke="#333" strokeWidth="4" />
-    <path d="M15 50 L85 50 L80 65 L20 65 Z" fill="#ef4444" stroke="#333" strokeWidth="3" />
+export const HeadVisorSVG = ({ color, viewBox="0 0 100 100", className }: SVGProps) => (
+  <svg width="100%" height="100%" viewBox={viewBox} className={className}>
+    <path d="M35 15 L65 15 L70 40 L30 40 Z" fill={color} stroke="#333" strokeWidth="3" />
+    <path d="M33 22 L67 22 L65 30 L35 30 Z" fill="#ef4444" stroke="#333" strokeWidth="2" />
   </svg>
 );
 
-export const HeadTriangleSVG = ({ color }: { color: string }) => (
-  <svg width="100%" height="100%" viewBox="0 0 100 100">
-    <path d="M50 20 L90 90 L10 90 Z" fill={color} stroke="#333" strokeWidth="4" />
-    <circle cx="50" cy="65" r="12" fill="#fff" stroke="#333" strokeWidth="3" />
-    <circle cx="50" cy="65" r="4" fill="#000" />
+export const HeadTriangleSVG = ({ color, viewBox="0 0 100 100", className }: SVGProps) => (
+  <svg width="100%" height="100%" viewBox={viewBox} className={className}>
+    <path d="M50 5 L70 40 L30 40 Z" fill={color} stroke="#333" strokeWidth="3" />
+    <circle cx="50" cy="28" r="6" fill="#fff" stroke="#333" strokeWidth="2" />
+    <circle cx="50" cy="28" r="2" fill="#000" />
   </svg>
 );
 
-export const HeadDomeSVG = ({ color }: { color: string }) => (
-  <svg width="100%" height="100%" viewBox="0 0 100 100">
-    <path d="M20 80 Q 20 20 50 20 Q 80 20 80 80 Z" fill="#e0f2fe" stroke="#333" strokeWidth="4" opacity="0.8" />
-    <rect x="15" y="80" width="70" height="15" fill={color} stroke="#333" strokeWidth="4" />
-    <circle cx="50" cy="60" r="15" fill={color} stroke="#333" strokeWidth="3" />
-    <circle cx="50" cy="60" r="5" fill="#facc15" />
+export const HeadDomeSVG = ({ color, viewBox="0 0 100 100", className }: SVGProps) => (
+  <svg width="100%" height="100%" viewBox={viewBox} className={className}>
+    <path d="M30 35 Q 30 10 50 10 Q 70 10 70 35 Z" fill="#e0f2fe" stroke="#333" strokeWidth="3" opacity="0.8" />
+    <rect x="28" y="35" width="44" height="6" fill={color} stroke="#333" strokeWidth="3" />
+    <circle cx="50" cy="25" r="7" fill={color} stroke="#333" strokeWidth="2" />
+    <circle cx="50" cy="25" r="2" fill="#facc15" />
   </svg>
 );
 
-
-// === BODY SVGs (8 patterns) ===
-
-export const BodyBasicSVG = ({ color }: { color: string }) => (
-  <svg width="100%" height="100%" viewBox="0 0 100 100">
-    <rect x="20" y="10" width="60" height="80" rx="10" fill={color} stroke="#333" strokeWidth="4" />
-    <rect x="35" y="25" width="30" height="20" fill="#fff" opacity="0.8" stroke="#333" strokeWidth="3" />
-    <line x1="20" y1="60" x2="80" y2="60" stroke="#333" strokeWidth="4" />
+// === BODY SVGs (y: 35~75, x: 25~75) ===
+export const BodyBasicSVG = ({ color, viewBox="0 0 100 100", className }: SVGProps) => (
+  <svg width="100%" height="100%" viewBox={viewBox} className={className}>
+    <rect x="30" y="38" width="40" height="34" rx="4" fill={color} stroke="#333" strokeWidth="3" />
+    <rect x="40" y="45" width="20" height="10" fill="#fff" opacity="0.8" stroke="#333" strokeWidth="2" />
+    <line x1="30" y1="65" x2="70" y2="65" stroke="#333" strokeWidth="3" />
   </svg>
 );
 
-export const BodyRoundSVG = ({ color }: { color: string }) => (
-  <svg width="100%" height="100%" viewBox="0 0 100 100">
-    <circle cx="50" cy="50" r="45" fill={color} stroke="#333" strokeWidth="4" />
-    <circle cx="50" cy="50" r="25" fill="#fff" opacity="0.3" />
-    <circle cx="50" cy="50" r="10" fill="#fff" stroke="#333" strokeWidth="3" />
+export const BodyRoundSVG = ({ color, viewBox="0 0 100 100", className }: SVGProps) => (
+  <svg width="100%" height="100%" viewBox={viewBox} className={className}>
+    <circle cx="50" cy="55" r="22" fill={color} stroke="#333" strokeWidth="3" />
+    <circle cx="50" cy="55" r="12" fill="#fff" opacity="0.3" />
+    <circle cx="50" cy="55" r="5" fill="#fff" stroke="#333" strokeWidth="2" />
   </svg>
 );
 
-export const BodyHeavySVG = ({ color }: { color: string }) => (
-  <svg width="100%" height="100%" viewBox="0 0 100 100">
-    <path d="M25 10 L75 10 L95 90 L5 90 Z" fill={color} stroke="#333" strokeWidth="4" />
-    <rect x="40" y="30" width="20" height="40" fill="#222" stroke="#333" strokeWidth="2" />
+export const BodyHeavySVG = ({ color, viewBox="0 0 100 100", className }: SVGProps) => (
+  <svg width="100%" height="100%" viewBox={viewBox} className={className}>
+    <path d="M30 35 L70 35 L80 75 L20 75 Z" fill={color} stroke="#333" strokeWidth="3" />
+    <rect x="42" y="45" width="16" height="20" fill="#222" stroke="#333" strokeWidth="2" />
   </svg>
 );
 
-export const BodyBarrelSVG = ({ color }: { color: string }) => (
-  <svg width="100%" height="100%" viewBox="0 0 100 100">
-    <rect x="25" y="10" width="50" height="80" rx="20" fill={color} stroke="#333" strokeWidth="4" />
-    <line x1="25" y1="30" x2="75" y2="30" stroke="#333" strokeWidth="4" />
-    <line x1="25" y1="50" x2="75" y2="50" stroke="#333" strokeWidth="4" />
-    <line x1="25" y1="70" x2="75" y2="70" stroke="#333" strokeWidth="4" />
+export const BodyBarrelSVG = ({ color, viewBox="0 0 100 100", className }: SVGProps) => (
+  <svg width="100%" height="100%" viewBox={viewBox} className={className}>
+    <rect x="35" y="35" width="30" height="40" rx="8" fill={color} stroke="#333" strokeWidth="3" />
+    <line x1="35" y1="45" x2="65" y2="45" stroke="#333" strokeWidth="2" />
+    <line x1="35" y1="55" x2="65" y2="55" stroke="#333" strokeWidth="2" />
+    <line x1="35" y1="65" x2="65" y2="65" stroke="#333" strokeWidth="2" />
   </svg>
 );
 
-export const BodySlimSVG = ({ color }: { color: string }) => (
-  <svg width="100%" height="100%" viewBox="0 0 100 100">
-    <path d="M20 10 L80 10 L60 50 L80 90 L20 90 L40 50 Z" fill={color} stroke="#333" strokeWidth="4" />
-    <circle cx="50" cy="50" r="10" fill="#222" />
+export const BodySlimSVG = ({ color, viewBox="0 0 100 100", className }: SVGProps) => (
+  <svg width="100%" height="100%" viewBox={viewBox} className={className}>
+    <path d="M35 35 L65 35 L55 55 L65 75 L35 75 L45 55 Z" fill={color} stroke="#333" strokeWidth="3" />
+    <circle cx="50" cy="55" r="5" fill="#222" />
   </svg>
 );
 
-export const BodyFurnaceSVG = ({ color }: { color: string }) => (
-  <svg width="100%" height="100%" viewBox="0 0 100 100">
-    <rect x="15" y="15" width="70" height="70" rx="15" fill={color} stroke="#333" strokeWidth="4" />
-    <path d="M30 50 Q 50 90 70 50 Q 50 30 30 50" fill="#f97316" stroke="#333" strokeWidth="3" />
-    <path d="M40 55 Q 50 80 60 55 Q 50 45 40 55" fill="#fef08a" />
+export const BodyFurnaceSVG = ({ color, viewBox="0 0 100 100", className }: SVGProps) => (
+  <svg width="100%" height="100%" viewBox={viewBox} className={className}>
+    <rect x="30" y="35" width="40" height="40" rx="6" fill={color} stroke="#333" strokeWidth="3" />
+    <path d="M38 50 Q 50 75 62 50 Q 50 40 38 50" fill="#f97316" stroke="#333" strokeWidth="2" />
+    <path d="M44 53 Q 50 68 56 53 Q 50 45 44 53" fill="#fef08a" />
   </svg>
 );
 
-export const BodyDiamondSVG = ({ color }: { color: string }) => (
-  <svg width="100%" height="100%" viewBox="0 0 100 100">
-    <path d="M50 5 L90 50 L50 95 L10 50 Z" fill={color} stroke="#333" strokeWidth="4" />
-    <path d="M50 25 L75 50 L50 75 L25 50 Z" fill="#fff" opacity="0.5" stroke="#333" strokeWidth="2" />
+export const BodyDiamondSVG = ({ color, viewBox="0 0 100 100", className }: SVGProps) => (
+  <svg width="100%" height="100%" viewBox={viewBox} className={className}>
+    <path d="M50 32 L75 55 L50 78 L25 55 Z" fill={color} stroke="#333" strokeWidth="3" />
+    <path d="M50 42 L63 55 L50 68 L37 55 Z" fill="#fff" opacity="0.5" stroke="#333" strokeWidth="2" />
   </svg>
 );
 
-export const BodyEngineSVG = ({ color }: { color: string }) => (
-  <svg width="100%" height="100%" viewBox="0 0 100 100">
-    <rect x="20" y="20" width="60" height="60" fill={color} stroke="#333" strokeWidth="4" />
-    <circle cx="35" cy="35" r="10" fill="#64748b" stroke="#333" strokeWidth="3" />
-    <circle cx="65" cy="35" r="10" fill="#64748b" stroke="#333" strokeWidth="3" />
-    <circle cx="35" cy="65" r="10" fill="#64748b" stroke="#333" strokeWidth="3" />
-    <circle cx="65" cy="65" r="10" fill="#64748b" stroke="#333" strokeWidth="3" />
+export const BodyEngineSVG = ({ color, viewBox="0 0 100 100", className }: SVGProps) => (
+  <svg width="100%" height="100%" viewBox={viewBox} className={className}>
+    <rect x="32" y="38" width="36" height="34" fill={color} stroke="#333" strokeWidth="3" />
+    <circle cx="40" cy="46" r="5" fill="#64748b" stroke="#333" strokeWidth="2" />
+    <circle cx="60" cy="46" r="5" fill="#64748b" stroke="#333" strokeWidth="2" />
+    <circle cx="40" cy="64" r="5" fill="#64748b" stroke="#333" strokeWidth="2" />
+    <circle cx="60" cy="64" r="5" fill="#64748b" stroke="#333" strokeWidth="2" />
   </svg>
 );
 
-
-// === ARMS SVGs (8 patterns) ===
-
-export const ArmsBasicSVG = ({ color }: { color: string }) => (
-  <svg width="100%" height="100%" viewBox="0 0 100 100">
-    <path d="M25 20 L10 60 L20 65 L35 30 Z" fill={color} stroke="#333" strokeWidth="3" />
-    <circle cx="15" cy="65" r="10" fill="#666" stroke="#333" strokeWidth="2" />
-    <path d="M75 20 L90 60 L80 65 L65 30 Z" fill={color} stroke="#333" strokeWidth="3" />
-    <circle cx="85" cy="65" r="10" fill="#666" stroke="#333" strokeWidth="2" />
+// === ARMS SVGs (Left: 5~35, Right: 65~95, y: 40~80) ===
+export const ArmsBasicSVG = ({ color, viewBox="0 0 100 100", className }: SVGProps) => (
+  <svg width="100%" height="100%" viewBox={viewBox} className={className}>
+    <path d="M30 42 L15 60 L20 65 L35 45 Z" fill={color} stroke="#333" strokeWidth="2" />
+    <circle cx="18" cy="64" r="6" fill="#666" stroke="#333" strokeWidth="2" />
+    <path d="M70 42 L85 60 L80 65 L65 45 Z" fill={color} stroke="#333" strokeWidth="2" />
+    <circle cx="82" cy="64" r="6" fill="#666" stroke="#333" strokeWidth="2" />
   </svg>
 );
 
-export const ArmsClawSVG = ({ color }: { color: string }) => (
-  <svg width="100%" height="100%" viewBox="0 0 100 100">
-    <path d="M30 30 Q 15 50 20 75" fill="none" stroke={color} strokeWidth="10" strokeLinecap="round" />
-    <path d="M70 30 Q 85 50 80 75" fill="none" stroke={color} strokeWidth="10" strokeLinecap="round" />
-    <path d="M15 75 L 5 90 M 25 75 L 35 90" stroke="#333" strokeWidth="4" strokeLinecap="round" />
-    <path d="M85 75 L 95 90 M 75 75 L 65 90" stroke="#333" strokeWidth="4" strokeLinecap="round" />
+export const ArmsClawSVG = ({ color, viewBox="0 0 100 100", className }: SVGProps) => (
+  <svg width="100%" height="100%" viewBox={viewBox} className={className}>
+    <path d="M30 45 Q 15 55 18 75" fill="none" stroke={color} strokeWidth="6" strokeLinecap="round" />
+    <path d="M70 45 Q 85 55 82 75" fill="none" stroke={color} strokeWidth="6" strokeLinecap="round" />
+    <path d="M15 75 L 8 85 M 21 75 L 28 85" stroke="#333" strokeWidth="3" strokeLinecap="round" />
+    <path d="M85 75 L 92 85 M 79 75 L 72 85" stroke="#333" strokeWidth="3" strokeLinecap="round" />
   </svg>
 );
 
-export const ArmsCannonSVG = ({ color }: { color: string }) => (
-  <svg width="100%" height="100%" viewBox="0 0 100 100">
-    <rect x="10" y="30" width="16" height="40" rx="4" fill={color} stroke="#333" strokeWidth="3" transform="rotate(15 18 50)" />
-    <rect x="12" y="70" width="12" height="15" fill="#222" transform="rotate(15 18 50)" />
-    <rect x="74" y="30" width="16" height="40" rx="4" fill={color} stroke="#333" strokeWidth="3" transform="rotate(-15 82 50)" />
-    <rect x="76" y="70" width="12" height="15" fill="#222" transform="rotate(-15 82 50)" />
+export const ArmsCannonSVG = ({ color, viewBox="0 0 100 100", className }: SVGProps) => (
+  <svg width="100%" height="100%" viewBox={viewBox} className={className}>
+    <rect x="15" y="45" width="10" height="25" rx="2" fill={color} stroke="#333" strokeWidth="2" transform="rotate(15 20 55)" />
+    <rect x="16" y="70" width="8" height="8" fill="#222" transform="rotate(15 20 55)" />
+    <rect x="75" y="45" width="10" height="25" rx="2" fill={color} stroke="#333" strokeWidth="2" transform="rotate(-15 80 55)" />
+    <rect x="76" y="70" width="8" height="8" fill="#222" transform="rotate(-15 80 55)" />
   </svg>
 );
 
-export const ArmsDrillSVG = ({ color }: { color: string }) => (
-  <svg width="100%" height="100%" viewBox="0 0 100 100">
-    <path d="M25 25 L15 50 L30 50 Z" fill={color} stroke="#333" strokeWidth="3" />
-    <path d="M15 50 L22 90 L30 50 Z" fill="#94a3b8" stroke="#333" strokeWidth="3" />
-    <path d="M75 25 L85 50 L70 50 Z" fill={color} stroke="#333" strokeWidth="3" />
-    <path d="M85 50 L78 90 L70 50 Z" fill="#94a3b8" stroke="#333" strokeWidth="3" />
+export const ArmsDrillSVG = ({ color, viewBox="0 0 100 100", className }: SVGProps) => (
+  <svg width="100%" height="100%" viewBox={viewBox} className={className}>
+    <path d="M32 45 L22 60 L35 60 Z" fill={color} stroke="#333" strokeWidth="2" />
+    <path d="M22 60 L28 80 L35 60 Z" fill="#94a3b8" stroke="#333" strokeWidth="2" />
+    <path d="M68 45 L78 60 L65 60 Z" fill={color} stroke="#333" strokeWidth="2" />
+    <path d="M78 60 L72 80 L65 60 Z" fill="#94a3b8" stroke="#333" strokeWidth="2" />
   </svg>
 );
 
-export const ArmsBladeSVG = ({ color }: { color: string }) => (
-  <svg width="100%" height="100%" viewBox="0 0 100 100">
-    <path d="M30 20 L20 40 L25 45 L35 25 Z" fill={color} stroke="#333" strokeWidth="3" />
-    <path d="M20 40 L5 95 L25 45 Z" fill="#cbd5e1" stroke="#333" strokeWidth="3" />
-    <path d="M70 20 L80 40 L75 45 L65 25 Z" fill={color} stroke="#333" strokeWidth="3" />
-    <path d="M80 40 L95 95 L75 45 Z" fill="#cbd5e1" stroke="#333" strokeWidth="3" />
+export const ArmsBladeSVG = ({ color, viewBox="0 0 100 100", className }: SVGProps) => (
+  <svg width="100%" height="100%" viewBox={viewBox} className={className}>
+    <path d="M30 42 L22 55 L26 58 L34 45 Z" fill={color} stroke="#333" strokeWidth="2" />
+    <path d="M22 55 L10 85 L26 58 Z" fill="#cbd5e1" stroke="#333" strokeWidth="2" />
+    <path d="M70 42 L78 55 L74 58 L66 45 Z" fill={color} stroke="#333" strokeWidth="2" />
+    <path d="M78 55 L90 85 L74 58 Z" fill="#cbd5e1" stroke="#333" strokeWidth="2" />
   </svg>
 );
 
-export const ArmsWhipSVG = ({ color }: { color: string }) => (
-  <svg width="100%" height="100%" viewBox="0 0 100 100">
-    <path d="M30 25 Q 5 40 20 60 T 5 90" fill="none" stroke={color} strokeWidth="8" strokeLinecap="round" />
-    <path d="M70 25 Q 95 40 80 60 T 95 90" fill="none" stroke={color} strokeWidth="8" strokeLinecap="round" />
+export const ArmsWhipSVG = ({ color, viewBox="0 0 100 100", className }: SVGProps) => (
+  <svg width="100%" height="100%" viewBox={viewBox} className={className}>
+    <path d="M30 45 Q 10 55 20 70 T 5 90" fill="none" stroke={color} strokeWidth="5" strokeLinecap="round" />
+    <path d="M70 45 Q 90 55 80 70 T 95 90" fill="none" stroke={color} strokeWidth="5" strokeLinecap="round" />
   </svg>
 );
 
-export const ArmsShieldSVG = ({ color }: { color: string }) => (
-  <svg width="100%" height="100%" viewBox="0 0 100 100">
-    <path d="M30 20 L15 35 L15 65 L30 80 L35 50 Z" fill={color} stroke="#333" strokeWidth="3" />
-    <path d="M70 20 L85 35 L85 65 L70 80 L65 50 Z" fill={color} stroke="#333" strokeWidth="3" />
+export const ArmsShieldSVG = ({ color, viewBox="0 0 100 100", className }: SVGProps) => (
+  <svg width="100%" height="100%" viewBox={viewBox} className={className}>
+    <path d="M30 40 L18 50 L18 70 L30 80 L33 60 Z" fill={color} stroke="#333" strokeWidth="2" />
+    <path d="M70 40 L82 50 L82 70 L70 80 L67 60 Z" fill={color} stroke="#333" strokeWidth="2" />
   </svg>
 );
 
-export const ArmsMultiSVG = ({ color }: { color: string }) => (
-  <svg width="100%" height="100%" viewBox="0 0 100 100">
-    <path d="M30 30 L10 40" fill="none" stroke={color} strokeWidth="6" strokeLinecap="round" />
-    <path d="M30 50 L10 60" fill="none" stroke={color} strokeWidth="6" strokeLinecap="round" />
-    <path d="M70 30 L90 40" fill="none" stroke={color} strokeWidth="6" strokeLinecap="round" />
-    <path d="M70 50 L90 60" fill="none" stroke={color} strokeWidth="6" strokeLinecap="round" />
+export const ArmsMultiSVG = ({ color, viewBox="0 0 100 100", className }: SVGProps) => (
+  <svg width="100%" height="100%" viewBox={viewBox} className={className}>
+    <path d="M32 45 L15 52" fill="none" stroke={color} strokeWidth="4" strokeLinecap="round" />
+    <path d="M30 55 L12 62" fill="none" stroke={color} strokeWidth="4" strokeLinecap="round" />
+    <path d="M68 45 L85 52" fill="none" stroke={color} strokeWidth="4" strokeLinecap="round" />
+    <path d="M70 55 L88 62" fill="none" stroke={color} strokeWidth="4" strokeLinecap="round" />
   </svg>
 );
 
-
-// === LEGS SVGs (8 patterns) ===
-
-export const LegsBasicSVG = ({ color }: { color: string }) => (
-  <svg width="100%" height="100%" viewBox="0 0 100 100">
-    <rect x="30" y="10" width="12" height="50" rx="4" fill={color} stroke="#333" strokeWidth="3" />
-    <path d="M20 60 L45 60 L40 80 L25 80 Z" fill="#555" stroke="#333" strokeWidth="3" />
-    <rect x="58" y="10" width="12" height="50" rx="4" fill={color} stroke="#333" strokeWidth="3" />
-    <path d="M55 60 L80 60 L75 80 L60 80 Z" fill="#555" stroke="#333" strokeWidth="3" />
+// === LEGS SVGs (y: 70~95, x: 25~75) ===
+export const LegsBasicSVG = ({ color, viewBox="0 0 100 100", className }: SVGProps) => (
+  <svg width="100%" height="100%" viewBox={viewBox} className={className}>
+    <rect x="36" y="70" width="8" height="15" rx="2" fill={color} stroke="#333" strokeWidth="2" />
+    <path d="M32 85 L44 85 L42 95 L34 95 Z" fill="#555" stroke="#333" strokeWidth="2" />
+    <rect x="56" y="70" width="8" height="15" rx="2" fill={color} stroke="#333" strokeWidth="2" />
+    <path d="M52 85 L64 85 L62 95 L54 95 Z" fill="#555" stroke="#333" strokeWidth="2" />
   </svg>
 );
 
-export const LegsTreadsSVG = ({ color }: { color: string }) => (
-  <svg width="100%" height="100%" viewBox="0 0 100 100">
-    <rect x="15" y="40" width="70" height="40" rx="20" fill="#444" stroke="#222" strokeWidth="4" />
-    <circle cx="30" cy="60" r="10" fill={color} stroke="#222" strokeWidth="2" />
-    <circle cx="50" cy="60" r="10" fill={color} stroke="#222" strokeWidth="2" />
-    <circle cx="70" cy="60" r="10" fill={color} stroke="#222" strokeWidth="2" />
-    <rect x="40" y="10" width="20" height="30" fill={color} stroke="#333" strokeWidth="3" />
+export const LegsTreadsSVG = ({ color, viewBox="0 0 100 100", className }: SVGProps) => (
+  <svg width="100%" height="100%" viewBox={viewBox} className={className}>
+    <rect x="25" y="78" width="50" height="16" rx="8" fill="#444" stroke="#222" strokeWidth="3" />
+    <circle cx="33" cy="86" r="5" fill={color} stroke="#222" strokeWidth="1" />
+    <circle cx="50" cy="86" r="5" fill={color} stroke="#222" strokeWidth="1" />
+    <circle cx="67" cy="86" r="5" fill={color} stroke="#222" strokeWidth="1" />
+    <rect x="42" y="70" width="16" height="12" fill={color} stroke="#333" strokeWidth="2" />
   </svg>
 );
 
-export const LegsHoverSVG = ({ color }: { color: string }) => (
-  <svg width="100%" height="100%" viewBox="0 0 100 100">
-    <path d="M35 10 L65 10 L55 50 L45 50 Z" fill={color} stroke="#333" strokeWidth="4" />
-    <ellipse cx="50" cy="60" rx="40" ry="15" fill="#333" stroke="#222" strokeWidth="4" />
-    <ellipse cx="50" cy="65" rx="30" ry="8" fill="#0ff" opacity="0.7" />
+export const LegsHoverSVG = ({ color, viewBox="0 0 100 100", className }: SVGProps) => (
+  <svg width="100%" height="100%" viewBox={viewBox} className={className}>
+    <path d="M40 70 L60 70 L55 82 L45 82 Z" fill={color} stroke="#333" strokeWidth="2" />
+    <ellipse cx="50" cy="86" rx="25" ry="8" fill="#333" stroke="#222" strokeWidth="2" />
+    <ellipse cx="50" cy="88" rx="18" ry="4" fill="#0ff" opacity="0.7" />
   </svg>
 );
 
-export const LegsSpiderSVG = ({ color }: { color: string }) => (
-  <svg width="100%" height="100%" viewBox="0 0 100 100">
-    <path d="M40 20 L20 40 L10 80" fill="none" stroke={color} strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M60 20 L80 40 L90 80" fill="none" stroke={color} strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M45 20 L35 50 L30 90" fill="none" stroke={color} strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M55 20 L65 50 L70 90" fill="none" stroke={color} strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
+export const LegsSpiderSVG = ({ color, viewBox="0 0 100 100", className }: SVGProps) => (
+  <svg width="100%" height="100%" viewBox={viewBox} className={className}>
+    <path d="M42 70 L30 80 L20 95" fill="none" stroke={color} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M58 70 L70 80 L80 95" fill="none" stroke={color} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M46 70 L38 82 L35 95" fill="none" stroke={color} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M54 70 L62 82 L65 95" fill="none" stroke={color} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
 
-export const LegsWheelSVG = ({ color }: { color: string }) => (
-  <svg width="100%" height="100%" viewBox="0 0 100 100">
-    <rect x="45" y="10" width="10" height="40" fill={color} stroke="#333" strokeWidth="3" />
-    <circle cx="50" cy="60" r="30" fill="#222" stroke="#444" strokeWidth="6" />
-    <circle cx="50" cy="60" r="10" fill={color} stroke="#333" strokeWidth="3" />
-    <line x1="50" y1="30" x2="50" y2="90" stroke="#555" strokeWidth="2" />
-    <line x1="20" y1="60" x2="80" y2="60" stroke="#555" strokeWidth="2" />
+export const LegsWheelSVG = ({ color, viewBox="0 0 100 100", className }: SVGProps) => (
+  <svg width="100%" height="100%" viewBox={viewBox} className={className}>
+    <rect x="46" y="70" width="8" height="12" fill={color} stroke="#333" strokeWidth="2" />
+    <circle cx="50" cy="85" r="12" fill="#222" stroke="#444" strokeWidth="3" />
+    <circle cx="50" cy="85" r="4" fill={color} stroke="#333" strokeWidth="2" />
+    <line x1="50" y1="73" x2="50" y2="97" stroke="#555" strokeWidth="1" />
+    <line x1="38" y1="85" x2="62" y2="85" stroke="#555" strokeWidth="1" />
   </svg>
 );
 
-export const LegsSpringSVG = ({ color }: { color: string }) => (
-  <svg width="100%" height="100%" viewBox="0 0 100 100">
-    <path d="M35 10 L25 30 L45 50 L25 70 L35 90" fill="none" stroke={color} strokeWidth="6" strokeLinejoin="round" />
-    <path d="M65 10 L55 30 L75 50 L55 70 L65 90" fill="none" stroke={color} strokeWidth="6" strokeLinejoin="round" />
-    <rect x="25" y="90" width="20" height="5" fill="#333" />
-    <rect x="55" y="90" width="20" height="5" fill="#333" />
+export const LegsSpringSVG = ({ color, viewBox="0 0 100 100", className }: SVGProps) => (
+  <svg width="100%" height="100%" viewBox={viewBox} className={className}>
+    <path d="M40 70 L34 76 L44 82 L34 88 L40 94" fill="none" stroke={color} strokeWidth="3" strokeLinejoin="round" />
+    <path d="M60 70 L54 76 L64 82 L54 88 L60 94" fill="none" stroke={color} strokeWidth="3" strokeLinejoin="round" />
+    <rect x="34" y="94" width="12" height="3" fill="#333" />
+    <rect x="54" y="94" width="12" height="3" fill="#333" />
   </svg>
 );
 
-export const LegsPegSVG = ({ color }: { color: string }) => (
-  <svg width="100%" height="100%" viewBox="0 0 100 100">
-    <path d="M35 10 L40 40 L35 90 Z" fill={color} stroke="#333" strokeWidth="3" />
-    <path d="M65 10 L60 40 L65 90 Z" fill={color} stroke="#333" strokeWidth="3" />
+export const LegsPegSVG = ({ color, viewBox="0 0 100 100", className }: SVGProps) => (
+  <svg width="100%" height="100%" viewBox={viewBox} className={className}>
+    <path d="M42 70 L44 85 L40 85 Z" fill={color} stroke="#333" strokeWidth="2" />
+    <path d="M58 70 L56 85 L60 85 Z" fill={color} stroke="#333" strokeWidth="2" />
   </svg>
 );
 
-export const LegsJetSVG = ({ color }: { color: string }) => (
-  <svg width="100%" height="100%" viewBox="0 0 100 100">
-    <path d="M30 10 L70 10 L60 40 L40 40 Z" fill={color} stroke="#333" strokeWidth="3" />
-    <path d="M45 40 L55 40 L60 80 L50 95 L40 80 Z" fill="#f97316" stroke="#fef08a" strokeWidth="2" />
+export const LegsJetSVG = ({ color, viewBox="0 0 100 100", className }: SVGProps) => (
+  <svg width="100%" height="100%" viewBox={viewBox} className={className}>
+    <path d="M38 70 L62 70 L56 80 L44 80 Z" fill={color} stroke="#333" strokeWidth="2" />
+    <path d="M46 80 L54 80 L58 92 L50 98 L42 92 Z" fill="#f97316" stroke="#fef08a" strokeWidth="1" />
   </svg>
 );
 
