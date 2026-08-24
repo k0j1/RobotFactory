@@ -69,9 +69,9 @@ export const RequestScreen: React.FC<{ state: GameState, engine: GameEngine }> =
             <p className="text-stone-500">倉庫にロボットがいません。</p>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-4">
-              {state.robots.map(r => (
+              {state.robots.map((r, idx) => (
                 <button 
-                  key={r.id} 
+                  key={`${r.id}-${idx}`} 
                   onClick={() => setSelectedRobotId(r.id)}
                   className={`p-2 border-2 ${theme.radius.md} ${selectedRobotId === r.id ? 'border-amber-500 bg-amber-100' : 'border-stone-200 bg-white'}`}
                 >

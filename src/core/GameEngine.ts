@@ -133,16 +133,16 @@ export class GameEngine {
     const isSuccess = true; // Always 100% success
     const obtained: string[] = [];
 
-    let dropCount = Math.floor(Math.random() * 3) + 1; // Base drop count (1 to 3)
+    let dropCount = Math.floor(Math.random() * 5) + 3; // Base drop count (3 to 7)
 
     if (this.state.activeQuest.dispatchedRobotId) {
       const robot = this.state.robots.find(r => r.id === this.state.activeQuest!.dispatchedRobotId);
       if (robot) {
         // Dispatched robot adds extra materials
-        dropCount += 2;
+        dropCount += 4;
         
         // Power stat gives a chance for even more materials
-        const extraDrops = Math.floor(robot.stats.power / 20);
+        const extraDrops = Math.floor(robot.stats.power / 10);
         dropCount += extraDrops;
         
         // Attribute affinity
@@ -155,8 +155,9 @@ export class GameEngine {
 
     for (let i = 0; i < dropCount; i++) {
       const dropId = loc.drops[Math.floor(Math.random() * loc.drops.length)];
-      obtained.push(dropId);
-      this.state.materials[dropId] = (this.state.materials[dropId] || 0) + 1;
+      const amount = Math.floor(Math.random() * 3) + 2;
+      for (let j = 0; j < amount; j++) obtained.push(dropId);
+      this.state.materials[dropId] = (this.state.materials[dropId] || 0) + amount;
     }
 
     this.state.activeQuest = null;
@@ -166,31 +167,36 @@ export class GameEngine {
   }
 
   // Crafting
-  public craftPart(type: PartType, materialId: string) {
-    if (!this.state.materials[materialId] || this.state.materials[materialId] <= 0) {
-      throw new Error("素材が足りません");
+  public craftPart(type: PartType, mainMaterialId: string, subMaterialId: string) {
+    if (!this.state.materials[mainMaterialId] || this.state.materials[mainMaterialId] < 3) {
+      throw new Error("メイン素材が足りません（3個必要）");
+    }
+    if (!this.state.materials[subMaterialId] || this.state.materials[subMaterialId] < 2) {
+      throw new Error("サブ素材が足りません（2個必要）");
     }
     
-    this.state.materials[materialId] -= 1;
+    this.state.materials[mainMaterialId] -= 3;
+    this.state.materials[subMaterialId] -= 2;
     
-    const mat = MATERIALS.find(m => m.id === materialId);
-    if (!mat) throw new Error("不明な素材");
+    const mainMat = MATERIALS.find(m => m.id === mainMaterialId);
+    const subMat = MATERIALS.find(m => m.id === subMaterialId);
+    if (!mainMat || !subMat) throw new Error("不明な素材");
 
     const typeNames: Record<PartType, string> = { head: 'ヘッド', body: 'ボディ', arms: 'アーム', legs: 'レッグ' };
-    const name = `${mat.name}の${typeNames[type]}`;
+    const name = `${mainMat.name}の${typeNames[type]}`;
 
     const newPart: RobotPart = {
-      id: `part_${Date.now()}_${Math.floor(Math.random()*1000)}`,
+      id: `part_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
       type,
       name,
-      attribute: mat.attribute,
-      rarity: mat.rarity,
+      attribute: mainMat.attribute, // Main material decides attribute
+      rarity: Math.max(mainMat.rarity, subMat.rarity),
       stats: {
-        hp: mat.baseStats.hp + Math.floor(Math.random() * 5),
-        power: mat.baseStats.power + Math.floor(Math.random() * 5),
-        defense: mat.baseStats.defense + Math.floor(Math.random() * 5),
-        agility: mat.baseStats.agility + Math.floor(Math.random() * 5),
-        dexterity: mat.baseStats.dexterity + Math.floor(Math.random() * 5),
+        hp: mainMat.baseStats.hp + Math.floor(subMat.baseStats.hp * 0.5) + Math.floor(Math.random() * 5),
+        power: mainMat.baseStats.power + Math.floor(subMat.baseStats.power * 0.5) + Math.floor(Math.random() * 5),
+        defense: mainMat.baseStats.defense + Math.floor(subMat.baseStats.defense * 0.5) + Math.floor(Math.random() * 5),
+        agility: mainMat.baseStats.agility + Math.floor(subMat.baseStats.agility * 0.5) + Math.floor(Math.random() * 5),
+        dexterity: mainMat.baseStats.dexterity + Math.floor(subMat.baseStats.dexterity * 0.5) + Math.floor(Math.random() * 5),
       },
       visualIndex: Math.floor(Math.random() * 24),
     };
@@ -228,7 +234,7 @@ export class GameEngine {
     const randomName = `${prefix1[Math.floor(Math.random() * prefix1.length)]}${prefix2[Math.floor(Math.random() * prefix2.length)]}${nouns[Math.floor(Math.random() * nouns.length)]}`;
 
     const newRobot: Robot = {
-      id: 'rob_' + Date.now() + Math.floor(Math.random()*1000),
+      id: `rob_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
       name: randomName,
       parts: { head, body, arms, legs },
       stats: {
@@ -418,6 +424,21 @@ export class GameEngine {
 
     // Remove the robot
     this.state.robots.splice(idx, 1);
+    this.saveState();
+  }
+
+  public recyclePart(partId: string) {
+    const idx = this.state.parts.findIndex(p => p.id === partId);
+    if (idx === -1) return;
+    const part = this.state.parts[idx];
+    
+    // Extract the original material name from the part name (e.g. "さびた鉄くずのヘッド" -> "さびた鉄くず")
+    const mat = MATERIALS.find(m => part.name.startsWith(m.name));
+    if (mat) {
+      this.state.materials[mat.id] = (this.state.materials[mat.id] || 0) + 2;
+    }
+    
+    this.state.parts.splice(idx, 1);
     this.saveState();
   }
 

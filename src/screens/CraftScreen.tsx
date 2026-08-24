@@ -13,7 +13,8 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
   const [tab, setTab] = useState<'part' | 'robot'>('part');
 
   // Part Crafting State
-  const [selectedMat, setSelectedMat] = useState<string | null>(null);
+  const [selectedMainMat, setSelectedMainMat] = useState<string | null>(null);
+  const [selectedSubMat, setSelectedSubMat] = useState<string | null>(null);
   const [selectedPartType, setSelectedPartType] = useState<PartType>('head');
   const [lastCraftedPart, setLastCraftedPart] = useState<RobotPart | null>(null);
 
@@ -28,7 +29,8 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
   const [isCrafting, setIsCrafting] = useState<boolean>(false);
   const [craftingMat, setCraftingMat] = useState<Material | null>(null);
 
-  const availableMats = MATERIALS.filter(m => (state.materials[m.id] || 0) > 0);
+  const availableMainMats = MATERIALS.filter(m => (state.materials[m.id] || 0) >= 3);
+  const availableSubMats = MATERIALS.filter(m => (state.materials[m.id] || 0) >= 2);
   
   const heads = state.parts.filter(p => p.type === 'head');
   const bodies = state.parts.filter(p => p.type === 'body');
@@ -36,17 +38,22 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
   const legs = state.parts.filter(p => p.type === 'legs');
 
   const handleCraftPart = () => {
-    if (!selectedMat) {
-      alert("素材を選んでください");
+    if (!selectedMainMat) {
+      alert("メイン素材を選んでください");
+      return;
+    }
+    if (!selectedSubMat) {
+      alert("サブ素材を選んでください");
       return;
     }
     try {
-      const part = engine.craftPart(selectedPartType, selectedMat);
+      const part = engine.craftPart(selectedPartType, selectedMainMat, selectedSubMat);
       
-      const mat = MATERIALS.find(m => m.id === selectedMat)!;
+      const mat = MATERIALS.find(m => m.id === selectedMainMat)!;
       setCraftingMat(mat);
       setIsCrafting(true);
-      setSelectedMat(null);
+      setSelectedMainMat(null);
+      setSelectedSubMat(null);
       
       setTimeout(() => {
         setIsCrafting(false);
@@ -155,7 +162,7 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
       {!isCrafting && tab === 'robot' && lastCraftedRobot && (
         <Card className="text-center bg-amber-50 border-2 border-amber-200">
           <h3 className={`${theme.typography.h3} text-amber-800 mb-4`}>ロボットが完成しました！</h3>
-          <RobotVisual robot={lastCraftedRobot} size={160} />
+          <RobotVisual robot={lastCraftedRobot} size={160} animateCrafting={true} />
           <h4 className={`${theme.typography.h2} mt-4`}>{lastCraftedRobot.name}</h4>
           <div className="flex justify-center gap-4 mt-2 text-sm font-bold text-stone-600">
             <span>HP: {lastCraftedRobot.stats.hp}</span>
@@ -182,36 +189,72 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
             ))}
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-            {availableMats.length === 0 && <p className="text-stone-500 col-span-full">素材がありません。</p>}
-            
-            {availableMats.map(mat => {
-              const count = state.materials[mat.id] || 0;
-              const isSelected = selectedMat === mat.id;
-              return (
-                <button 
-                  key={mat.id}
-                  onClick={() => setSelectedMat(mat.id)}
-                  className={`text-left p-3 border-2 ${theme.radius.md} transition-all ${isSelected ? 'border-amber-500 bg-amber-50' : 'border-stone-300 bg-white hover:border-stone-400'}`}
-                >
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="font-bold text-sm flex items-center gap-1">
-                      <MaterialIcon materialId={mat.id} />
-                      {mat.name}
-                    </span>
-                    <Badge className="bg-stone-200">x{count}</Badge>
-                  </div>
-                  <p className="text-xs text-stone-500">属性: {mat.attribute}</p>
-                </button>
-              );
-            })}
+          <div className="space-y-4">
+            <div>
+              <h4 className="font-bold text-stone-700 mb-2">メイン素材 (3個消費) - 属性とベース性能を決定</h4>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                {availableMainMats.length === 0 && <p className="text-stone-500 col-span-full">3個以上ある素材がありません。</p>}
+                
+                {availableMainMats.map(mat => {
+                  const count = state.materials[mat.id] || 0;
+                  const isSelected = selectedMainMat === mat.id;
+                  return (
+                    <button 
+                      key={`main-${mat.id}`}
+                      onClick={() => setSelectedMainMat(mat.id)}
+                      className={`text-left p-3 border-2 ${theme.radius.md} transition-all ${isSelected ? 'border-amber-500 bg-amber-50' : 'border-stone-300 bg-white hover:border-stone-400'}`}
+                    >
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="font-bold text-sm flex items-center gap-1">
+                          <MaterialIcon materialId={mat.id} />
+                          {mat.name}
+                        </span>
+                        <Badge className="bg-stone-200">x{count}</Badge>
+                      </div>
+                      <p className="text-xs text-stone-500">属性: {mat.attribute}</p>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <h4 className="font-bold text-stone-700 mb-2">サブ素材 (2個消費) - 追加性能を決定</h4>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                {availableSubMats.length === 0 && <p className="text-stone-500 col-span-full">2個以上ある素材がありません。</p>}
+                
+                {availableSubMats.map(mat => {
+                  // Ignore if it's the main mat and we don't have enough to use both
+                  const count = state.materials[mat.id] || 0;
+                  if (selectedMainMat === mat.id && count < 5) return null;
+
+                  const isSelected = selectedSubMat === mat.id;
+                  return (
+                    <button 
+                      key={`sub-${mat.id}`}
+                      onClick={() => setSelectedSubMat(mat.id)}
+                      className={`text-left p-3 border-2 ${theme.radius.md} transition-all ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-stone-300 bg-white hover:border-stone-400'}`}
+                    >
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="font-bold text-sm flex items-center gap-1">
+                          <MaterialIcon materialId={mat.id} />
+                          {mat.name}
+                        </span>
+                        <Badge className="bg-stone-200">x{count}</Badge>
+                      </div>
+                      <p className="text-xs text-stone-500">属性: {mat.attribute}</p>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
 
           <Card className="mt-8 flex justify-between items-center bg-stone-100">
             <div>
               <p className="font-bold">部位: {partTypes.find(p => p.id === selectedPartType)?.label}</p>
             </div>
-            <Button size="lg" disabled={!selectedMat} onClick={handleCraftPart}>パーツ製造</Button>
+            <Button size="lg" disabled={!selectedMainMat || !selectedSubMat} onClick={handleCraftPart}>パーツ製造</Button>
           </Card>
         </>
       )}
@@ -257,7 +300,7 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                 onChange={e => setSelectedHead(e.target.value)}
               >
                 <option value="">選択してください</option>
-                {heads.map(p => <option key={p.id} value={p.id}>{p.name} (HP:{p.stats.hp} 属性:{p.attribute})</option>)}
+                {heads.map((p, idx) => <option key={`${p.id}-${idx}`} value={p.id}>{p.name} (HP:{p.stats.hp} 属性:{p.attribute})</option>)}
               </select>
             </div>
             
@@ -269,7 +312,7 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                 onChange={e => setSelectedBody(e.target.value)}
               >
                 <option value="">選択してください</option>
-                {bodies.map(p => <option key={p.id} value={p.id}>{p.name} (HP:{p.stats.hp} 属性:{p.attribute})</option>)}
+                {bodies.map((p, idx) => <option key={`${p.id}-${idx}`} value={p.id}>{p.name} (HP:{p.stats.hp} 属性:{p.attribute})</option>)}
               </select>
             </div>
 
@@ -281,7 +324,7 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                 onChange={e => setSelectedArms(e.target.value)}
               >
                 <option value="">選択してください</option>
-                {arms.map(p => <option key={p.id} value={p.id}>{p.name} (HP:{p.stats.hp} 属性:{p.attribute})</option>)}
+                {arms.map((p, idx) => <option key={`${p.id}-${idx}`} value={p.id}>{p.name} (HP:{p.stats.hp} 属性:{p.attribute})</option>)}
               </select>
             </div>
 
@@ -293,7 +336,7 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                 onChange={e => setSelectedLegs(e.target.value)}
               >
                 <option value="">選択してください</option>
-                {legs.map(p => <option key={p.id} value={p.id}>{p.name} (HP:{p.stats.hp} 属性:{p.attribute})</option>)}
+                {legs.map((p, idx) => <option key={`${p.id}-${idx}`} value={p.id}>{p.name} (HP:{p.stats.hp} 属性:{p.attribute})</option>)}
               </select>
             </div>
           </div>

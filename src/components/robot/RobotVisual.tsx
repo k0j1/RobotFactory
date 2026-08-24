@@ -3,9 +3,12 @@ import { Robot, AttributeColors } from '../../core/models';
 import { SVG_HEADS, SVG_BODIES, SVG_ARMS, SVG_LEGS } from './RobotSVGs';
 import { theme } from '../../styles/theme';
 
+import { motion } from 'motion/react';
+
 interface RobotVisualProps {
-  robot: Robot;
+  robot: any;
   size?: number; // width/height in px
+  animateCrafting?: boolean;
 }
 
 export const PartVisual: React.FC<{ part: any, size?: number }> = ({ part, size = 64 }) => {
@@ -43,7 +46,7 @@ export const PartVisual: React.FC<{ part: any, size?: number }> = ({ part, size 
   );
 };
 
-export const RobotVisual: React.FC<{ robot: any, size?: number }> = ({ robot, size = 120 }) => {
+export const RobotVisual: React.FC<RobotVisualProps> = ({ robot, size = 120, animateCrafting = false }) => {
   const parts = robot?.parts || {};
   const { head, body, arms, legs } = parts;
   
@@ -68,12 +71,37 @@ export const RobotVisual: React.FC<{ robot: any, size?: number }> = ({ robot, si
     boxShadow: 'inset 0 0 20px rgba(0,0,0,0.05)'
   };
 
+  const animProps = (delay: number, startY: number) => 
+    animateCrafting 
+      ? {
+          initial: { opacity: 0, y: startY },
+          animate: { opacity: 1, y: 0 },
+          transition: { duration: 0.5, delay, type: "spring", bounce: 0.4 }
+        }
+      : {};
+
   return (
     <div className={`relative flex justify-center items-center ${theme.radius.md} overflow-hidden border-2 border-stone-300`} style={bgStyle}>
-      {LegsComp && <LegsComp color={legsColor} className="absolute inset-0 w-full h-full z-10" />}
-      {ArmsComp && <ArmsComp color={armsColor} className="absolute inset-0 w-full h-full z-20" />}
-      {BodyComp && <BodyComp color={bodyColor} className="absolute inset-0 w-full h-full z-30" />}
-      {HeadComp && <HeadComp color={headColor} className="absolute inset-0 w-full h-full z-40" />}
+      {LegsComp && (
+        <motion.div className="absolute inset-0 w-full h-full z-10" {...animProps(0, 50)}>
+          <LegsComp color={legsColor} className="w-full h-full" />
+        </motion.div>
+      )}
+      {BodyComp && (
+        <motion.div className="absolute inset-0 w-full h-full z-20" {...animProps(0.3, -50)}>
+          <BodyComp color={bodyColor} className="w-full h-full" />
+        </motion.div>
+      )}
+      {ArmsComp && (
+        <motion.div className="absolute inset-0 w-full h-full z-30" {...animProps(0.6, -30)}>
+          <ArmsComp color={armsColor} className="w-full h-full" />
+        </motion.div>
+      )}
+      {HeadComp && (
+        <motion.div className="absolute inset-0 w-full h-full z-40" {...animProps(0.9, -80)}>
+          <HeadComp color={headColor} className="w-full h-full" />
+        </motion.div>
+      )}
     </div>
   );
 };

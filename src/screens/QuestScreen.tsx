@@ -33,8 +33,8 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
           onChange={e => setSelectedRobotId(e.target.value || null)}
         >
           <option value="">ロボットなし (基本素材のみ)</option>
-          {state.robots.map(r => (
-            <option key={r.id} value={r.id}>{r.name} (Pow: {r.stats.power} Agi: {r.stats.agility})</option>
+          {state.robots.map((r, idx) => (
+            <option key={`${r.id}-${idx}`} value={r.id}>{r.name} (Pow: {r.stats.power} Agi: {r.stats.agility})</option>
           ))}
         </select>
       </div>

@@ -5,6 +5,8 @@ import { Card, Button, Badge } from '../components/ui/core';
 import { theme } from '../styles/theme';
 import { LOCATIONS, MATERIALS } from '../core/data';
 import { MaterialIcon } from '../components/ui/MaterialIcon';
+import { motion, AnimatePresence } from 'motion/react';
+
 
 const formatTime = (ms: number) => {
   if (ms <= 0) return '00:00';
@@ -15,13 +17,22 @@ const formatTime = (ms: number) => {
 };
 
 export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavigate: (v: string) => void }> = ({ state, engine, onNavigate }) => {
-  const [questResult, setQuestResult] = useState<{success: boolean, drops: string[]} | null>(null);
+    const [questResult, setQuestResult] = useState<{success: boolean, drops: string[]} | null>(null);
+  const [isAnimating, setIsAnimating] = useState(false);
 
   const handleCompleteQuest = () => {
     const result = engine.completeQuest();
     if (result) {
       setQuestResult(result);
     }
+  };
+
+  const handleCloseModal = () => {
+    setIsAnimating(true);
+    setTimeout(() => {
+      setIsAnimating(false);
+      setQuestResult(null);
+    }, 2000);
   };
 
   const activeQuestLoc = state.activeQuest ? LOCATIONS.find(l => l.id === state.activeQuest?.locationId) : null;
@@ -125,14 +136,14 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
       )}
 
       {/* Quest Result Modal */}
-      {questResult && (
+      {questResult && !isAnimating && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
           <Card className="max-w-md w-full bg-stone-50 text-center shadow-2xl">
             <h2 className={`${theme.typography.h2} mb-4 text-emerald-600`}>
               遠征成功！
             </h2>
             <p className="mb-4 font-bold">以下の素材を獲得しました！</p>
-            <div className="flex flex-wrap justify-center gap-2 mb-6">
+            <div className="flex flex-wrap justify-center gap-2 mb-6 max-h-64 overflow-y-auto p-2">
               {questResult.drops.map((dropId, i) => {
                 const mat = MATERIALS.find(m => m.id === dropId);
                 return (
@@ -143,10 +154,53 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                 );
               })}
             </div>
-            <Button onClick={() => setQuestResult(null)} className="w-full" size="lg">閉じる</Button>
+            <Button onClick={handleCloseModal} className="w-full" size="lg" variant="primary">倉庫へ送る</Button>
           </Card>
         </div>
       )}
+      
+      {/* Particle Animation */}
+      <AnimatePresence>
+        {isAnimating && questResult && (
+          <div className="fixed inset-0 pointer-events-none z-[100] overflow-hidden">
+            {questResult.drops.map((dropId, i) => {
+              const mat = MATERIALS.find(m => m.id === dropId);
+              const angle = Math.random() * Math.PI * 2;
+              const radius = Math.random() * 80 + 20;
+              const initialX = Math.cos(angle) * radius;
+              const initialY = Math.sin(angle) * radius - 50;
+              
+              // Target coordinates (storage button is approx bottom right, constrained by max-w-4xl)
+              // max-w-4xl is 896px.
+              const targetX = window.innerWidth / 2 + Math.min(window.innerWidth / 2, 448) * 0.8;
+              const targetY = window.innerHeight - 30;
+
+              return (
+                <motion.div
+                  key={i}
+                  initial={{ x: window.innerWidth / 2 + initialX, y: window.innerHeight / 2 + initialY, scale: 0, opacity: 0 }}
+                  animate={{ 
+                    x: [window.innerWidth / 2 + initialX, window.innerWidth / 2 + initialX + (Math.random() * 100 - 50), targetX], 
+                    y: [window.innerHeight / 2 + initialY, window.innerHeight / 2 + initialY - (Math.random() * 100 + 50), targetY],
+                    scale: [0, 1.2, 0.5],
+                    opacity: [0, 1, 0]
+                  }}
+                  transition={{ 
+                    duration: 1.2 + Math.random() * 0.5, 
+                    delay: i * 0.03, // Slight stagger
+                    ease: "easeInOut",
+                    times: [0, 0.4, 1]
+                  }}
+                  className="absolute shadow-lg bg-amber-100 rounded-full p-2 border-2 border-amber-400 flex items-center justify-center"
+                  style={{ width: 40, height: 40, marginLeft: -20, marginTop: -20 }}
+                >
+                  <MaterialIcon materialId={mat?.id || ''} size={20} />
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

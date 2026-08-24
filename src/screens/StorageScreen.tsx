@@ -9,6 +9,8 @@ import { MaterialIcon } from '../components/ui/MaterialIcon';
 
 export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> = ({ state, engine }) => {
   const [tab, setTab] = useState<'robots'|'parts'|'materials'>('robots');
+  const [confirmRobotId, setConfirmRobotId] = useState<string | null>(null);
+  const [confirmPartId, setConfirmPartId] = useState<string | null>(null);
 
   const currentSizeIndex = MAX_STORAGE_LEVELS.indexOf(state.storageSize);
   const nextSize = MAX_STORAGE_LEVELS[currentSizeIndex + 1];
@@ -77,8 +79,8 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
             <p className="text-center text-stone-500 py-8">ロボットがいません</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {state.robots.map(r => (
-                <Card key={r.id} className="relative pt-6">
+              {state.robots.map((r, idx) => (
+                <Card key={`${r.id}-${idx}`} className="relative pt-6">
                   <div className="absolute top-2 right-2 flex gap-1">
                     <Button size="sm" variant="secondary" onClick={() => handleShare(r.name)}>Share</Button>
                   </div>
@@ -97,17 +99,14 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                     <RobotVisual robot={r} size={80} />
                   </div>
                   <div className="mt-4 flex justify-end">
-                    <Button 
-                      size="sm" 
-                      variant="danger" 
-                      onClick={() => {
-                        if (confirm('本当に解体してパーツに戻しますか？')) {
-                          engine.disassembleRobot(r.id);
-                        }
-                      }}
-                    >
-                      解体する
-                    </Button>
+                    {confirmRobotId === r.id ? (
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="secondary" onClick={() => setConfirmRobotId(null)}>キャンセル</Button>
+                        <Button size="sm" variant="danger" onClick={() => { engine.disassembleRobot(r.id); setConfirmRobotId(null); }}>解体実行</Button>
+                      </div>
+                    ) : (
+                      <Button size="sm" variant="danger" onClick={() => setConfirmRobotId(r.id)}>解体する</Button>
+                    )}
                   </div>
                 </Card>
               ))}
@@ -121,8 +120,8 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
           {state.parts.length === 0 ? (
             <p className="text-stone-500 col-span-full">パーツがありません</p>
           ) : (
-            state.parts.map(p => (
-              <Card key={p.id} className="p-3">
+            state.parts.map((p, idx) => (
+              <Card key={`${p.id}-${idx}`} className="p-3 flex flex-col justify-between">
                 <div className="flex justify-between items-start">
                   <div>
                     <p className="font-bold text-sm">{p.name}</p>
@@ -136,6 +135,16 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                   <div className="bg-stone-100 rounded-md p-1 border border-stone-200">
                     <PartVisual part={p} size={48} />
                   </div>
+                </div>
+                <div className="mt-3 flex justify-end">
+                  {confirmPartId === p.id ? (
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="secondary" onClick={() => setConfirmPartId(null)}>やめる</Button>
+                      <Button size="sm" variant="danger" onClick={() => { engine.recyclePart(p.id); setConfirmPartId(null); }}>還元する</Button>
+                    </div>
+                  ) : (
+                    <Button size="sm" variant="danger" onClick={() => setConfirmPartId(p.id)}>素材に戻す</Button>
+                  )}
                 </div>
               </Card>
             ))

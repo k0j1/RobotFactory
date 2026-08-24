@@ -10,13 +10,13 @@ interface Props {
 
 export const MaterialIcon: React.FC<Props> = ({ materialId, size = 16, className = '', color }) => {
   const props = { size, className, color };
-  switch (materialId) {
-    case 'm1': return <FaCubes {...props} />;
-    case 'm2': return <FaCog {...props} />;
-    case 'm3': return <FaVial {...props} />;
-    case 'm4': return <FaFan {...props} />;
-    case 'm5': return <FaLightbulb {...props} />;
-    case 'm6': return <FaFlask {...props} />;
-    default: return <FaQuestion {...props} />;
-  }
+  
+  if (materialId.startsWith('m_e')) return <FaCubes {...props} />;
+  if (materialId.startsWith('m_f')) return <FaCog {...props} />;
+  if (materialId.startsWith('m_w')) return <FaVial {...props} />;
+  if (materialId.startsWith('m_a')) return <FaFan {...props} />;
+  if (materialId.startsWith('m_l')) return <FaLightbulb {...props} />;
+  if (materialId.startsWith('m_d')) return <FaFlask {...props} />;
+  return <FaQuestion {...props} />;
+
 };
