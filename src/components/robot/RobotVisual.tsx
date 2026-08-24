@@ -1,6 +1,6 @@
 import React from 'react';
 import { Robot, AttributeColors } from '../../core/models';
-import { HEADS, BODIES, ARMS, LEGS } from '../../core/pixelArt';
+import { SVG_HEADS, SVG_BODIES, SVG_ARMS, SVG_LEGS } from './RobotSVGs';
 import { theme } from '../../styles/theme';
 
 interface RobotVisualProps {
@@ -8,44 +8,22 @@ interface RobotVisualProps {
   size?: number; // width/height in px
 }
 
-export const PixelGrid: React.FC<{ grid: string[], color: string, xOffset: number, yOffset: number, pixelSize: number }> = ({ grid, color, xOffset, yOffset, pixelSize }) => {
-  const elements = [];
-  for (let y = 0; y < grid.length; y++) {
-    for (let x = 0; x < grid[y].length; x++) {
-      if (grid[y][x] === 'X') {
-        elements.push(
-          <rect
-            key={`${x}-${y}`}
-            x={xOffset + x * pixelSize}
-            y={yOffset + y * pixelSize}
-            width={pixelSize}
-            height={pixelSize}
-            fill={color}
-          />
-        );
-      }
-    }
-  }
-  return <>{elements}</>;
-};
-
 export const PartVisual: React.FC<{ part: any, size?: number }> = ({ part, size = 64 }) => {
   if (!part) return null;
 
-  let grid = null;
-  if (part.type === 'head') grid = HEADS[part.visualIndex % HEADS.length];
-  else if (part.type === 'body') grid = BODIES[part.visualIndex % BODIES.length];
-  else if (part.type === 'arms') grid = ARMS[part.visualIndex % ARMS.length];
-  else if (part.type === 'legs') grid = LEGS[part.visualIndex % LEGS.length];
+  let Comp = null;
+  if (part.type === 'head') Comp = SVG_HEADS[part.visualIndex % SVG_HEADS.length];
+  else if (part.type === 'body') Comp = SVG_BODIES[part.visualIndex % SVG_BODIES.length];
+  else if (part.type === 'arms') Comp = SVG_ARMS[part.visualIndex % SVG_ARMS.length];
+  else if (part.type === 'legs') Comp = SVG_LEGS[part.visualIndex % SVG_LEGS.length];
 
   const color = AttributeColors[part.attribute] || '#000';
-  const pixelSize = size / 32;
 
   return (
     <div className={`flex justify-center items-center ${theme.colors.surfaceDark} ${theme.radius.md} overflow-hidden`} style={{ width: size, height: size }}>
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        {grid && <PixelGrid grid={grid} color={color} xOffset={0} yOffset={0} pixelSize={pixelSize} />}
-      </svg>
+      <div style={{ width: '80%', height: '80%', position: 'relative' }}>
+        {Comp && <Comp color={color} />}
+      </div>
     </div>
   );
 };
@@ -54,14 +32,11 @@ export const RobotVisual: React.FC<{ robot: any, size?: number }> = ({ robot, si
   const parts = robot?.parts || {};
   const { head, body, arms, legs } = parts;
   
-  const headGrid = head ? HEADS[head.visualIndex % HEADS.length] : null;
-  const bodyGrid = body ? BODIES[body.visualIndex % BODIES.length] : null;
-  const armsGrid = arms ? ARMS[arms.visualIndex % ARMS.length] : null;
-  const legsGrid = legs ? LEGS[legs.visualIndex % LEGS.length] : null;
+  const HeadComp = head ? SVG_HEADS[head.visualIndex % SVG_HEADS.length] : null;
+  const BodyComp = body ? SVG_BODIES[body.visualIndex % SVG_BODIES.length] : null;
+  const ArmsComp = arms ? SVG_ARMS[arms.visualIndex % SVG_ARMS.length] : null;
+  const LegsComp = legs ? SVG_LEGS[legs.visualIndex % SVG_LEGS.length] : null;
 
-  const CANVAS_SIZE = 32;
-  const pixelSize = size / CANVAS_SIZE;
-  
   // Use AttributeColors based on part's attribute
   const headColor = head ? AttributeColors[head.attribute] : '#000';
   const bodyColor = body ? AttributeColors[body.attribute] : '#000';
@@ -69,13 +44,31 @@ export const RobotVisual: React.FC<{ robot: any, size?: number }> = ({ robot, si
   const legsColor = legs ? AttributeColors[legs.attribute] : '#000';
 
   return (
-    <div className={`flex justify-center items-center ${theme.colors.surfaceDark} ${theme.radius.md} overflow-hidden`} style={{ width: size, height: size }}>
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        {armsGrid && <PixelGrid grid={armsGrid} color={armsColor} xOffset={0} yOffset={0} pixelSize={pixelSize} />}
-        {legsGrid && <PixelGrid grid={legsGrid} color={legsColor} xOffset={0} yOffset={0} pixelSize={pixelSize} />}
-        {bodyGrid && <PixelGrid grid={bodyGrid} color={bodyColor} xOffset={0} yOffset={0} pixelSize={pixelSize} />}
-        {headGrid && <PixelGrid grid={headGrid} color={headColor} xOffset={0} yOffset={0} pixelSize={pixelSize} />}
-      </svg>
+    <div className={`relative flex justify-center items-center ${theme.colors.surfaceDark} ${theme.radius.md} overflow-hidden`} style={{ width: size, height: size }}>
+      {LegsComp && (
+        <div className="absolute" style={{ bottom: '5%', left: '25%', width: '50%', height: '40%', zIndex: 10 }}>
+          <LegsComp color={legsColor} />
+        </div>
+      )}
+      
+      {ArmsComp && (
+        <div className="absolute" style={{ top: '35%', left: '5%', width: '90%', height: '40%', zIndex: 15 }}>
+          <ArmsComp color={armsColor} />
+        </div>
+      )}
+
+      {BodyComp && (
+        <div className="absolute" style={{ top: '30%', left: '25%', width: '50%', height: '45%', zIndex: 20 }}>
+          <BodyComp color={bodyColor} />
+        </div>
+      )}
+
+      {HeadComp && (
+        <div className="absolute" style={{ top: '5%', left: '25%', width: '50%', height: '40%', zIndex: 30 }}>
+          <HeadComp color={headColor} />
+        </div>
+      )}
     </div>
   );
 };
+

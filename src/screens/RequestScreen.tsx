@@ -3,6 +3,7 @@ import { GameState, ClientRequest } from '../core/models';
 import { GameEngine } from '../core/GameEngine';
 import { Card, Button, Badge } from '../components/ui/core';
 import { RobotVisual } from '../components/robot/RobotVisual';
+import { ClientVisual } from '../components/ui/ClientVisual';
 import { theme } from '../styles/theme';
 
 export const RequestScreen: React.FC<{ state: GameState, engine: GameEngine }> = ({ state, engine }) => {
@@ -47,9 +48,15 @@ export const RequestScreen: React.FC<{ state: GameState, engine: GameEngine }> =
             <Button variant="danger" size="sm" onClick={() => engine.cancelRequest()}>破棄する</Button>
           </div>
           
-          <div className="mb-4">
-            <p className="font-bold mb-2">依頼主: {state.currentRequest.clientName}</p>
-            <p className="p-3 bg-white rounded-md text-stone-700">「{state.currentRequest.description}」</p>
+          <div className="mb-4 flex gap-4 items-start">
+            <ClientVisual rank={state.currentRequest.rank} size={64} />
+            <div className="flex-1">
+              <p className="font-bold mb-2">依頼主: {state.currentRequest.clientName}</p>
+              <p className="p-3 bg-white rounded-md text-stone-700 shadow-sm relative">
+                <span className="absolute -left-2 top-3 w-0 h-0 border-t-8 border-t-transparent border-r-8 border-r-white border-b-8 border-b-transparent"></span>
+                「{state.currentRequest.description}」
+              </p>
+            </div>
           </div>
           
           <div className="flex justify-between items-center mb-6">
@@ -74,7 +81,6 @@ export const RequestScreen: React.FC<{ state: GameState, engine: GameEngine }> =
               ))}
             </div>
           )}
-
           <Button 
             className="w-full" 
             size="lg"
@@ -90,16 +96,23 @@ export const RequestScreen: React.FC<{ state: GameState, engine: GameEngine }> =
           <div className="grid gap-4">
             {state.availableRequests.map(req => (
               <Card key={req.id}>
-                <div className="flex justify-between items-center mb-2">
-                  <Badge className={req.rank === 'King' ? 'bg-amber-200 text-amber-800' : req.rank === 'Noble' ? 'bg-purple-200 text-purple-800' : 'bg-stone-200'}>
-                    {req.clientName}
-                  </Badge>
-                  <span className="font-bold text-amber-600">{req.rewardG} G</span>
-                </div>
-                <p className="mb-4 text-sm">{req.description}</p>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-stone-500">更新まで: {formatTime(req.deadline - now)}</span>
-                  <Button onClick={() => engine.acceptRequest(req.id)}>この依頼を受ける</Button>
+                <div className="flex gap-4">
+                  <ClientVisual rank={req.rank} size={80} />
+                  <div className="flex-1 flex flex-col justify-between">
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <Badge className={req.rank === 'King' ? 'bg-amber-200 text-amber-800' : req.rank === 'Noble' ? 'bg-purple-200 text-purple-800' : 'bg-stone-200'}>
+                          {req.clientName}
+                        </Badge>
+                        <span className="font-bold text-amber-600">{req.rewardG} G</span>
+                      </div>
+                      <p className="mb-4 text-sm font-medium">{req.description}</p>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-stone-500">更新まで: {formatTime(req.deadline - now)}</span>
+                      <Button onClick={() => engine.acceptRequest(req.id)}>この依頼を受ける</Button>
+                    </div>
+                  </div>
                 </div>
               </Card>
             ))}

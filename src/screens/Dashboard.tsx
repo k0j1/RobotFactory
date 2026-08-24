@@ -128,27 +128,21 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
       {questResult && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
           <Card className="max-w-md w-full bg-stone-50 text-center shadow-2xl">
-            <h2 className={`${theme.typography.h2} mb-4 ${questResult.success ? 'text-emerald-600' : 'text-stone-500'}`}>
-              {questResult.success ? '遠征成功！' : '遠征失敗…'}
+            <h2 className={`${theme.typography.h2} mb-4 text-emerald-600`}>
+              遠征成功！
             </h2>
-            {questResult.success ? (
-              <>
-                <p className="mb-4 font-bold">以下の素材を獲得しました！</p>
-                <div className="flex flex-wrap justify-center gap-2 mb-6">
-                  {questResult.drops.map((dropId, i) => {
-                    const mat = MATERIALS.find(m => m.id === dropId);
-                    return (
-                      <Badge key={i} className="bg-amber-100 text-amber-900 border border-amber-300 p-2 text-sm flex items-center gap-1">
-                        <MaterialIcon materialId={mat?.id || ''} />
-                        {mat?.name}
-                      </Badge>
-                    );
-                  })}
-                </div>
-              </>
-            ) : (
-              <p className="mb-6 font-bold text-stone-600">素材は見つかりませんでした…<br/>（ロボットを派遣すると成功率が上がります！）</p>
-            )}
+            <p className="mb-4 font-bold">以下の素材を獲得しました！</p>
+            <div className="flex flex-wrap justify-center gap-2 mb-6">
+              {questResult.drops.map((dropId, i) => {
+                const mat = MATERIALS.find(m => m.id === dropId);
+                return (
+                  <Badge key={i} className="bg-amber-100 text-amber-900 border border-amber-300 p-2 text-sm flex items-center gap-1">
+                    <MaterialIcon materialId={mat?.id || ''} />
+                    {mat?.name}
+                  </Badge>
+                );
+              })}
+            </div>
             <Button onClick={() => setQuestResult(null)} className="w-full" size="lg">閉じる</Button>
           </Card>
         </div>

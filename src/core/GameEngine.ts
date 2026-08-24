@@ -103,10 +103,20 @@ export class GameEngine {
     const loc = LOCATIONS.find(l => l.id === locationId);
     if (!loc) return;
 
+    let timeReduction = 0;
+    if (robotId) {
+      const robot = this.state.robots.find(r => r.id === robotId);
+      if (robot) {
+        // Reduce time based on agility (max 50% reduction for high agility)
+        const agilityBonus = Math.min(0.5, robot.stats.agility / 200);
+        timeReduction = loc.baseTimeMs * agilityBonus;
+      }
+    }
+
     this.state.activeQuest = {
       locationId,
       startTime: Date.now(),
-      endTime: Date.now() + loc.baseTimeMs,
+      endTime: Date.now() + Math.floor(loc.baseTimeMs - timeReduction),
       dispatchedRobotId: robotId
     };
     if (this.state.tutorialStep === 0) this.advanceTutorial();
@@ -120,32 +130,33 @@ export class GameEngine {
     const loc = LOCATIONS.find(l => l.id === this.state.activeQuest!.locationId);
     if (!loc) return null;
 
-    // Check success rate based on dispatched robot
-    let successRate = 0.5; // Base 50% without robot
+    const isSuccess = true; // Always 100% success
+    const obtained: string[] = [];
+
+    let dropCount = Math.floor(Math.random() * 3) + 1; // Base drop count (1 to 3)
+
     if (this.state.activeQuest.dispatchedRobotId) {
       const robot = this.state.robots.find(r => r.id === this.state.activeQuest!.dispatchedRobotId);
       if (robot) {
-        successRate = 0.8; // 80% with any robot
+        // Dispatched robot adds extra materials
+        dropCount += 2;
+        
+        // Power stat gives a chance for even more materials
+        const extraDrops = Math.floor(robot.stats.power / 20);
+        dropCount += extraDrops;
+        
         // Attribute affinity
         const robotAttrs = [robot.parts.head.attribute, robot.parts.body.attribute, robot.parts.arms.attribute, robot.parts.legs.attribute];
-        if (loc.name.includes('火') && robotAttrs.includes('Water')) successRate = 1.0;
-        else if (loc.name.includes('水') && robotAttrs.includes('Earth')) successRate = 1.0;
-        else if (loc.name.includes('風') && robotAttrs.includes('Fire')) successRate = 1.0;
-        // Simple heuristic for now
-        if (robot.stats.power > 30 || robot.stats.agility > 30) successRate += 0.1;
+        if (loc.name.includes('火') && robotAttrs.includes('Water')) dropCount += 1;
+        else if (loc.name.includes('水') && robotAttrs.includes('Earth')) dropCount += 1;
+        else if (loc.name.includes('風') && robotAttrs.includes('Fire')) dropCount += 1;
       }
     }
 
-    const isSuccess = Math.random() < successRate;
-    const obtained: string[] = [];
-
-    if (isSuccess) {
-      const dropCount = Math.floor(Math.random() * 3) + 1 + (this.state.activeQuest.dispatchedRobotId ? 1 : 0);
-      for (let i = 0; i < dropCount; i++) {
-        const dropId = loc.drops[Math.floor(Math.random() * loc.drops.length)];
-        obtained.push(dropId);
-        this.state.materials[dropId] = (this.state.materials[dropId] || 0) + 1;
-      }
+    for (let i = 0; i < dropCount; i++) {
+      const dropId = loc.drops[Math.floor(Math.random() * loc.drops.length)];
+      obtained.push(dropId);
+      this.state.materials[dropId] = (this.state.materials[dropId] || 0) + 1;
     }
 
     this.state.activeQuest = null;
@@ -394,24 +405,18 @@ export class GameEngine {
     this.saveState();
   }
 
-  public sellRobot(robotId: string) {
+  public disassembleRobot(robotId: string) {
     const idx = this.state.robots.findIndex(r => r.id === robotId);
     if (idx === -1) return;
     const robot = this.state.robots[idx];
-    this.state.gold += robot.value;
-    this.state.robots.splice(idx, 1);
-    this.saveState();
-  }
+    
+    // Add parts back to inventory
+    this.state.parts.push(robot.parts.head);
+    this.state.parts.push(robot.parts.body);
+    this.state.parts.push(robot.parts.arms);
+    this.state.parts.push(robot.parts.legs);
 
-  public scrapRobot(robotId: string) {
-    const idx = this.state.robots.findIndex(r => r.id === robotId);
-    if (idx === -1) return;
-    const drops = ['m1', 'm2', 'm3'];
-    const count = Math.floor(Math.random() * 2) + 1;
-    for(let i=0; i<count; i++){
-       const d = drops[Math.floor(Math.random() * drops.length)];
-       this.state.materials[d] = (this.state.materials[d] || 0) + 1;
-    }
+    // Remove the robot
     this.state.robots.splice(idx, 1);
     this.saveState();
   }

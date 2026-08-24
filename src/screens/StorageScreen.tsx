@@ -101,12 +101,12 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                       size="sm" 
                       variant="danger" 
                       onClick={() => {
-                        if (confirm('本当に売却しますか？')) {
-                          engine.sellRobot(r.id);
+                        if (confirm('本当に解体してパーツに戻しますか？')) {
+                          engine.disassembleRobot(r.id);
                         }
                       }}
                     >
-                      売却する
+                      解体する
                     </Button>
                   </div>
                 </Card>

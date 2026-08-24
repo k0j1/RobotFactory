@@ -26,15 +26,15 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
       {/* Robot Selection */}
       <div className={`p-4 bg-stone-100 ${theme.radius.md}`}>
         <h3 className="font-bold mb-2">派遣するロボット（任意）</h3>
-        <p className="text-xs text-stone-500 mb-2">ロボットを派遣すると成功率が上がり、より多くの素材を持ち帰ります。</p>
+        <p className="text-xs text-stone-500 mb-2">ロボットを派遣すると素材量が増えたり、素早さ(Agi)に応じて遠征時間が短縮されます。</p>
         <select 
           className="w-full p-2 border border-stone-300 rounded" 
           value={selectedRobotId || ''} 
           onChange={e => setSelectedRobotId(e.target.value || null)}
         >
-          <option value="">ロボットなし (成功率 50%)</option>
+          <option value="">ロボットなし (基本素材のみ)</option>
           {state.robots.map(r => (
-            <option key={r.id} value={r.id}>{r.name} (HP: {r.stats.hp} Pow: {r.stats.power})</option>
+            <option key={r.id} value={r.id}>{r.name} (Pow: {r.stats.power} Agi: {r.stats.agility})</option>
           ))}
         </select>
       </div>

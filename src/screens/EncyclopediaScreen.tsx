@@ -2,25 +2,23 @@ import React, { useState } from 'react';
 import { GameState, AttributeColors } from '../core/models';
 import { Card, Button, Badge } from '../components/ui/core';
 import { theme } from '../styles/theme';
-import { RobotVisual, PixelGrid } from '../components/robot/RobotVisual';
+import { RobotVisual, PartVisual } from '../components/robot/RobotVisual';
+import { SVG_HEADS, SVG_BODIES, SVG_ARMS, SVG_LEGS } from '../components/robot/RobotSVGs';
 import { MATERIALS } from '../core/data';
-import { HEADS, BODIES, ARMS, LEGS } from '../core/pixelArt';
 import { FaRobot, FaBox, FaWrench, FaShoePrints, FaStar } from 'react-icons/fa';
 import { MaterialIcon } from '../components/ui/MaterialIcon';
 
-const SinglePart: React.FC<{ grid: string[], color: string, rarityLabel?: number }> = ({ grid, color, rarityLabel }) => {
-  const size = 64;
-  const pixelSize = size / 32;
+const SinglePart: React.FC<{ Comp: React.FC<{color: string}>, color: string, rarityLabel?: number }> = ({ Comp, color, rarityLabel }) => {
   return (
-    <div className="bg-stone-100 rounded p-1 inline-flex flex-col items-center border border-stone-200">
+    <div className="bg-stone-100 rounded p-1 flex flex-col items-center border border-stone-200 overflow-hidden w-full aspect-square justify-center">
       {rarityLabel !== undefined && (
         <span className="text-[10px] flex items-center gap-0.5 mb-1 text-amber-600 font-bold">
           <FaStar size={10} />{rarityLabel}
         </span>
       )}
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        <PixelGrid grid={grid} color={color} xOffset={0} yOffset={0} pixelSize={pixelSize} />
-      </svg>
+      <div className="flex-1 w-full flex items-center justify-center p-1">
+        <Comp color={color} />
+      </div>
     </div>
   );
 };
@@ -119,25 +117,25 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
                   <div className="flex flex-col items-center">
                     <p className="mb-2 flex items-center justify-center gap-1"><FaRobot size={14} />アタマ</p>
                     <div className="grid grid-cols-2 gap-2">
-                      {HEADS.slice(0, mat.rarity * 8).map((grid, idx) => <SinglePart key={idx} grid={grid} color={color} rarityLabel={Math.floor(idx / 8) + 1} />)}
+                      {SVG_HEADS.map((Comp, idx) => <SinglePart key={idx} Comp={Comp} color={color} rarityLabel={1} />)}
                     </div>
                   </div>
                   <div className="flex flex-col items-center">
                     <p className="mb-2 flex items-center justify-center gap-1"><FaBox size={14} />ボディ</p>
                     <div className="grid grid-cols-2 gap-2">
-                      {BODIES.slice(0, mat.rarity * 8).map((grid, idx) => <SinglePart key={idx} grid={grid} color={color} rarityLabel={Math.floor(idx / 8) + 1} />)}
+                      {SVG_BODIES.map((Comp, idx) => <SinglePart key={idx} Comp={Comp} color={color} rarityLabel={1} />)}
                     </div>
                   </div>
                   <div className="flex flex-col items-center">
                     <p className="mb-2 flex items-center justify-center gap-1"><FaWrench size={14} />ウデ</p>
                     <div className="grid grid-cols-2 gap-2">
-                      {ARMS.slice(0, mat.rarity * 8).map((grid, idx) => <SinglePart key={idx} grid={grid} color={color} rarityLabel={Math.floor(idx / 8) + 1} />)}
+                      {SVG_ARMS.map((Comp, idx) => <SinglePart key={idx} Comp={Comp} color={color} rarityLabel={1} />)}
                     </div>
                   </div>
                   <div className="flex flex-col items-center">
                     <p className="mb-2 flex items-center justify-center gap-1"><FaShoePrints size={14} />アシ</p>
                     <div className="grid grid-cols-2 gap-2">
-                      {LEGS.slice(0, mat.rarity * 8).map((grid, idx) => <SinglePart key={idx} grid={grid} color={color} rarityLabel={Math.floor(idx / 8) + 1} />)}
+                      {SVG_LEGS.map((Comp, idx) => <SinglePart key={idx} Comp={Comp} color={color} rarityLabel={1} />)}
                     </div>
                   </div>
                 </div>
