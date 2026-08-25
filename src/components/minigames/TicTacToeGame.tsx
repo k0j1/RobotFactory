@@ -11,7 +11,7 @@ const WIN_PATTERNS = [
   [0,4,8], [2,4,6]           // diags
 ];
 
-export const TicTacToeGame: React.FC<MinigameProps> = ({ activeRobot, activeOpponent, onFinish, speed, isPaused, isFinished }) => {
+export const TicTacToeGame: React.FC<MinigameProps> = ({ activeRobot, activeOpponent, onFinish, speed, isPaused, isFinished, battleResult }) => {
   const [board, setBoard] = useState<BoardState>(Array(9).fill(0));
   const [turn, setTurn] = useState<Player>(1);
   const [lastMove, setLastMove] = useState<number | null>(null);
@@ -85,9 +85,14 @@ export const TicTacToeGame: React.FC<MinigameProps> = ({ activeRobot, activeOppo
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <div className={`text-center p-3 rounded-lg flex-1 ${turn === 1 ? 'bg-stone-200 shadow-inner' : ''}`}>
-          <div className="flex justify-center mb-2"><RobotVisual robot={activeRobot} size={48} /></div>
-          <div className="font-bold">{activeRobot.name}</div>
+        <div className={`text-center p-3 rounded-lg flex-1 ${turn === 1 ? 'bg-stone-200 shadow-inner' : ''} ${battleResult === 'win' ? 'ring-2 ring-amber-400 bg-amber-50' : ''}`}>
+          <div className="flex justify-center mb-2">
+            <RobotVisual robot={activeRobot} size={48} animateVictory={battleResult === 'win'} />
+          </div>
+          <div className="font-bold flex items-center justify-center gap-1">
+            {activeRobot.name}
+            {battleResult === 'win' && <span className="text-amber-500 text-xs">👑</span>}
+          </div>
           <div className="text-xs text-stone-600">Int: {activeRobot.stats.intelligence}</div>
           <div className="mt-2 text-xl font-bold text-blue-500">⭕</div>
         </div>

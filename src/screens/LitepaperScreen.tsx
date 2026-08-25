@@ -11,25 +11,26 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
       </div>
 
       <Card className="bg-stone-50 border-2 border-stone-200">
-        <h3 className={`${theme.typography.h3} mb-4 text-stone-700`}>ポンコツロボット工房 v1.0.53 仕様まとめ</h3>
+        <h3 className={`${theme.typography.h3} mb-4 text-stone-700`}>ポンコツロボット工房 v1.0.55 仕様まとめ</h3>
         
         <div className="space-y-6 text-sm text-stone-800">
           <section>
             <h4 className="font-bold text-lg text-amber-700 border-b border-stone-300 mb-2">1. ゲームの目的</h4>
             <p>
-              プレイヤーはロボット工房の職人となり、「遠征」で全48種類の素材を集め、「製造」でパーツとロボットを組み立てます。<br/>
+              プレイヤーはロボット工房の職人となり、「遠征」や「自動探索」で全48種類の素材を集め、「製造」でパーツとロボットを組み立てます。<br/>
               完成したロボットを「依頼」で納品することでG（ゴールド）を稼ぎ、倉庫の拡張や新たな工房内装の獲得を行いながら工房を発展させます。
             </p>
           </section>
 
           <section>
-            <h4 className="font-bold text-lg text-amber-700 border-b border-stone-300 mb-2">2. 遠征（素材収集）</h4>
+            <h4 className="font-bold text-lg text-amber-700 border-b border-stone-300 mb-2">2. 遠征と自動探索（素材収集）</h4>
             <ul className="list-disc list-inside space-y-1 ml-2">
-              <li>リアルタイムの時間経過によって遠征が完了し、ランダムな種類の素材をまとまった数（スタック）で獲得できます。</li>
+              <li><strong>通常遠征:</strong> リアルタイムの時間経過によって遠征が完了し、ランダムな種類の素材をまとまった数（スタック）で獲得できます。</li>
               <li><strong>成功率:</strong> 失敗はありません。常に100%成功し、素材を持ち帰ります。</li>
               <li><strong>ロボット派遣ボーナス:</strong> 任意のロボットを派遣すると、獲得できる素材の「抽選回数（ドロップ枠）」が基本値から大幅に増加します。</li>
               <li><strong>ステータス補正:</strong> 派遣するロボットの<strong>「パワー」</strong>が高いほど、さらにドロップ枠が追加されます。<strong>「敏捷」</strong>が高いほど、遠征にかかる時間が最大で半減します。</li>
               <li><strong>属性相性:</strong> 派遣先と有利な属性を持つロボット（例：火の地域に水属性）を派遣すると、さらにドロップ枠が追加されます。</li>
+              <li><strong>自動探索（放置探索）:</strong> ロボットを自動探索へ派遣しておくと、<strong>1時間に1つ</strong>の素材を自動的に発見・蓄積します（工房画面から随時回収可能）。</li>
             </ul>
           </section>
 
@@ -56,7 +57,16 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
           </section>
 
           <section>
-            <h4 className="font-bold text-lg text-amber-700 border-b border-stone-300 mb-2">5. 倉庫・商店・図鑑</h4>
+            <h4 className="font-bold text-lg text-amber-700 border-b border-stone-300 mb-2">5. ミニゲーム（ロボット・バトル）</h4>
+            <ul className="list-disc list-inside space-y-1 ml-2">
+              <li>自作のロボットを出撃させ、オセロ・五目並べ・チェス・マルバツのボードゲームで各企業のAIとオート対決ができます。</li>
+              <li>ロボットの<strong>「賢さ (Int)」</strong>が高いほど、より精度の高い次の一手を選択します。</li>
+              <li><strong>勝利演出:</strong> 対戦に勝利すると、使用したロボットが両腕を突き上げて飛び跳ねる<strong>「ガッツポーズアニメーション」</strong>とキラキラエフェクトで勝利を祝います。対戦相手に応じたG報酬も獲得できます。</li>
+            </ul>
+          </section>
+
+          <section>
+            <h4 className="font-bold text-lg text-amber-700 border-b border-stone-300 mb-2">6. 倉庫・商店・図鑑</h4>
             <ul className="list-disc list-inside space-y-1 ml-2">
               <li><strong>倉庫:</strong> 製造したロボットと所持パーツ・素材を管理します。ロボットの所持上限はGを消費して拡張できます。</li>
               <li><strong>解体とリサイクル:</strong> 不要なロボットは「解体」して4つのパーツに戻すことができます。パーツは「リサイクル」することで、メイン素材2個に還元されます。</li>

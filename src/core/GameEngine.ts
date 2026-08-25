@@ -216,8 +216,8 @@ export class GameEngine {
     const now = Date.now();
     let changed = false;
 
-    // Auto dispatch takes 10 minutes (600000ms) for slower idle collection
-    const COLLECTION_INTERVAL = 10 * 60 * 1000;
+    // Auto dispatch takes 1 hour (3600000ms) for collecting 1 material per hour
+    const COLLECTION_INTERVAL = 60 * 60 * 1000;
 
     for (const d of this.state.autoDispatches) {
       if (!d.pendingDrops) {
@@ -234,33 +234,20 @@ export class GameEngine {
         if (loc) {
           const robot = this.state.robots.find(r => r.id === d.robotId);
           if (robot) {
-             const robotAttrs = [robot.parts.head.attribute, robot.parts.body.attribute, robot.parts.arms.attribute, robot.parts.legs.attribute];
              const newFoundDrops: string[] = [];
 
              for (let i = 0; i < actualCollections; i++) {
-                // Base drops: 1-2 per collection (lowered for balance)
-                let drops = Math.floor(Math.random() * 2) + 1;
-                
-                // Bonus from power (lowered)
-                drops += Math.floor(robot.stats.power / 60);
-                
-                if (loc.name.includes('火') && robotAttrs.includes('Water')) drops += 1;
-                if (loc.name.includes('水') && robotAttrs.includes('Earth')) drops += 1;
-                if (loc.name.includes('風') && robotAttrs.includes('Fire')) drops += 1;
-
-                // Add to pending drops
-                for (let j = 0; j < drops; j++) {
-                  const dropId = loc.drops[Math.floor(Math.random() * loc.drops.length)];
-                  newFoundDrops.push(dropId);
-                  d.pendingDrops.push(dropId);
-                }
+                // 1時間に1つの素材を回収
+                const dropId = loc.drops[Math.floor(Math.random() * loc.drops.length)];
+                newFoundDrops.push(dropId);
+                d.pendingDrops.push(dropId);
              }
 
              if (newFoundDrops.length > 0) {
-               d.logs.push(`${actualCollections}回の自動探索で${newFoundDrops.length}個の素材を発見！(未回収: ${d.pendingDrops.length}個)`);
-               // Keep only last 5 logs
-               if (d.logs.length > 5) d.logs.shift();
-               changed = true;
+                d.logs.push(`${actualCollections}時間の自動探索で${newFoundDrops.length}個の素材を発見！(未回収: ${d.pendingDrops.length}個)`);
+                // Keep only last 5 logs
+                if (d.logs.length > 5) d.logs.shift();
+                changed = true;
              }
           }
         }
@@ -274,8 +261,6 @@ export class GameEngine {
     }
   }
 
-
-  
   public recordBattleResult(robotId: string, result: 'win' | 'lose' | 'draw') {
     const robot = this.state.robots.find(r => r.id === robotId);
     if (robot) {

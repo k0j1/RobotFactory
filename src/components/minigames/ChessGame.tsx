@@ -34,7 +34,7 @@ const isBlack = (p: string) => p !== '.' && p === p.toLowerCase();
 const isOpponent = (p1: string, p2: string) => (isWhite(p1) && isBlack(p2)) || (isBlack(p1) && isWhite(p2));
 const isOwn = (p1: string, p2: string) => (isWhite(p1) && isWhite(p2)) || (isBlack(p1) && isBlack(p2));
 
-export const ChessGame: React.FC<MinigameProps> = ({ activeRobot, activeOpponent, onFinish, speed, isPaused, isFinished }) => {
+export const ChessGame: React.FC<MinigameProps> = ({ activeRobot, activeOpponent, onFinish, speed, isPaused, isFinished, battleResult }) => {
   const [board, setBoard] = useState<BoardState>(INITIAL_BOARD);
   const [turn, setTurn] = useState<Player>(1); // 1 = White, 2 = Black
   const [lastMove, setLastMove] = useState<{fr: number, fc: number, tr: number, tc: number} | null>(null);
@@ -192,9 +192,14 @@ export const ChessGame: React.FC<MinigameProps> = ({ activeRobot, activeOpponent
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <div className={`text-center p-3 rounded-lg flex-1 ${turn === 1 ? 'bg-stone-200 shadow-inner' : ''}`}>
-          <div className="flex justify-center mb-2"><RobotVisual robot={activeRobot} size={48} /></div>
-          <div className="font-bold">{activeRobot.name}</div>
+        <div className={`text-center p-3 rounded-lg flex-1 ${turn === 1 ? 'bg-stone-200 shadow-inner' : ''} ${battleResult === 'win' ? 'ring-2 ring-amber-400 bg-amber-50' : ''}`}>
+          <div className="flex justify-center mb-2">
+            <RobotVisual robot={activeRobot} size={48} animateVictory={battleResult === 'win'} />
+          </div>
+          <div className="font-bold flex items-center justify-center gap-1">
+            {activeRobot.name}
+            {battleResult === 'win' && <span className="text-amber-500 text-xs">👑</span>}
+          </div>
           <div className="text-xs text-stone-600">Int: {activeRobot.stats.intelligence}</div>
           <div className="mt-2 text-xl font-bold bg-white text-stone-900 border border-stone-300 rounded w-12 mx-auto">♔</div>
         </div>

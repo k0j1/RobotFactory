@@ -366,7 +366,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
         <div className="flex justify-between items-center mb-4 border-b border-stone-300 pb-2 flex-wrap gap-2">
           <div>
             <h3 className={theme.typography.h3}>自動探索ロボット</h3>
-            <p className="text-xs text-stone-500">10分ごとに素材を発見・蓄積します（要回収）</p>
+            <p className="text-xs text-stone-500">1時間ごとに1つの素材を発見・蓄積します（要回収）</p>
           </div>
           <div className="flex items-center gap-2">
             {totalAutoPendingDrops > 0 && (
@@ -386,8 +386,8 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
               const robot = state.robots.find(r => r.id === dispatch.robotId);
               const pendingCount = dispatch.pendingDrops?.length || 0;
               
-              // 10分インターバル計算
-              const nextTime = dispatch.lastCollectedAt + 10 * 60 * 1000;
+              // 1時間インターバル計算
+              const nextTime = dispatch.lastCollectedAt + 60 * 60 * 1000;
               const remainToNext = Math.max(0, nextTime - Date.now());
 
               return (
@@ -447,7 +447,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                       ))}
                     </div>
                   ) : (
-                    <p className="text-xs text-stone-500 italic mt-2">まだ素材を回収していません（10分ごとに素材を発見）...</p>
+                    <p className="text-xs text-stone-500 italic mt-2">まだ素材を回収していません（1時間ごとに1つの素材を発見）...</p>
                   )}
                 </div>
               );

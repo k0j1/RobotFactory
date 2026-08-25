@@ -8,6 +8,8 @@ import { OthelloGame } from '../components/minigames/OthelloGame';
 import { GomokuGame } from '../components/minigames/GomokuGame';
 import { ChessGame } from '../components/minigames/ChessGame';
 import { TicTacToeGame } from '../components/minigames/TicTacToeGame';
+import { RobotVisual } from '../components/robot/RobotVisual';
+import { motion } from 'motion/react';
 
 const GAMES = [
   { id: 'othello', name: 'オセロ', desc: '挟んで裏返す定番ボードゲーム' },
@@ -54,10 +56,10 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
   const renderGame = () => {
     if (!activeRobot || !activeOpponent) return null;
     switch (selectedGame) {
-      case 'othello': return <OthelloGame activeRobot={activeRobot} activeOpponent={activeOpponent} onFinish={handleFinish} speed={speed} isPaused={isPaused} isFinished={battleResult !== null} />;
-      case 'gomoku': return <GomokuGame activeRobot={activeRobot} activeOpponent={activeOpponent} onFinish={handleFinish} speed={speed} isPaused={isPaused} isFinished={battleResult !== null} />;
-      case 'chess': return <ChessGame activeRobot={activeRobot} activeOpponent={activeOpponent} onFinish={handleFinish} speed={speed} isPaused={isPaused} isFinished={battleResult !== null} />;
-      case 'tictactoe': return <TicTacToeGame activeRobot={activeRobot} activeOpponent={activeOpponent} onFinish={handleFinish} speed={speed} isPaused={isPaused} isFinished={battleResult !== null} />;
+      case 'othello': return <OthelloGame activeRobot={activeRobot} activeOpponent={activeOpponent} onFinish={handleFinish} speed={speed} isPaused={isPaused} isFinished={battleResult !== null} battleResult={battleResult} />;
+      case 'gomoku': return <GomokuGame activeRobot={activeRobot} activeOpponent={activeOpponent} onFinish={handleFinish} speed={speed} isPaused={isPaused} isFinished={battleResult !== null} battleResult={battleResult} />;
+      case 'chess': return <ChessGame activeRobot={activeRobot} activeOpponent={activeOpponent} onFinish={handleFinish} speed={speed} isPaused={isPaused} isFinished={battleResult !== null} battleResult={battleResult} />;
+      case 'tictactoe': return <TicTacToeGame activeRobot={activeRobot} activeOpponent={activeOpponent} onFinish={handleFinish} speed={speed} isPaused={isPaused} isFinished={battleResult !== null} battleResult={battleResult} />;
       default: return null;
     }
   };
@@ -172,17 +174,68 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                 バトル進行中...
               </p>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-5 flex flex-col items-center">
+                {battleResult === 'win' && activeRobot && (
+                  <motion.div 
+                    className="relative flex flex-col items-center"
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ type: 'spring', bounce: 0.5, duration: 0.6 }}
+                  >
+                    {/* Victory Banner / Speech Bubble */}
+                    <motion.div 
+                      className="mb-3 px-4 py-1.5 bg-amber-500 text-white font-bold text-sm rounded-full shadow-md flex items-center gap-1.5"
+                      animate={{ y: [0, -4, 0] }}
+                      transition={{ duration: 1.5, repeat: Infinity }}
+                    >
+                      <span>🏆</span>
+                      <span>ガッツポーズ！勝利の雄叫び！</span>
+                      <span>✨</span>
+                    </motion.div>
+
+                    {/* Victorious Robot Visual */}
+                    <div className="p-3 bg-gradient-to-b from-amber-100/80 to-yellow-50/80 rounded-2xl border-2 border-amber-300 shadow-lg">
+                      <RobotVisual robot={activeRobot} size={140} animateVictory={true} />
+                    </div>
+
+                    <div className="mt-2 font-bold text-stone-800 text-base flex items-center gap-1">
+                      <span>{activeRobot.name}</span>
+                      <span className="text-amber-500 text-xs px-2 py-0.5 bg-amber-100 rounded-full border border-amber-300">VICTORY</span>
+                    </div>
+                  </motion.div>
+                )}
+
+                {battleResult !== 'win' && activeRobot && (
+                  <div className="flex flex-col items-center">
+                    <div className="p-2 bg-stone-200/60 rounded-xl border border-stone-300">
+                      <RobotVisual robot={activeRobot} size={100} />
+                    </div>
+                    <div className="mt-1 font-bold text-stone-600 text-sm">
+                      {activeRobot.name}
+                    </div>
+                  </div>
+                )}
+
                 <div className="text-3xl font-black">
-                  {battleResult === 'win' && <span className="text-emerald-500">🎉 勝利！</span>}
+                  {battleResult === 'win' && <span className="text-emerald-600 drop-shadow-sm">🎉 勝利！</span>}
                   {battleResult === 'lose' && <span className="text-red-500">💀 敗北...</span>}
                   {battleResult === 'draw' && <span className="text-stone-500">🤝 引き分け</span>}
                 </div>
+
                 {battleResult === 'win' && (
-                  <p className="text-amber-700 font-bold text-lg">報酬: {activeOpponent?.reward} G を獲得しました！</p>
+                  <div className="bg-amber-50 border border-amber-200 px-6 py-2.5 rounded-xl shadow-sm">
+                    <p className="text-amber-800 font-bold text-lg flex items-center justify-center gap-2">
+                      <span>💰</span>
+                      <span>獲得報酬: +{activeOpponent?.reward} G</span>
+                    </p>
+                  </div>
                 )}
-                <Button onClick={() => { setIsBattleActive(false); setBattleResult(null); }}>
-                  戻る
+
+                <Button 
+                  onClick={() => { setIsBattleActive(false); setBattleResult(null); }}
+                  className="px-8 py-2.5 text-base shadow-md"
+                >
+                  結果を確認して戻る
                 </Button>
               </div>
             )}

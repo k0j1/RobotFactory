@@ -22,4 +22,5 @@ export interface MinigameProps {
   speed: number;
   isPaused: boolean;
   isFinished: boolean;
+  battleResult?: 'win' | 'lose' | 'draw' | null;
 }

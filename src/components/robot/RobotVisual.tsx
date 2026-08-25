@@ -9,6 +9,7 @@ interface RobotVisualProps {
   robot: any;
   size?: number; // width/height in px
   animateCrafting?: boolean;
+  animateVictory?: boolean;
 }
 
 export const PartVisual: React.FC<{ part: any, size?: number }> = ({ part, size = 64 }) => {
@@ -46,7 +47,7 @@ export const PartVisual: React.FC<{ part: any, size?: number }> = ({ part, size 
   );
 };
 
-export const RobotVisual: React.FC<RobotVisualProps> = ({ robot, size = 120, animateCrafting = false }) => {
+export const RobotVisual: React.FC<RobotVisualProps> = ({ robot, size = 120, animateCrafting = false, animateVictory = false }) => {
   const parts = robot?.parts || {};
   const { head, body, arms, legs } = parts;
   
@@ -68,7 +69,7 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({ robot, size = 120, ani
     backgroundImage: `linear-gradient(#d6d3d1 2px, transparent 2px), linear-gradient(90deg, #d6d3d1 2px, transparent 2px)`,
     backgroundSize: `${bgGridSize}px ${bgGridSize}px`,
     backgroundPosition: 'center center',
-    boxShadow: 'inset 0 0 20px rgba(0,0,0,0.05)'
+    boxShadow: animateVictory ? '0 0 25px rgba(234, 179, 8, 0.4), inset 0 0 20px rgba(254, 240, 138, 0.3)' : 'inset 0 0 20px rgba(0,0,0,0.05)'
   };
 
   const animProps = (delay: number, startY: number) => 
@@ -80,28 +81,98 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({ robot, size = 120, ani
         }
       : {};
 
+  // Victory pose animations
+  const victoryBodyJump = animateVictory
+    ? {
+        animate: { 
+          y: [0, -10, 0, -6, 0],
+          scale: [1, 1.04, 1, 1.02, 1],
+          rotate: [0, -2, 2, -1, 0]
+        },
+        transition: { duration: 0.9, repeat: Infinity, ease: "easeInOut" }
+      }
+    : {};
+
+  const victoryArmPump = animateVictory
+    ? {
+        animate: { 
+          y: [-2, -14, -4, -14, -2], 
+          scaleY: [1, 1.15, 1, 1.15, 1],
+          rotate: [-4, 6, -4, 6, -4]
+        },
+        transition: { duration: 0.9, repeat: Infinity, ease: "easeInOut" }
+      }
+    : {};
+
+  const victoryHeadTilt = animateVictory
+    ? {
+        animate: { 
+          rotate: [-6, 6, -6],
+          y: [0, -3, 0]
+        },
+        transition: { duration: 0.9, repeat: Infinity, ease: "easeInOut" }
+      }
+    : {};
+
   return (
-    <div className={`relative flex justify-center items-center ${theme.radius.md} overflow-hidden border-2 border-stone-300`} style={bgStyle}>
-      {LegsComp && (
-        <motion.div className="absolute inset-0 w-full h-full z-10" {...animProps(0, 50)}>
-          <LegsComp color={legsColor} className="w-full h-full" />
-        </motion.div>
+    <div className={`relative flex justify-center items-center ${theme.radius.md} overflow-hidden border-2 ${animateVictory ? 'border-amber-400 ring-2 ring-amber-300' : 'border-stone-300'}`} style={bgStyle}>
+      {/* Victory sparkles effect */}
+      {animateVictory && (
+        <>
+          <motion.div 
+            className="absolute top-1 left-2 text-amber-400 text-xs sm:text-sm z-50 pointer-events-none select-none font-bold"
+            animate={{ scale: [0.6, 1.2, 0.8, 1.3, 0.6], opacity: [0.4, 1, 0.5, 1, 0.4], y: [-2, -6, -2] }}
+            transition={{ duration: 1.2, repeat: Infinity }}
+          >
+            ✨
+          </motion.div>
+          <motion.div 
+            className="absolute top-1 right-2 text-yellow-500 text-xs sm:text-sm z-50 pointer-events-none select-none font-bold"
+            animate={{ scale: [1.2, 0.7, 1.3, 0.6, 1.2], opacity: [1, 0.4, 1, 0.5, 1], y: [-4, 0, -4] }}
+            transition={{ duration: 1.4, repeat: Infinity }}
+          >
+            ⭐
+          </motion.div>
+          <motion.div 
+            className="absolute bottom-1 right-2 text-amber-500 text-[10px] sm:text-xs z-50 pointer-events-none select-none font-bold"
+            animate={{ scale: [0.8, 1.3, 0.7, 1.2, 0.8], opacity: [0.5, 1, 0.4, 1, 0.5] }}
+            transition={{ duration: 1.1, repeat: Infinity }}
+          >
+            ✨
+          </motion.div>
+          <motion.div 
+            className="absolute bottom-1 left-2 text-yellow-400 text-[10px] sm:text-xs z-50 pointer-events-none select-none font-bold"
+            animate={{ scale: [1.3, 0.8, 1.2, 0.7, 1.3], opacity: [1, 0.5, 1, 0.4, 1] }}
+            transition={{ duration: 1.3, repeat: Infinity }}
+          >
+            🎉
+          </motion.div>
+        </>
       )}
-      {BodyComp && (
-        <motion.div className="absolute inset-0 w-full h-full z-20" {...animProps(0.3, -50)}>
-          <BodyComp color={bodyColor} className="w-full h-full" />
-        </motion.div>
-      )}
-      {ArmsComp && (
-        <motion.div className="absolute inset-0 w-full h-full z-30" {...animProps(0.6, -30)}>
-          <ArmsComp color={armsColor} className="w-full h-full" />
-        </motion.div>
-      )}
-      {HeadComp && (
-        <motion.div className="absolute inset-0 w-full h-full z-40" {...animProps(0.9, -80)}>
-          <HeadComp color={headColor} className="w-full h-full" />
-        </motion.div>
-      )}
+
+      {/* Robot Parts with animations */}
+      <motion.div className="w-full h-full relative" {...victoryBodyJump}>
+        {LegsComp && (
+          <motion.div className="absolute inset-0 w-full h-full z-10" {...animProps(0, 50)}>
+            <LegsComp color={legsColor} className="w-full h-full" />
+          </motion.div>
+        )}
+        {BodyComp && (
+          <motion.div className="absolute inset-0 w-full h-full z-20" {...animProps(0.3, -50)}>
+            <BodyComp color={bodyColor} className="w-full h-full" />
+          </motion.div>
+        )}
+        {ArmsComp && (
+          <motion.div className="absolute inset-0 w-full h-full z-30" {...animProps(0.6, -30)} {...victoryArmPump}>
+            <ArmsComp color={armsColor} className="w-full h-full" />
+          </motion.div>
+        )}
+        {HeadComp && (
+          <motion.div className="absolute inset-0 w-full h-full z-40" {...animProps(0.9, -80)} {...victoryHeadTilt}>
+            <HeadComp color={headColor} className="w-full h-full" />
+          </motion.div>
+        )}
+      </motion.div>
     </div>
   );
 };

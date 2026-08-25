@@ -7,7 +7,7 @@ type Player = 1 | 2;
 type BoardState = number[][];
 const INITIAL_BOARD: BoardState = Array(SIZE).fill(0).map(() => Array(SIZE).fill(0));
 
-export const GomokuGame: React.FC<MinigameProps> = ({ activeRobot, activeOpponent, onFinish, speed, isPaused, isFinished }) => {
+export const GomokuGame: React.FC<MinigameProps> = ({ activeRobot, activeOpponent, onFinish, speed, isPaused, isFinished, battleResult }) => {
   const [board, setBoard] = useState<BoardState>(INITIAL_BOARD);
   const [turn, setTurn] = useState<Player>(1);
   const [lastMove, setLastMove] = useState<{r: number, c: number} | null>(null);
@@ -130,9 +130,14 @@ export const GomokuGame: React.FC<MinigameProps> = ({ activeRobot, activeOpponen
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <div className={`text-center p-3 rounded-lg flex-1 ${turn === 1 ? 'bg-stone-200 shadow-inner' : ''}`}>
-          <div className="flex justify-center mb-2"><RobotVisual robot={activeRobot} size={48} /></div>
-          <div className="font-bold">{activeRobot.name}</div>
+        <div className={`text-center p-3 rounded-lg flex-1 ${turn === 1 ? 'bg-stone-200 shadow-inner' : ''} ${battleResult === 'win' ? 'ring-2 ring-amber-400 bg-amber-50' : ''}`}>
+          <div className="flex justify-center mb-2">
+            <RobotVisual robot={activeRobot} size={48} animateVictory={battleResult === 'win'} />
+          </div>
+          <div className="font-bold flex items-center justify-center gap-1">
+            {activeRobot.name}
+            {battleResult === 'win' && <span className="text-amber-500 text-xs">👑</span>}
+          </div>
           <div className="text-xs text-stone-600">Int: {activeRobot.stats.intelligence}</div>
           <div className="mt-2 text-xl font-bold text-stone-900">⚫</div>
         </div>
