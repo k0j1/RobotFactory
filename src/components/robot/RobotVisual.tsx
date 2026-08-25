@@ -15,10 +15,10 @@ export const PartVisual: React.FC<{ part: any, size?: number }> = ({ part, size 
   if (!part) return null;
 
   let Comp = null;
-  if (part.type === 'head') Comp = SVG_HEADS[part.visualIndex % SVG_HEADS.length];
-  else if (part.type === 'body') Comp = SVG_BODIES[part.visualIndex % SVG_BODIES.length];
-  else if (part.type === 'arms') Comp = SVG_ARMS[part.visualIndex % SVG_ARMS.length];
-  else if (part.type === 'legs') Comp = SVG_LEGS[part.visualIndex % SVG_LEGS.length];
+  if (part.type === 'head') Comp = SVG_HEADS[part.visualIndex % SVG_HEADS?.length];
+  else if (part.type === 'body') Comp = SVG_BODIES[part.visualIndex % SVG_BODIES?.length];
+  else if (part.type === 'arms') Comp = SVG_ARMS[part.visualIndex % SVG_ARMS?.length];
+  else if (part.type === 'legs') Comp = SVG_LEGS[part.visualIndex % SVG_LEGS?.length];
 
   const color = AttributeColors[part.attribute] || '#000';
   
@@ -50,10 +50,10 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({ robot, size = 120, ani
   const parts = robot?.parts || {};
   const { head, body, arms, legs } = parts;
   
-  const HeadComp = head ? SVG_HEADS[head.visualIndex % SVG_HEADS.length] : null;
-  const BodyComp = body ? SVG_BODIES[body.visualIndex % SVG_BODIES.length] : null;
-  const ArmsComp = arms ? SVG_ARMS[arms.visualIndex % SVG_ARMS.length] : null;
-  const LegsComp = legs ? SVG_LEGS[legs.visualIndex % SVG_LEGS.length] : null;
+  const HeadComp = head ? SVG_HEADS[head.visualIndex % SVG_HEADS?.length] : null;
+  const BodyComp = body ? SVG_BODIES[body.visualIndex % SVG_BODIES?.length] : null;
+  const ArmsComp = arms ? SVG_ARMS[arms.visualIndex % SVG_ARMS?.length] : null;
+  const LegsComp = legs ? SVG_LEGS[legs.visualIndex % SVG_LEGS?.length] : null;
 
   // Use AttributeColors based on part's attribute
   const headColor = head ? AttributeColors[head.attribute] : '#000';

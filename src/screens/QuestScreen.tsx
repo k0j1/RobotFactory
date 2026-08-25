@@ -4,6 +4,7 @@ import { GameEngine } from '../core/GameEngine';
 import { Card, Button } from '../components/ui/core';
 import { LOCATIONS } from '../core/data';
 import { theme } from '../styles/theme';
+import { TutorialPopup } from '../components/ui/TutorialPopup';
 
 export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine }> = ({ state, engine }) => {
   const [selectedRobotId, setSelectedRobotId] = useState<string | null>(null);
@@ -14,6 +15,15 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
 
   return (
     <div className="space-y-6">
+
+      <TutorialPopup 
+        tutorialId="quest_first_visit" 
+        state={state} 
+        engine={engine} 
+        title="遠征（探索）について" 
+        description={"ここではロボットを派遣して素材を集めることができます。\n・好きな場所を選んで「探索へ行く」を押すと、一定時間後に素材を持ち帰ります。\n・ロボットを派遣するとアイテムドロップ枠が増え、さらにステータスによるボーナスが付きます！"} 
+      />
+  
       <h2 className={`${theme.typography.h2} border-b-2 ${theme.colors.border} pb-2`}>遠征先を選ぶ</h2>
       <p className={theme.typography.body}>場所を指定して素材を集めます。時間経過で帰還します。</p>
 

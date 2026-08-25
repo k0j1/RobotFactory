@@ -83,8 +83,8 @@ export const ClientVisual: React.FC<ClientVisualProps> = ({ rank, size = 64 }) =
   const pixelSize = size / gridSize;
 
   const elements = [];
-  for (let y = 0; y < grid.length; y++) {
-    for (let x = 0; x < grid[y].length; x++) {
+  for (let y = 0; y < grid?.length; y++) {
+    for (let x = 0; x < grid[y]?.length; x++) {
       const char = grid[y][x];
       if (char !== ' ') {
         elements.push(

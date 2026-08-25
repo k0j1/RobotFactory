@@ -26,7 +26,7 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
       <div className="flex justify-between items-end border-b-2 border-stone-300 pb-2">
         <h2 className={theme.typography.h2}>倉庫</h2>
         {tab === 'robots' && (
-          <span className="font-bold text-stone-500">容量: {state.robots.length} / {state.storageSize}</span>
+          <span className="font-bold text-stone-500">容量: {state.robots?.length} / {state.storageSize}</span>
         )}
       </div>
 
@@ -75,7 +75,7 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
             </Card>
           )}
           
-          {state.robots.length === 0 ? (
+          {state.robots?.length === 0 ? (
             <p className="text-center text-stone-500 py-8">ロボットがいません</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -117,7 +117,7 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
 
       {tab === 'parts' && (
         <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-          {state.parts.length === 0 ? (
+          {state.parts?.length === 0 ? (
             <p className="text-stone-500 col-span-full">パーツがありません</p>
           ) : (
             state.parts.map((p, idx) => (

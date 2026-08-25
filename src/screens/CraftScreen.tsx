@@ -6,6 +6,7 @@ import { Card, Button, Badge } from '../components/ui/core';
 import { RobotVisual, PartVisual } from '../components/robot/RobotVisual';
 import { AttributeEffects } from '../components/effects/AttributeEffects';
 import { theme } from '../styles/theme';
+import { TutorialPopup } from '../components/ui/TutorialPopup';
 import { MaterialIcon } from '../components/ui/MaterialIcon';
 import { motion } from 'motion/react';
 
@@ -98,6 +99,15 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
 
   return (
     <div className="space-y-6">
+
+      <TutorialPopup 
+        tutorialId="craft_first_visit" 
+        state={state} 
+        engine={engine} 
+        title="製造（クラフト）について" 
+        description={"ここでは集めた素材を組み合わせてロボットを作ります。\n・ベースとなる「メイン素材」3個と、ボーナスを決める「サブ素材」2個を選んでパーツを作ります。\n・メイン素材はパーツの属性や基礎能力を決め、レア度が高いほど珍しい見た目になりやすいです！\n・アタマ・ボディ・ウデ・アシの4パーツを作ったら、ロボットを組み立てましょう。"} 
+      />
+  
       <div className="flex gap-2">
         <button 
           className={`flex-1 py-2 font-bold rounded-t-md border-b-4 ${tab === 'part' ? 'border-amber-500 text-amber-700 bg-amber-50' : 'border-transparent text-stone-500 hover:bg-stone-100'}`}
@@ -193,7 +203,7 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
             <div>
               <h4 className="font-bold text-stone-700 mb-2">メイン素材 (3個消費) - 属性とベース性能を決定</h4>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                {availableMainMats.length === 0 && <p className="text-stone-500 col-span-full">3個以上ある素材がありません。</p>}
+                {availableMainMats?.length === 0 && <p className="text-stone-500 col-span-full">3個以上ある素材がありません。</p>}
                 
                 {availableMainMats.map(mat => {
                   const count = state.materials[mat.id] || 0;
@@ -221,7 +231,7 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
             <div>
               <h4 className="font-bold text-stone-700 mb-2">サブ素材 (2個消費) - 追加性能を決定</h4>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                {availableSubMats.length === 0 && <p className="text-stone-500 col-span-full">2個以上ある素材がありません。</p>}
+                {availableSubMats?.length === 0 && <p className="text-stone-500 col-span-full">2個以上ある素材がありません。</p>}
                 
                 {availableSubMats.map(mat => {
                   // Ignore if it's the main mat and we don't have enough to use both

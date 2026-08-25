@@ -5,6 +5,7 @@ import { Card, Button, Badge } from '../components/ui/core';
 import { RobotVisual } from '../components/robot/RobotVisual';
 import { ClientVisual } from '../components/ui/ClientVisual';
 import { theme } from '../styles/theme';
+import { TutorialPopup } from '../components/ui/TutorialPopup';
 
 export const RequestScreen: React.FC<{ state: GameState, engine: GameEngine }> = ({ state, engine }) => {
   const [selectedRobotId, setSelectedRobotId] = useState<string>('');
@@ -39,6 +40,15 @@ export const RequestScreen: React.FC<{ state: GameState, engine: GameEngine }> =
 
   return (
     <div className="space-y-6">
+
+      <TutorialPopup 
+        tutorialId="request_first_visit" 
+        state={state} 
+        engine={engine} 
+        title="依頼（納品）について" 
+        description={"ここでは完成したロボットを必要としている人たちに納品して、G（ゴールド）を稼ぐことができます。\n・依頼には「期限」や「指定属性」「要求ステータス」があります。\n・条件に合うロボットを倉庫から選んで納品しましょう！\n・24時間経過、または受諾中の依頼が無い場合に新しい依頼が補充されます。"} 
+      />
+  
       <h2 className={`${theme.typography.h2} border-b-2 ${theme.colors.border} pb-2`}>依頼掲示板</h2>
       
       {state.currentRequest ? (
@@ -65,7 +75,7 @@ export const RequestScreen: React.FC<{ state: GameState, engine: GameEngine }> =
           </div>
 
           <h4 className="font-bold mb-2">納品するロボットを選ぶ</h4>
-          {state.robots.length === 0 ? (
+          {state.robots?.length === 0 ? (
             <p className="text-stone-500">倉庫にロボットがいません。</p>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-4">

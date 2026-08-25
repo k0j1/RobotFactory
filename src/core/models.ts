@@ -75,6 +75,15 @@ export interface DeliveredLog {
   stats: { hp: number; power: number; defense: number; agility: number; dexterity: number; };
 }
 
+export interface AutoDispatch {
+  id: string;
+  robotId: string;
+  locationId: string;
+  dispatchedAt: number;
+  lastCollectedAt: number;
+  logs: string[];
+}
+
 export interface GameState {
   gold: number;
   storageSize: number;
@@ -91,4 +100,6 @@ export interface GameState {
   availableRequests: ClientRequest[];
   unlockedInteriors: string[];
   currentInterior: string;
+  autoDispatches: AutoDispatch[];
+  seenTutorials: string[];
 }
