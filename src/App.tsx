@@ -6,6 +6,7 @@ import { QuestScreen } from './screens/QuestScreen';
 import { CraftScreen } from './screens/CraftScreen';
 import { RequestScreen } from './screens/RequestScreen';
 import { StorageScreen } from './screens/StorageScreen';
+import { MinigameScreen } from './screens/MinigameScreen';
 import { TitleScreen } from './screens/TitleScreen';
 import { ShopScreen } from './screens/ShopScreen';
 import { EncyclopediaScreen } from './screens/EncyclopediaScreen';
@@ -43,6 +44,7 @@ export default function App() {
       {view === 'craft' && <CraftScreen state={state} engine={engine} />}
       {view === 'requests' && <RequestScreen state={state} engine={engine} />}
       {view === 'storage' && <StorageScreen state={state} engine={engine} />}
+      {view === 'minigame' && <MinigameScreen state={state} engine={engine} />}
       {view === 'shop' && <ShopScreen state={state} engine={engine} onBack={() => setView('dashboard')} />}
       {view === 'encyclopedia' && <EncyclopediaScreen state={state} onBack={() => setView('dashboard')} />}
       {view === 'litepaper' && <LitepaperScreen onBack={() => setView('dashboard')} />}

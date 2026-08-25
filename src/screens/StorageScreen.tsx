@@ -107,6 +107,7 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                           <span>Def: {r.stats.defense}</span>
                           <span>Agi: {r.stats.agility}</span>
                           <span>Dex: {r.stats.dexterity}</span>
+                          <span>Int: {r.stats.intelligence}</span>
                         </div>
 
                         {/* 左側のスペースに配置したシェアボタン */}

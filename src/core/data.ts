@@ -12,7 +12,8 @@ export const MATERIALS: Material[] = [
       "power": 5,
       "defense": 10,
       "agility": 2,
-      "dexterity": 5
+      "dexterity": 5,
+      "intelligence": 1
     }
   },
   {
@@ -26,7 +27,8 @@ export const MATERIALS: Material[] = [
       "power": 4,
       "defense": 12,
       "agility": 1,
-      "dexterity": 4
+      "dexterity": 4,
+      "intelligence": 1
     }
   },
   {
@@ -40,7 +42,8 @@ export const MATERIALS: Material[] = [
       "power": 2,
       "defense": 15,
       "agility": 2,
-      "dexterity": 8
+      "dexterity": 8,
+      "intelligence": 2
     }
   },
   {
@@ -54,7 +57,8 @@ export const MATERIALS: Material[] = [
       "power": 10,
       "defense": 25,
       "agility": 5,
-      "dexterity": 5
+      "dexterity": 5,
+      "intelligence": 2
     }
   },
   {
@@ -68,7 +72,8 @@ export const MATERIALS: Material[] = [
       "power": 15,
       "defense": 20,
       "agility": 4,
-      "dexterity": 8
+      "dexterity": 8,
+      "intelligence": 2
     }
   },
   {
@@ -82,7 +87,8 @@ export const MATERIALS: Material[] = [
       "power": 12,
       "defense": 30,
       "agility": 3,
-      "dexterity": 6
+      "dexterity": 6,
+      "intelligence": 2
     }
   },
   {
@@ -96,7 +102,8 @@ export const MATERIALS: Material[] = [
       "power": 30,
       "defense": 50,
       "agility": 10,
-      "dexterity": 10
+      "dexterity": 10,
+      "intelligence": 3
     }
   },
   {
@@ -110,7 +117,8 @@ export const MATERIALS: Material[] = [
       "power": 25,
       "defense": 60,
       "agility": 8,
-      "dexterity": 15
+      "dexterity": 15,
+      "intelligence": 4
     }
   },
   {
@@ -124,7 +132,8 @@ export const MATERIALS: Material[] = [
       "power": 15,
       "defense": 5,
       "agility": 5,
-      "dexterity": 5
+      "dexterity": 5,
+      "intelligence": 1
     }
   },
   {
@@ -138,7 +147,8 @@ export const MATERIALS: Material[] = [
       "power": 18,
       "defense": 4,
       "agility": 6,
-      "dexterity": 4
+      "dexterity": 4,
+      "intelligence": 4
     }
   },
   {
@@ -152,7 +162,8 @@ export const MATERIALS: Material[] = [
       "power": 15,
       "defense": 2,
       "agility": 8,
-      "dexterity": 8
+      "dexterity": 8,
+      "intelligence": 1
     }
   },
   {
@@ -166,7 +177,8 @@ export const MATERIALS: Material[] = [
       "power": 30,
       "defense": 10,
       "agility": 10,
-      "dexterity": 10
+      "dexterity": 10,
+      "intelligence": 2
     }
   },
   {
@@ -180,7 +192,8 @@ export const MATERIALS: Material[] = [
       "power": 35,
       "defense": 15,
       "agility": 8,
-      "dexterity": 8
+      "dexterity": 8,
+      "intelligence": 1
     }
   },
   {
@@ -194,7 +207,8 @@ export const MATERIALS: Material[] = [
       "power": 40,
       "defense": 20,
       "agility": 5,
-      "dexterity": 5
+      "dexterity": 5,
+      "intelligence": 3
     }
   },
   {
@@ -208,7 +222,8 @@ export const MATERIALS: Material[] = [
       "power": 60,
       "defense": 30,
       "agility": 15,
-      "dexterity": 15
+      "dexterity": 15,
+      "intelligence": 4
     }
   },
   {
@@ -222,7 +237,8 @@ export const MATERIALS: Material[] = [
       "power": 80,
       "defense": 20,
       "agility": 10,
-      "dexterity": 10
+      "dexterity": 10,
+      "intelligence": 3
     }
   },
   {
@@ -236,7 +252,8 @@ export const MATERIALS: Material[] = [
       "power": 5,
       "defense": 10,
       "agility": 5,
-      "dexterity": 10
+      "dexterity": 10,
+      "intelligence": 2
     }
   },
   {
@@ -250,7 +267,8 @@ export const MATERIALS: Material[] = [
       "power": 4,
       "defense": 12,
       "agility": 4,
-      "dexterity": 8
+      "dexterity": 8,
+      "intelligence": 3
     }
   },
   {
@@ -264,7 +282,8 @@ export const MATERIALS: Material[] = [
       "power": 2,
       "defense": 8,
       "agility": 5,
-      "dexterity": 15
+      "dexterity": 15,
+      "intelligence": 3
     }
   },
   {
@@ -278,7 +297,8 @@ export const MATERIALS: Material[] = [
       "power": 10,
       "defense": 20,
       "agility": 10,
-      "dexterity": 15
+      "dexterity": 15,
+      "intelligence": 2
     }
   },
   {
@@ -292,7 +312,8 @@ export const MATERIALS: Material[] = [
       "power": 15,
       "defense": 25,
       "agility": 8,
-      "dexterity": 12
+      "dexterity": 12,
+      "intelligence": 2
     }
   },
   {
@@ -306,7 +327,8 @@ export const MATERIALS: Material[] = [
       "power": 12,
       "defense": 30,
       "agility": 6,
-      "dexterity": 10
+      "dexterity": 10,
+      "intelligence": 4
     }
   },
   {
@@ -320,7 +342,8 @@ export const MATERIALS: Material[] = [
       "power": 20,
       "defense": 50,
       "agility": 10,
-      "dexterity": 20
+      "dexterity": 20,
+      "intelligence": 1
     }
   },
   {
@@ -334,7 +357,8 @@ export const MATERIALS: Material[] = [
       "power": 15,
       "defense": 40,
       "agility": 15,
-      "dexterity": 30
+      "dexterity": 30,
+      "intelligence": 1
     }
   },
   {
@@ -348,7 +372,8 @@ export const MATERIALS: Material[] = [
       "power": 5,
       "defense": 5,
       "agility": 15,
-      "dexterity": 10
+      "dexterity": 10,
+      "intelligence": 4
     }
   },
   {
@@ -362,7 +387,8 @@ export const MATERIALS: Material[] = [
       "power": 6,
       "defense": 4,
       "agility": 18,
-      "dexterity": 12
+      "dexterity": 12,
+      "intelligence": 5
     }
   },
   {
@@ -376,7 +402,8 @@ export const MATERIALS: Material[] = [
       "power": 5,
       "defense": 5,
       "agility": 20,
-      "dexterity": 8
+      "dexterity": 8,
+      "intelligence": 3
     }
   },
   {
@@ -390,7 +417,8 @@ export const MATERIALS: Material[] = [
       "power": 10,
       "defense": 10,
       "agility": 35,
-      "dexterity": 15
+      "dexterity": 15,
+      "intelligence": 3
     }
   },
   {
@@ -404,7 +432,8 @@ export const MATERIALS: Material[] = [
       "power": 15,
       "defense": 12,
       "agility": 40,
-      "dexterity": 18
+      "dexterity": 18,
+      "intelligence": 1
     }
   },
   {
@@ -418,7 +447,8 @@ export const MATERIALS: Material[] = [
       "power": 20,
       "defense": 10,
       "agility": 45,
-      "dexterity": 12
+      "dexterity": 12,
+      "intelligence": 2
     }
   },
   {
@@ -432,7 +462,8 @@ export const MATERIALS: Material[] = [
       "power": 25,
       "defense": 20,
       "agility": 70,
-      "dexterity": 25
+      "dexterity": 25,
+      "intelligence": 3
     }
   },
   {
@@ -446,7 +477,8 @@ export const MATERIALS: Material[] = [
       "power": 30,
       "defense": 25,
       "agility": 85,
-      "dexterity": 30
+      "dexterity": 30,
+      "intelligence": 5
     }
   },
   {
@@ -460,7 +492,8 @@ export const MATERIALS: Material[] = [
       "power": 8,
       "defense": 8,
       "agility": 8,
-      "dexterity": 12
+      "dexterity": 12,
+      "intelligence": 4
     }
   },
   {
@@ -474,7 +507,8 @@ export const MATERIALS: Material[] = [
       "power": 9,
       "defense": 7,
       "agility": 9,
-      "dexterity": 14
+      "dexterity": 14,
+      "intelligence": 2
     }
   },
   {
@@ -488,7 +522,8 @@ export const MATERIALS: Material[] = [
       "power": 5,
       "defense": 5,
       "agility": 10,
-      "dexterity": 15
+      "dexterity": 15,
+      "intelligence": 5
     }
   },
   {
@@ -502,7 +537,8 @@ export const MATERIALS: Material[] = [
       "power": 15,
       "defense": 15,
       "agility": 15,
-      "dexterity": 25
+      "dexterity": 25,
+      "intelligence": 5
     }
   },
   {
@@ -516,7 +552,8 @@ export const MATERIALS: Material[] = [
       "power": 18,
       "defense": 20,
       "agility": 12,
-      "dexterity": 30
+      "dexterity": 30,
+      "intelligence": 2
     }
   },
   {
@@ -530,7 +567,8 @@ export const MATERIALS: Material[] = [
       "power": 22,
       "defense": 18,
       "agility": 18,
-      "dexterity": 35
+      "dexterity": 35,
+      "intelligence": 2
     }
   },
   {
@@ -544,7 +582,8 @@ export const MATERIALS: Material[] = [
       "power": 30,
       "defense": 30,
       "agility": 30,
-      "dexterity": 50
+      "dexterity": 50,
+      "intelligence": 4
     }
   },
   {
@@ -558,7 +597,8 @@ export const MATERIALS: Material[] = [
       "power": 40,
       "defense": 40,
       "agility": 40,
-      "dexterity": 60
+      "dexterity": 60,
+      "intelligence": 5
     }
   },
   {
@@ -572,7 +612,8 @@ export const MATERIALS: Material[] = [
       "power": 12,
       "defense": 8,
       "agility": 5,
-      "dexterity": 5
+      "dexterity": 5,
+      "intelligence": 2
     }
   },
   {
@@ -586,7 +627,8 @@ export const MATERIALS: Material[] = [
       "power": 15,
       "defense": 6,
       "agility": 6,
-      "dexterity": 4
+      "dexterity": 4,
+      "intelligence": 5
     }
   },
   {
@@ -600,7 +642,8 @@ export const MATERIALS: Material[] = [
       "power": 10,
       "defense": 5,
       "agility": 5,
-      "dexterity": 8
+      "dexterity": 8,
+      "intelligence": 4
     }
   },
   {
@@ -614,7 +657,8 @@ export const MATERIALS: Material[] = [
       "power": 25,
       "defense": 15,
       "agility": 10,
-      "dexterity": 10
+      "dexterity": 10,
+      "intelligence": 5
     }
   },
   {
@@ -628,7 +672,8 @@ export const MATERIALS: Material[] = [
       "power": 30,
       "defense": 20,
       "agility": 12,
-      "dexterity": 12
+      "dexterity": 12,
+      "intelligence": 3
     }
   },
   {
@@ -642,7 +687,8 @@ export const MATERIALS: Material[] = [
       "power": 28,
       "defense": 22,
       "agility": 15,
-      "dexterity": 15
+      "dexterity": 15,
+      "intelligence": 5
     }
   },
   {
@@ -656,7 +702,8 @@ export const MATERIALS: Material[] = [
       "power": 50,
       "defense": 30,
       "agility": 20,
-      "dexterity": 20
+      "dexterity": 20,
+      "intelligence": 3
     }
   },
   {
@@ -670,7 +717,8 @@ export const MATERIALS: Material[] = [
       "power": 60,
       "defense": 40,
       "agility": 25,
-      "dexterity": 25
+      "dexterity": 25,
+      "intelligence": 5
     }
   }
 ];

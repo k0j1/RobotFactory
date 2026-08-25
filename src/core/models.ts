@@ -14,7 +14,7 @@ export interface RobotPart {
   name: string;
   attribute: Attribute;
   rarity: number;
-  stats: { hp: number; power: number; defense: number; agility: number; dexterity: number; };
+  stats: { hp: number; power: number; defense: number; agility: number; dexterity: number; intelligence: number; };
   visualIndex: number;
 }
 
@@ -24,14 +24,14 @@ export interface Material {
   attribute: Attribute;
   rarity: 1 | 2 | 3;
   price: number;
-  baseStats: { hp: number; power: number; defense: number; agility: number; dexterity: number; };
+  baseStats: { hp: number; power: number; defense: number; agility: number; dexterity: number; intelligence: number; };
 }
 
 export interface Robot {
   id: string;
   name: string;
   parts: { head: RobotPart; body: RobotPart; arms: RobotPart; legs: RobotPart; };
-  stats: { hp: number; power: number; defense: number; agility: number; dexterity: number; };
+  stats: { hp: number; power: number; defense: number; agility: number; dexterity: number; intelligence: number; };
   createdAt: number;
   value: number;
 }
@@ -60,7 +60,7 @@ export interface ClientRequest {
   description: string;
   requirements: {
     attribute?: Attribute;
-    statType?: 'hp' | 'power' | 'defense' | 'agility' | 'dexterity';
+    statType?: 'hp' | 'power' | 'defense' | 'agility' | 'dexterity' | 'intelligence';
     minStatValue?: number;
   };
   rewardG: number;
@@ -72,7 +72,7 @@ export interface DeliveredLog {
   name: string;
   deliveredAt: number;
   parts: { head: RobotPart; body: RobotPart; arms: RobotPart; legs: RobotPart; };
-  stats: { hp: number; power: number; defense: number; agility: number; dexterity: number; };
+  stats: { hp: number; power: number; defense: number; agility: number; dexterity: number; intelligence: number; };
 }
 
 export interface AutoDispatch {

@@ -83,6 +83,7 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                 <span>Def: {selectedRobot.stats.defense}</span>
                 <span>Agi: {selectedRobot.stats.agility}</span>
                 <span>Dex: {selectedRobot.stats.dexterity}</span>
+                <span>Int: {selectedRobot.stats.intelligence}</span>
               </div>
             </div>
             <div className="flex-shrink-0 bg-stone-50 p-1 rounded-md border border-stone-200">

@@ -45,12 +45,22 @@ export class GameEngine {
         // Migrate old robots to new parts format
         if (parsed.robots) {
           parsed.robots.forEach((r: any) => {
+            
+            if (r.stats && r.stats.intelligence === undefined) {
+              r.stats.intelligence = 1;
+              if (r.parts) {
+                if (r.parts.head) r.parts.head.stats.intelligence = 1;
+                if (r.parts.body) r.parts.body.stats.intelligence = 1;
+                if (r.parts.arms) r.parts.arms.stats.intelligence = 1;
+                if (r.parts.legs) r.parts.legs.stats.intelligence = 1;
+              }
+            }
             if (!r.parts && r.visuals) {
               r.parts = {
-                head: { id: '', type: 'head', name: '旧ヘッド', attribute: r.attribute, rarity: 1, stats: {hp:0, power:0, defense:0, agility:0, dexterity:0}, visualIndex: r.visuals.head },
-                body: { id: '', type: 'body', name: '旧ボディ', attribute: r.attribute, rarity: 1, stats: {hp:0, power:0, defense:0, agility:0, dexterity:0}, visualIndex: r.visuals.body },
-                arms: { id: '', type: 'arms', name: '旧アーム', attribute: r.attribute, rarity: 1, stats: {hp:0, power:0, defense:0, agility:0, dexterity:0}, visualIndex: r.visuals.arms },
-                legs: { id: '', type: 'legs', name: '旧レッグ', attribute: r.attribute, rarity: 1, stats: {hp:0, power:0, defense:0, agility:0, dexterity:0}, visualIndex: r.visuals.legs }
+                head: { id: '', type: 'head', name: '旧ヘッド', attribute: r.attribute, rarity: 1, stats: {hp:0, power:0, defense:0, agility:0, dexterity:0, intelligence:1}, visualIndex: r.visuals.head },
+                body: { id: '', type: 'body', name: '旧ボディ', attribute: r.attribute, rarity: 1, stats: {hp:0, power:0, defense:0, agility:0, dexterity:0, intelligence:1}, visualIndex: r.visuals.body },
+                arms: { id: '', type: 'arms', name: '旧アーム', attribute: r.attribute, rarity: 1, stats: {hp:0, power:0, defense:0, agility:0, dexterity:0, intelligence:1}, visualIndex: r.visuals.arms },
+                legs: { id: '', type: 'legs', name: '旧レッグ', attribute: r.attribute, rarity: 1, stats: {hp:0, power:0, defense:0, agility:0, dexterity:0, intelligence:1}, visualIndex: r.visuals.legs }
               };
             }
           });
@@ -64,12 +74,16 @@ export class GameEngine {
         
         if (parsed.deliveredLogs) {
           parsed.deliveredLogs.forEach((l: any) => {
+            
+            if (l.stats && l.stats.intelligence === undefined) {
+              l.stats.intelligence = 1;
+            }
             if (!l.parts && l.visuals) {
               l.parts = {
-                head: { id: '', type: 'head', name: '旧ヘッド', attribute: l.attribute, rarity: 1, stats: {hp:0, power:0, defense:0, agility:0, dexterity:0}, visualIndex: l.visuals.head },
-                body: { id: '', type: 'body', name: '旧ボディ', attribute: l.attribute, rarity: 1, stats: {hp:0, power:0, defense:0, agility:0, dexterity:0}, visualIndex: l.visuals.body },
-                arms: { id: '', type: 'arms', name: '旧アーム', attribute: l.attribute, rarity: 1, stats: {hp:0, power:0, defense:0, agility:0, dexterity:0}, visualIndex: l.visuals.arms },
-                legs: { id: '', type: 'legs', name: '旧レッグ', attribute: l.attribute, rarity: 1, stats: {hp:0, power:0, defense:0, agility:0, dexterity:0}, visualIndex: l.visuals.legs }
+                head: { id: '', type: 'head', name: '旧ヘッド', attribute: l.attribute, rarity: 1, stats: {hp:0, power:0, defense:0, agility:0, dexterity:0, intelligence:1}, visualIndex: l.visuals.head },
+                body: { id: '', type: 'body', name: '旧ボディ', attribute: l.attribute, rarity: 1, stats: {hp:0, power:0, defense:0, agility:0, dexterity:0, intelligence:1}, visualIndex: l.visuals.body },
+                arms: { id: '', type: 'arms', name: '旧アーム', attribute: l.attribute, rarity: 1, stats: {hp:0, power:0, defense:0, agility:0, dexterity:0, intelligence:1}, visualIndex: l.visuals.arms },
+                legs: { id: '', type: 'legs', name: '旧レッグ', attribute: l.attribute, rarity: 1, stats: {hp:0, power:0, defense:0, agility:0, dexterity:0, intelligence:1}, visualIndex: l.visuals.legs }
               };
             }
           });
@@ -78,6 +92,14 @@ export class GameEngine {
         // Ensure parts array exists
         if (!parsed.clientAffection) { parsed.clientAffection = { King: 1, Noble: 1, OldMan: 1 }; }
         if (!parsed.completedRequestDeadlines) { parsed.completedRequestDeadlines = {}; }
+        
+        if (parsed.parts) {
+          parsed.parts.forEach(p => {
+            if (p.stats && p.stats.intelligence === undefined) {
+              p.stats.intelligence = 1;
+            }
+          });
+        }
         if (!parsed.parts) {
           parsed.parts = [];
         }
@@ -253,6 +275,11 @@ export class GameEngine {
   }
 
 
+  public addGold(amount: number) {
+    this.state.gold += amount;
+    this.saveState();
+  }
+  
   public forceSave() {
     this.saveState();
   }
@@ -375,6 +402,7 @@ export class GameEngine {
         defense: mainMat.baseStats.defense + Math.floor(subMat.baseStats.defense * 0.5) + Math.floor(Math.random() * 5),
         agility: mainMat.baseStats.agility + Math.floor(subMat.baseStats.agility * 0.5) + Math.floor(Math.random() * 5),
         dexterity: mainMat.baseStats.dexterity + Math.floor(subMat.baseStats.dexterity * 0.5) + Math.floor(Math.random() * 5),
+        intelligence: mainMat.baseStats.intelligence + Math.floor(subMat.baseStats.intelligence * 0.5) + Math.floor(Math.random() * 5),
       },
       visualIndex: Math.floor(Math.random() * 24),
     };
@@ -405,6 +433,7 @@ export class GameEngine {
     const totalDef = head.stats.defense + body.stats.defense + arms.stats.defense + legs.stats.defense;
     const totalAgi = head.stats.agility + body.stats.agility + arms.stats.agility + legs.stats.agility;
     const totalDex = head.stats.dexterity + body.stats.dexterity + arms.stats.dexterity + legs.stats.dexterity;
+    const totalInt = head.stats.intelligence + body.stats.intelligence + arms.stats.intelligence + legs.stats.intelligence;
 
     const prefix1 = ['野生の', '古代の', '謎の', '伝説の', '鋼鉄の', '真紅の', '漆黒の', '錆びた', '光る', '怒れる', '眠れる', '小さな', '巨大な', '忘れられた', '名無しの'];
     const prefix2 = ['繊細な', '凶暴な', '勇敢な', '臆病な', '賢い', '鈍い', '素早い', '硬い', '柔らかい', '冷たい', '熱い', '美しい', '醜い', '奇妙な', '完璧な'];
@@ -416,7 +445,7 @@ export class GameEngine {
       name: randomName,
       parts: { head, body, arms, legs },
       stats: {
-        hp: totalHp, power: totalPow, defense: totalDef, agility: totalAgi, dexterity: totalDex
+        hp: totalHp, power: totalPow, defense: totalDef, agility: totalAgi, dexterity: totalDex, intelligence: totalInt
       },
       createdAt: Date.now(),
       value: (head.rarity + body.rarity + arms.rarity + legs.rarity) * 20
@@ -554,8 +583,8 @@ export class GameEngine {
   }
 
   private createRandomRequest(rank: RequestRank, deadline: number): ClientRequest {
-    const stats = ['hp', 'power', 'defense', 'agility', 'dexterity'] as const;
-    const statLabels: Record<string, string> = { hp: '体力', power: 'パワー', defense: 'ディフェンス', agility: 'アジリティ', dexterity: '器用さ' };
+    const stats = ['hp', 'power', 'defense', 'agility', 'dexterity', 'intelligence'] as const;
+    const statLabels: Record<string, string> = { hp: '体力', power: 'パワー', defense: 'ディフェンス', agility: 'アジリティ', dexterity: '器用さ', intelligence: '賢さ' };
     const randStat = stats[Math.floor(Math.random() * stats.length)];
     const attrs: Attribute[] = ['Fire', 'Water', 'Wind', 'Earth', 'Light', 'Dark'];
     const attrLabels: Record<string, string> = { Fire: '火', Water: '水', Wind: '風', Earth: '土', Light: '光', Dark: '闇' };
