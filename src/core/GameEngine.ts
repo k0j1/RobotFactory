@@ -20,6 +20,8 @@ const INITIAL_STATE: GameState = {
   currentInterior: 'default',
   autoDispatches: [],
   seenTutorials: [],
+  clientAffection: { King: 1, Noble: 1, OldMan: 1 },
+  completedRequestDeadlines: {},
 };
 
 const STORAGE_KEY = 'ponkotsu_robot_save';
@@ -31,6 +33,7 @@ export class GameEngine {
   constructor(onStateChange: (state: GameState) => void) {
     this.onStateChange = onStateChange;
     this.state = this.loadState();
+    this.update();
   }
 
   private loadState(): GameState {
@@ -73,6 +76,8 @@ export class GameEngine {
         }
 
         // Ensure parts array exists
+        if (!parsed.clientAffection) { parsed.clientAffection = { King: 1, Noble: 1, OldMan: 1 }; }
+        if (!parsed.completedRequestDeadlines) { parsed.completedRequestDeadlines = {}; }
         if (!parsed.parts) {
           parsed.parts = [];
         }
@@ -101,7 +106,7 @@ export class GameEngine {
 
   public startAutoDispatch(robotId: string, locationId: string) {
     if (this.isRobotAutoDispatched(robotId)) throw new Error("このロボットは既に派遣中です");
-    if (this.state.activeQuest && this.state.activeQuest.robotId === robotId) throw new Error("このロボットは遠征中です");
+    if (this.state.activeQuest && this.state.activeQuest.dispatchedRobotId === robotId) throw new Error("このロボットは遠征中です");
     
     this.state.autoDispatches.push({
       id: Math.random().toString(36).substring(2, 9),
@@ -109,7 +114,8 @@ export class GameEngine {
       locationId,
       dispatchedAt: Date.now(),
       lastCollectedAt: Date.now(),
-      logs: []
+      logs: [],
+      pendingDrops: []
     });
     this.saveState();
   }
@@ -117,20 +123,85 @@ export class GameEngine {
   public cancelAutoDispatch(dispatchId: string) {
     const idx = this.state.autoDispatches.findIndex(d => d.id === dispatchId);
     if (idx !== -1) {
+      const d = this.state.autoDispatches[idx];
+      // Collect any pending drops before leaving so items are not lost
+      if (d.pendingDrops && d.pendingDrops.length > 0) {
+        for (const dropId of d.pendingDrops) {
+          this.state.materials[dropId] = (this.state.materials[dropId] || 0) + 1;
+        }
+      }
       this.state.autoDispatches.splice(idx, 1);
       this.saveState();
     }
+  }
+
+  public claimAutoDispatch(dispatchId: string): { drops: string[]; robotName: string; locationName: string } {
+    const dispatch = this.state.autoDispatches.find(d => d.id === dispatchId);
+    if (!dispatch) {
+      throw new Error("自動探索が見つかりません");
+    }
+
+    if (!dispatch.pendingDrops || dispatch.pendingDrops.length === 0) {
+      throw new Error("回収できる素材がありません");
+    }
+
+    const drops = [...dispatch.pendingDrops];
+    for (const dropId of drops) {
+      this.state.materials[dropId] = (this.state.materials[dropId] || 0) + 1;
+    }
+
+    dispatch.pendingDrops = [];
+    dispatch.logs.push(`素材${drops.length}個を回収して工房の倉庫に格納しました。`);
+    if (dispatch.logs.length > 5) dispatch.logs.shift();
+
+    const robot = this.state.robots.find(r => r.id === dispatch.robotId);
+    const loc = LOCATIONS.find(l => l.id === dispatch.locationId);
+
+    this.saveState();
+    return {
+      drops,
+      robotName: robot?.name || 'ロボット',
+      locationName: loc?.name || '探索地'
+    };
+  }
+
+  public claimAllAutoDispatches(): { drops: string[] } {
+    const allDrops: string[] = [];
+    let collectedAny = false;
+
+    for (const dispatch of this.state.autoDispatches) {
+      if (dispatch.pendingDrops && dispatch.pendingDrops.length > 0) {
+        for (const dropId of dispatch.pendingDrops) {
+          this.state.materials[dropId] = (this.state.materials[dropId] || 0) + 1;
+          allDrops.push(dropId);
+        }
+        dispatch.logs.push(`素材${dispatch.pendingDrops.length}個を回収して工房の倉庫に格納しました。`);
+        if (dispatch.logs.length > 5) dispatch.logs.shift();
+        dispatch.pendingDrops = [];
+        collectedAny = true;
+      }
+    }
+
+    if (!collectedAny) {
+      throw new Error("回収できる素材がありません");
+    }
+
+    this.saveState();
+    return { drops: allDrops };
   }
 
   public processAutoDispatches() {
     const now = Date.now();
     let changed = false;
 
-    // e.g. 1 minute for collection for good idle feel, or maybe 5 minutes.
-    // Given regular quest takes ~2 minutes. Let's make auto dispatch take 3 minutes (180000ms).
-    const COLLECTION_INTERVAL = 3 * 60 * 1000;
+    // Auto dispatch takes 10 minutes (600000ms) for slower idle collection
+    const COLLECTION_INTERVAL = 10 * 60 * 1000;
 
     for (const d of this.state.autoDispatches) {
+      if (!d.pendingDrops) {
+        d.pendingDrops = [];
+      }
+
       const elapsed = now - d.lastCollectedAt;
       if (elapsed >= COLLECTION_INTERVAL) {
         const collectionsCount = Math.floor(elapsed / COLLECTION_INTERVAL);
@@ -141,31 +212,32 @@ export class GameEngine {
         if (loc) {
           const robot = this.state.robots.find(r => r.id === d.robotId);
           if (robot) {
-             let totalDrops = 0;
-             const newLogs = [];
+             const robotAttrs = [robot.parts.head.attribute, robot.parts.body.attribute, robot.parts.arms.attribute, robot.parts.legs.attribute];
+             const newFoundDrops: string[] = [];
+
              for (let i = 0; i < actualCollections; i++) {
-                // Base drops: 3-5 per collection
-                let drops = Math.floor(Math.random() * 3) + 3;
+                // Base drops: 1-2 per collection (lowered for balance)
+                let drops = Math.floor(Math.random() * 2) + 1;
                 
-                // Bonus from stats
-                drops += Math.floor(robot.stats.power / 20); // +1 drop per 20 power
+                // Bonus from power (lowered)
+                drops += Math.floor(robot.stats.power / 60);
                 
-                if (loc.element === '水' && robot.attribute === '草') drops += 2;
-                if (loc.element === '草' && robot.attribute === '火') drops += 2;
+                if (loc.name.includes('火') && robotAttrs.includes('Water')) drops += 1;
+                if (loc.name.includes('水') && robotAttrs.includes('Earth')) drops += 1;
+                if (loc.name.includes('風') && robotAttrs.includes('Fire')) drops += 1;
 
-                totalDrops += drops;
-
-                // Add to inventory
+                // Add to pending drops
                 for (let j = 0; j < drops; j++) {
-                  const dropId = loc.drops[Math.floor(Math.random() * loc.drops?.length)];
-                  this.state.materials[dropId] = (this.state.materials[dropId] || 0) + 1;
+                  const dropId = loc.drops[Math.floor(Math.random() * loc.drops.length)];
+                  newFoundDrops.push(dropId);
+                  d.pendingDrops.push(dropId);
                 }
              }
 
-             if (totalDrops > 0) {
-               d.logs.push(`${actualCollections}回の探索で計${totalDrops}個の素材を回収しました。`);
+             if (newFoundDrops.length > 0) {
+               d.logs.push(`${actualCollections}回の自動探索で${newFoundDrops.length}個の素材を発見！(未回収: ${d.pendingDrops.length}個)`);
                // Keep only last 5 logs
-               if (d.logs?.length > 5) d.logs.shift();
+               if (d.logs.length > 5) d.logs.shift();
                changed = true;
              }
           }
@@ -204,6 +276,10 @@ export class GameEngine {
     if (this.state.activeQuest) return;
     const loc = LOCATIONS.find(l => l.id === locationId);
     if (!loc) return;
+
+    if (robotId && this.isRobotAutoDispatched(robotId)) {
+      throw new Error("このロボットは自動探索中です");
+    }
 
     let timeReduction = 0;
     if (robotId) {
@@ -352,32 +428,120 @@ export class GameEngine {
     return newRobot;
   }
 
+  public getUpdateTimes(rank: RequestRank, nowMs: number): { current: number; next: number } {
+    const date = new Date(nowMs);
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const day = date.getDate();
+
+    let slotHours: number[] = [];
+    if (rank === 'King') {
+      slotHours = [9]; // 9:00 every day (24h)
+    } else if (rank === 'Noble') {
+      slotHours = [9, 21]; // 9:00, 21:00 every day (12h)
+    } else {
+      slotHours = [3, 9, 15, 21]; // 3:00, 9:00, 15:00, 21:00 every day (6h)
+    }
+
+    // Generate candidate slot boundary timestamps around the current day
+    const candidateTimes: number[] = [];
+    for (let dOffset = -2; dOffset <= 2; dOffset++) {
+      for (const h of slotHours) {
+        candidateTimes.push(new Date(year, month, day + dOffset, h, 0, 0, 0).getTime());
+      }
+    }
+    candidateTimes.sort((a, b) => a - b);
+
+    let current = candidateTimes[0];
+    let next = candidateTimes[candidateTimes.length - 1];
+
+    for (let i = 0; i < candidateTimes.length - 1; i++) {
+      if (candidateTimes[i] <= nowMs && nowMs < candidateTimes[i + 1]) {
+        current = candidateTimes[i];
+        next = candidateTimes[i + 1];
+        break;
+      }
+    }
+
+    return { current, next };
+  }
+
   public update() {
     this.processAutoDispatches();
     const now = Date.now();
     let changed = false;
 
-    // Check available requests expiration (switch board every 1 day)
-    if (this.state.availableRequests?.length > 0 && now - this.state.lastRequestGeneratedAt > 24 * 60 * 60 * 1000) {
-      this.state.availableRequests = [];
-      changed = true;
+    // Check if in-progress request expired
+    if (this.state.currentRequest) {
+      const curTimes = this.getUpdateTimes(this.state.currentRequest.rank, now);
+      if (now >= this.state.currentRequest.deadline || now >= curTimes.next) {
+        // Expired automatically
+        this.state.currentRequest = null;
+        changed = true;
+      } else if (this.state.currentRequest.deadline !== curTimes.next) {
+        // Correct deadline to align with current slot
+        this.state.currentRequest.deadline = curTimes.next;
+        changed = true;
+      }
     }
 
-    // Check active request time limit
-    if (this.state.currentRequest && now > this.state.currentRequest.deadline) {
-      this.state.currentRequest = null;
-      changed = true;
+    if (!this.state.completedRequestDeadlines) {
+      this.state.completedRequestDeadlines = {};
+    }
+    if (!this.state.clientAffection) {
+      this.state.clientAffection = { King: 1, Noble: 1, OldMan: 1 };
     }
 
-    if (this.state.availableRequests?.length === 0 && !this.state.currentRequest) {
-      this.state.availableRequests = [
-        this.createRandomRequest('King'),
-        this.createRandomRequest('Noble'),
-        this.createRandomRequest('OldMan'),
-      ];
-      this.state.lastRequestGeneratedAt = now;
-      changed = true;
+    const ranks: RequestRank[] = ['King', 'Noble', 'OldMan'];
+    for (let i = 0; i < ranks.length; i++) {
+      const rank = ranks[i];
+      const times = this.getUpdateTimes(rank, now);
+
+      // 1. Clean up stale completed records
+      if (this.state.completedRequestDeadlines[rank]) {
+        if (this.state.completedRequestDeadlines[rank]! <= now || this.state.completedRequestDeadlines[rank] !== times.next) {
+          delete this.state.completedRequestDeadlines[rank];
+          changed = true;
+        }
+      }
+
+      // 2. If this rank is currently in progress
+      if (this.state.currentRequest && this.state.currentRequest.rank === rank) {
+        const dupIdx = this.state.availableRequests.findIndex(r => r.rank === rank);
+        if (dupIdx !== -1) {
+          this.state.availableRequests.splice(dupIdx, 1);
+          changed = true;
+        }
+        continue;
+      }
+
+      // 3. If this rank was already completed for this current slot
+      if (this.state.completedRequestDeadlines[rank] === times.next) {
+        const dupIdx = this.state.availableRequests.findIndex(r => r.rank === rank);
+        if (dupIdx !== -1) {
+          this.state.availableRequests.splice(dupIdx, 1);
+          changed = true;
+        }
+        continue;
+      }
+
+      // 4. Ensure an active available request exists with exact deadline = times.next
+      const existingIdx = this.state.availableRequests.findIndex(r => r.rank === rank);
+      if (existingIdx !== -1) {
+        const existing = this.state.availableRequests[existingIdx];
+        if (existing.deadline <= now || existing.deadline !== times.next) {
+          this.state.availableRequests[existingIdx] = this.createRandomRequest(rank, times.next);
+          changed = true;
+        }
+      } else {
+        this.state.availableRequests.push(this.createRandomRequest(rank, times.next));
+        changed = true;
+      }
     }
+
+    // Sort availableRequests consistently: King -> Noble -> OldMan
+    const rankOrder: Record<RequestRank, number> = { King: 0, Noble: 1, OldMan: 2 };
+    this.state.availableRequests.sort((a, b) => rankOrder[a.rank] - rankOrder[b.rank]);
 
     if (changed) {
       this.saveState();
@@ -389,7 +553,7 @@ export class GameEngine {
     this.update();
   }
 
-  private createRandomRequest(rank: RequestRank): ClientRequest {
+  private createRandomRequest(rank: RequestRank, deadline: number): ClientRequest {
     const stats = ['hp', 'power', 'defense', 'agility', 'dexterity'] as const;
     const statLabels: Record<string, string> = { hp: '体力', power: 'パワー', defense: 'ディフェンス', agility: 'アジリティ', dexterity: '器用さ' };
     const randStat = stats[Math.floor(Math.random() * stats.length)];
@@ -405,7 +569,7 @@ export class GameEngine {
         description: `${attrLabels[randAttr]}属性で、${statLabels[randStat]}が50以上のロボを納品せよ`,
         requirements: { attribute: randAttr, statType: randStat, minStatValue: 50 },
         rewardG: 500,
-        deadline: Date.now() + 24 * 60 * 60 * 1000 // 1 day
+        deadline
       };
     } else if (rank === 'Noble') {
       return {
@@ -415,7 +579,7 @@ export class GameEngine {
         description: `${attrLabels[randAttr]}属性で、${statLabels[randStat]}が30以上のロボを納品せよ`,
         requirements: { attribute: randAttr, statType: randStat, minStatValue: 30 },
         rewardG: 300,
-        deadline: Date.now() + 24 * 60 * 60 * 1000 // 1 day
+        deadline
       };
     } else {
       return {
@@ -425,7 +589,7 @@ export class GameEngine {
         description: `属性なんでも良いから、${statLabels[randStat]}が10以上のロボを頼む`,
         requirements: { statType: randStat, minStatValue: 10 },
         rewardG: 100,
-        deadline: Date.now() + 24 * 60 * 60 * 1000 // 1 day
+        deadline
       };
     }
   }
@@ -434,16 +598,22 @@ export class GameEngine {
     const req = this.state.availableRequests.find(r => r.id === reqId);
     if (!req) return;
     this.state.currentRequest = req;
-    // Set time limit for accepted request (1~3 days)
-    const days = Math.floor(Math.random() * 3) + 1;
-    this.state.currentRequest.deadline = Date.now() + days * 24 * 60 * 60 * 1000;
-    this.state.availableRequests = []; // Clear others
+    this.state.availableRequests = this.state.availableRequests.filter(r => r.id !== reqId);
     if (this.state.tutorialStep === 3) this.advanceTutorial();
     this.saveState();
   }
 
   public cancelRequest() {
+    if (!this.state.currentRequest) return;
+    const rank = this.state.currentRequest.rank;
+    
+    if (this.state.clientAffection) {
+        this.state.clientAffection[rank] = Math.max(1, (this.state.clientAffection[rank] || 1) - 1);
+    }
+    
+    this.state.availableRequests.push(this.state.currentRequest);
     this.state.currentRequest = null;
+    
     this.generateRequestsIfNeeded();
     this.saveState();
   }
@@ -470,7 +640,22 @@ export class GameEngine {
     }
 
     // Success
-    this.state.gold += req.rewardG;
+    
+    let rewardG = req.rewardG;
+    if (this.state.clientAffection) {
+        this.state.clientAffection[req.rank] = Math.min(10, (this.state.clientAffection[req.rank] || 1) + 1);
+        if (this.state.clientAffection[req.rank] === 10) {
+            rewardG = Math.floor(rewardG * 1.5);
+        }
+    }
+    
+    if (!this.state.completedRequestDeadlines) {
+        this.state.completedRequestDeadlines = {};
+    }
+    this.state.completedRequestDeadlines[req.rank] = req.deadline;
+
+    this.state.gold += rewardG;
+
     this.state.deliveredLogs.push({
       id: robot.id,
       name: robot.name,

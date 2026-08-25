@@ -79,37 +79,76 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
             <p className="text-center text-stone-500 py-8">ロボットがいません</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {state.robots.map((r, idx) => (
-                <Card key={`${r.id}-${idx}`} className="relative pt-6">
-                  <div className="absolute top-2 right-2 flex gap-1">
-                    <Button size="sm" variant="secondary" onClick={() => handleShare(r.name)}>Share</Button>
-                  </div>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className={theme.typography.h3}>{r.name}</h3>
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 text-sm text-stone-600">
-                        <span>HP: {r.stats.hp}</span>
-                        <span>Pow: {r.stats.power}</span>
-                        <span>Def: {r.stats.defense}</span>
-                        <span>Agi: {r.stats.agility}</span>
-                        <span>Dex: {r.stats.dexterity}</span>
+              {state.robots.map((r, idx) => {
+                const isAutoDispatched = state.autoDispatches?.some(d => d.robotId === r.id);
+                const isQuesting = state.activeQuest?.dispatchedRobotId === r.id;
+
+                return (
+                  <Card key={`${r.id}-${idx}`} className="relative p-4">
+                    <div className="flex justify-between items-start gap-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <h3 className={theme.typography.h3}>{r.name}</h3>
+                          {isQuesting && (
+                            <span className="text-[10px] bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded font-bold border border-blue-200">
+                              遠征中
+                            </span>
+                          )}
+                          {isAutoDispatched && (
+                            <span className="text-[10px] bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded font-bold border border-purple-200">
+                              自動探索中
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 mt-1 text-xs text-stone-600 font-mono">
+                          <span>HP: {r.stats.hp}</span>
+                          <span>Pow: {r.stats.power}</span>
+                          <span>Def: {r.stats.defense}</span>
+                          <span>Agi: {r.stats.agility}</span>
+                          <span>Dex: {r.stats.dexterity}</span>
+                        </div>
+
+                        <p className="mt-1.5 text-xs font-bold text-amber-700">価値: {r.value} G</p>
+
+                        {/* 左側のスペースに配置したシェアボタン */}
+                        <div className="mt-2.5 flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleShare(r.name)}
+                            className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded border border-stone-300 transition"
+                          >
+                            <span>𝕏</span>
+                            <span>シェア</span>
+                          </button>
+                        </div>
                       </div>
-                      <p className="mt-2 font-bold text-amber-700">価値: {r.value} G</p>
+
+                      <div className="flex-shrink-0 bg-stone-50 p-1.5 rounded-lg border border-stone-200">
+                        <RobotVisual robot={r} size={84} />
+                      </div>
                     </div>
-                    <RobotVisual robot={r} size={80} />
-                  </div>
-                  <div className="mt-4 flex justify-end">
-                    {confirmRobotId === r.id ? (
-                      <div className="flex gap-2">
-                        <Button size="sm" variant="secondary" onClick={() => setConfirmRobotId(null)}>キャンセル</Button>
-                        <Button size="sm" variant="danger" onClick={() => { engine.disassembleRobot(r.id); setConfirmRobotId(null); }}>解体実行</Button>
-                      </div>
-                    ) : (
-                      <Button size="sm" variant="danger" onClick={() => setConfirmRobotId(r.id)}>解体する</Button>
-                    )}
-                  </div>
-                </Card>
-              ))}
+
+                    <div className="mt-3 pt-2 border-t border-stone-200 flex justify-end items-center">
+                      {confirmRobotId === r.id ? (
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="secondary" onClick={() => setConfirmRobotId(null)}>キャンセル</Button>
+                          <Button size="sm" variant="danger" onClick={() => { engine.disassembleRobot(r.id); setConfirmRobotId(null); }}>解体実行</Button>
+                        </div>
+                      ) : (
+                        <Button 
+                          size="sm" 
+                          variant="danger" 
+                          disabled={isQuesting || isAutoDispatched}
+                          onClick={() => setConfirmRobotId(r.id)}
+                        >
+                          {isQuesting || isAutoDispatched ? '出撃中のため解体不可' : '解体する'}
+                        </Button>
+                      )}
+                    </div>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </>

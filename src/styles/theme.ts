@@ -41,6 +41,7 @@ export const theme = {
     h1: "text-2xl font-bold font-['DotGothic16',_sans-serif]",
     h2: "text-xl font-bold font-['DotGothic16',_sans-serif]",
     h3: "text-lg font-bold font-['DotGothic16',_sans-serif]",
+    h4: "text-base font-bold font-['DotGothic16',_sans-serif]",
     body: "text-base font-['DotGothic16',_sans-serif]",
     small: "text-xs font-['DotGothic16',_sans-serif]",
   }

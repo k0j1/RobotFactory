@@ -82,6 +82,7 @@ export interface AutoDispatch {
   dispatchedAt: number;
   lastCollectedAt: number;
   logs: string[];
+  pendingDrops?: string[];
 }
 
 export interface GameState {
@@ -102,4 +103,6 @@ export interface GameState {
   currentInterior: string;
   autoDispatches: AutoDispatch[];
   seenTutorials: string[];
+  clientAffection?: { King: number; Noble: number; OldMan: number };
+  completedRequestDeadlines?: { King?: number; Noble?: number; OldMan?: number };
 }

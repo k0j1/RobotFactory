@@ -37,7 +37,7 @@ export default function App() {
   const interiorBg = currentInteriorData ? currentInteriorData.bgClass : undefined;
 
   return (
-    <Layout activeView={view} onNavigate={setView} interiorBg={interiorBg}>
+    <Layout activeView={view} onNavigate={setView} interiorBg={interiorBg} state={state}>
       {view === 'dashboard' && <Dashboard state={state} engine={engine} onNavigate={setView} />}
       {view === 'quest' && <QuestScreen state={state} engine={engine} />}
       {view === 'craft' && <CraftScreen state={state} engine={engine} />}

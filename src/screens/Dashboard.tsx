@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { GameState, AttributeNames } from '../core/models';
 import { GameEngine } from '../core/GameEngine';
 import { Card, Button, Badge } from '../components/ui/core';
+import { RobotVisual } from '../components/robot/RobotVisual';
 import { theme } from '../styles/theme';
 import { LOCATIONS, MATERIALS } from '../core/data';
 import { MaterialIcon } from '../components/ui/MaterialIcon';
@@ -12,29 +13,73 @@ import confetti from 'canvas-confetti';
 const formatTime = (ms: number) => {
   if (ms <= 0) return '00:00';
   const totalSec = Math.ceil(ms / 1000);
-  const m = Math.floor(totalSec / 60);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
   const s = totalSec % 60;
+  if (h > 0) return `${h}時間${m}分`;
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 };
 
 export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavigate: (v: string) => void }> = ({ state, engine, onNavigate }) => {
-    const [questResult, setQuestResult] = useState<{success: boolean, drops: string[]} | null>(null);
+  const [lootResult, setLootResult] = useState<{ title: string; subtitle?: string; drops: string[]; type: 'quest' | 'auto_dispatch' } | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
   const [isDispatchModalOpen, setIsDispatchModalOpen] = useState(false);
   const [selectedLocationId, setSelectedLocationId] = useState<string>('');
   const [selectedRobotId, setSelectedRobotId] = useState<string>('');
 
+  const triggerConfetti = () => {
+    confetti({
+      particleCount: 150,
+      spread: 80,
+      origin: { y: 0.6 },
+      colors: ['#f59e0b', '#10b981', '#3b82f6', '#ec4899', '#8b5cf6']
+    });
+  };
 
   const handleCompleteQuest = () => {
     const result = engine.completeQuest();
     if (result) {
-      setQuestResult(result);
-      confetti({
-        particleCount: 150,
-        spread: 80,
-        origin: { y: 0.6 },
-        colors: ['#f59e0b', '#10b981', '#3b82f6', '#ec4899', '#8b5cf6']
+      setLootResult({
+        title: '🎉 遠征成功！ 🎉',
+        subtitle: '以下の素材を獲得しました！',
+        drops: result.drops,
+        type: 'quest'
       });
+      triggerConfetti();
+    }
+  };
+
+  const handleClaimAutoDispatch = (dispatchId: string) => {
+    try {
+      const res = engine.claimAutoDispatch(dispatchId);
+      if (res && res.drops.length > 0) {
+        setLootResult({
+          title: '🤖 自動探索 素材回収！',
+          subtitle: `${res.robotName} が ${res.locationName} で見つけた素材を獲得しました！`,
+          drops: res.drops,
+          type: 'auto_dispatch'
+        });
+        triggerConfetti();
+      }
+    } catch (e: any) {
+      alert(e.message || '素材の回収に失敗しました');
+    }
+  };
+
+  const handleClaimAllAutoDispatches = () => {
+    try {
+      const res = engine.claimAllAutoDispatches();
+      if (res && res.drops.length > 0) {
+        setLootResult({
+          title: '🤖 自動探索 一括回収！',
+          subtitle: '派遣中のロボットたちが探索した素材を一括回収しました！',
+          drops: res.drops,
+          type: 'auto_dispatch'
+        });
+        triggerConfetti();
+      }
+    } catch (e: any) {
+      alert(e.message || '素材の回収に失敗しました');
     }
   };
 
@@ -42,13 +87,19 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
     setIsAnimating(true);
     setTimeout(() => {
       setIsAnimating(false);
-      setQuestResult(null);
+      setLootResult(null);
     }, 2000);
   };
 
   const activeQuestLoc = state.activeQuest ? LOCATIONS.find(l => l.id === state.activeQuest?.locationId) : null;
+  const questRobot = state.activeQuest?.dispatchedRobotId 
+    ? state.robots.find(r => r.id === state.activeQuest?.dispatchedRobotId) 
+    : null;
   const timeRemaining = state.activeQuest ? state.activeQuest.endTime - Date.now() : 0;
   const questDone = timeRemaining <= 0;
+  const selectedModalRobot = state.robots.find(r => r.id === selectedRobotId);
+
+  const totalAutoPendingDrops = state.autoDispatches?.reduce((acc, d) => acc + (d.pendingDrops?.length || 0), 0) || 0;
 
   return (
     <div className="space-y-6">
@@ -98,6 +149,150 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
         </Button>
       </div>
 
+      {/* Dispatch Status & Quick Log Panel */}
+      <Card className="bg-stone-50 border-2 border-stone-300">
+        <div className="flex justify-between items-center mb-3 border-b border-stone-200 pb-2 flex-wrap gap-2">
+          <div className="flex items-center gap-2">
+            <span className="text-xl">📡</span>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className={theme.typography.h3}>出撃状況・探索ログパネル</h3>
+                {(questDone || totalAutoPendingDrops > 0) && (
+                  <span className="bg-emerald-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-full animate-bounce shadow">
+                    {questDone && totalAutoPendingDrops > 0 ? '🎉 遠征完了 & 素材受取可能！' : questDone ? '🎉 遠征帰還！' : `📦 素材受取可能 (${totalAutoPendingDrops}個)`}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-stone-500">遠征および自動探索中のロボットの現在ステータスとログ</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {totalAutoPendingDrops > 0 && (
+              <Button size="sm" variant="success" onClick={handleClaimAllAutoDispatches} className="animate-pulse shadow-sm">
+                自動探索を一括回収 ({totalAutoPendingDrops}個)
+              </Button>
+            )}
+            <span className="flex h-2.5 w-2.5 relative">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+            </span>
+          </div>
+        </div>
+
+        {/* List of all active dispatches & quest */}
+        {!state.activeQuest && (!state.autoDispatches || state.autoDispatches.length === 0) ? (
+          <div className="text-center py-4 bg-white rounded-lg border border-dashed border-stone-300">
+            <p className="text-stone-500 text-sm">現在、出撃中のロボットはいません。</p>
+            <p className="text-xs text-stone-400 mt-1">「遠征」へ出発するか、下の「自動探索」でロボットを派遣してみましょう。</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {/* Active Quest Quick Row */}
+            {state.activeQuest && (
+              <div className={`bg-white p-3 rounded-lg border shadow-sm flex items-center justify-between gap-3 ${questDone ? 'border-emerald-400 ring-2 ring-emerald-200' : 'border-amber-200'}`}>
+                <div className="flex items-center gap-3">
+                  <div className="p-1.5 bg-amber-50 rounded border border-amber-200 flex-shrink-0">
+                    {questRobot ? (
+                      <RobotVisual robot={questRobot} size={40} />
+                    ) : (
+                      <span className="text-2xl">🎒</span>
+                    )}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-xs bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded border border-amber-200">
+                        通常遠征
+                      </span>
+                      <span className="font-bold text-sm text-stone-800">{activeQuestLoc?.name}</span>
+                      {questDone && (
+                        <span className="text-[10px] bg-emerald-500 text-white font-bold px-1.5 py-0.5 rounded-full animate-pulse">
+                          受取可能
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-stone-600 mt-0.5">
+                      同行: {questRobot ? questRobot.name : 'なし'}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  {questDone ? (
+                    <Button size="sm" variant="success" onClick={handleCompleteQuest} className="shadow animate-bounce">
+                      素材を受け取る
+                    </Button>
+                  ) : (
+                    <div>
+                      <span className="text-xs text-stone-500 block">残り時間</span>
+                      <span className="text-sm font-bold font-mono text-amber-700">{formatTime(timeRemaining)}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Auto Dispatches Quick Rows */}
+            {state.autoDispatches?.map(d => {
+              const dRobot = state.robots.find(r => r.id === d.robotId);
+              const dLoc = LOCATIONS.find(l => l.id === d.locationId);
+              const nextTime = d.lastCollectedAt + 10 * 60 * 1000;
+              const remain = Math.max(0, nextTime - Date.now());
+              const pending = d.pendingDrops?.length || 0;
+              const latestLog = d.logs && d.logs.length > 0 ? d.logs[d.logs.length - 1] : '探索開始しました';
+
+              return (
+                <div key={`quick-auto-${d.id}`} className={`bg-white p-3 rounded-lg border shadow-sm space-y-2 ${pending > 0 ? 'border-emerald-300 ring-1 ring-emerald-200' : 'border-stone-200'}`}>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="p-1 bg-purple-50 rounded border border-purple-200 flex-shrink-0">
+                        {dRobot ? <RobotVisual robot={dRobot} size={40} /> : <span className="text-2xl">🤖</span>}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-xs bg-purple-100 text-purple-900 px-1.5 py-0.5 rounded border border-purple-200">
+                            自動探索
+                          </span>
+                          <span className="font-bold text-sm text-stone-800">{dRobot?.name || 'ロボット'}</span>
+                          {pending > 0 && (
+                            <span className="text-[10px] bg-emerald-500 text-white font-bold px-1.5 py-0.5 rounded-full animate-pulse">
+                              受取可
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-stone-500 mt-0.5">
+                          探索場所: <span className="font-bold text-stone-700">{dLoc?.name}</span>
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      {pending > 0 ? (
+                        <Button 
+                          size="sm" 
+                          variant="success" 
+                          onClick={() => handleClaimAutoDispatch(d.id)}
+                          className="shadow-sm font-bold"
+                        >
+                          回収 ({pending}個)
+                        </Button>
+                      ) : (
+                        <div>
+                          <span className="text-[10px] text-stone-400 block">次回素材発見</span>
+                          <span className="text-xs font-bold font-mono text-purple-700">{formatTime(remain)}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Latest Log Snippet */}
+                  <div className="bg-stone-50 px-2.5 py-1.5 rounded text-[11px] font-mono text-stone-600 border border-stone-200 flex items-center justify-between">
+                    <span className="truncate flex-1">📝 最新ログ: {latestLog}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Card>
+
       {/* Active Quest */}
       <h2 className={`${theme.typography.h2} border-b-2 ${theme.colors.border} pb-2`}>現在の状況</h2>
       
@@ -111,6 +306,26 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
               <Badge className="bg-amber-100 text-amber-800">探索中...</Badge>
             )}
           </div>
+
+          {/* 連れて行っているロボットのビジュアル表示 */}
+          {questRobot ? (
+            <div className="flex items-center justify-between bg-stone-50 p-3 rounded-lg border border-stone-200 my-3">
+              <div>
+                <p className="text-xs text-stone-500 font-bold">連れて行っているロボット</p>
+                <p className="font-bold text-stone-800 text-sm mt-0.5">{questRobot.name}</p>
+                <div className="flex gap-2 mt-1 text-xs text-stone-600 font-mono">
+                  <span>Pow: {questRobot.stats.power}</span>
+                  <span>Agi: {questRobot.stats.agility}</span>
+                </div>
+              </div>
+              <div className="bg-white p-1 rounded border border-stone-200">
+                <RobotVisual robot={questRobot} size={60} />
+              </div>
+            </div>
+          ) : (
+            <p className="text-xs text-stone-500 my-2 italic">※ロボット同行なし</p>
+          )}
+
           {!questDone && <p className="text-2xl text-center my-4 font-mono">{formatTime(timeRemaining)}</p>}
           <Button 
             className="w-full mt-4" 
@@ -146,11 +361,21 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
         </Card>
       )}
 
-            {/* Auto Dispatches */}
+      {/* Auto Dispatches */}
       <Card className="bg-stone-50 border-2 border-stone-200">
-        <div className="flex justify-between items-center mb-4 border-b border-stone-300 pb-2">
-          <h3 className={theme.typography.h3}>自動探索ロボット</h3>
-          <Button size="sm" onClick={() => setIsDispatchModalOpen(true)}>派遣する</Button>
+        <div className="flex justify-between items-center mb-4 border-b border-stone-300 pb-2 flex-wrap gap-2">
+          <div>
+            <h3 className={theme.typography.h3}>自動探索ロボット</h3>
+            <p className="text-xs text-stone-500">10分ごとに素材を発見・蓄積します（要回収）</p>
+          </div>
+          <div className="flex items-center gap-2">
+            {totalAutoPendingDrops > 0 && (
+              <Button size="sm" variant="success" onClick={handleClaimAllAutoDispatches}>
+                全回収 ({totalAutoPendingDrops}個)
+              </Button>
+            )}
+            <Button size="sm" onClick={() => setIsDispatchModalOpen(true)}>派遣する</Button>
+          </div>
         </div>
         {(!state.autoDispatches || state.autoDispatches?.length === 0) ? (
           <p className="text-sm text-stone-500 text-center py-4">現在、自動探索中のロボットはいません。</p>
@@ -159,22 +384,70 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
             {state.autoDispatches.map(dispatch => {
               const loc = LOCATIONS.find(l => l.id === dispatch.locationId);
               const robot = state.robots.find(r => r.id === dispatch.robotId);
+              const pendingCount = dispatch.pendingDrops?.length || 0;
+              
+              // 10分インターバル計算
+              const nextTime = dispatch.lastCollectedAt + 10 * 60 * 1000;
+              const remainToNext = Math.max(0, nextTime - Date.now());
+
               return (
                 <div key={dispatch.id} className="bg-white border border-stone-200 p-3 rounded-md shadow-sm">
-                  <div className="flex justify-between items-center mb-2">
-                    <p className="font-bold text-stone-700">
-                      {robot?.name || '不明なロボット'} <span className="text-xs text-stone-500 font-normal">in {loc?.name}</span>
-                    </p>
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex items-center gap-3">
+                      {robot && (
+                        <div className="bg-stone-50 p-1 rounded border border-stone-200 flex-shrink-0">
+                          <RobotVisual robot={robot} size={52} />
+                        </div>
+                      )}
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-bold text-stone-800 text-sm">
+                            {robot?.name || '不明なロボット'}
+                          </p>
+                          {pendingCount > 0 ? (
+                            <span className="text-[11px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold border border-emerald-300 animate-pulse">
+                              未回収: {pendingCount}個
+                            </span>
+                          ) : (
+                            <span className="text-[11px] bg-stone-100 text-stone-600 px-2 py-0.5 rounded-full font-medium">
+                              探索中...
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-stone-500 mt-0.5">
+                          探索場所: <span className="font-bold text-stone-700">{loc?.name}</span>
+                        </p>
+                        <p className="text-[11px] text-stone-500 font-mono mt-0.5">
+                          次回到着まで: {formatTime(remainToNext)}
+                        </p>
+                      </div>
+                    </div>
                     <Button size="sm" variant="danger" onClick={() => engine.cancelAutoDispatch(dispatch.id)}>帰還</Button>
                   </div>
+
+                  {/* 回収アクションエリア */}
+                  <div className="mt-2.5 pt-2 border-t border-stone-100 flex items-center justify-between gap-2">
+                    <span className="text-xs text-stone-600 font-sans">
+                      {pendingCount > 0 ? `📦 ${pendingCount}個の素材が回収可能です！` : '⏳ 素材の発見を待機中...'}
+                    </span>
+                    <Button
+                      size="sm"
+                      variant={pendingCount > 0 ? 'success' : 'secondary'}
+                      disabled={pendingCount === 0}
+                      onClick={() => handleClaimAutoDispatch(dispatch.id)}
+                    >
+                      {pendingCount > 0 ? `素材を回収する (${pendingCount}個)` : '素材なし'}
+                    </Button>
+                  </div>
+
                   {dispatch.logs?.length > 0 ? (
-                    <div className="bg-stone-100 p-2 rounded text-xs text-stone-600 font-mono space-y-1">
+                    <div className="bg-stone-100 p-2 rounded text-xs text-stone-600 font-mono space-y-1 mt-2">
                       {dispatch.logs.map((log, idx) => (
                         <p key={idx}>- {log}</p>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-xs text-stone-500 italic">まだ素材を回収していません...</p>
+                    <p className="text-xs text-stone-500 italic mt-2">まだ素材を回収していません（10分ごとに素材を発見）...</p>
                   )}
                 </div>
               );
@@ -192,7 +465,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
             <div className="mb-4">
               <label className="block text-sm font-bold mb-1">派遣先</label>
               <select 
-                className="w-full p-2 border border-stone-300 rounded"
+                className="w-full p-2 border border-stone-300 rounded bg-white"
                 value={selectedLocationId}
                 onChange={e => setSelectedLocationId(e.target.value)}
               >
@@ -204,22 +477,35 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
               </select>
             </div>
 
-            <div className="mb-6">
+            <div className="mb-4">
               <label className="block text-sm font-bold mb-1">派遣するロボット</label>
               <select 
-                className="w-full p-2 border border-stone-300 rounded"
+                className="w-full p-2 border border-stone-300 rounded bg-white"
                 value={selectedRobotId}
                 onChange={e => setSelectedRobotId(e.target.value)}
               >
                 <option value="">選択してください</option>
                 {state.robots
                   .filter(r => !state.autoDispatches?.some(d => d.robotId === r.id))
-                  .filter(r => state.activeQuest?.robotId !== r.id)
+                  .filter(r => state.activeQuest?.dispatchedRobotId !== r.id)
                   .map(r => (
                   <option key={r.id} value={r.id}>{r.name} (パワー: {r.stats.power})</option>
                 ))}
               </select>
             </div>
+
+            {/* Selected Robot Preview in Modal */}
+            {selectedModalRobot && (
+              <div className="mb-4 p-2 bg-white rounded border border-stone-200 flex items-center justify-between">
+                <div>
+                  <p className="font-bold text-xs text-stone-700">{selectedModalRobot.name}</p>
+                  <p className="text-[10px] text-stone-500">パワー: {selectedModalRobot.stats.power} / 敏捷: {selectedModalRobot.stats.agility}</p>
+                </div>
+                <div className="bg-stone-50 p-1 rounded border border-stone-200">
+                  <RobotVisual robot={selectedModalRobot} size={48} />
+                </div>
+              </div>
+            )}
 
             <div className="flex gap-2">
               <Button 
@@ -246,9 +532,9 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
       )}
 
 
-      {/* Quest Result Modal */}
+      {/* Loot Result Modal (Quest & Auto Dispatch) */}
       <AnimatePresence>
-      {questResult && !isAnimating && (
+      {lootResult && !isAnimating && (
         <motion.div 
           initial={{ opacity: 0 }} 
           animate={{ opacity: 1 }} 
@@ -276,32 +562,34 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                   initial={{ y: -20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.2 }}
-                  className={`${theme.typography.h2} mb-4 text-emerald-500 drop-shadow-md text-3xl`}
+                  className={`${theme.typography.h2} mb-2 text-emerald-600 drop-shadow-md text-2xl sm:text-3xl`}
                   style={{ textShadow: '0 0 10px rgba(16, 185, 129, 0.5)' }}
                 >
-                  🎉 遠征成功！ 🎉
+                  {lootResult.title}
                 </motion.h2>
                 
-                <motion.p 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.4 }}
-                  className="mb-4 font-bold text-stone-700"
-                >
-                  以下の素材を獲得しました！
-                </motion.p>
+                {lootResult.subtitle && (
+                  <motion.p 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.3 }}
+                    className="mb-4 font-bold text-xs sm:text-sm text-stone-700"
+                  >
+                    {lootResult.subtitle}
+                  </motion.p>
+                )}
                 
-                <div className="flex flex-wrap justify-center gap-3 mb-6 max-h-64 overflow-y-auto p-4 bg-stone-100 rounded-lg shadow-inner">
-                  {questResult.drops.map((dropId, i) => {
+                <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-6 max-h-64 overflow-y-auto p-4 bg-stone-100 rounded-lg shadow-inner">
+                  {lootResult.drops.map((dropId, i) => {
                     const mat = MATERIALS.find(m => m.id === dropId);
                     return (
                       <motion.div
                         key={i}
                         initial={{ scale: 0, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
-                        transition={{ delay: 0.5 + (i * 0.05), type: "spring", stiffness: 300 }}
+                        transition={{ delay: 0.4 + (i * 0.04), type: "spring", stiffness: 300 }}
                       >
-                        <Badge className="bg-white text-stone-800 border-2 border-emerald-200 p-2 text-sm flex items-center gap-2 shadow-sm">
+                        <Badge className="bg-white text-stone-800 border-2 border-emerald-200 p-2 text-xs sm:text-sm flex items-center gap-1.5 shadow-sm">
                           <MaterialIcon materialId={mat?.id || ''} />
                           <span className="font-bold">{mat?.name}</span>
                         </Badge>
@@ -313,10 +601,10 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                 <motion.div
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 1.0 }}
+                  transition={{ delay: 0.8 }}
                 >
-                  <Button onClick={handleCloseModal} className="w-full text-lg shadow-lg hover:shadow-xl transition-shadow" size="lg" variant="success">
-                    アイテムを回収する
+                  <Button onClick={handleCloseModal} className="w-full text-base sm:text-lg shadow-lg hover:shadow-xl transition-shadow" size="lg" variant="success">
+                    アイテムを倉庫へ格納する
                   </Button>
                 </motion.div>
               </div>
@@ -328,17 +616,15 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
       
       {/* Particle Animation */}
       <AnimatePresence>
-        {isAnimating && questResult && (
+        {isAnimating && lootResult && (
           <div className="fixed inset-0 pointer-events-none z-[100] overflow-hidden">
-            {questResult.drops.map((dropId, i) => {
+            {lootResult.drops.map((dropId, i) => {
               const mat = MATERIALS.find(m => m.id === dropId);
               const angle = Math.random() * Math.PI * 2;
               const radius = Math.random() * 80 + 20;
               const initialX = Math.cos(angle) * radius;
               const initialY = Math.sin(angle) * radius - 50;
               
-              // Target coordinates (storage button is approx bottom right, constrained by max-w-4xl)
-              // max-w-4xl is 896px.
               const targetX = window.innerWidth / 2 + Math.min(window.innerWidth / 2, 448) * 0.8;
               const targetY = window.innerHeight - 30;
 

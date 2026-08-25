@@ -158,7 +158,12 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
           <div className="flex justify-center my-4">
             <PartVisual part={lastCraftedPart} size={96} />
           </div>
-          <h4 className={`${theme.typography.h2} mt-4`}>{lastCraftedPart.name}</h4>
+          <div className="flex items-center justify-center gap-2 mt-2">
+            <h4 className={theme.typography.h2}>{lastCraftedPart.name}</h4>
+            <span className="font-bold text-amber-600 bg-amber-100 px-2 py-0.5 rounded text-sm border border-amber-300">
+              {'★'.repeat(lastCraftedPart.rarity || 1)} ({`★${lastCraftedPart.rarity || 1}`})
+            </span>
+          </div>
           <p className="mt-2 text-stone-600">属性: {lastCraftedPart.attribute}</p>
           <div className="flex justify-center gap-4 mt-2 text-sm">
             <span>HP: {lastCraftedPart.stats.hp}</span>
@@ -201,7 +206,9 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
 
           <div className="space-y-4">
             <div>
-              <h4 className="font-bold text-stone-700 mb-2">メイン素材 (3個消費) - 属性とベース性能を決定</h4>
+              <div className="flex justify-between items-center mb-2">
+                <h4 className="font-bold text-stone-700">メイン素材 (3個消費) - 属性・レア度とベース性能を決定</h4>
+              </div>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                 {availableMainMats?.length === 0 && <p className="text-stone-500 col-span-full">3個以上ある素材がありません。</p>}
                 
@@ -212,7 +219,7 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                     <button 
                       key={`main-${mat.id}`}
                       onClick={() => setSelectedMainMat(mat.id)}
-                      className={`text-left p-3 border-2 ${theme.radius.md} transition-all ${isSelected ? 'border-amber-500 bg-amber-50' : 'border-stone-300 bg-white hover:border-stone-400'}`}
+                      className={`text-left p-3 border-2 ${theme.radius.md} transition-all ${isSelected ? 'border-amber-500 bg-amber-50 shadow-sm' : 'border-stone-300 bg-white hover:border-stone-400'}`}
                     >
                       <div className="flex justify-between items-center mb-1">
                         <span className="font-bold text-sm flex items-center gap-1">
@@ -221,7 +228,12 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                         </span>
                         <Badge className="bg-stone-200">x{count}</Badge>
                       </div>
-                      <p className="text-xs text-stone-500">属性: {mat.attribute}</p>
+                      <div className="flex justify-between items-center mt-1 text-xs">
+                        <span className="text-stone-500">属性: {mat.attribute}</span>
+                        <span className="font-bold text-amber-700 bg-amber-100/80 px-1.5 py-0.2 rounded border border-amber-200">
+                          {'★'.repeat(mat.rarity)} (★{mat.rarity})
+                        </span>
+                      </div>
                     </button>
                   );
                 })}
@@ -229,7 +241,9 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
             </div>
 
             <div>
-              <h4 className="font-bold text-stone-700 mb-2">サブ素材 (2個消費) - 追加性能を決定</h4>
+              <div className="flex justify-between items-center mb-2">
+                <h4 className="font-bold text-stone-700">サブ素材 (2個消費) - 追加性能を決定</h4>
+              </div>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                 {availableSubMats?.length === 0 && <p className="text-stone-500 col-span-full">2個以上ある素材がありません。</p>}
                 
@@ -243,7 +257,7 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                     <button 
                       key={`sub-${mat.id}`}
                       onClick={() => setSelectedSubMat(mat.id)}
-                      className={`text-left p-3 border-2 ${theme.radius.md} transition-all ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-stone-300 bg-white hover:border-stone-400'}`}
+                      className={`text-left p-3 border-2 ${theme.radius.md} transition-all ${isSelected ? 'border-blue-500 bg-blue-50 shadow-sm' : 'border-stone-300 bg-white hover:border-stone-400'}`}
                     >
                       <div className="flex justify-between items-center mb-1">
                         <span className="font-bold text-sm flex items-center gap-1">
@@ -252,7 +266,12 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                         </span>
                         <Badge className="bg-stone-200">x{count}</Badge>
                       </div>
-                      <p className="text-xs text-stone-500">属性: {mat.attribute}</p>
+                      <div className="flex justify-between items-center mt-1 text-xs">
+                        <span className="text-stone-500">属性: {mat.attribute}</span>
+                        <span className="font-bold text-amber-700 bg-amber-100/80 px-1.5 py-0.2 rounded border border-amber-200">
+                          {'★'.repeat(mat.rarity)} (★{mat.rarity})
+                        </span>
+                      </div>
                     </button>
                   );
                 })}
@@ -305,48 +324,64 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
             <div className="flex flex-col gap-1">
               <label className="text-sm font-bold text-stone-700">ヘッド</label>
               <select 
-                className="p-2 border border-stone-300 rounded-md bg-white"
+                className="p-2 border border-stone-300 rounded-md bg-white text-sm"
                 value={selectedHead}
                 onChange={e => setSelectedHead(e.target.value)}
               >
                 <option value="">選択してください</option>
-                {heads.map((p, idx) => <option key={`${p.id}-${idx}`} value={p.id}>{p.name} (HP:{p.stats.hp} 属性:{p.attribute})</option>)}
+                {heads.map((p, idx) => (
+                  <option key={`${p.id}-${idx}`} value={p.id}>
+                    {p.name} (★{p.rarity || 1} HP:{p.stats.hp} 属性:{p.attribute})
+                  </option>
+                ))}
               </select>
             </div>
             
             <div className="flex flex-col gap-1">
               <label className="text-sm font-bold text-stone-700">ボディ</label>
               <select 
-                className="p-2 border border-stone-300 rounded-md bg-white"
+                className="p-2 border border-stone-300 rounded-md bg-white text-sm"
                 value={selectedBody}
                 onChange={e => setSelectedBody(e.target.value)}
               >
                 <option value="">選択してください</option>
-                {bodies.map((p, idx) => <option key={`${p.id}-${idx}`} value={p.id}>{p.name} (HP:{p.stats.hp} 属性:{p.attribute})</option>)}
+                {bodies.map((p, idx) => (
+                  <option key={`${p.id}-${idx}`} value={p.id}>
+                    {p.name} (★{p.rarity || 1} HP:{p.stats.hp} 属性:{p.attribute})
+                  </option>
+                ))}
               </select>
             </div>
 
             <div className="flex flex-col gap-1">
               <label className="text-sm font-bold text-stone-700">アーム</label>
               <select 
-                className="p-2 border border-stone-300 rounded-md bg-white"
+                className="p-2 border border-stone-300 rounded-md bg-white text-sm"
                 value={selectedArms}
                 onChange={e => setSelectedArms(e.target.value)}
               >
                 <option value="">選択してください</option>
-                {arms.map((p, idx) => <option key={`${p.id}-${idx}`} value={p.id}>{p.name} (HP:{p.stats.hp} 属性:{p.attribute})</option>)}
+                {arms.map((p, idx) => (
+                  <option key={`${p.id}-${idx}`} value={p.id}>
+                    {p.name} (★{p.rarity || 1} HP:{p.stats.hp} 属性:{p.attribute})
+                  </option>
+                ))}
               </select>
             </div>
 
             <div className="flex flex-col gap-1">
               <label className="text-sm font-bold text-stone-700">レッグ</label>
               <select 
-                className="p-2 border border-stone-300 rounded-md bg-white"
+                className="p-2 border border-stone-300 rounded-md bg-white text-sm"
                 value={selectedLegs}
                 onChange={e => setSelectedLegs(e.target.value)}
               >
                 <option value="">選択してください</option>
-                {legs.map((p, idx) => <option key={`${p.id}-${idx}`} value={p.id}>{p.name} (HP:{p.stats.hp} 属性:{p.attribute})</option>)}
+                {legs.map((p, idx) => (
+                  <option key={`${p.id}-${idx}`} value={p.id}>
+                    {p.name} (★{p.rarity || 1} HP:{p.stats.hp} 属性:{p.attribute})
+                  </option>
+                ))}
               </select>
             </div>
           </div>
