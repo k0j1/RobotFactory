@@ -109,8 +109,6 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                           <span>Dex: {r.stats.dexterity}</span>
                         </div>
 
-                        <p className="mt-1.5 text-xs font-bold text-amber-700">価値: {r.value} G</p>
-
                         {/* 左側のスペースに配置したシェアボタン */}
                         <div className="mt-2.5 flex items-center gap-2">
                           <button
