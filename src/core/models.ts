@@ -15,6 +15,12 @@ export interface RobotPart {
   attribute: Attribute;
   rarity: number;
   stats: { hp: number; power: number; defense: number; agility: number; dexterity: number; intelligence: number; };
+  battleStats?: {
+    matches: number;
+    wins: number;
+    losses: number;
+    draws: number;
+  };
   visualIndex: number;
 }
 
@@ -32,6 +38,12 @@ export interface Robot {
   name: string;
   parts: { head: RobotPart; body: RobotPart; arms: RobotPart; legs: RobotPart; };
   stats: { hp: number; power: number; defense: number; agility: number; dexterity: number; intelligence: number; };
+  battleStats?: {
+    matches: number;
+    wins: number;
+    losses: number;
+    draws: number;
+  };
   createdAt: number;
   value: number;
 }
@@ -73,6 +85,12 @@ export interface DeliveredLog {
   deliveredAt: number;
   parts: { head: RobotPart; body: RobotPart; arms: RobotPart; legs: RobotPart; };
   stats: { hp: number; power: number; defense: number; agility: number; dexterity: number; intelligence: number; };
+  battleStats?: {
+    matches: number;
+    wins: number;
+    losses: number;
+    draws: number;
+  };
 }
 
 export interface AutoDispatch {

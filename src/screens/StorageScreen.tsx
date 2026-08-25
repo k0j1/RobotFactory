@@ -109,6 +109,12 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                           <span>Dex: {r.stats.dexterity}</span>
                           <span>Int: {r.stats.intelligence}</span>
                         </div>
+                        {r.battleStats && r.battleStats.matches > 0 && (
+                          <div className="mt-2 text-[10px] font-bold text-stone-600 bg-stone-100 p-1.5 rounded border border-stone-200">
+                            戦績: {r.battleStats.matches}戦 {r.battleStats.wins}勝 {r.battleStats.losses}敗 {r.battleStats.draws}分 
+                            (勝率: {Math.round(r.battleStats.wins / r.battleStats.matches * 100)}%)
+                          </div>
+                        )}
 
                         {/* 左側のスペースに配置したシェアボタン */}
                         <div className="mt-2.5 flex items-center gap-2">

@@ -275,6 +275,21 @@ export class GameEngine {
   }
 
 
+  
+  public recordBattleResult(robotId: string, result: 'win' | 'lose' | 'draw') {
+    const robot = this.state.robots.find(r => r.id === robotId);
+    if (robot) {
+      if (!robot.battleStats) {
+        robot.battleStats = { matches: 0, wins: 0, losses: 0, draws: 0 };
+      }
+      robot.battleStats.matches += 1;
+      if (result === 'win') robot.battleStats.wins += 1;
+      else if (result === 'lose') robot.battleStats.losses += 1;
+      else robot.battleStats.draws += 1;
+      this.saveState();
+    }
+  }
+
   public addGold(amount: number) {
     this.state.gold += amount;
     this.saveState();
