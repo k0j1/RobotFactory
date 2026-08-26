@@ -41,24 +41,35 @@ export const ShopScreen: React.FC<{ state: GameState, engine: GameEngine, onBack
         <>
           <h3 className={theme.typography.h3}>素材を購入</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {MATERIALS.map(mat => (
-              <Card key={mat.id} className="flex justify-between items-center">
-                <div>
-                  <p className="font-bold flex items-center gap-2">
-                    <MaterialIcon materialId={mat.id} size={18} />
-                    {mat.name}
-                  </p>
-                  <p className="text-xs text-stone-500 mt-1">属性: {mat.attribute}</p>
-                </div>
-                <Button 
-                  size="sm" 
-                  disabled={state.gold < mat.price}
-                  onClick={() => engine.buyMaterial(mat.id)}
+            {MATERIALS.map(mat => {
+              const rStyle = theme.rarity[mat.rarity];
+              return (
+                <div 
+                  key={mat.id} 
+                  className={`p-4 rounded-lg border-2 ${rStyle.border} ${rStyle.bg} ${rStyle.ring} flex justify-between items-center transition-shadow shadow-xs hover:shadow-md`}
                 >
-                  {mat.price} G
-                </Button>
-              </Card>
-            ))}
+                  <div>
+                    <p className={`font-bold flex items-center gap-2 ${rStyle.text}`}>
+                      <MaterialIcon materialId={mat.id} size={18} />
+                      {mat.name}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1.5">
+                      <span className="text-xs text-stone-500">属性: {mat.attribute}</span>
+                      <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold border ${rStyle.badge}`}>
+                        {rStyle.stars} (★{mat.rarity})
+                      </span>
+                    </div>
+                  </div>
+                  <Button 
+                    size="sm" 
+                    disabled={state.gold < mat.price}
+                    onClick={() => engine.buyMaterial(mat.id)}
+                  >
+                    {mat.price} G
+                  </Button>
+                </div>
+              );
+            })}
           </div>
         </>
       )}

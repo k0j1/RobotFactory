@@ -34,10 +34,10 @@ export const Layout: React.FC<{
 
   return (
     <div className={`min-h-screen ${interiorBg || theme.colors.background} ${theme.colors.text} flex flex-col font-['DotGothic16',_sans-serif] transition-colors duration-500`}>
-      <header className={`${theme.colors.secondary} ${theme.colors.textLight} ${theme.spacing.sm} sticky top-0 z-10 ${theme.shadow.sm}`}>
+      <header className={`${theme.colors.secondary} ${theme.colors.textLight} ${theme.spacing.sm} sticky top-0 ${theme.zIndex.header} ${theme.shadow.sm}`}>
         <div className="max-w-4xl mx-auto flex justify-between items-center">
           <h1 className={theme.typography.h2}>ポンコツロボット工房</h1>
-          <div className="text-sm">v1.0.55</div>
+          <div className="text-sm">v1.0.60</div>
         </div>
       </header>
 
@@ -45,7 +45,7 @@ export const Layout: React.FC<{
         {children}
       </main>
 
-      <nav className={`${theme.colors.surface} ${theme.shadow.lg} border-t ${theme.colors.border} fixed bottom-0 w-full z-20`}>
+      <nav className={`${theme.colors.surface} ${theme.shadow.lg} border-t ${theme.colors.border} fixed bottom-0 w-full ${theme.zIndex.nav}`}>
         <div className="max-w-4xl mx-auto flex justify-around p-2 gap-1">
           {navItems.map(item => (
             <button

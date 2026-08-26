@@ -11,7 +11,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
       </div>
 
       <Card className="bg-stone-50 border-2 border-stone-200">
-        <h3 className={`${theme.typography.h3} mb-4 text-stone-700`}>ポンコツロボット工房 v1.0.55 仕様まとめ</h3>
+        <h3 className={`${theme.typography.h3} mb-4 text-stone-700`}>ポンコツロボット工房 v1.0.60 仕様まとめ</h3>
         
         <div className="space-y-6 text-sm text-stone-800">
           <section>
@@ -31,6 +31,8 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
               <li><strong>ステータス補正:</strong> 派遣するロボットの<strong>「パワー」</strong>が高いほど、さらにドロップ枠が追加されます。<strong>「敏捷」</strong>が高いほど、遠征にかかる時間が最大で半減します。</li>
               <li><strong>属性相性:</strong> 派遣先と有利な属性を持つロボット（例：火の地域に水属性）を派遣すると、さらにドロップ枠が追加されます。</li>
               <li><strong>自動探索（放置探索）:</strong> ロボットを自動探索へ派遣しておくと、<strong>1時間に1つ</strong>の素材を自動的に発見・蓄積します（工房画面から随時回収可能）。</li>
+              <li><strong>探索中の演出:</strong> 自動探索中のロボットは背景が洞窟になり、脚を動かして歩きながら頭をキョロキョロ見渡して素材を探すアニメーションが再生されます。</li>
+              <li><strong>回収演出（紙ふぶき）:</strong> 遠征完了や自動探索の回収時には、お祝いの紙ふぶき（Confetti）が途切れることなく画面いっぱいに舞い散る持続エフェクトが発生します。</li>
             </ul>
           </section>
 
@@ -68,7 +70,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
           <section>
             <h4 className="font-bold text-lg text-amber-700 border-b border-stone-300 mb-2">6. 倉庫・商店・図鑑</h4>
             <ul className="list-disc list-inside space-y-1 ml-2">
-              <li><strong>倉庫:</strong> 製造したロボットと所持パーツ・素材を管理します。ロボットの所持上限はGを消費して拡張できます。</li>
+              <li><strong>倉庫（素材一覧の希少度可視化）:</strong> 製造したロボット、所持パーツ、および素材を管理します。素材一覧ではレアリティ（★1 コモン、★2 レア、★3 Sレア）に応じて背景色・枠線・星バッジが色分けされ、一目で希少度を判別できます。レア度や属性、名前による絞り込み検索も可能です。</li>
               <li><strong>解体とリサイクル:</strong> 不要なロボットは「解体」して4つのパーツに戻すことができます。パーツは「リサイクル」することで、メイン素材2個に還元されます。</li>
               <li><strong>商店:</strong> Gを使って素材を購入したり、特定の素材を消費して「工房の背景（内装）」を獲得・変更することができます。</li>
               <li><strong>図鑑・実績:</strong> これまでに納品したロボットの履歴、獲得G推計を確認できます。「素材・パーツ詳細」タブでは、各素材から出現する可能性があるパーツの見た目を一覧で確認できます。</li>

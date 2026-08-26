@@ -28,12 +28,47 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
   const [selectedRobotId, setSelectedRobotId] = useState<string>('');
 
   const triggerConfetti = () => {
+    // 初回の華やかなバースト（軽量化のため数を調整）
     confetti({
-      particleCount: 150,
+      particleCount: 50,
       spread: 80,
       origin: { y: 0.6 },
-      colors: ['#f59e0b', '#10b981', '#3b82f6', '#ec4899', '#8b5cf6']
+      colors: ['#f59e0b', '#10b981', '#3b82f6', '#ec4899', '#8b5cf6', '#eab308'],
+      zIndex: 9999,
+      disableForReducedMotion: true
     });
+
+    // レンダリングの遅延により途中で時間切れになるのを防ぐため、回数ベースで実行
+    let burstCount = 0;
+    const maxBursts = 10;
+    
+    const interval = setInterval(() => {
+      burstCount++;
+      if (burstCount >= maxBursts) {
+        clearInterval(interval);
+        return;
+      }
+      
+      // 左右から少しずつ降らせる（負荷軽減のため数と設定を調整）
+      confetti({
+        particleCount: 12,
+        spread: 60,
+        startVelocity: 25,
+        origin: { x: Math.random() * 0.2 + 0.1, y: Math.random() * 0.2 },
+        colors: ['#f59e0b', '#10b981', '#3b82f6', '#ec4899', '#8b5cf6', '#eab308'],
+        zIndex: 9999,
+        disableForReducedMotion: true
+      });
+      confetti({
+        particleCount: 12,
+        spread: 60,
+        startVelocity: 25,
+        origin: { x: Math.random() * 0.2 + 0.7, y: Math.random() * 0.2 },
+        colors: ['#f59e0b', '#10b981', '#3b82f6', '#ec4899', '#8b5cf6', '#eab308'],
+        zIndex: 9999,
+        disableForReducedMotion: true
+      });
+    }, 250);
   };
 
   const handleCompleteQuest = () => {
@@ -391,39 +426,48 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
               const remainToNext = Math.max(0, nextTime - Date.now());
 
               return (
-                <div key={dispatch.id} className="bg-white border border-stone-200 p-3 rounded-md shadow-sm">
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex items-center gap-3">
-                      {robot && (
-                        <div className="bg-stone-50 p-1 rounded border border-stone-200 flex-shrink-0">
-                          <RobotVisual robot={robot} size={52} />
-                        </div>
-                      )}
-                      <div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="font-bold text-stone-800 text-sm">
-                            {robot?.name || '不明なロボット'}
-                          </p>
-                          {pendingCount > 0 ? (
-                            <span className="text-[11px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold border border-emerald-300 animate-pulse">
-                              未回収: {pendingCount}個
-                            </span>
-                          ) : (
-                            <span className="text-[11px] bg-stone-100 text-stone-600 px-2 py-0.5 rounded-full font-medium">
-                              探索中...
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-stone-500 mt-0.5">
-                          探索場所: <span className="font-bold text-stone-700">{loc?.name}</span>
-                        </p>
-                        <p className="text-[11px] text-stone-500 font-mono mt-0.5">
-                          次回到着まで: {formatTime(remainToNext)}
-                        </p>
-                      </div>
+                <div key={dispatch.id} className="bg-white border border-stone-200 rounded-md shadow-sm overflow-hidden mb-4">
+                  {/* ロボット探索アニメーション (フルウィズ・高さ3倍) */}
+                  {robot && (
+                    <div className="w-full bg-stone-900 border-b border-stone-300">
+                      <RobotVisual 
+                        robot={robot} 
+                        size={52} 
+                        containerWidth="100%"
+                        containerHeight={52 * 3}
+                        animateExploration={true} 
+                      />
                     </div>
-                    <Button size="sm" variant="danger" onClick={() => engine.cancelAutoDispatch(dispatch.id)}>帰還</Button>
-                  </div>
+                  )}
+                  
+                  <div className="p-3">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex items-center gap-3">
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="font-bold text-stone-800 text-sm">
+                              {robot?.name || '不明なロボット'}
+                            </p>
+                            {pendingCount > 0 ? (
+                              <span className="text-[11px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold border border-emerald-300 animate-pulse">
+                                未回収: {pendingCount}個
+                              </span>
+                            ) : (
+                              <span className="text-[11px] bg-stone-100 text-stone-600 px-2 py-0.5 rounded-full font-medium">
+                                探索中...
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-stone-500 mt-0.5">
+                            探索場所: <span className="font-bold text-stone-700">{loc?.name}</span>
+                          </p>
+                          <p className="text-[11px] text-stone-500 font-mono mt-0.5">
+                            次回到着まで: {formatTime(remainToNext)}
+                          </p>
+                        </div>
+                      </div>
+                      <Button size="sm" variant="danger" onClick={() => engine.cancelAutoDispatch(dispatch.id)}>帰還</Button>
+                    </div>
 
                   {/* 回収アクションエリア */}
                   <div className="mt-2.5 pt-2 border-t border-stone-100 flex items-center justify-between gap-2">
@@ -449,6 +493,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                   ) : (
                     <p className="text-xs text-stone-500 italic mt-2">まだ素材を回収していません（1時間ごとに1つの素材を発見）...</p>
                   )}
+                  </div>
                 </div>
               );
             })}
@@ -458,7 +503,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
 
       {/* Dispatch Modal */}
       {isDispatchModalOpen && (
-        <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
+        <div className={`fixed inset-0 bg-black/50 ${theme.zIndex.modalOverlay} flex items-center justify-center p-4`}>
           <Card className="w-full max-w-md bg-stone-50">
             <h3 className={`${theme.typography.h3} mb-4`}>自動探索へ派遣</h3>
             
@@ -539,7 +584,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
           initial={{ opacity: 0 }} 
           animate={{ opacity: 1 }} 
           exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+          className={`fixed inset-0 bg-black/80 ${theme.zIndex.modalOverlay} flex items-center justify-center p-4 backdrop-blur-sm`}
         >
           <motion.div
             initial={{ scale: 0.5, y: 50, opacity: 0 }}
@@ -582,6 +627,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                 <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-6 max-h-64 overflow-y-auto p-4 bg-stone-100 rounded-lg shadow-inner">
                   {lootResult.drops.map((dropId, i) => {
                     const mat = MATERIALS.find(m => m.id === dropId);
+                    const rarityStyle = mat ? theme.rarity[mat.rarity] : theme.rarity[1];
                     return (
                       <motion.div
                         key={i}
@@ -589,9 +635,12 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                         animate={{ scale: 1, opacity: 1 }}
                         transition={{ delay: 0.4 + (i * 0.04), type: "spring", stiffness: 300 }}
                       >
-                        <Badge className="bg-white text-stone-800 border-2 border-emerald-200 p-2 text-xs sm:text-sm flex items-center gap-1.5 shadow-sm">
+                        <Badge className={`${rarityStyle.bg} ${rarityStyle.text} border-2 ${rarityStyle.border} ${rarityStyle.ring} p-2 text-xs sm:text-sm flex items-center gap-1.5 shadow-sm`}>
                           <MaterialIcon materialId={mat?.id || ''} />
                           <span className="font-bold">{mat?.name}</span>
+                          <span className={`text-[10px] font-bold ${rarityStyle.starColor}`}>
+                            {rarityStyle.stars}
+                          </span>
                         </Badge>
                       </motion.div>
                     );
@@ -617,7 +666,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
       {/* Particle Animation */}
       <AnimatePresence>
         {isAnimating && lootResult && (
-          <div className="fixed inset-0 pointer-events-none z-[100] overflow-hidden">
+          <div className={`fixed inset-0 pointer-events-none ${theme.zIndex.confetti} overflow-hidden`}>
             {lootResult.drops.map((dropId, i) => {
               const mat = MATERIALS.find(m => m.id === dropId);
               const angle = Math.random() * Math.PI * 2;

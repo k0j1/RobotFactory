@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { GameState } from '../core/models';
+import React, { useState, useMemo } from 'react';
+import { GameState, AttributeColors, AttributeNames } from '../core/models';
 import { GameEngine } from '../core/GameEngine';
 import { Card, Button, Badge } from '../components/ui/core';
 import { RobotVisual, PartVisual } from '../components/robot/RobotVisual';
@@ -11,6 +11,11 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
   const [tab, setTab] = useState<'robots'|'parts'|'materials'>('robots');
   const [confirmRobotId, setConfirmRobotId] = useState<string | null>(null);
   const [confirmPartId, setConfirmPartId] = useState<string | null>(null);
+  
+  // Materials tab filtering
+  const [matRarityFilter, setMatRarityFilter] = useState<'all' | 1 | 2 | 3>('all');
+  const [matAttributeFilter, setMatAttributeFilter] = useState<string>('All');
+  const [matSearchQuery, setMatSearchQuery] = useState('');
 
   const currentSizeIndex = MAX_STORAGE_LEVELS.indexOf(state.storageSize);
   const nextSize = MAX_STORAGE_LEVELS[currentSizeIndex + 1];
@@ -20,6 +25,25 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
     const text = `私が作ったポンコツロボット「${robotName}」を見てくれ！ #ポンコツロボット工房`;
     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
   };
+
+  const ownedMaterialsList = useMemo(() => {
+    return MATERIALS.filter(mat => {
+      const count = state.materials[mat.id] || 0;
+      if (count === 0) return false;
+      if (matRarityFilter !== 'all' && mat.rarity !== matRarityFilter) return false;
+      if (matAttributeFilter !== 'All' && mat.attribute !== matAttributeFilter) return false;
+      if (matSearchQuery && !mat.name.toLowerCase().includes(matSearchQuery.toLowerCase())) return false;
+      return true;
+    });
+  }, [state.materials, matRarityFilter, matAttributeFilter, matSearchQuery]);
+
+  const totalMaterialsCount = useMemo(() => {
+    return Object.values(state.materials || {}).reduce<number>((sum, count) => sum + (Number(count) || 0), 0);
+  }, [state.materials]);
+
+  const totalDistinctMaterials = useMemo(() => {
+    return Object.values(state.materials || {}).filter(count => (Number(count) || 0) > 0).length;
+  }, [state.materials]);
 
   return (
     <div className="space-y-6">
@@ -197,23 +221,157 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
       )}
 
       {tab === 'materials' && (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-          {MATERIALS.map(mat => {
-            const count = state.materials[mat.id] || 0;
-            if (count === 0) return null;
-            return (
-              <Card key={mat.id} className="flex justify-between items-center p-3">
-                <div>
-                  <p className="font-bold text-sm flex items-center gap-1">
-                    <MaterialIcon materialId={mat.id} />
-                    {mat.name}
-                  </p>
-                  <p className="text-xs text-stone-500">属性: {mat.attribute}</p>
-                </div>
-                <Badge>x{count}</Badge>
-              </Card>
-            );
-          })}
+        <div className="space-y-4">
+          {/* Summary & Filters Header */}
+          <div className="bg-stone-100 p-3 rounded-lg border border-stone-300 space-y-3">
+            <div className="flex justify-between items-center flex-wrap gap-2">
+              <span className="font-bold text-xs sm:text-sm text-stone-700">
+                所持素材: <strong className="text-amber-700">{totalMaterialsCount}</strong> 個 ({totalDistinctMaterials} 種類)
+              </span>
+              
+              {/* Rarity filter tabs */}
+              <div className="flex gap-1 items-center">
+                <span className="text-xs text-stone-500 font-bold mr-1">レア度:</span>
+                <Button 
+                  size="sm" 
+                  variant={matRarityFilter === 'all' ? 'primary' : 'secondary'} 
+                  onClick={() => setMatRarityFilter('all')}
+                  className="px-2 py-1 text-xs"
+                >
+                  すべて
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant={matRarityFilter === 1 ? 'primary' : 'secondary'} 
+                  onClick={() => setMatRarityFilter(1)}
+                  className="px-2 py-1 text-xs"
+                >
+                  ★1
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant={matRarityFilter === 2 ? 'primary' : 'secondary'} 
+                  onClick={() => setMatRarityFilter(2)}
+                  className="px-2 py-1 text-xs"
+                >
+                  ★2
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant={matRarityFilter === 3 ? 'primary' : 'secondary'} 
+                  onClick={() => setMatRarityFilter(3)}
+                  className="px-2 py-1 text-xs"
+                >
+                  ★3
+                </Button>
+              </div>
+            </div>
+
+            {/* Attribute & Search */}
+            <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center justify-between pt-2 border-t border-stone-200">
+              <div className="flex flex-wrap gap-1 items-center">
+                <span className="text-xs text-stone-500 font-bold mr-1">属性:</span>
+                <button
+                  onClick={() => setMatAttributeFilter('All')}
+                  className={`px-2 py-0.5 text-xs rounded border ${matAttributeFilter === 'All' ? 'bg-stone-800 text-white border-stone-800 font-bold' : 'bg-white text-stone-700 border-stone-300'}`}
+                >
+                  すべて
+                </button>
+                {Object.keys(AttributeNames).map(attr => {
+                  const isSelected = matAttributeFilter === attr;
+                  return (
+                    <button
+                      key={attr}
+                      onClick={() => setMatAttributeFilter(attr)}
+                      className={`px-2 py-0.5 text-xs rounded border transition-colors ${isSelected ? 'font-bold text-white shadow-xs' : 'bg-white text-stone-700 border-stone-300'}`}
+                      style={isSelected ? { backgroundColor: AttributeColors[attr as keyof typeof AttributeColors], borderColor: AttributeColors[attr as keyof typeof AttributeColors] } : {}}
+                    >
+                      {AttributeNames[attr as keyof typeof AttributeNames]}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <input
+                type="text"
+                placeholder="素材名で絞り込み..."
+                value={matSearchQuery}
+                onChange={e => setMatSearchQuery(e.target.value)}
+                className="p-1.5 text-xs border border-stone-300 rounded bg-white w-full sm:w-44"
+              />
+            </div>
+          </div>
+
+          {/* Materials Grid */}
+          {ownedMaterialsList.length === 0 ? (
+            <div className="p-8 text-center bg-stone-50 rounded-lg border border-stone-200 text-stone-500">
+              <p className="font-bold text-sm">該当する所持素材がありません</p>
+              <p className="text-xs mt-1 text-stone-400">「遠征」や「自動探索」で素材を集めましょう！</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+              {ownedMaterialsList.map(mat => {
+                const count = state.materials[mat.id] || 0;
+                const rarityStyle = theme.rarity[mat.rarity];
+                const attrColor = AttributeColors[mat.attribute];
+                const attrName = AttributeNames[mat.attribute];
+
+                return (
+                  <div 
+                    key={mat.id} 
+                    className={`p-3 rounded-lg border-2 ${rarityStyle.border} ${rarityStyle.bg} ${rarityStyle.ring} flex flex-col justify-between transition-shadow hover:shadow-md relative overflow-hidden`}
+                  >
+                    {/* Top row: Name, Attribute badge & Quantity badge */}
+                    <div className="flex justify-between items-start gap-1 mb-2">
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <span 
+                            className="p-1 rounded-md text-white flex items-center justify-center shadow-2xs"
+                            style={{ backgroundColor: attrColor }}
+                          >
+                            <MaterialIcon materialId={mat.id} size={14} />
+                          </span>
+                          <span className={`font-bold text-sm ${rarityStyle.text}`}>
+                            {mat.name}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-1">
+                          <span 
+                            className="text-[10px] px-1.5 py-0.2 rounded font-bold text-white shadow-2xs"
+                            style={{ backgroundColor: attrColor }}
+                          >
+                            {attrName}
+                          </span>
+                          <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold border ${rarityStyle.badge}`}>
+                            {rarityStyle.label}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col items-end gap-1">
+                        <Badge className="bg-stone-900 text-white font-bold text-xs px-2 py-0.5 shadow-xs">
+                          x{count}
+                        </Badge>
+                        <span className="text-[10px] text-stone-500 font-mono">
+                          単価 {mat.price} G
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Stats preview */}
+                    <div className="mt-2 pt-2 border-t border-stone-200/80 grid grid-cols-3 gap-x-2 gap-y-0.5 text-[10px] text-stone-600 font-mono">
+                      <span>HP: +{mat.baseStats.hp}</span>
+                      <span>Pow: +{mat.baseStats.power}</span>
+                      <span>Def: +{mat.baseStats.defense}</span>
+                      <span>Agi: +{mat.baseStats.agility}</span>
+                      <span>Dex: +{mat.baseStats.dexterity}</span>
+                      <span>Int: +{mat.baseStats.intelligence}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
     </div>

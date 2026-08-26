@@ -215,23 +215,24 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                 {availableMainMats.map(mat => {
                   const count = state.materials[mat.id] || 0;
                   const isSelected = selectedMainMat === mat.id;
+                  const rStyle = theme.rarity[mat.rarity];
                   return (
                     <button 
                       key={`main-${mat.id}`}
                       onClick={() => setSelectedMainMat(mat.id)}
-                      className={`text-left p-3 border-2 ${theme.radius.md} transition-all ${isSelected ? 'border-amber-500 bg-amber-50 shadow-sm' : 'border-stone-300 bg-white hover:border-stone-400'}`}
+                      className={`text-left p-3 border-2 ${theme.radius.md} transition-all ${isSelected ? 'border-amber-500 bg-amber-100/90 ring-2 ring-amber-400 shadow-sm' : `${rStyle.border} ${rStyle.bg} hover:border-stone-400`}`}
                     >
                       <div className="flex justify-between items-center mb-1">
-                        <span className="font-bold text-sm flex items-center gap-1">
+                        <span className={`font-bold text-sm flex items-center gap-1.5 ${rStyle.text}`}>
                           <MaterialIcon materialId={mat.id} />
                           {mat.name}
                         </span>
-                        <Badge className="bg-stone-200">x{count}</Badge>
+                        <Badge className="bg-stone-900 text-white font-bold text-xs">x{count}</Badge>
                       </div>
                       <div className="flex justify-between items-center mt-1 text-xs">
                         <span className="text-stone-500">属性: {mat.attribute}</span>
-                        <span className="font-bold text-amber-700 bg-amber-100/80 px-1.5 py-0.2 rounded border border-amber-200">
-                          {'★'.repeat(mat.rarity)} (★{mat.rarity})
+                        <span className={`font-bold text-[10px] px-1.5 py-0.2 rounded border ${rStyle.badge}`}>
+                          {rStyle.stars} (★{mat.rarity})
                         </span>
                       </div>
                     </button>
@@ -253,23 +254,24 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                   if (selectedMainMat === mat.id && count < 5) return null;
 
                   const isSelected = selectedSubMat === mat.id;
+                  const rStyle = theme.rarity[mat.rarity];
                   return (
                     <button 
                       key={`sub-${mat.id}`}
                       onClick={() => setSelectedSubMat(mat.id)}
-                      className={`text-left p-3 border-2 ${theme.radius.md} transition-all ${isSelected ? 'border-blue-500 bg-blue-50 shadow-sm' : 'border-stone-300 bg-white hover:border-stone-400'}`}
+                      className={`text-left p-3 border-2 ${theme.radius.md} transition-all ${isSelected ? 'border-blue-500 bg-blue-100/90 ring-2 ring-blue-400 shadow-sm' : `${rStyle.border} ${rStyle.bg} hover:border-stone-400`}`}
                     >
                       <div className="flex justify-between items-center mb-1">
-                        <span className="font-bold text-sm flex items-center gap-1">
+                        <span className={`font-bold text-sm flex items-center gap-1.5 ${rStyle.text}`}>
                           <MaterialIcon materialId={mat.id} />
                           {mat.name}
                         </span>
-                        <Badge className="bg-stone-200">x{count}</Badge>
+                        <Badge className="bg-stone-900 text-white font-bold text-xs">x{count}</Badge>
                       </div>
                       <div className="flex justify-between items-center mt-1 text-xs">
                         <span className="text-stone-500">属性: {mat.attribute}</span>
-                        <span className="font-bold text-amber-700 bg-amber-100/80 px-1.5 py-0.2 rounded border border-amber-200">
-                          {'★'.repeat(mat.rarity)} (★{mat.rarity})
+                        <span className={`font-bold text-[10px] px-1.5 py-0.2 rounded border ${rStyle.badge}`}>
+                          {rStyle.stars} (★{mat.rarity})
                         </span>
                       </div>
                     </button>
