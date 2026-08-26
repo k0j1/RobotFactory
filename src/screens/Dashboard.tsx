@@ -269,7 +269,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
             {state.autoDispatches?.map(d => {
               const dRobot = state.robots.find(r => r.id === d.robotId);
               const dLoc = LOCATIONS.find(l => l.id === d.locationId);
-              const nextTime = d.lastCollectedAt + 10 * 60 * 1000;
+              const nextTime = d.lastCollectedAt + 60 * 60 * 1000;
               const remain = Math.max(0, nextTime - Date.now());
               const pending = d.pendingDrops?.length || 0;
               const latestLog = d.logs && d.logs.length > 0 ? d.logs[d.logs.length - 1] : '探索開始しました';
