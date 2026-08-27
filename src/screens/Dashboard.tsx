@@ -186,6 +186,51 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
         </Button>
       </div>
 
+      {/* Crafting in Progress Banner (if any) */}
+      {(state.activePartCraft || state.activeRobotAssembly) && (
+        <Card className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 shadow-sm">
+          <div className="flex justify-between items-center flex-wrap gap-2">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl animate-spin" style={{ animationDuration: '4s' }}>⚙️</span>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h4 className="font-bold text-amber-900 text-sm">
+                    {state.activePartCraft && state.activeRobotAssembly 
+                      ? 'パーツ製造 & ロボット組立中' 
+                      : state.activePartCraft 
+                        ? 'パーツ製造進行中' 
+                        : 'ロボット組立進行中'}
+                  </h4>
+                  {(
+                    (state.activePartCraft && state.activePartCraft.endTime <= Date.now()) ||
+                    (state.activeRobotAssembly && state.activeRobotAssembly.endTime <= Date.now())
+                  ) && (
+                    <Badge className="bg-emerald-500 text-white text-[10px] animate-bounce">
+                      🎉 完成受取可能！
+                    </Badge>
+                  )}
+                </div>
+                <div className="text-xs text-stone-600 flex gap-4 mt-0.5">
+                  {state.activePartCraft && (
+                    <span>
+                      パーツ: {state.activePartCraft.endTime <= Date.now() ? <strong className="text-emerald-600">完成！</strong> : <span className="font-mono">{formatTime(Math.max(0, state.activePartCraft.endTime - Date.now()))}</span>}
+                    </span>
+                  )}
+                  {state.activeRobotAssembly && (
+                    <span>
+                      ロボット: {state.activeRobotAssembly.endTime <= Date.now() ? <strong className="text-emerald-600">完成！</strong> : <span className="font-mono">{formatTime(Math.max(0, state.activeRobotAssembly.endTime - Date.now()))}</span>}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+            <Button size="sm" onClick={() => onNavigate('craft')} className="bg-amber-600 hover:bg-amber-500 text-white font-bold">
+              製造画面へ →
+            </Button>
+          </div>
+        </Card>
+      )}
+
       {/* Dispatch Status & Quick Log Panel */}
       <Card className="bg-stone-50 border-2 border-stone-300">
         <div className="flex justify-between items-center mb-3 border-b border-stone-200 pb-2 flex-wrap gap-2">

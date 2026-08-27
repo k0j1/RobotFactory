@@ -88,7 +88,7 @@ export const ShopScreen: React.FC<{ state: GameState, engine: GameEngine, onBack
                     <div className="flex items-center gap-2 mt-1.5">
                       <span className="text-xs text-stone-500">属性: {mat.attribute}</span>
                       <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold border ${rStyle.badge}`}>
-                        {rStyle.stars} (★{mat.rarity})
+                        {rStyle.stars}
                       </span>
                     </div>
                   </div>

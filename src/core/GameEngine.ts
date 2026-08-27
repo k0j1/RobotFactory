@@ -10,6 +10,8 @@ const INITIAL_STATE: GameState = {
   robots: [],
   unlockedLocations: ['loc1'],
   activeQuest: null,
+  activePartCraft: null,
+  activeRobotAssembly: null,
   currentRequest: null,
   deliveredRobotsCount: 0,
   deliveredLogs: [],
@@ -423,7 +425,226 @@ export class GameEngine {
     return { success: isSuccess, drops: obtained };
   }
 
-  // Crafting
+  // Crafting Duration Calculations
+  public getPartCraftDuration(mainMaterialId: string, subMaterialId?: string): number {
+    const mainMat = MATERIALS.find(m => m.id === mainMaterialId);
+    if (!mainMat) return 10000;
+    
+    // ベース10秒 (素材レア度によって変える)
+    // メイン素材: ★1 = 10秒, ★2 = 14秒, ★3 = 18秒
+    let duration = 10000;
+    if (mainMat.rarity === 2) duration = 14000;
+    else if (mainMat.rarity === 3) duration = 18000;
+
+    // サブ素材による微調整 (★1: +0秒, ★2: +1秒, ★3: +2秒)
+    if (subMaterialId) {
+      const subMat = MATERIALS.find(m => m.id === subMaterialId);
+      if (subMat) {
+        if (subMat.rarity === 2) duration += 1000;
+        else if (subMat.rarity === 3) duration += 2000;
+      }
+    }
+    return duration;
+  }
+
+  public getRobotAssembleDuration(headId: string, bodyId: string, armsId: string, legsId: string): number {
+    const head = this.state.parts.find(p => p.id === headId);
+    const body = this.state.parts.find(p => p.id === bodyId);
+    const arms = this.state.parts.find(p => p.id === armsId);
+    const legs = this.state.parts.find(p => p.id === legsId);
+
+    // ベース1分 (60秒 = 60,000ms) (パーツ性能によって変える)
+    let baseDuration = 60000;
+
+    if (head && body && arms && legs) {
+      // 4パーツの合計レア度 (4〜12): レア度1増加につき +2.5秒
+      const totalRarity = (head.rarity || 1) + (body.rarity || 1) + (arms.rarity || 1) + (legs.rarity || 1);
+      const rarityBonus = Math.max(0, totalRarity - 4) * 2500;
+
+      // 4パーツの合計ステータス (標準120程度からの超過分により +0〜15秒)
+      const totalStats = (
+        (head.stats.hp + head.stats.power + head.stats.defense + head.stats.agility + head.stats.dexterity + head.stats.intelligence) +
+        (body.stats.hp + body.stats.power + body.stats.defense + body.stats.agility + body.stats.dexterity + body.stats.intelligence) +
+        (arms.stats.hp + arms.stats.power + arms.stats.defense + arms.stats.agility + arms.stats.dexterity + arms.stats.intelligence) +
+        (legs.stats.hp + legs.stats.power + legs.stats.defense + legs.stats.agility + legs.stats.dexterity + legs.stats.intelligence)
+      );
+      const statsBonus = Math.min(15000, Math.max(0, Math.floor((totalStats - 120) / 10) * 1000));
+
+      return baseDuration + rarityBonus + statsBonus;
+    }
+
+    return baseDuration;
+  }
+
+  // Active Crafting (Parts)
+  public startCraftPart(type: PartType, mainMaterialId: string, subMaterialId: string) {
+    if (this.state.activePartCraft) {
+      throw new Error("現在パーツを製造中です");
+    }
+    if (!this.state.materials[mainMaterialId] || this.state.materials[mainMaterialId] < 3) {
+      throw new Error("メイン素材が足りません（3個必要）");
+    }
+    if (!this.state.materials[subMaterialId] || this.state.materials[subMaterialId] < 2) {
+      throw new Error("サブ素材が足りません（2個必要）");
+    }
+    
+    this.state.materials[mainMaterialId] -= 3;
+    this.state.materials[subMaterialId] -= 2;
+    
+    const mainMat = MATERIALS.find(m => m.id === mainMaterialId);
+    const subMat = MATERIALS.find(m => m.id === subMaterialId);
+    if (!mainMat || !subMat) throw new Error("不明な素材");
+
+    const typeNames: Record<PartType, string> = { head: 'ヘッド', body: 'ボディ', arms: 'アーム', legs: 'レッグ' };
+    const name = `${mainMat.name}の${typeNames[type]}`;
+
+    const newPart: RobotPart = {
+      id: `part_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+      type,
+      name,
+      attribute: mainMat.attribute, // Main material decides attribute
+      rarity: Math.max(mainMat.rarity, subMat.rarity),
+      stats: {
+        hp: mainMat.baseStats.hp + Math.floor(subMat.baseStats.hp * 0.5) + Math.floor(Math.random() * 5),
+        power: mainMat.baseStats.power + Math.floor(subMat.baseStats.power * 0.5) + Math.floor(Math.random() * 5),
+        defense: mainMat.baseStats.defense + Math.floor(subMat.baseStats.defense * 0.5) + Math.floor(Math.random() * 5),
+        agility: mainMat.baseStats.agility + Math.floor(subMat.baseStats.agility * 0.5) + Math.floor(Math.random() * 5),
+        dexterity: mainMat.baseStats.dexterity + Math.floor(subMat.baseStats.dexterity * 0.5) + Math.floor(Math.random() * 5),
+        intelligence: mainMat.baseStats.intelligence + Math.floor(subMat.baseStats.intelligence * 0.5) + Math.floor(Math.random() * 5),
+      },
+      visualIndex: Math.floor(Math.random() * 24),
+    };
+
+    const durationMs = this.getPartCraftDuration(mainMaterialId, subMaterialId);
+    const now = Date.now();
+
+    this.state.activePartCraft = {
+      partType: type,
+      mainMaterialId,
+      subMaterialId,
+      startTime: now,
+      endTime: now + durationMs,
+      durationMs,
+      resultPart: newPart
+    };
+
+    this.saveState();
+    return this.state.activePartCraft;
+  }
+
+  public claimCraftedPart(): RobotPart {
+    if (!this.state.activePartCraft) {
+      throw new Error("製造中のパーツはありません");
+    }
+    if (Date.now() < this.state.activePartCraft.endTime) {
+      throw new Error("パーツ製造はまだ完了していません");
+    }
+
+    const craftedPart = this.state.activePartCraft.resultPart;
+    this.state.parts.push(craftedPart);
+    this.state.activePartCraft = null;
+
+    if (this.state.tutorialStep === 2) this.advanceTutorial();
+    this.saveState();
+    return craftedPart;
+  }
+
+  public cancelCraftPart() {
+    if (!this.state.activePartCraft) return;
+    const { mainMaterialId, subMaterialId } = this.state.activePartCraft;
+    this.state.materials[mainMaterialId] = (this.state.materials[mainMaterialId] || 0) + 3;
+    this.state.materials[subMaterialId] = (this.state.materials[subMaterialId] || 0) + 2;
+    this.state.activePartCraft = null;
+    this.saveState();
+  }
+
+  // Active Crafting (Robot Assembly)
+  public startAssembleRobot(headId: string, bodyId: string, armsId: string, legsId: string) {
+    if (this.state.activeRobotAssembly) {
+      throw new Error("現在ロボットを組立中です");
+    }
+    if (this.state.robots?.length >= this.state.storageSize) {
+      throw new Error("倉庫がいっぱいです");
+    }
+
+    const head = this.state.parts.find(p => p.id === headId && p.type === 'head');
+    const body = this.state.parts.find(p => p.id === bodyId && p.type === 'body');
+    const arms = this.state.parts.find(p => p.id === armsId && p.type === 'arms');
+    const legs = this.state.parts.find(p => p.id === legsId && p.type === 'legs');
+
+    if (!head || !body || !arms || !legs) throw new Error("パーツが不足しています");
+
+    const durationMs = this.getRobotAssembleDuration(headId, bodyId, armsId, legsId);
+
+    // remove parts from inventory
+    this.state.parts = this.state.parts.filter(p => ![headId, bodyId, armsId, legsId].includes(p.id));
+
+    const totalHp = head.stats.hp + body.stats.hp + arms.stats.hp + legs.stats.hp;
+    const totalPow = head.stats.power + body.stats.power + arms.stats.power + legs.stats.power;
+    const totalDef = head.stats.defense + body.stats.defense + arms.stats.defense + legs.stats.defense;
+    const totalAgi = head.stats.agility + body.stats.agility + arms.stats.agility + legs.stats.agility;
+    const totalDex = head.stats.dexterity + body.stats.dexterity + arms.stats.dexterity + legs.stats.dexterity;
+    const totalInt = head.stats.intelligence + body.stats.intelligence + arms.stats.intelligence + legs.stats.intelligence;
+
+    const prefix1 = ['野生の', '古代の', '謎の', '伝説の', '鋼鉄の', '真紅の', '漆黒の', '錆びた', '光る', '怒れる', '眠れる', '小さな', '巨大な', '忘れられた', '名無しの'];
+    const prefix2 = ['繊細な', '凶暴な', '勇敢な', '臆病な', '賢い', '鈍い', '素早い', '硬い', '柔らかい', '冷たい', '熱い', '美しい', '醜い', '奇妙な', '完璧な'];
+    const nouns = ['ポピー', 'ゴーレム', '巨人', '兵士', '騎士', '番人', '破壊者', '守護者', '従者', '王', '悪魔', '天使', '獣', '機械', '塊'];
+    const randomName = `${prefix1[Math.floor(Math.random() * prefix1.length)]}${prefix2[Math.floor(Math.random() * prefix2.length)]}${nouns[Math.floor(Math.random() * nouns.length)]}`;
+
+    const newRobot: Robot = {
+      id: `rob_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+      name: randomName,
+      parts: { head, body, arms, legs },
+      stats: {
+        hp: totalHp, power: totalPow, defense: totalDef, agility: totalAgi, dexterity: totalDex, intelligence: totalInt
+      },
+      currentHp: 12,
+      maxHp: 12,
+      createdAt: Date.now(),
+      value: (head.rarity + body.rarity + arms.rarity + legs.rarity) * 20
+    };
+
+    const now = Date.now();
+    this.state.activeRobotAssembly = {
+      startTime: now,
+      endTime: now + durationMs,
+      durationMs,
+      resultRobot: newRobot
+    };
+
+    this.saveState();
+    return this.state.activeRobotAssembly;
+  }
+
+  public claimAssembledRobot(): Robot {
+    if (!this.state.activeRobotAssembly) {
+      throw new Error("組立中のロボットはありません");
+    }
+    if (Date.now() < this.state.activeRobotAssembly.endTime) {
+      throw new Error("ロボットの組立はまだ完了していません");
+    }
+
+    const assembledRobot = this.state.activeRobotAssembly.resultRobot;
+    this.state.robots.push(assembledRobot);
+    this.state.activeRobotAssembly = null;
+
+    if (this.state.tutorialStep === 2) this.advanceTutorial();
+    this.saveState();
+    return assembledRobot;
+  }
+
+  public cancelAssembleRobot() {
+    if (!this.state.activeRobotAssembly) return;
+    const { parts } = this.state.activeRobotAssembly.resultRobot;
+    if (parts.head) this.state.parts.push(parts.head);
+    if (parts.body) this.state.parts.push(parts.body);
+    if (parts.arms) this.state.parts.push(parts.arms);
+    if (parts.legs) this.state.parts.push(parts.legs);
+    this.state.activeRobotAssembly = null;
+    this.saveState();
+  }
+
+  // Legacy immediate Crafting methods for backward compatibility
   public craftPart(type: PartType, mainMaterialId: string, subMaterialId: string) {
     if (!this.state.materials[mainMaterialId] || this.state.materials[mainMaterialId] < 3) {
       throw new Error("メイン素材が足りません（3個必要）");

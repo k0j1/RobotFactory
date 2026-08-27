@@ -105,6 +105,23 @@ export interface AutoDispatch {
   pendingDrops?: string[];
 }
 
+export interface ActivePartCraft {
+  partType: PartType;
+  mainMaterialId: string;
+  subMaterialId: string;
+  startTime: number;
+  endTime: number;
+  durationMs: number;
+  resultPart: RobotPart;
+}
+
+export interface ActiveRobotAssembly {
+  startTime: number;
+  endTime: number;
+  durationMs: number;
+  resultRobot: Robot;
+}
+
 export interface GameState {
   gold: number;
   storageSize: number;
@@ -113,6 +130,8 @@ export interface GameState {
   robots: Robot[];
   unlockedLocations: string[];
   activeQuest: ActiveQuest | null;
+  activePartCraft?: ActivePartCraft | null;
+  activeRobotAssembly?: ActiveRobotAssembly | null;
   currentRequest: ClientRequest | null;
   deliveredRobotsCount: number;
   deliveredLogs: DeliveredLog[];

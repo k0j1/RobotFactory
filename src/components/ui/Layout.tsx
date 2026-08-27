@@ -11,13 +11,16 @@ export const Layout: React.FC<{
 }> = ({ children, onNavigate, activeView, interiorBg, state }) => {
   // Notification calculations
   const isQuestDone = state?.activeQuest ? (state.activeQuest.endTime - Date.now() <= 0) : false;
+  const isCraftPartDone = state?.activePartCraft ? (state.activePartCraft.endTime - Date.now() <= 0) : false;
+  const isCraftRobotDone = state?.activeRobotAssembly ? (state.activeRobotAssembly.endTime - Date.now() <= 0) : false;
+  const isCraftDone = isCraftPartDone || isCraftRobotDone;
   const totalPendingAutoDrops = state?.autoDispatches?.reduce((acc, d) => acc + (d.pendingDrops?.length || 0), 0) || 0;
 
   const navItems = [
     { 
       id: 'dashboard', 
       label: '工房',
-      badge: (isQuestDone || totalPendingAutoDrops > 0) ? (totalPendingAutoDrops > 0 ? `${totalPendingAutoDrops}` : '!') : undefined,
+      badge: (isQuestDone || totalPendingAutoDrops > 0 || isCraftDone) ? (totalPendingAutoDrops > 0 ? `${totalPendingAutoDrops}` : '!') : undefined,
       badgeColor: 'bg-emerald-500 text-white'
     },
     { 
@@ -26,7 +29,12 @@ export const Layout: React.FC<{
       badge: isQuestDone ? '完了' : undefined,
       badgeColor: 'bg-amber-500 text-white animate-bounce'
     },
-    { id: 'craft', label: '製造' },
+    { 
+      id: 'craft', 
+      label: '製造',
+      badge: isCraftDone ? '完了' : (state?.activePartCraft || state?.activeRobotAssembly ? '作成中' : undefined),
+      badgeColor: isCraftDone ? 'bg-amber-500 text-white animate-bounce' : 'bg-blue-500 text-white'
+    },
     { id: 'requests', label: '依頼板' },
     { id: 'storage', label: '倉庫' },
     { id: 'minigame', label: 'バトル' },
@@ -37,7 +45,7 @@ export const Layout: React.FC<{
       <header className={`${theme.colors.secondary} ${theme.colors.textLight} ${theme.spacing.sm} sticky top-0 ${theme.zIndex.header} ${theme.shadow.sm}`}>
         <div className="max-w-4xl mx-auto flex justify-between items-center">
           <h1 className={theme.typography.h2}>ポンコツロボット工房</h1>
-          <div className="text-sm">v1.0.62</div>
+          <div className="text-sm">v1.0.71</div>
         </div>
       </header>
 

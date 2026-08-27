@@ -11,7 +11,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
       </div>
 
       <Card className="bg-stone-50 border-2 border-stone-200">
-        <h3 className={`${theme.typography.h3} mb-4 text-stone-700`}>ポンコツロボット工房 v1.0.68 仕様まとめ</h3>
+        <h3 className={`${theme.typography.h3} mb-4 text-stone-700`}>ポンコツロボット工房 v1.0.71 仕様まとめ</h3>
         
         <div className="space-y-6 text-sm text-stone-800">
           <section>
@@ -45,8 +45,10 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
             <ul className="list-disc list-inside space-y-1 ml-2">
               <li><strong>パーツ製造:</strong> 手持ちの素材から<strong>「メイン素材(3個)」</strong>と<strong>「サブ素材(2個)」</strong>を選んでパーツを合成します。</li>
               <li>メイン素材はパーツの「属性」と「基礎ステータス」を決定し、サブ素材は「追加ステータスボーナス」を付与します。</li>
-              <li><strong>レア度:</strong> メインとサブの中で高い方の素材レア度（★1〜★3）がパーツのレア度になり、高いほど珍しい見た目のパーツが生成されやすくなります。</li>
-              <li><strong>ロボット組立:</strong> 製造したアタマ・ボディ・ウデ・アシの4つのパーツを組み合わせて1体のロボットを完成させます。各パーツのステータスの合計がロボットの総合ステータスになります。</li>
+              <li><strong>パーツ製造時間（約10秒〜素材レア度変動）:</strong> 基本時間は10秒です。メイン素材のレア度（★1: 10秒、★2: 14秒、★3: 18秒）およびサブ素材レア度に応じて、高品質な素材ほどより精密な加工時間を要します。</li>
+              <li><strong>リアルタイム秒数カウントダウンタイマー &amp; 自動ジャンプ:</strong> 各パーツ製造項目（ヘッド・ボディ・アーム・レッグの各部位、タブバッジ、製造中カード）に<strong>「あと○秒で完成」</strong>のリアルタイムタイマーが常時表示されます。「パーツ製造開始」ボタンを押すと即座に製造中タイマー位置へスムーズスクロールしてジャンプします。</li>
+              <li><strong>ロボット組立時間（約1分〜パーツ性能変動）:</strong> 製造した4パーツ（ヘッド・ボディ・ウデ・アシ）を組み合わせてロボットを組み立てます。基本時間は1分（60秒）で、パーツの合計レア度やステータス合計値が高くなるほど、より高度なアセンブリ作業時間を要します。</li>
+              <li><strong>バックグラウンド進行 &amp; 受取通知:</strong> 製造・組立の進行中はプログレスバーと残り時間がリアルタイムにカウントダウン表示されます。他の画面（工房や遠征など）に移動してもバックグラウンドで製造が進行し、完了時にはナビゲーションや工房画面に受取バッジが表示されます。</li>
             </ul>
           </section>
 
