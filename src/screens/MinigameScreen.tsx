@@ -42,11 +42,18 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
     setBattleResult(result);
     if (result === 'win' && activeOpponent) {
       (engine as any).addGold(activeOpponent.reward);
+      const kits = activeOpponent.id === 'op4' ? 5 : activeOpponent.id === 'op3' ? 3 : activeOpponent.id === 'op2' ? 2 : 1;
+      (engine as any).addRepairKits(kits);
     }
   };
 
   const handleStartBattle = () => {
     if (!activeRobot || !activeOpponent) return;
+    if ((activeRobot.currentHp ?? 12) < 1) {
+      alert("HPが足りません。バトルに参加するにはHPが1必要です。");
+      return;
+    }
+    (engine as any).consumeRobotHp(activeRobot.id, 1);
     setIsBattleActive(true);
     setBattleResult(null);
     setIsPaused(false);
@@ -101,17 +108,19 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                     return (
                       <button
                         key={r.id}
-                        onClick={() => !isDispatched && setSelectedRobotId(r.id)}
-                        disabled={isDispatched}
-                        className={`w-full text-left p-3 rounded border transition-colors ${selectedRobotId === r.id ? 'border-primary bg-primary/10' : 'border-stone-200'} ${isDispatched ? 'opacity-50 cursor-not-allowed' : 'hover:bg-stone-50'}`}
+                        onClick={() => !isDispatched && (r.currentHp ?? 12) >= 1 && setSelectedRobotId(r.id)}
+                        disabled={isDispatched || (r.currentHp ?? 12) < 1}
+                        className={`w-full text-left p-3 rounded border transition-colors ${selectedRobotId === r.id ? 'border-primary bg-primary/10' : 'border-stone-200'} ${isDispatched || (r.currentHp ?? 12) < 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-stone-50'}`}
                       >
                         <div className="flex justify-between items-center">
                           <span className="font-bold">{r.name}</span>
                           <div className="flex gap-3 text-xs text-stone-600">
+                            <span>HP: {r.currentHp ?? 12}/{r.maxHp ?? 12}</span>
                             <span>Int: {r.stats.intelligence}</span>
                           </div>
                         </div>
                         {isDispatched && <span className="text-[10px] text-red-500">※出撃中</span>}
+                        {!isDispatched && (r.currentHp ?? 12) < 1 && <span className="text-[10px] text-red-500">※HP不足</span>}
                       </button>
                     )
                   })

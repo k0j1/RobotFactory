@@ -80,6 +80,13 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
 
       {tab === 'robots' && (
         <>
+          <div className="flex justify-between items-center mb-2 px-1">
+            <span className="font-bold text-stone-600">所有ロボット</span>
+            <span className="font-bold text-green-700 bg-green-100 px-3 py-1 rounded border border-green-300 shadow-sm text-sm">
+              🔧 修理キット: {state.repairKits || 0} 個
+            </span>
+          </div>
+
           {nextSize && (
             <Card className="flex justify-between items-center bg-stone-100">
               <div>
@@ -125,8 +132,29 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                           )}
                         </div>
 
-                        <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 mt-1 text-xs text-stone-600 font-mono">
-                          <span>HP: {r.stats.hp}</span>
+                        <div className="mt-2 space-y-1.5">
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="font-bold text-stone-700">残HP: {r.currentHp ?? 12}/{r.maxHp ?? 12}</span>
+                            {state.repairKits && state.repairKits > 0 ? (
+                              <button
+                                onClick={() => engine.useRepairKit(r.id)}
+                                disabled={(r.currentHp ?? 12) >= (r.maxHp ?? 12)}
+                                className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded border border-green-300 font-bold hover:bg-green-200 disabled:opacity-50"
+                              >
+                                🔧 修理キット使用
+                              </button>
+                            ) : null}
+                          </div>
+                          <div className="w-full bg-stone-200 rounded-full h-1.5">
+                            <div 
+                              className="bg-green-500 h-1.5 rounded-full transition-all" 
+                              style={{ width: `${Math.max(0, Math.min(100, ((r.currentHp ?? 12) / (r.maxHp ?? 12)) * 100))}%` }} 
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 mt-2 text-xs text-stone-600 font-mono">
+                          <span>Vit: {r.stats.hp}</span>
                           <span>Pow: {r.stats.power}</span>
                           <span>Def: {r.stats.defense}</span>
                           <span>Agi: {r.stats.agility}</span>

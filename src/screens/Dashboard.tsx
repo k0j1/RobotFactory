@@ -510,9 +510,14 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                             )}
                           </div>
                           <p className="text-xs text-stone-500 mt-0.5">
-                            探索場所: <span className="font-bold text-stone-700">{loc?.name}</span>
+                            探索場所: <span className="font-bold text-stone-700">{loc?.name}</span> / HP: {robot?.currentHp ?? 12}/{robot?.maxHp ?? 12}
                           </p>
-                          <div className="flex items-center gap-2 flex-wrap mt-0.5">
+                          {(robot?.currentHp ?? 12) <= 1 && (
+                            <p className="text-[11px] text-red-600 font-bold mt-1 bg-red-50 p-1 rounded border border-red-200">
+                              ⚠️ HPが残りわずかのため探索を中断しています。帰還して修理してください。
+                            </p>
+                          )}
+                          <div className="flex items-center gap-2 flex-wrap mt-1">
                             <p className="text-[11px] text-stone-500 font-mono">
                               次回到着まで: {formatTime(remainToNext)}
                             </p>
@@ -594,8 +599,8 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                   .filter(r => !state.autoDispatches?.some(d => d.robotId === r.id))
                   .filter(r => state.activeQuest?.dispatchedRobotId !== r.id)
                   .map(r => (
-                  <option key={r.id} value={r.id}>
-                    {r.name} (Pow: {r.stats.power} / Agi: {r.stats.agility})
+                  <option key={r.id} value={r.id} disabled={(r.currentHp ?? 12) <= 1}>
+                    {r.name} (HP: {r.currentHp ?? 12}/{r.maxHp ?? 12} | Agi: {r.stats.agility})
                   </option>
                 ))}
               </select>

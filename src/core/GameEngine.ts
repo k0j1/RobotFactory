@@ -130,6 +130,10 @@ export class GameEngine {
     if (this.isRobotAutoDispatched(robotId)) throw new Error("このロボットは既に派遣中です");
     if (this.state.activeQuest && this.state.activeQuest.dispatchedRobotId === robotId) throw new Error("このロボットは遠征中です");
     
+    const robot = this.state.robots.find(r => r.id === robotId);
+    if (!robot) throw new Error("ロボットが見つかりません");
+    if ((robot.currentHp ?? 10) <= 1) throw new Error("HPが足りません（残り1以下のため派遣不可）");
+
     this.state.autoDispatches.push({
       id: Math.random().toString(36).substring(2, 9),
       robotId,
@@ -236,38 +240,75 @@ export class GameEngine {
       if (elapsed >= intervalMs) {
         const collectionsCount = Math.floor(elapsed / intervalMs);
         const maxCollections = 200; // max cap to prevent huge calculations if offline for weeks
-        const actualCollections = Math.min(collectionsCount, maxCollections);
+        let actualCollections = Math.min(collectionsCount, maxCollections);
         
         const loc = LOCATIONS.find(l => l.id === d.locationId);
+        let canceled = false;
+
         if (loc) {
           const robot = this.state.robots.find(r => r.id === d.robotId);
           if (robot) {
+             const currentHp = robot.currentHp ?? 10;
+             // Remaining collections possible without hitting 0 HP. Stop at 1 HP.
+             const maxPossibleCollections = Math.max(0, currentHp - 1);
+             actualCollections = Math.min(actualCollections, maxPossibleCollections);
+
              const newFoundDrops: string[] = [];
 
-             for (let i = 0; i < actualCollections; i++) {
-                // 素材を回収
-                const dropId = loc.drops[Math.floor(Math.random() * loc.drops.length)];
-                newFoundDrops.push(dropId);
-                d.pendingDrops.push(dropId);
+             if (actualCollections > 0) {
+               for (let i = 0; i < actualCollections; i++) {
+                  // 素材を回収
+                  const dropId = loc.drops[Math.floor(Math.random() * loc.drops.length)];
+                  newFoundDrops.push(dropId);
+                  d.pendingDrops.push(dropId);
+               }
+
+               // HP消費
+               robot.currentHp = currentHp - actualCollections;
+
+               const minText = Math.round((intervalMs / 60000) * 10) / 10;
+               d.logs.push(`自動探索(${minText}分間隔)で素材を${newFoundDrops.length}個発見！(未回収: ${d.pendingDrops.length}個, 残りHP: ${robot.currentHp})`);
+               if (d.logs.length > 5) d.logs.shift();
+               changed = true;
              }
 
-             if (newFoundDrops.length > 0) {
-                const minText = Math.round((intervalMs / 60000) * 10) / 10;
-                d.logs.push(`自動探索(${minText}分間隔)で素材を${newFoundDrops.length}個発見！(未回収: ${d.pendingDrops.length}個)`);
-                // Keep only last 5 logs
-                if (d.logs.length > 5) d.logs.shift();
-                changed = true;
+             if (robot.currentHp! <= 1) {
+               d.logs.push(`⚠️ HPが残りわずか(1)のため、これ以上探索を継続できません。帰還してください。`);
+               if (d.logs.length > 5) d.logs.shift();
+               canceled = true; // wait for player to manually collect and cancel, or we can auto cancel
              }
           }
         }
         
-        d.lastCollectedAt += collectionsCount * intervalMs;
+        // If they had more collections left but got canceled due to HP, we shouldn't advance lastCollectedAt by full elapsed time.
+        // We advance it by the actualCollections time, so they don't get free elapsed time when healed.
+        d.lastCollectedAt += actualCollections * intervalMs;
+        
+        if (canceled) {
+           // We just let the dispatch stay but it won't collect anymore because HP is 1.
+           // They have to click "帰還" to collect drops and then repair.
+           d.lastCollectedAt = now; // Prevent building up time while at 1 HP.
+        }
       }
     }
 
     if (changed) {
       this.saveState();
     }
+  }
+
+  public consumeRobotHp(robotId: string, amount: number) {
+    const robot = this.state.robots.find(r => r.id === robotId);
+    if (!robot) throw new Error("ロボットが見つかりません");
+    const currentHp = robot.currentHp ?? 12;
+    if (currentHp < amount) throw new Error("HPが足りません");
+    robot.currentHp = currentHp - amount;
+    this.saveState();
+  }
+
+  public addRepairKits(amount: number) {
+    this.state.repairKits = (this.state.repairKits || 0) + amount;
+    this.saveState();
   }
 
   public recordBattleResult(robotId: string, result: 'win' | 'lose' | 'draw') {
@@ -458,6 +499,8 @@ export class GameEngine {
       stats: {
         hp: totalHp, power: totalPow, defense: totalDef, agility: totalAgi, dexterity: totalDex, intelligence: totalInt
       },
+      currentHp: 12,
+      maxHp: 12,
       createdAt: Date.now(),
       value: (head.rarity + body.rarity + arms.rarity + legs.rarity) * 20
     };
@@ -708,6 +751,22 @@ export class GameEngine {
     this.state.currentRequest = null;
     if (this.state.tutorialStep === 4) this.advanceTutorial();
     this.generateRequestsIfNeeded(); // Instantly replenish the board
+    this.saveState();
+  }
+
+  public useRepairKit(robotId: string) {
+    if (!this.state.repairKits || this.state.repairKits <= 0) {
+      throw new Error("修理キットがありません");
+    }
+    const robot = this.state.robots.find(r => r.id === robotId);
+    if (!robot) throw new Error("ロボットが見つかりません");
+    
+    if ((robot.currentHp ?? 12) >= (robot.maxHp ?? 12)) {
+      throw new Error("HPは既に最大です");
+    }
+
+    this.state.repairKits -= 1;
+    robot.currentHp = robot.maxHp ?? 12;
     this.saveState();
   }
 

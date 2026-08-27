@@ -38,6 +38,8 @@ export interface Robot {
   name: string;
   parts: { head: RobotPart; body: RobotPart; arms: RobotPart; legs: RobotPart; };
   stats: { hp: number; power: number; defense: number; agility: number; dexterity: number; intelligence: number; };
+  currentHp?: number;
+  maxHp?: number;
   battleStats?: {
     matches: number;
     wins: number;
@@ -123,4 +125,5 @@ export interface GameState {
   seenTutorials: string[];
   clientAffection?: { King: number; Noble: number; OldMan: number };
   completedRequestDeadlines?: { King?: number; Noble?: number; OldMan?: number };
+  repairKits?: number;
 }
