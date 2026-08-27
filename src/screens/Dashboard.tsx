@@ -405,7 +405,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                   </span>
                 ) : (
                   <span className="inline-block mt-1 text-[11px] bg-stone-100 text-stone-600 px-1.5 py-0.5 rounded">
-                    洞窟を探索中...
+                    遠征中...
                   </span>
                 )}
               </div>

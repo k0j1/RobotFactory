@@ -306,7 +306,7 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
             animate={{ y: [-1, -4, -1], scale: [0.95, 1.05, 0.95] }}
             transition={{ duration: 1.0, repeat: Infinity }}
           >
-            <span>🎁 素材発見！</span>
+            <span>{animateVictory ? '🏆 勝利！' : '🎁 素材発見！'}</span>
           </motion.div>
           <motion.div 
             className="absolute bottom-2 right-3 text-amber-500 text-[10px] sm:text-xs z-10 pointer-events-none select-none font-bold"
