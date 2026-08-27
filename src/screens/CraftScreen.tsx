@@ -180,27 +180,27 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
       {/* タブ切り替え */}
       <div className="flex gap-2">
         <button 
-          className={`flex-1 py-2.5 font-bold rounded-t-md border-b-4 flex items-center justify-center gap-1.5 transition-colors ${tab === 'part' ? 'border-amber-500 text-amber-700 bg-amber-50' : 'border-transparent text-stone-500 hover:bg-stone-100'}`}
+          className={`flex-1 py-2.5 font-bold rounded-t-md border-b-4 flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap ${tab === 'part' ? 'border-amber-500 text-amber-700 bg-amber-50' : 'border-transparent text-stone-500 hover:bg-stone-100'}`}
           onClick={() => setTab('part')}
         >
           <span>パーツ製造</span>
           {isPartReady ? (
-            <Badge className="bg-amber-500 text-white text-xs animate-bounce">受取可！</Badge>
+            <Badge className="bg-amber-500 text-white text-[10px] sm:text-xs animate-bounce px-1.5 py-0.5 leading-none">受取可！</Badge>
           ) : isPartCrafting ? (
-            <Badge className="bg-blue-600 text-white text-[11px] font-mono animate-pulse">
+            <Badge className="bg-blue-600 text-white text-[10px] sm:text-[11px] font-mono animate-pulse px-1.5 py-0.5 leading-none">
               あと{partRemainingSec}秒
             </Badge>
           ) : null}
         </button>
         <button 
-          className={`flex-1 py-2.5 font-bold rounded-t-md border-b-4 flex items-center justify-center gap-1.5 transition-colors ${tab === 'robot' ? 'border-amber-500 text-amber-700 bg-amber-50' : 'border-transparent text-stone-500 hover:bg-stone-100'}`}
+          className={`flex-1 py-2.5 font-bold rounded-t-md border-b-4 flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap ${tab === 'robot' ? 'border-amber-500 text-amber-700 bg-amber-50' : 'border-transparent text-stone-500 hover:bg-stone-100'}`}
           onClick={() => setTab('robot')}
         >
           <span>ロボット組立</span>
           {isRobotReady ? (
-            <Badge className="bg-amber-500 text-white text-xs animate-bounce">受取可！</Badge>
+            <Badge className="bg-amber-500 text-white text-[10px] sm:text-xs animate-bounce px-1.5 py-0.5 leading-none">受取可！</Badge>
           ) : isRobotAssembling ? (
-            <Badge className="bg-blue-600 text-white text-[11px] font-mono animate-pulse">
+            <Badge className="bg-blue-600 text-white text-[10px] sm:text-[11px] font-mono animate-pulse px-1.5 py-0.5 leading-none">
               あと{robotRemainingSec}秒
             </Badge>
           ) : null}
@@ -287,19 +287,19 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                         : 'border-stone-200 bg-white hover:border-stone-300'
                     }`}
                   >
-                    <div className="flex justify-between items-center">
-                      <span className="font-bold text-sm text-stone-800">{pt.label}</span>
+                    <div className="flex justify-between items-center gap-1">
+                      <span className="font-bold text-sm text-stone-800 whitespace-nowrap">{pt.label}</span>
                       {isThisPartReady ? (
-                        <Badge className="bg-emerald-600 text-white text-[10px] animate-bounce px-1.5 py-0.2">
+                        <Badge className="bg-emerald-600 text-white text-[9px] sm:text-[10px] animate-bounce px-1.5 py-0.5 leading-none shrink-0">
                           完成！
                         </Badge>
                       ) : isThisPartCrafting ? (
-                        <Badge className="bg-blue-600 text-white text-[10px] font-mono px-1.5 py-0.2 flex items-center gap-1 shadow-[0_0_8px_rgba(37,99,235,0.6)]">
-                          <motion.span animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 2, ease: "linear" }} className="inline-block text-[10px]">⚙️</motion.span>
+                        <Badge className="bg-blue-600 text-white text-[9px] sm:text-[10px] font-mono px-1.5 py-0.5 flex items-center gap-1 shadow-[0_0_8px_rgba(37,99,235,0.6)] leading-none shrink-0 whitespace-nowrap">
+                          <motion.span animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 2, ease: "linear" }} className="inline-block text-[9px]">⚙️</motion.span>
                           <span>あと{partRemainingSec}秒</span>
                         </Badge>
                       ) : (
-                        <span className="text-[10px] text-stone-400">待機中</span>
+                        <span className="text-[10px] text-stone-400 whitespace-nowrap leading-none">待機中</span>
                       )}
                     </div>
 
@@ -463,22 +463,22 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                         onClick={() => setSelectedMainMat(mat.id)}
                         className={`text-left p-3 border-2 ${theme.radius.md} transition-all ${isSelected ? 'border-amber-500 bg-amber-100/90 ring-2 ring-amber-400 shadow-sm' : `${rStyle.border} ${rStyle.bg} hover:border-stone-400`}`}
                       >
-                        <div className="flex justify-between items-center mb-1">
-                          <span className={`font-bold text-sm flex items-center gap-1.5 ${rStyle.text}`}>
+                        <div className="flex justify-between items-center mb-1 gap-1">
+                          <span className={`font-bold text-sm flex items-center gap-1.5 truncate ${rStyle.text}`}>
                             <MaterialIcon materialId={mat.id} />
-                            {mat.name}
+                            <span className="truncate">{mat.name}</span>
                           </span>
-                          <Badge className="bg-stone-900 text-white font-bold text-xs">x{count}</Badge>
+                          <Badge className="bg-stone-900 text-white font-bold text-[10px] sm:text-xs px-1.5 py-0.5 min-w-[2rem] text-center leading-none shrink-0 font-mono">x{count}</Badge>
                         </div>
                         <div className="flex justify-between items-center mt-1 text-xs">
-                          <span className="text-stone-500">属性: {mat.attribute}</span>
-                          <span className={`font-bold text-[10px] px-1.5 py-0.2 rounded border ${rStyle.badge}`}>
+                          <span className="text-stone-500 whitespace-nowrap">属性: {mat.attribute}</span>
+                          <span className={`font-bold text-[10px] px-1.5 py-0.2 rounded border whitespace-nowrap leading-none ${rStyle.badge}`}>
                             {rStyle.stars}
                           </span>
                         </div>
                         <div className="mt-1.5 flex items-center justify-between text-[11px] text-stone-600 font-mono bg-white/60 px-1.5 py-0.5 rounded border border-stone-200">
-                          <span>⏱️ 製造時間:</span>
-                          <strong className="text-amber-800">{formatDurationLabel(singleDuration)}</strong>
+                          <span className="whitespace-nowrap">⏱️ 製造時間:</span>
+                          <strong className="text-amber-800 whitespace-nowrap">{formatDurationLabel(singleDuration)}</strong>
                         </div>
                       </button>
                     );
@@ -507,16 +507,16 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                         onClick={() => setSelectedSubMat(mat.id)}
                         className={`text-left p-3 border-2 ${theme.radius.md} transition-all ${isSelected ? 'border-blue-500 bg-blue-100/90 ring-2 ring-blue-400 shadow-sm' : `${rStyle.border} ${rStyle.bg} hover:border-stone-400`}`}
                       >
-                        <div className="flex justify-between items-center mb-1">
-                          <span className={`font-bold text-sm flex items-center gap-1.5 ${rStyle.text}`}>
+                        <div className="flex justify-between items-center mb-1 gap-1">
+                          <span className={`font-bold text-sm flex items-center gap-1.5 truncate ${rStyle.text}`}>
                             <MaterialIcon materialId={mat.id} />
-                            {mat.name}
+                            <span className="truncate">{mat.name}</span>
                           </span>
-                          <Badge className="bg-stone-900 text-white font-bold text-xs">x{count}</Badge>
+                          <Badge className="bg-stone-900 text-white font-bold text-[10px] sm:text-xs px-1.5 py-0.5 min-w-[2rem] text-center leading-none shrink-0 font-mono">x{count}</Badge>
                         </div>
                         <div className="flex justify-between items-center mt-1 text-xs">
-                          <span className="text-stone-500">属性: {mat.attribute}</span>
-                          <span className={`font-bold text-[10px] px-1.5 py-0.2 rounded border ${rStyle.badge}`}>
+                          <span className="text-stone-500 whitespace-nowrap">属性: {mat.attribute}</span>
+                          <span className={`font-bold text-[10px] px-1.5 py-0.2 rounded border whitespace-nowrap leading-none ${rStyle.badge}`}>
                             {rStyle.stars}
                           </span>
                         </div>

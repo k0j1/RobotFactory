@@ -1047,34 +1047,79 @@ export class GameEngine {
   }
 
   public disassembleRobot(robotId: string) {
+    if (this.state.activeRobotDisassembly) throw new Error("既に解体中のロボットがあります");
     if (this.isRobotAutoDispatched(robotId)) throw new Error("派遣中のロボットは解体できません");
     const idx = this.state.robots.findIndex(r => r.id === robotId);
     if (idx === -1) return;
     const robot = this.state.robots[idx];
     
-    // Add parts back to inventory
-    this.state.parts.push(robot.parts.head);
-    this.state.parts.push(robot.parts.body);
-    this.state.parts.push(robot.parts.arms);
-    this.state.parts.push(robot.parts.legs);
+    const durationMs = 30000; // 30 seconds for disassembling
+    const now = Date.now();
+
+    this.state.activeRobotDisassembly = {
+      robotClone: JSON.parse(JSON.stringify(robot)),
+      startTime: now,
+      endTime: now + durationMs,
+      durationMs,
+      resultParts: [
+        robot.parts.head,
+        robot.parts.body,
+        robot.parts.arms,
+        robot.parts.legs
+      ]
+    };
 
     // Remove the robot
     this.state.robots.splice(idx, 1);
     this.saveState();
   }
 
+  public claimRobotDisassembly() {
+    if (!this.state.activeRobotDisassembly) throw new Error("解体中のロボットがありません");
+    if (this.state.activeRobotDisassembly.endTime > Date.now()) throw new Error("解体がまだ完了していません");
+
+    for (const part of this.state.activeRobotDisassembly.resultParts) {
+      this.state.parts.push(part);
+    }
+    
+    this.state.activeRobotDisassembly = null;
+    this.saveState();
+  }
+
   public recyclePart(partId: string) {
+    if (this.state.activePartRecycle) throw new Error("既に還元中のパーツがあります");
     const idx = this.state.parts.findIndex(p => p.id === partId);
     if (idx === -1) return;
     const part = this.state.parts[idx];
     
     // Extract the original material name from the part name (e.g. "さびた鉄くずのヘッド" -> "さびた鉄くず")
     const mat = MATERIALS.find(m => part.name.startsWith(m.name));
-    if (mat) {
-      this.state.materials[mat.id] = (this.state.materials[mat.id] || 0) + 2;
-    }
+    const resultMaterials = mat ? [{ materialId: mat.id, count: 2 }] : [];
+
+    const durationMs = 10000; // 10 seconds for recycling
+    const now = Date.now();
+
+    this.state.activePartRecycle = {
+      partClone: JSON.parse(JSON.stringify(part)),
+      startTime: now,
+      endTime: now + durationMs,
+      durationMs,
+      resultMaterials
+    };
     
     this.state.parts.splice(idx, 1);
+    this.saveState();
+  }
+
+  public claimPartRecycle() {
+    if (!this.state.activePartRecycle) throw new Error("還元中のパーツがありません");
+    if (this.state.activePartRecycle.endTime > Date.now()) throw new Error("還元がまだ完了していません");
+
+    for (const res of this.state.activePartRecycle.resultMaterials) {
+      this.state.materials[res.materialId] = (this.state.materials[res.materialId] || 0) + res.count;
+    }
+    
+    this.state.activePartRecycle = null;
     this.saveState();
   }
 

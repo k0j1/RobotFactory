@@ -14,13 +14,21 @@ export const Layout: React.FC<{
   const isCraftPartDone = state?.activePartCraft ? (state.activePartCraft.endTime - Date.now() <= 0) : false;
   const isCraftRobotDone = state?.activeRobotAssembly ? (state.activeRobotAssembly.endTime - Date.now() <= 0) : false;
   const isCraftDone = isCraftPartDone || isCraftRobotDone;
+  
+  const isDisassemblyDone = state?.activeRobotDisassembly ? (state.activeRobotDisassembly.endTime - Date.now() <= 0) : false;
+  const isRecycleDone = state?.activePartRecycle ? (state.activePartRecycle.endTime - Date.now() <= 0) : false;
+  const isStorageTaskDone = isDisassemblyDone || isRecycleDone;
+  const isStorageTaskActive = state?.activeRobotDisassembly || state?.activePartRecycle;
+
   const totalPendingAutoDrops = state?.autoDispatches?.reduce((acc, d) => acc + (d.pendingDrops?.length || 0), 0) || 0;
 
   const navItems = [
     { 
       id: 'dashboard', 
       label: '工房',
-      badge: (isQuestDone || totalPendingAutoDrops > 0 || isCraftDone) ? (totalPendingAutoDrops > 0 ? `${totalPendingAutoDrops}` : '!') : undefined,
+      badge: (isQuestDone || totalPendingAutoDrops > 0 || isCraftDone || isStorageTaskDone) 
+        ? (totalPendingAutoDrops > 0 ? (totalPendingAutoDrops > 99 ? '99+' : `${totalPendingAutoDrops}`) : '!') 
+        : undefined,
       badgeColor: 'bg-emerald-500 text-white'
     },
     { 
@@ -36,7 +44,12 @@ export const Layout: React.FC<{
       badgeColor: isCraftDone ? 'bg-amber-500 text-white animate-bounce' : 'bg-blue-500 text-white'
     },
     { id: 'requests', label: '依頼板' },
-    { id: 'storage', label: '倉庫' },
+    { 
+      id: 'storage', 
+      label: '倉庫',
+      badge: isStorageTaskDone ? '完了' : (isStorageTaskActive ? '解体中' : undefined),
+      badgeColor: isStorageTaskDone ? 'bg-amber-500 text-white animate-bounce' : 'bg-blue-500 text-white'
+    },
     { id: 'minigame', label: 'バトル' },
   ];
 
@@ -45,7 +58,7 @@ export const Layout: React.FC<{
       <header className={`${theme.colors.secondary} ${theme.colors.textLight} ${theme.spacing.sm} sticky top-0 ${theme.zIndex.header} ${theme.shadow.sm}`}>
         <div className="max-w-4xl mx-auto flex justify-between items-center">
           <h1 className={theme.typography.h2}>ポンコツロボット工房</h1>
-          <div className="text-sm">v1.0.71</div>
+          <div className="text-sm">v1.0.73</div>
         </div>
       </header>
 
@@ -61,9 +74,9 @@ export const Layout: React.FC<{
               onClick={() => onNavigate(item.id)}
               className={`relative flex-1 py-3 text-center transition-colors ${theme.radius.md} ${activeView === item.id ? theme.colors.primary : 'hover:bg-stone-200'}`}
             >
-              <span className={`font-bold ${activeView === item.id ? 'text-white' : theme.colors.textMuted}`}>{item.label}</span>
+              <span className={`font-bold whitespace-nowrap ${activeView === item.id ? 'text-white' : theme.colors.textMuted}`}>{item.label}</span>
               {item.badge && (
-                <span className={`absolute -top-1 right-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-md border border-white ${item.badgeColor}`}>
+                <span className={`absolute -top-1 right-1 h-4.5 min-w-[1.25rem] px-1 inline-flex items-center justify-center text-[9px] font-bold rounded-full shadow-md border border-white whitespace-nowrap leading-none tracking-tight shrink-0 ${item.badgeColor}`}>
                   {item.badge}
                 </span>
               )}

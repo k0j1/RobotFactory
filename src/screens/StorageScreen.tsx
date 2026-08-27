@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { GameState, AttributeColors, AttributeNames } from '../core/models';
 import { GameEngine } from '../core/GameEngine';
 import { Card, Button, Badge } from '../components/ui/core';
@@ -11,11 +11,23 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
   const [tab, setTab] = useState<'robots'|'parts'|'materials'>('robots');
   const [confirmRobotId, setConfirmRobotId] = useState<string | null>(null);
   const [confirmPartId, setConfirmPartId] = useState<string | null>(null);
+  const [now, setNow] = useState(Date.now());
   
   // Materials tab filtering
   const [matRarityFilter, setMatRarityFilter] = useState<'all' | 1 | 2 | 3>('all');
   const [matAttributeFilter, setMatAttributeFilter] = useState<string>('All');
   const [matSearchQuery, setMatSearchQuery] = useState('');
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 100);
+    return () => clearInterval(timer);
+  }, []);
+
+  const activeDisassembly = state.activeRobotDisassembly;
+  const isDisassemblyDone = activeDisassembly ? activeDisassembly.endTime <= now : false;
+
+  const activeRecycle = state.activePartRecycle;
+  const isRecycleDone = activeRecycle ? activeRecycle.endTime <= now : false;
 
   const currentSizeIndex = MAX_STORAGE_LEVELS.indexOf(state.storageSize);
   const nextSize = MAX_STORAGE_LEVELS[currentSizeIndex + 1];
@@ -57,17 +69,29 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
       <div className="flex gap-2">
         <Button 
           variant={tab === 'robots' ? 'primary' : 'secondary'} 
-          className="flex-1" 
+          className="flex-1 relative" 
           onClick={() => setTab('robots')}
         >
           ロボット
+          {activeDisassembly && (
+            <span className={`absolute -top-1 -right-1 flex h-3 w-3 ${isDisassemblyDone ? 'animate-bounce' : 'animate-pulse'}`}>
+              <span className={`absolute inline-flex h-full w-full rounded-full opacity-75 ${isDisassemblyDone ? 'bg-emerald-400' : 'bg-blue-400'}`}></span>
+              <span className={`relative inline-flex rounded-full h-3 w-3 ${isDisassemblyDone ? 'bg-emerald-500' : 'bg-blue-500'}`}></span>
+            </span>
+          )}
         </Button>
         <Button 
           variant={tab === 'parts' ? 'primary' : 'secondary'} 
-          className="flex-1" 
+          className="flex-1 relative" 
           onClick={() => setTab('parts')}
         >
           パーツ
+          {activeRecycle && (
+            <span className={`absolute -top-1 -right-1 flex h-3 w-3 ${isRecycleDone ? 'animate-bounce' : 'animate-pulse'}`}>
+              <span className={`absolute inline-flex h-full w-full rounded-full opacity-75 ${isRecycleDone ? 'bg-emerald-400' : 'bg-blue-400'}`}></span>
+              <span className={`relative inline-flex rounded-full h-3 w-3 ${isRecycleDone ? 'bg-emerald-500' : 'bg-blue-500'}`}></span>
+            </span>
+          )}
         </Button>
         <Button 
           variant={tab === 'materials' ? 'primary' : 'secondary'} 
@@ -80,12 +104,60 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
 
       {tab === 'robots' && (
         <>
-          <div className="flex justify-between items-center mb-2 px-1">
+          <div className="flex justify-between items-center mb-2 px-1 flex-wrap gap-2">
             <span className="font-bold text-stone-600">所有ロボット</span>
-            <span className="font-bold text-green-700 bg-green-100 px-3 py-1 rounded border border-green-300 shadow-sm text-sm">
+            <span className="font-bold text-green-700 bg-green-100 px-3 py-1 rounded border border-green-300 shadow-sm text-xs sm:text-sm whitespace-nowrap leading-none inline-flex items-center">
               🔧 修理キット: {state.repairKits || 0} 個
             </span>
           </div>
+
+          {activeDisassembly && (
+            <Card className="bg-stone-50 border-rose-300 mb-4 p-4 shadow-sm relative overflow-hidden">
+              <div className="flex justify-between items-center mb-2 relative z-10">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-stone-700">⚙️ ロボット解体中...</span>
+                  <span className="text-sm font-bold text-rose-600">{activeDisassembly.robotClone.name}</span>
+                </div>
+                {isDisassemblyDone ? (
+                  <Badge className="bg-emerald-500 text-white animate-bounce text-xs px-2 py-1 leading-none">完了！</Badge>
+                ) : (
+                  <Badge className="bg-blue-600 text-white font-mono text-xs px-2 py-1 leading-none">
+                    あと {Math.ceil(Math.max(0, activeDisassembly.endTime - now) / 1000)}秒
+                  </Badge>
+                )}
+              </div>
+              
+              {!isDisassemblyDone ? (
+                <div className="w-full bg-stone-200 h-2 rounded-full overflow-hidden relative z-10 mb-1">
+                  <div 
+                    className="bg-blue-500 h-full transition-all duration-100"
+                    style={{ width: `${Math.min(100, Math.max(0, 100 - ((activeDisassembly.endTime - now) / activeDisassembly.durationMs * 100)))}%` }}
+                  />
+                </div>
+              ) : (
+                <div className="flex justify-between items-center mt-3 pt-3 border-t border-rose-100">
+                  <div className="flex gap-2">
+                    {activeDisassembly.resultParts.map((p, i) => (
+                      <span key={i} className="text-xs bg-stone-200 px-2 py-0.5 rounded font-mono border border-stone-300 shadow-sm">{p.name.substring(0, 4)}...</span>
+                    ))}
+                  </div>
+                  <Button 
+                    size="sm" 
+                    variant="success" 
+                    onClick={() => {
+                      try {
+                        engine.claimRobotDisassembly();
+                      } catch(e: any) {
+                        alert(e.message);
+                      }
+                    }}
+                  >
+                    パーツを受け取る
+                  </Button>
+                </div>
+              )}
+            </Card>
+          )}
 
           {nextSize && (
             <Card className="flex justify-between items-center bg-stone-100">
@@ -190,16 +262,23 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                       {confirmRobotId === r.id ? (
                         <div className="flex gap-2">
                           <Button size="sm" variant="secondary" onClick={() => setConfirmRobotId(null)}>キャンセル</Button>
-                          <Button size="sm" variant="danger" onClick={() => { engine.disassembleRobot(r.id); setConfirmRobotId(null); }}>解体実行</Button>
+                          <Button size="sm" variant="danger" onClick={() => {
+                            try {
+                              engine.disassembleRobot(r.id);
+                            } catch(e: any) {
+                              alert(e.message);
+                            }
+                            setConfirmRobotId(null);
+                          }}>解体実行</Button>
                         </div>
                       ) : (
                         <Button 
                           size="sm" 
                           variant="danger" 
-                          disabled={isQuesting || isAutoDispatched}
+                          disabled={isQuesting || isAutoDispatched || !!activeDisassembly}
                           onClick={() => setConfirmRobotId(r.id)}
                         >
-                          {isQuesting || isAutoDispatched ? '出撃中のため解体不可' : '解体する'}
+                          {isQuesting || isAutoDispatched ? '出撃中のため解体不可' : activeDisassembly ? '解体進行中のため不可' : '解体する'}
                         </Button>
                       )}
                     </div>
@@ -212,10 +291,64 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
       )}
 
       {tab === 'parts' && (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-          {state.parts?.length === 0 ? (
-            <p className="text-stone-500 col-span-full">パーツがありません</p>
-          ) : (
+        <>
+          {activeRecycle && (
+            <Card className="bg-stone-50 border-amber-300 mb-4 p-4 shadow-sm relative overflow-hidden">
+              <div className="flex justify-between items-center mb-2 relative z-10">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-stone-700">♻️ パーツ還元中...</span>
+                  <span className="text-sm font-bold text-amber-600">{activeRecycle.partClone.name}</span>
+                </div>
+                {isRecycleDone ? (
+                  <Badge className="bg-emerald-500 text-white animate-bounce text-xs px-2 py-1 leading-none">完了！</Badge>
+                ) : (
+                  <Badge className="bg-blue-600 text-white font-mono text-xs px-2 py-1 leading-none">
+                    あと {Math.ceil(Math.max(0, activeRecycle.endTime - now) / 1000)}秒
+                  </Badge>
+                )}
+              </div>
+              
+              {!isRecycleDone ? (
+                <div className="w-full bg-stone-200 h-2 rounded-full overflow-hidden relative z-10 mb-1">
+                  <div 
+                    className="bg-blue-500 h-full transition-all duration-100"
+                    style={{ width: `${Math.min(100, Math.max(0, 100 - ((activeRecycle.endTime - now) / activeRecycle.durationMs * 100)))}%` }}
+                  />
+                </div>
+              ) : (
+                <div className="flex justify-between items-center mt-3 pt-3 border-t border-amber-100">
+                  <div className="flex gap-2">
+                    {activeRecycle.resultMaterials.map((m, i) => {
+                      const matDef = MATERIALS.find(def => def.id === m.materialId);
+                      return (
+                        <span key={i} className="text-xs bg-stone-200 px-2 py-0.5 rounded font-bold border border-stone-300 flex items-center gap-1 shadow-sm">
+                          {matDef ? <MaterialIcon materialId={matDef.id} /> : null}
+                          {matDef ? matDef.name.substring(0,4) : '素材'}x{m.count}
+                        </span>
+                      );
+                    })}
+                  </div>
+                  <Button 
+                    size="sm" 
+                    variant="success" 
+                    onClick={() => {
+                      try {
+                        engine.claimPartRecycle();
+                      } catch(e: any) {
+                        alert(e.message);
+                      }
+                    }}
+                  >
+                    素材を受け取る
+                  </Button>
+                </div>
+              )}
+            </Card>
+          )}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+            {state.parts?.length === 0 ? (
+              <p className="text-stone-500 col-span-full">パーツがありません</p>
+            ) : (
             state.parts.map((p, idx) => (
               <Card key={`${p.id}-${idx}`} className="p-3 flex flex-col justify-between">
                 <div className="flex justify-between items-start">
@@ -236,16 +369,26 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                   {confirmPartId === p.id ? (
                     <div className="flex gap-2">
                       <Button size="sm" variant="secondary" onClick={() => setConfirmPartId(null)}>やめる</Button>
-                      <Button size="sm" variant="danger" onClick={() => { engine.recyclePart(p.id); setConfirmPartId(null); }}>還元する</Button>
+                      <Button size="sm" variant="danger" onClick={() => {
+                        try {
+                          engine.recyclePart(p.id);
+                        } catch(e: any) {
+                          alert(e.message);
+                        }
+                        setConfirmPartId(null);
+                      }}>還元する</Button>
                     </div>
                   ) : (
-                    <Button size="sm" variant="danger" onClick={() => setConfirmPartId(p.id)}>素材に戻す</Button>
+                    <Button size="sm" variant="danger" disabled={!!activeRecycle} onClick={() => setConfirmPartId(p.id)}>
+                      {activeRecycle ? '還元進行中のため不可' : '素材に戻す'}
+                    </Button>
                   )}
                 </div>
               </Card>
             ))
           )}
         </div>
+        </>
       )}
 
       {tab === 'materials' && (
@@ -376,11 +519,11 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                         </div>
                       </div>
 
-                      <div className="flex flex-col items-end gap-1">
-                        <Badge className="bg-stone-900 text-white font-bold text-xs px-2 py-0.5 shadow-xs">
+                      <div className="flex flex-col items-end gap-1 shrink-0">
+                        <Badge className="bg-stone-900 text-white font-bold text-[11px] sm:text-xs px-2 py-0.5 shadow-xs min-w-[2rem] text-center font-mono leading-none">
                           x{count}
                         </Badge>
-                        <span className="text-[10px] text-stone-500 font-mono">
+                        <span className="text-[10px] text-stone-500 font-mono whitespace-nowrap">
                           単価 {mat.price} G
                         </span>
                       </div>

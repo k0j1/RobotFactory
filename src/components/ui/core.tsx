@@ -24,7 +24,7 @@ export const Button: React.FC<ButtonProps> = ({
   if (size === 'md') sClass = 'px-4 py-2';
   if (size === 'lg') sClass = 'px-6 py-3 text-lg';
 
-  const baseClass = `inline-flex items-center justify-center font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${theme.radius.md} ${theme.typography.body} ${theme.shadow.sm}`;
+  const baseClass = `inline-flex items-center justify-center font-bold whitespace-nowrap select-none transition-colors shrink-0 disabled:opacity-50 disabled:cursor-not-allowed ${theme.radius.md} ${theme.typography.body} ${theme.shadow.sm}`;
 
   return (
     <button className={`${baseClass} ${vClass} ${sClass} ${className}`} {...props}>
@@ -39,8 +39,11 @@ export const Card: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({ children,
   </div>
 );
 
-export const Badge: React.FC<{ children: React.ReactNode, className?: string }> = ({ children, className = '' }) => (
-  <span className={`inline-block px-2 py-0.5 ${theme.colors.background} ${theme.colors.textMuted} ${theme.radius.sm} text-xs font-bold ${className}`}>
+export const Badge: React.FC<{ children: React.ReactNode, className?: string, style?: React.CSSProperties }> = ({ children, className = '', style }) => (
+  <span 
+    style={style}
+    className={`inline-flex items-center justify-center whitespace-nowrap leading-none px-2 py-0.5 ${theme.colors.background} ${theme.colors.textMuted} ${theme.radius.sm} text-xs font-bold shrink-0 ${className}`}
+  >
     {children}
   </span>
 );

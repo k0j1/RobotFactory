@@ -327,51 +327,63 @@ export const RequestScreen: React.FC<{ state: GameState; engine: GameEngine }> =
                   <div className="flex-1 flex flex-col justify-between space-y-3">
                     <div>
                       {/* Desktop Header */}
-                      <div className="hidden sm:flex justify-between items-center mb-2">
-                        <div className="flex items-center gap-2">
+                      <div className="hidden sm:flex justify-between items-center mb-2 flex-wrap gap-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <Badge
-                            className={
+                            className={`whitespace-nowrap leading-none ${
                               rank === 'King'
                                 ? 'bg-amber-200 text-amber-900'
                                 : rank === 'Noble'
                                 ? 'bg-purple-200 text-purple-900'
                                 : 'bg-stone-200 text-stone-900'
-                            }
+                            }`}
                           >
                             {schedule.label}
                           </Badge>
 
-                          <span className={`text-xs px-2 py-0.5 rounded border font-medium ${schedule.tagColor}`}>
+                          <span className={`text-xs px-2 py-0.5 rounded border font-medium whitespace-nowrap leading-none ${schedule.tagColor}`}>
                             {schedule.interval} ({schedule.times})
                           </span>
 
-                          <span className="text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded">
+                          <span className="text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded whitespace-nowrap leading-none inline-flex items-center">
                             好感度: Lv.{affection}/10
                             {affection >= 10 && ' ★MAX(1.5倍)'}
                           </span>
                         </div>
 
                         {/* Status Badge */}
-                        <div>
-                          {isCurrentActive && <Badge className="bg-blue-500 text-white">受注中</Badge>}
-                          {isCompletedThisSlot && <Badge className="bg-emerald-100 text-emerald-800">今期 納品完了</Badge>}
+                        <div className="shrink-0">
+                          {isCurrentActive && <Badge className="bg-blue-500 text-white leading-none whitespace-nowrap">受注中</Badge>}
+                          {isCompletedThisSlot && <Badge className="bg-emerald-100 text-emerald-800 leading-none whitespace-nowrap">今期 納品完了</Badge>}
                           {!isCurrentActive && !isCompletedThisSlot && availableReq && (
-                            <Badge className="bg-amber-100 text-amber-800">募集中</Badge>
+                            <Badge className="bg-amber-100 text-amber-800 leading-none whitespace-nowrap">募集中</Badge>
                           )}
                         </div>
                       </div>
 
                       {/* Mobile Badge & Affection */}
-                      <div className="flex sm:hidden justify-between items-center mb-2">
-                        <span className="text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded">
-                          好感度: Lv.{affection}/10
-                          {affection >= 10 && ' ★MAX'}
-                        </span>
-                        <div>
-                          {isCurrentActive && <Badge className="bg-blue-500 text-white">受注中</Badge>}
-                          {isCompletedThisSlot && <Badge className="bg-emerald-100 text-emerald-800">今期 納品完了</Badge>}
+                      <div className="flex sm:hidden justify-between items-center mb-2 flex-wrap gap-1">
+                        <div className="flex items-center gap-1 flex-wrap">
+                          <Badge
+                            className={`whitespace-nowrap leading-none text-[11px] ${
+                              rank === 'King'
+                                ? 'bg-amber-200 text-amber-900'
+                                : rank === 'Noble'
+                                ? 'bg-purple-200 text-purple-900'
+                                : 'bg-stone-200 text-stone-900'
+                            }`}
+                          >
+                            {schedule.label}
+                          </Badge>
+                          <span className="text-[10px] font-bold text-rose-600 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded whitespace-nowrap leading-none">
+                            Lv.{affection} {affection >= 10 ? '★MAX' : ''}
+                          </span>
+                        </div>
+                        <div className="shrink-0">
+                          {isCurrentActive && <Badge className="bg-blue-500 text-white text-[10px] leading-none whitespace-nowrap">受注中</Badge>}
+                          {isCompletedThisSlot && <Badge className="bg-emerald-100 text-emerald-800 text-[10px] leading-none whitespace-nowrap">今期 納品完了</Badge>}
                           {!isCurrentActive && !isCompletedThisSlot && availableReq && (
-                            <Badge className="bg-amber-100 text-amber-800">募集中</Badge>
+                            <Badge className="bg-amber-100 text-amber-800 text-[10px] leading-none whitespace-nowrap">募集中</Badge>
                           )}
                         </div>
                       </div>

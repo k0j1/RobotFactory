@@ -122,6 +122,22 @@ export interface ActiveRobotAssembly {
   resultRobot: Robot;
 }
 
+export interface ActiveRobotDisassembly {
+  robotClone: Robot;
+  startTime: number;
+  endTime: number;
+  durationMs: number;
+  resultParts: RobotPart[];
+}
+
+export interface ActivePartRecycle {
+  partClone: RobotPart;
+  startTime: number;
+  endTime: number;
+  durationMs: number;
+  resultMaterials: { materialId: string, count: number }[];
+}
+
 export interface GameState {
   gold: number;
   storageSize: number;
@@ -132,6 +148,8 @@ export interface GameState {
   activeQuest: ActiveQuest | null;
   activePartCraft?: ActivePartCraft | null;
   activeRobotAssembly?: ActiveRobotAssembly | null;
+  activeRobotDisassembly?: ActiveRobotDisassembly | null;
+  activePartRecycle?: ActivePartRecycle | null;
   currentRequest: ClientRequest | null;
   deliveredRobotsCount: number;
   deliveredLogs: DeliveredLog[];

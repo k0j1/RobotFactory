@@ -205,26 +205,26 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                     (state.activePartCraft && state.activePartCraft.endTime <= Date.now()) ||
                     (state.activeRobotAssembly && state.activeRobotAssembly.endTime <= Date.now())
                   ) && (
-                    <Badge className="bg-emerald-500 text-white text-[10px] animate-bounce">
+                    <Badge className="bg-emerald-500 text-white text-[10px] whitespace-nowrap animate-bounce leading-none">
                       🎉 完成受取可能！
                     </Badge>
                   )}
                 </div>
                 <div className="text-xs text-stone-600 flex gap-4 mt-0.5">
                   {state.activePartCraft && (
-                    <span>
+                    <span className="whitespace-nowrap">
                       パーツ: {state.activePartCraft.endTime <= Date.now() ? <strong className="text-emerald-600">完成！</strong> : <span className="font-mono">{formatTime(Math.max(0, state.activePartCraft.endTime - Date.now()))}</span>}
                     </span>
                   )}
                   {state.activeRobotAssembly && (
-                    <span>
+                    <span className="whitespace-nowrap">
                       ロボット: {state.activeRobotAssembly.endTime <= Date.now() ? <strong className="text-emerald-600">完成！</strong> : <span className="font-mono">{formatTime(Math.max(0, state.activeRobotAssembly.endTime - Date.now()))}</span>}
                     </span>
                   )}
                 </div>
               </div>
             </div>
-            <Button size="sm" onClick={() => onNavigate('craft')} className="bg-amber-600 hover:bg-amber-500 text-white font-bold">
+            <Button size="sm" onClick={() => onNavigate('craft')} className="bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs sm:text-sm">
               製造画面へ →
             </Button>
           </div>
@@ -237,10 +237,10 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
           <div className="flex items-center gap-2">
             <span className="text-xl">📡</span>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h3 className={theme.typography.h3}>出撃状況・探索ログパネル</h3>
                 {(questDone || totalAutoPendingDrops > 0) && (
-                  <span className="bg-emerald-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-full animate-bounce shadow">
+                  <span className="bg-emerald-500 text-white text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-full animate-bounce shadow whitespace-nowrap leading-none shrink-0 inline-flex items-center">
                     {questDone && totalAutoPendingDrops > 0 ? '🎉 遠征完了 & 素材受取可能！' : questDone ? '🎉 遠征帰還！' : `📦 素材受取可能 (${totalAutoPendingDrops}個)`}
                   </span>
                 )}
@@ -250,7 +250,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
           </div>
           <div className="flex items-center gap-2">
             {totalAutoPendingDrops > 0 && (
-              <Button size="sm" variant="success" onClick={handleClaimAllAutoDispatches} className="animate-pulse shadow-sm">
+              <Button size="sm" variant="success" onClick={handleClaimAllAutoDispatches} className="animate-pulse shadow-sm text-xs px-2.5 py-1.5">
                 自動探索を一括回収 ({totalAutoPendingDrops}個)
               </Button>
             )}
@@ -345,20 +345,20 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                         </p>
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right shrink-0">
                       {pending > 0 ? (
                         <Button 
                           size="sm" 
                           variant="success" 
                           onClick={() => handleClaimAutoDispatch(d.id)}
-                          className="shadow-sm font-bold"
+                          className="shadow-sm font-bold text-xs px-2 py-1"
                         >
                           回収 ({pending}個)
                         </Button>
                       ) : (
                         <div>
-                          <span className="text-[10px] text-stone-400 block">次回素材発見</span>
-                          <span className="text-xs font-bold font-mono text-purple-700">{formatTime(remain)}</span>
+                          <span className="text-[10px] text-stone-400 block whitespace-nowrap">次回素材発見</span>
+                          <span className="text-xs font-bold font-mono text-purple-700 whitespace-nowrap">{formatTime(remain)}</span>
                         </div>
                       )}
                     </div>
@@ -469,7 +469,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
           </div>
           <div className="flex items-center gap-2">
             {totalAutoPendingDrops > 0 && (
-              <Button size="sm" variant="success" onClick={handleClaimAllAutoDispatches}>
+              <Button size="sm" variant="success" onClick={handleClaimAllAutoDispatches} className="text-xs px-2.5 py-1.5">
                 全回収 ({totalAutoPendingDrops}個)
               </Button>
             )}
@@ -511,24 +511,24 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
 
                       {/* 表情テスト切替コントロール（控えめに右上に配置） */}
                       <div className="absolute top-2 right-2 flex items-center gap-1 bg-stone-900/80 p-1 rounded border border-stone-700/60 z-20">
-                        <span className="text-[10px] text-stone-400 mr-0.5">表情:</span>
+                        <span className="text-[10px] text-stone-400 mr-0.5 whitespace-nowrap">表情:</span>
                         <button 
                           onClick={() => setPreviewEmotions(prev => ({ ...prev, [dispatch.id]: 'auto' }))}
-                          className={`text-[10px] px-1.5 py-0.5 rounded font-bold transition-colors ${selectedEmotion === 'auto' ? 'bg-amber-500 text-white' : 'text-stone-300 hover:bg-stone-800'}`}
+                          className={`text-[10px] px-1.5 py-0.5 rounded font-bold whitespace-nowrap transition-colors ${selectedEmotion === 'auto' ? 'bg-amber-500 text-white' : 'text-stone-300 hover:bg-stone-800'}`}
                           title="自動（素材発見時: 喜ぶ / 探索中: 歩行）"
                         >
                           自動
                         </button>
                         <button 
                           onClick={() => setPreviewEmotions(prev => ({ ...prev, [dispatch.id]: 'happy' }))}
-                          className={`text-[10px] px-1.5 py-0.5 rounded font-bold transition-colors ${selectedEmotion === 'happy' ? 'bg-amber-500 text-white' : 'text-stone-300 hover:bg-stone-800'}`}
+                          className={`text-[10px] px-1.5 py-0.5 rounded font-bold whitespace-nowrap transition-colors ${selectedEmotion === 'happy' ? 'bg-amber-500 text-white' : 'text-stone-300 hover:bg-stone-800'}`}
                           title="素材発見（喜ぶ表情・バンザイ）"
                         >
                           ✨発見
                         </button>
                         <button 
                           onClick={() => setPreviewEmotions(prev => ({ ...prev, [dispatch.id]: 'troubled' }))}
-                          className={`text-[10px] px-1.5 py-0.5 rounded font-bold transition-colors ${selectedEmotion === 'troubled' ? 'bg-blue-600 text-white' : 'text-stone-300 hover:bg-stone-800'}`}
+                          className={`text-[10px] px-1.5 py-0.5 rounded font-bold whitespace-nowrap transition-colors ${selectedEmotion === 'troubled' ? 'bg-blue-600 text-white' : 'text-stone-300 hover:bg-stone-800'}`}
                           title="探索難航・失敗（困る表情・オロオロ）"
                         >
                           💦困り
@@ -546,11 +546,11 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                               {robot?.name || '不明なロボット'}
                             </p>
                             {pendingCount > 0 ? (
-                              <span className="text-[11px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold border border-emerald-300 animate-pulse flex items-center gap-1">
+                              <span className="text-[10px] sm:text-[11px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold border border-emerald-300 animate-pulse flex items-center gap-1 whitespace-nowrap leading-none shrink-0">
                                 <span>🎁 未回収: {pendingCount}個 (大喜び中！)</span>
                               </span>
                             ) : (
-                              <span className="text-[11px] bg-stone-100 text-stone-600 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+                              <span className="text-[10px] sm:text-[11px] bg-stone-100 text-stone-600 px-2 py-0.5 rounded-full font-medium flex items-center gap-1 whitespace-nowrap leading-none shrink-0">
                                 <span>🔍 探索中 (敏捷 {robot?.stats.agility || 0})</span>
                               </span>
                             )}
@@ -564,11 +564,11 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                             </p>
                           )}
                           <div className="flex items-center gap-2 flex-wrap mt-1">
-                            <p className="text-[11px] text-stone-500 font-mono">
+                            <p className="text-[11px] text-stone-500 font-mono whitespace-nowrap">
                               次回到着まで: {formatTime(remainToNext)}
                             </p>
                             {robot && (robot.stats.agility > 0) && (
-                              <span className="text-[10px] bg-blue-50 text-blue-700 px-1.5 py-0.2 rounded border border-blue-200 font-mono">
+                              <span className="text-[10px] bg-blue-50 text-blue-700 px-1.5 py-0.2 rounded border border-blue-200 font-mono whitespace-nowrap leading-none">
                                 敏捷短縮: -{robot.stats.agility}秒 (周期: {Math.round(intervalMs / 60000 * 10) / 10}分)
                               </span>
                             )}
@@ -579,8 +579,8 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                     </div>
 
                   {/* 回収アクションエリア */}
-                  <div className="mt-2.5 pt-2 border-t border-stone-100 flex items-center justify-between gap-2">
-                    <span className="text-xs text-stone-600 font-sans">
+                  <div className="mt-2.5 pt-2 border-t border-stone-100 flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+                    <span className="text-xs text-stone-600 font-sans whitespace-nowrap">
                       {pendingCount > 0 ? `📦 ${pendingCount}個の素材が回収可能です！` : '⏳ 素材の発見を待機中...'}
                     </span>
                     <Button
@@ -588,6 +588,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                       variant={pendingCount > 0 ? 'success' : 'secondary'}
                       disabled={pendingCount === 0}
                       onClick={() => handleClaimAutoDispatch(dispatch.id)}
+                      className="text-xs px-2.5 py-1"
                     >
                       {pendingCount > 0 ? `素材を回収する (${pendingCount}個)` : '素材なし'}
                     </Button>
