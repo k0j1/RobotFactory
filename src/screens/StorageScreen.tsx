@@ -320,21 +320,28 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                       </div>
                     </div>
 
-                    <div className="mt-3 pt-2 border-t border-stone-200 flex justify-end items-center">
+                    <div className="mt-3 pt-2 border-t border-stone-200 flex flex-col gap-2">
                       {confirmRobotId === r.id ? (
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="secondary" onClick={() => setConfirmRobotId(null)}>キャンセル</Button>
-                          <Button size="sm" variant="danger" onClick={() => handleDisassembleRobot(r.id)}>解体実行</Button>
-                        </div>
+                        <>
+                          <div className="text-xs text-rose-600 font-bold bg-rose-50 p-2 rounded border border-rose-200">
+                            ※解体すると頭・胴・腕・脚の4パーツに分解されます（所要時間：30秒）
+                          </div>
+                          <div className="flex justify-end gap-2">
+                            <Button size="sm" variant="secondary" onClick={() => setConfirmRobotId(null)}>キャンセル</Button>
+                            <Button size="sm" variant="danger" onClick={() => handleDisassembleRobot(r.id)}>解体実行</Button>
+                          </div>
+                        </>
                       ) : (
-                        <Button 
-                          size="sm" 
-                          variant="danger" 
-                          disabled={isQuesting || isAutoDispatched || !!activeDisassembly}
-                          onClick={() => setConfirmRobotId(r.id)}
-                        >
-                          {isQuesting || isAutoDispatched ? '出撃中のため解体不可' : activeDisassembly ? '解体進行中のため不可' : '解体する'}
-                        </Button>
+                        <div className="flex justify-end">
+                          <Button 
+                            size="sm" 
+                            variant="danger" 
+                            disabled={isQuesting || isAutoDispatched || !!activeDisassembly}
+                            onClick={() => setConfirmRobotId(r.id)}
+                          >
+                            {isQuesting || isAutoDispatched ? '出撃中のため解体不可' : activeDisassembly ? '解体進行中のため不可' : '解体する'}
+                          </Button>
+                        </div>
                       )}
                     </div>
                   </Card>
@@ -433,16 +440,23 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                     <PartVisual part={p} size={48} />
                   </div>
                 </div>
-                <div className="mt-3 flex justify-end">
+                <div className="mt-3 flex flex-col gap-2">
                   {confirmPartId === p.id ? (
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="secondary" onClick={() => setConfirmPartId(null)}>やめる</Button>
-                      <Button size="sm" variant="danger" onClick={() => handleRecyclePart(p.id)}>還元する</Button>
-                    </div>
+                    <>
+                      <div className="text-[10px] sm:text-xs text-rose-600 font-bold bg-rose-50 p-1.5 sm:p-2 rounded border border-rose-200 leading-tight">
+                        ※還元するとメイン素材2個に戻ります（所要時間：10秒）
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button size="sm" variant="secondary" onClick={() => setConfirmPartId(null)}>やめる</Button>
+                        <Button size="sm" variant="danger" onClick={() => handleRecyclePart(p.id)}>還元する</Button>
+                      </div>
+                    </>
                   ) : (
-                    <Button size="sm" variant="danger" disabled={!!activeRecycle} onClick={() => setConfirmPartId(p.id)}>
-                      {activeRecycle ? '還元進行中のため不可' : '素材に戻す'}
-                    </Button>
+                    <div className="flex justify-end">
+                      <Button size="sm" variant="danger" disabled={!!activeRecycle} onClick={() => setConfirmPartId(p.id)}>
+                        {activeRecycle ? '還元進行中のため不可' : '素材に戻す'}
+                      </Button>
+                    </div>
                   )}
                 </div>
               </Card>
