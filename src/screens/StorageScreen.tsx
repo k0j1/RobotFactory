@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { GameState, AttributeColors, AttributeNames } from '../core/models';
 import { GameEngine } from '../core/GameEngine';
 import { Card, Button, Badge } from '../components/ui/core';
@@ -13,6 +13,9 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
   const [confirmPartId, setConfirmPartId] = useState<string | null>(null);
   const [now, setNow] = useState(Date.now());
   
+  const disassemblyRef = useRef<HTMLDivElement>(null);
+  const recycleRef = useRef<HTMLDivElement>(null);
+
   // Materials tab filtering
   const [matRarityFilter, setMatRarityFilter] = useState<'all' | 1 | 2 | 3>('all');
   const [matAttributeFilter, setMatAttributeFilter] = useState<string>('All');
@@ -28,6 +31,30 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
 
   const activeRecycle = state.activePartRecycle;
   const isRecycleDone = activeRecycle ? activeRecycle.endTime <= now : false;
+
+  const handleDisassembleRobot = (robotId: string) => {
+    try {
+      engine.disassembleRobot(robotId);
+      setConfirmRobotId(null);
+      setTimeout(() => {
+        disassemblyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 50);
+    } catch(e: any) {
+      alert(e.message);
+    }
+  };
+
+  const handleRecyclePart = (partId: string) => {
+    try {
+      engine.recyclePart(partId);
+      setConfirmPartId(null);
+      setTimeout(() => {
+        recycleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 50);
+    } catch(e: any) {
+      alert(e.message);
+    }
+  };
 
   const currentSizeIndex = MAX_STORAGE_LEVELS.indexOf(state.storageSize);
   const nextSize = MAX_STORAGE_LEVELS[currentSizeIndex + 1];
@@ -112,51 +139,86 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
           </div>
 
           {activeDisassembly && (
-            <Card className="bg-stone-50 border-rose-300 mb-4 p-4 shadow-sm relative overflow-hidden">
-              <div className="flex justify-between items-center mb-2 relative z-10">
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-stone-700">⚙️ ロボット解体中...</span>
-                  <span className="text-sm font-bold text-rose-600">{activeDisassembly.robotClone.name}</span>
-                </div>
-                {isDisassemblyDone ? (
-                  <Badge className="bg-emerald-500 text-white animate-bounce text-xs px-2 py-1 leading-none">完了！</Badge>
-                ) : (
-                  <Badge className="bg-blue-600 text-white font-mono text-xs px-2 py-1 leading-none">
-                    あと {Math.ceil(Math.max(0, activeDisassembly.endTime - now) / 1000)}秒
-                  </Badge>
-                )}
-              </div>
-              
-              {!isDisassemblyDone ? (
-                <div className="w-full bg-stone-200 h-2 rounded-full overflow-hidden relative z-10 mb-1">
-                  <div 
-                    className="bg-blue-500 h-full transition-all duration-100"
-                    style={{ width: `${Math.min(100, Math.max(0, 100 - ((activeDisassembly.endTime - now) / activeDisassembly.durationMs * 100)))}%` }}
-                  />
-                </div>
-              ) : (
-                <div className="flex justify-between items-center mt-3 pt-3 border-t border-rose-100">
-                  <div className="flex gap-2">
-                    {activeDisassembly.resultParts.map((p, i) => (
-                      <span key={i} className="text-xs bg-stone-200 px-2 py-0.5 rounded font-mono border border-stone-300 shadow-sm">{p.name.substring(0, 4)}...</span>
-                    ))}
+            <div ref={disassemblyRef} className="scroll-mt-14">
+              <Card className="bg-stone-50 border-2 border-rose-300 mb-4 p-4 shadow-sm relative overflow-hidden">
+                <div className="flex justify-between items-center mb-2 relative z-10">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-stone-700">⚙️ ロボット解体中...</span>
+                    <span className="text-sm font-bold text-rose-600">{activeDisassembly.robotClone.name}</span>
                   </div>
-                  <Button 
-                    size="sm" 
-                    variant="success" 
-                    onClick={() => {
-                      try {
-                        engine.claimRobotDisassembly();
-                      } catch(e: any) {
-                        alert(e.message);
-                      }
-                    }}
-                  >
-                    パーツを受け取る
-                  </Button>
+                  {isDisassemblyDone ? (
+                    <Badge className="bg-emerald-500 text-white animate-bounce text-xs px-2.5 py-1 leading-none font-bold">解体完了！</Badge>
+                  ) : (
+                    <Badge className="bg-blue-600 text-white font-mono text-xs px-2.5 py-1 leading-none font-bold">
+                      あと {Math.ceil(Math.max(0, activeDisassembly.endTime - now) / 1000)}秒
+                    </Badge>
+                  )}
                 </div>
-              )}
-            </Card>
+                
+                {!isDisassemblyDone ? (
+                  <div className="space-y-2 mb-1">
+                    <div className="w-full bg-stone-200 h-2.5 rounded-full overflow-hidden relative z-10">
+                      <div 
+                        className="bg-blue-500 h-full transition-all duration-100"
+                        style={{ width: `${Math.min(100, Math.max(0, 100 - ((activeDisassembly.endTime - now) / activeDisassembly.durationMs * 100)))}%` }}
+                      />
+                    </div>
+                    <p className="text-[11px] text-stone-500 text-right font-mono">
+                      解体中: 頭部・胴体・腕部・脚部パーツに分解しています...
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 mt-3 pt-3 border-t border-rose-100">
+                    <div className="text-xs font-bold text-stone-700">獲得パーツ（全4パーツ）：</div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {activeDisassembly.resultParts.map((p, i) => {
+                        const typeLabels: Record<string, string> = {
+                          head: '頭部',
+                          body: '胴体',
+                          arms: '腕部',
+                          legs: '脚部',
+                        };
+                        return (
+                          <div key={i} className="flex items-center gap-2 bg-stone-100/90 p-2 rounded-lg border border-stone-200 shadow-xs">
+                            <div className="shrink-0 bg-white p-1 rounded border border-stone-200 flex items-center justify-center">
+                              <PartVisual part={p} size={36} />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5 mb-0.5">
+                                <span className="text-[10px] font-bold text-stone-600 bg-stone-200 px-1.5 py-0.5 rounded leading-none">
+                                  {typeLabels[p.type] || p.type}
+                                </span>
+                                <span className="text-[10px] font-bold" style={{ color: AttributeColors[p.attribute] }}>
+                                  {AttributeNames[p.attribute]}
+                                </span>
+                              </div>
+                              <div className="text-xs font-bold text-stone-800 break-words leading-tight">
+                                {p.name}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="flex justify-end pt-1">
+                      <Button 
+                        size="sm" 
+                        variant="success" 
+                        onClick={() => {
+                          try {
+                            engine.claimRobotDisassembly();
+                          } catch(e: any) {
+                            alert(e.message);
+                          }
+                        }}
+                      >
+                        パーツを受け取る
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </Card>
+            </div>
           )}
 
           {nextSize && (
@@ -262,14 +324,7 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                       {confirmRobotId === r.id ? (
                         <div className="flex gap-2">
                           <Button size="sm" variant="secondary" onClick={() => setConfirmRobotId(null)}>キャンセル</Button>
-                          <Button size="sm" variant="danger" onClick={() => {
-                            try {
-                              engine.disassembleRobot(r.id);
-                            } catch(e: any) {
-                              alert(e.message);
-                            }
-                            setConfirmRobotId(null);
-                          }}>解体実行</Button>
+                          <Button size="sm" variant="danger" onClick={() => handleDisassembleRobot(r.id)}>解体実行</Button>
                         </div>
                       ) : (
                         <Button 
@@ -293,57 +348,70 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
       {tab === 'parts' && (
         <>
           {activeRecycle && (
-            <Card className="bg-stone-50 border-amber-300 mb-4 p-4 shadow-sm relative overflow-hidden">
-              <div className="flex justify-between items-center mb-2 relative z-10">
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-stone-700">♻️ パーツ還元中...</span>
-                  <span className="text-sm font-bold text-amber-600">{activeRecycle.partClone.name}</span>
-                </div>
-                {isRecycleDone ? (
-                  <Badge className="bg-emerald-500 text-white animate-bounce text-xs px-2 py-1 leading-none">完了！</Badge>
-                ) : (
-                  <Badge className="bg-blue-600 text-white font-mono text-xs px-2 py-1 leading-none">
-                    あと {Math.ceil(Math.max(0, activeRecycle.endTime - now) / 1000)}秒
-                  </Badge>
-                )}
-              </div>
-              
-              {!isRecycleDone ? (
-                <div className="w-full bg-stone-200 h-2 rounded-full overflow-hidden relative z-10 mb-1">
-                  <div 
-                    className="bg-blue-500 h-full transition-all duration-100"
-                    style={{ width: `${Math.min(100, Math.max(0, 100 - ((activeRecycle.endTime - now) / activeRecycle.durationMs * 100)))}%` }}
-                  />
-                </div>
-              ) : (
-                <div className="flex justify-between items-center mt-3 pt-3 border-t border-amber-100">
-                  <div className="flex gap-2">
-                    {activeRecycle.resultMaterials.map((m, i) => {
-                      const matDef = MATERIALS.find(def => def.id === m.materialId);
-                      return (
-                        <span key={i} className="text-xs bg-stone-200 px-2 py-0.5 rounded font-bold border border-stone-300 flex items-center gap-1 shadow-sm">
-                          {matDef ? <MaterialIcon materialId={matDef.id} /> : null}
-                          {matDef ? matDef.name.substring(0,4) : '素材'}x{m.count}
-                        </span>
-                      );
-                    })}
+            <div ref={recycleRef} className="scroll-mt-14">
+              <Card className="bg-stone-50 border-2 border-amber-300 mb-4 p-4 shadow-sm relative overflow-hidden">
+                <div className="flex justify-between items-center mb-2 relative z-10">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-stone-700">♻️ パーツ還元中...</span>
+                    <span className="text-sm font-bold text-amber-700">{activeRecycle.partClone.name}</span>
                   </div>
-                  <Button 
-                    size="sm" 
-                    variant="success" 
-                    onClick={() => {
-                      try {
-                        engine.claimPartRecycle();
-                      } catch(e: any) {
-                        alert(e.message);
-                      }
-                    }}
-                  >
-                    素材を受け取る
-                  </Button>
+                  {isRecycleDone ? (
+                    <Badge className="bg-emerald-500 text-white animate-bounce text-xs px-2.5 py-1 leading-none font-bold">還元完了！</Badge>
+                  ) : (
+                    <Badge className="bg-blue-600 text-white font-mono text-xs px-2.5 py-1 leading-none font-bold">
+                      あと {Math.ceil(Math.max(0, activeRecycle.endTime - now) / 1000)}秒
+                    </Badge>
+                  )}
                 </div>
-              )}
-            </Card>
+                
+                {!isRecycleDone ? (
+                  <div className="space-y-2 mb-1">
+                    <div className="w-full bg-stone-200 h-2.5 rounded-full overflow-hidden relative z-10">
+                      <div 
+                        className="bg-blue-500 h-full transition-all duration-100"
+                        style={{ width: `${Math.min(100, Math.max(0, 100 - ((activeRecycle.endTime - now) / activeRecycle.durationMs * 100)))}%` }}
+                      />
+                    </div>
+                    <p className="text-[11px] text-stone-500 text-right font-mono">
+                      素材抽出中: メイン素材2個に還元しています...
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 mt-3 pt-3 border-t border-amber-100">
+                    <div className="text-xs font-bold text-stone-700">獲得素材：</div>
+                    <div className="flex flex-wrap gap-2">
+                      {activeRecycle.resultMaterials.map((m, i) => {
+                        const matDef = MATERIALS.find(def => def.id === m.materialId);
+                        return (
+                          <div key={i} className="flex items-center gap-2 bg-stone-100 p-2 rounded-lg border border-stone-300 shadow-xs">
+                            {matDef ? <MaterialIcon materialId={matDef.id} /> : null}
+                            <span className="text-xs font-bold text-stone-800">{matDef ? matDef.name : '素材'}</span>
+                            <span className="text-xs font-mono font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                              x{m.count}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="flex justify-end pt-1">
+                      <Button 
+                        size="sm" 
+                        variant="success" 
+                        onClick={() => {
+                          try {
+                            engine.claimPartRecycle();
+                          } catch(e: any) {
+                            alert(e.message);
+                          }
+                        }}
+                      >
+                        素材を受け取る
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </Card>
+            </div>
           )}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
             {state.parts?.length === 0 ? (
@@ -369,14 +437,7 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                   {confirmPartId === p.id ? (
                     <div className="flex gap-2">
                       <Button size="sm" variant="secondary" onClick={() => setConfirmPartId(null)}>やめる</Button>
-                      <Button size="sm" variant="danger" onClick={() => {
-                        try {
-                          engine.recyclePart(p.id);
-                        } catch(e: any) {
-                          alert(e.message);
-                        }
-                        setConfirmPartId(null);
-                      }}>還元する</Button>
+                      <Button size="sm" variant="danger" onClick={() => handleRecyclePart(p.id)}>還元する</Button>
                     </div>
                   ) : (
                     <Button size="sm" variant="danger" disabled={!!activeRecycle} onClick={() => setConfirmPartId(p.id)}>

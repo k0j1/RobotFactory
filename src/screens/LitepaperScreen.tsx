@@ -11,7 +11,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
       </div>
 
       <Card className="bg-stone-50 border-2 border-stone-200">
-        <h3 className={`${theme.typography.h3} mb-4 text-stone-700`}>ポンコツロボット工房 v1.0.73 仕様まとめ</h3>
+        <h3 className={`${theme.typography.h3} mb-4 text-stone-700`}>ポンコツロボット工房 v1.0.74 仕様まとめ</h3>
         
         <div className="space-y-6 text-sm text-stone-800">
           <section>
@@ -78,7 +78,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
             <h4 className="font-bold text-lg text-amber-700 border-b border-stone-300 mb-2">6. 倉庫・商店・図鑑</h4>
             <ul className="list-disc list-inside space-y-1 ml-2">
               <li><strong>倉庫（素材一覧の希少度可視化）:</strong> 製造したロボット、所持パーツ、および素材を管理します。素材一覧ではレアリティ（★1 コモン、★2 レア、★3 Sレア）に応じて背景色・枠線・星バッジが色分けされ、一目で希少度を判別できます。レア度や属性、名前による絞り込み検索も可能です。</li>
-              <li><strong>解体とリサイクル:</strong> 不要なロボットは「解体」して4つのパーツに戻すことができます。パーツは「還元する」ことで、メイン素材2個に還元されます。解体および還元には製造時と同様に時間が経過し、進捗アニメーションが表示されます。完了後に回収ボタンで受け取れます。</li>
+              <li><strong>解体とリサイクル:</strong> 不要なロボットは「解体」して4つのパーツに戻すことができます。パーツは「還元する」ことで、メイン素材2個に還元されます。解体および還元には製造時と同様に時間が経過し、進捗アニメーションが表示されます。解体実行時には進行中カードへ自動スムーズスクロールし、完了時には獲得した各部位のパーツ名（頭部・胴体・腕部・脚部）および属性・ビジュアルが省略なく完全表示され、回収ボタンで安全に受け取れます。</li>
               <li><strong>商店:</strong> Gを使って素材を購入したり、特定の素材を消費して「工房の背景（内装）」を獲得・変更することができます。また、<strong>「修理キット交換」</strong>機能により、余った素材（★1素材:3個→1個、★2素材:1個→1個、★3素材:1個→3個）を消費してロボットの体力回復用【修理キット】と交換できます。</li>
               <li><strong>図鑑・実績:</strong> これまでに納品したロボットの履歴、獲得G推計を確認できます。「素材・パーツ詳細」タブでは、各素材から出現する可能性があるパーツの見た目を一覧で確認できます。</li>
             </ul>
