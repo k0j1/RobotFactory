@@ -26,6 +26,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
   const [isDispatchModalOpen, setIsDispatchModalOpen] = useState(false);
   const [selectedLocationId, setSelectedLocationId] = useState<string>('');
   const [selectedRobotId, setSelectedRobotId] = useState<string>('');
+  const [previewEmotions, setPreviewEmotions] = useState<{ [dispatchId: string]: 'auto' | 'happy' | 'troubled' | 'searching' }>({});
 
   const triggerConfetti = () => {
     // 初回の華やかなバースト（軽量化のため数を調整）
@@ -352,9 +353,26 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                   <span>Pow: {questRobot.stats.power}</span>
                   <span>Agi: {questRobot.stats.agility}</span>
                 </div>
+                {questDone ? (
+                  <span className="inline-block mt-1 text-[11px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-bold border border-amber-300">
+                    🎁 素材発見！大喜び中
+                  </span>
+                ) : (
+                  <span className="inline-block mt-1 text-[11px] bg-stone-100 text-stone-600 px-1.5 py-0.5 rounded">
+                    洞窟を探索中...
+                  </span>
+                )}
               </div>
-              <div className="bg-white p-1 rounded border border-stone-200">
-                <RobotVisual robot={questRobot} size={60} />
+              <div className="bg-stone-900 p-1 rounded border border-stone-200 overflow-hidden">
+                <RobotVisual 
+                  robot={questRobot} 
+                  size={60} 
+                  animateExploration={!questDone}
+                  animateVictory={questDone}
+                  hasPendingDrops={questDone}
+                  locationId={state.activeQuest?.locationId}
+                  agility={questRobot.stats.agility}
+                />
               </div>
             </div>
           ) : (
@@ -421,22 +439,55 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
               const robot = state.robots.find(r => r.id === dispatch.robotId);
               const pendingCount = dispatch.pendingDrops?.length || 0;
               
-              // 1時間インターバル計算
-              const nextTime = dispatch.lastCollectedAt + 60 * 60 * 1000;
+              // Agilityに応じたインターバル計算（Agility 1につき1秒短縮）
+              const intervalMs = engine.getAutoDispatchIntervalMs(dispatch.robotId);
+              const nextTime = dispatch.lastCollectedAt + intervalMs;
               const remainToNext = Math.max(0, nextTime - Date.now());
+
+              const selectedEmotion = previewEmotions[dispatch.id] || 'auto';
 
               return (
                 <div key={dispatch.id} className="bg-white border border-stone-200 rounded-md shadow-sm overflow-hidden mb-4">
                   {/* ロボット探索アニメーション (フルウィズ・高さ3倍) */}
                   {robot && (
-                    <div className="w-full bg-stone-900 border-b border-stone-300">
+                    <div className="w-full bg-stone-900 border-b border-stone-300 relative">
                       <RobotVisual 
                         robot={robot} 
                         size={52} 
                         containerWidth="100%"
                         containerHeight={52 * 3}
                         animateExploration={true} 
+                        emotion={selectedEmotion}
+                        hasPendingDrops={pendingCount > 0}
+                        locationId={dispatch.locationId}
+                        agility={robot.stats.agility}
                       />
+
+                      {/* 表情テスト切替コントロール（控えめに右上に配置） */}
+                      <div className="absolute top-2 right-2 flex items-center gap-1 bg-stone-900/80 p-1 rounded border border-stone-700/60 z-20">
+                        <span className="text-[10px] text-stone-400 mr-0.5">表情:</span>
+                        <button 
+                          onClick={() => setPreviewEmotions(prev => ({ ...prev, [dispatch.id]: 'auto' }))}
+                          className={`text-[10px] px-1.5 py-0.5 rounded font-bold transition-colors ${selectedEmotion === 'auto' ? 'bg-amber-500 text-white' : 'text-stone-300 hover:bg-stone-800'}`}
+                          title="自動（素材発見時: 喜ぶ / 探索中: 歩行）"
+                        >
+                          自動
+                        </button>
+                        <button 
+                          onClick={() => setPreviewEmotions(prev => ({ ...prev, [dispatch.id]: 'happy' }))}
+                          className={`text-[10px] px-1.5 py-0.5 rounded font-bold transition-colors ${selectedEmotion === 'happy' ? 'bg-amber-500 text-white' : 'text-stone-300 hover:bg-stone-800'}`}
+                          title="素材発見（喜ぶ表情・バンザイ）"
+                        >
+                          ✨発見
+                        </button>
+                        <button 
+                          onClick={() => setPreviewEmotions(prev => ({ ...prev, [dispatch.id]: 'troubled' }))}
+                          className={`text-[10px] px-1.5 py-0.5 rounded font-bold transition-colors ${selectedEmotion === 'troubled' ? 'bg-blue-600 text-white' : 'text-stone-300 hover:bg-stone-800'}`}
+                          title="探索難航・失敗（困る表情・オロオロ）"
+                        >
+                          💦困り
+                        </button>
+                      </div>
                     </div>
                   )}
                   
@@ -449,21 +500,28 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                               {robot?.name || '不明なロボット'}
                             </p>
                             {pendingCount > 0 ? (
-                              <span className="text-[11px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold border border-emerald-300 animate-pulse">
-                                未回収: {pendingCount}個
+                              <span className="text-[11px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold border border-emerald-300 animate-pulse flex items-center gap-1">
+                                <span>🎁 未回収: {pendingCount}個 (大喜び中！)</span>
                               </span>
                             ) : (
-                              <span className="text-[11px] bg-stone-100 text-stone-600 px-2 py-0.5 rounded-full font-medium">
-                                探索中...
+                              <span className="text-[11px] bg-stone-100 text-stone-600 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+                                <span>🔍 探索中 (敏捷 {robot?.stats.agility || 0})</span>
                               </span>
                             )}
                           </div>
                           <p className="text-xs text-stone-500 mt-0.5">
                             探索場所: <span className="font-bold text-stone-700">{loc?.name}</span>
                           </p>
-                          <p className="text-[11px] text-stone-500 font-mono mt-0.5">
-                            次回到着まで: {formatTime(remainToNext)}
-                          </p>
+                          <div className="flex items-center gap-2 flex-wrap mt-0.5">
+                            <p className="text-[11px] text-stone-500 font-mono">
+                              次回到着まで: {formatTime(remainToNext)}
+                            </p>
+                            {robot && (robot.stats.agility > 0) && (
+                              <span className="text-[10px] bg-blue-50 text-blue-700 px-1.5 py-0.2 rounded border border-blue-200 font-mono">
+                                敏捷短縮: -{robot.stats.agility}秒 (周期: {Math.round(intervalMs / 60000 * 10) / 10}分)
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <Button size="sm" variant="danger" onClick={() => engine.cancelAutoDispatch(dispatch.id)}>帰還</Button>
@@ -491,7 +549,9 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                       ))}
                     </div>
                   ) : (
-                    <p className="text-xs text-stone-500 italic mt-2">まだ素材を回収していません（1時間ごとに1つの素材を発見）...</p>
+                    <p className="text-xs text-stone-500 italic mt-2">
+                      まだ素材を回収していません（敏捷 {robot?.stats.agility || 0} により {Math.round(intervalMs / 60000 * 10) / 10} 分ごとに発見）...
+                    </p>
                   )}
                   </div>
                 </div>
@@ -534,20 +594,33 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                   .filter(r => !state.autoDispatches?.some(d => d.robotId === r.id))
                   .filter(r => state.activeQuest?.dispatchedRobotId !== r.id)
                   .map(r => (
-                  <option key={r.id} value={r.id}>{r.name} (パワー: {r.stats.power})</option>
+                  <option key={r.id} value={r.id}>
+                    {r.name} (Pow: {r.stats.power} / Agi: {r.stats.agility})
+                  </option>
                 ))}
               </select>
             </div>
 
             {/* Selected Robot Preview in Modal */}
             {selectedModalRobot && (
-              <div className="mb-4 p-2 bg-white rounded border border-stone-200 flex items-center justify-between">
+              <div className="mb-4 p-2.5 bg-white rounded border border-stone-200 flex items-center justify-between">
                 <div>
-                  <p className="font-bold text-xs text-stone-700">{selectedModalRobot.name}</p>
-                  <p className="text-[10px] text-stone-500">パワー: {selectedModalRobot.stats.power} / 敏捷: {selectedModalRobot.stats.agility}</p>
+                  <p className="font-bold text-xs text-stone-800">{selectedModalRobot.name}</p>
+                  <p className="text-[11px] text-stone-600 mt-0.5">
+                    パワー: <span className="font-bold">{selectedModalRobot.stats.power}</span> / 敏捷: <span className="font-bold text-blue-600">{selectedModalRobot.stats.agility}</span>
+                  </p>
+                  <p className="text-[10px] text-blue-600 font-mono mt-1">
+                    ⚡ 敏捷補正: -{selectedModalRobot.stats.agility}秒短縮 (周期: {Math.round(engine.getAutoDispatchIntervalMs(selectedModalRobot.id) / 60000 * 10) / 10}分)
+                  </p>
                 </div>
-                <div className="bg-stone-50 p-1 rounded border border-stone-200">
-                  <RobotVisual robot={selectedModalRobot} size={48} />
+                <div className="bg-stone-900 p-1 rounded border border-stone-200 overflow-hidden">
+                  <RobotVisual 
+                    robot={selectedModalRobot} 
+                    size={48} 
+                    locationId={selectedLocationId || 'loc1'}
+                    agility={selectedModalRobot.stats.agility}
+                    animateExploration={true}
+                  />
                 </div>
               </div>
             )}

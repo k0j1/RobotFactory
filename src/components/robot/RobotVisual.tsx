@@ -2,6 +2,7 @@ import React from 'react';
 import { Robot, AttributeColors } from '../../core/models';
 import { SVG_HEADS, SVG_BODIES, SVG_ARMS, SVG_LEGS } from './RobotSVGs';
 import { theme } from '../../styles/theme';
+import { LocationEnvironment } from './LocationEnvironment';
 
 import { motion } from 'motion/react';
 
@@ -13,6 +14,11 @@ interface RobotVisualProps {
   animateCrafting?: boolean;
   animateVictory?: boolean;
   animateExploration?: boolean;
+  emotion?: 'auto' | 'normal' | 'happy' | 'troubled' | 'searching';
+  hasPendingDrops?: boolean;
+  isTroubled?: boolean;
+  locationId?: string; // 探索地に応じた背景・天気
+  agility?: number; // ロボットの素早さ（歩行・アニメーション速度に反映）
 }
 
 export const PartVisual: React.FC<{ part: any, size?: number }> = ({ part, size = 64 }) => {
@@ -57,7 +63,12 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
   containerHeight, 
   animateCrafting = false, 
   animateVictory = false, 
-  animateExploration = false 
+  animateExploration = false,
+  emotion = 'auto',
+  hasPendingDrops = false,
+  isTroubled = false,
+  locationId,
+  agility
 }) => {
   const parts = robot?.parts || {};
   const { head, body, arms, legs } = parts;
@@ -73,6 +84,29 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
   const armsColor = arms ? AttributeColors[arms.attribute] : '#000';
   const legsColor = legs ? AttributeColors[legs.attribute] : '#000';
 
+  // ロボットのAgility（props.agility または robot.stats.agility）
+  const robotAgility = agility ?? (robot?.stats?.agility || 0);
+
+  // Agilityに応じた速度倍率 (基本1.0、Agility 100で1.5倍、Agility 300で2.5倍)
+  const speedMultiplier = 1.0 + Math.min(2.5, (robotAgility / 100) * 0.5);
+
+  // 歩行・探索アニメーション周期（Agilityが高いと素早くキビキビ動く）
+  const walkDuration = Math.max(0.28, 0.7 / speedMultiplier);
+  const headSearchDuration = Math.max(1.2, 2.8 / speedMultiplier);
+  const bgScrollDuration = Math.max(0.5, 1.5 / speedMultiplier);
+
+  // Determine current emotion state
+  const currentEmotion: 'happy' | 'troubled' | 'searching' | 'normal' = 
+    emotion && emotion !== 'auto'
+      ? (emotion as 'happy' | 'troubled' | 'searching' | 'normal')
+      : animateVictory || hasPendingDrops
+      ? 'happy'
+      : isTroubled
+      ? 'troubled'
+      : animateExploration
+      ? 'searching'
+      : 'normal';
+
   const bgGridSize = Math.max(10, size / 8);
   const defaultBgStyle = {
     width: containerWidth || size, height: containerHeight || size,
@@ -80,26 +114,17 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
     backgroundImage: `linear-gradient(#d6d3d1 2px, transparent 2px), linear-gradient(90deg, #d6d3d1 2px, transparent 2px)`,
     backgroundSize: `${bgGridSize}px ${bgGridSize}px`,
     backgroundPosition: 'center center',
-    boxShadow: animateVictory ? '0 0 25px rgba(234, 179, 8, 0.4), inset 0 0 20px rgba(254, 240, 138, 0.3)' : 'inset 0 0 20px rgba(0,0,0,0.05)'
+    boxShadow: (currentEmotion === 'happy' || animateVictory) ? '0 0 25px rgba(234, 179, 8, 0.4), inset 0 0 20px rgba(254, 240, 138, 0.3)' : 'inset 0 0 20px rgba(0,0,0,0.05)'
   };
-
-  const caveSvgPattern = encodeURIComponent(`
-    <svg width='120' height='120' xmlns='http://www.w3.org/2000/svg'>
-      <rect width='120' height='120' fill='#292524'/>
-      <path d='M0,0 L15,35 L30,0 L50,45 L75,0 L95,25 L120,0 Z' fill='#1c1917'/>
-      <path d='M0,120 L20,80 L45,120 L65,70 L90,120 L105,90 L120,120 Z' fill='#44403c'/>
-      <circle cx='25' cy='60' r='4' fill='#57534e'/>
-      <circle cx='85' cy='70' r='5' fill='#57534e'/>
-      <circle cx='60' cy='45' r='3' fill='#57534e'/>
-    </svg>
-  `.trim().replace(/\n/g, ''));
 
   const explorationBgStyle = {
     width: containerWidth || size, height: containerHeight || size,
-    backgroundColor: '#292524',
-    backgroundImage: `url("data:image/svg+xml;utf8,${caveSvgPattern}")`,
-    backgroundSize: '120px 120px',
-    boxShadow: 'inset 0 0 25px rgba(0,0,0,0.8)'
+    backgroundColor: '#1c1917',
+    boxShadow: currentEmotion === 'happy'
+      ? '0 0 25px rgba(234, 179, 8, 0.4), inset 0 0 25px rgba(0,0,0,0.7)'
+      : currentEmotion === 'troubled'
+      ? '0 0 20px rgba(59, 130, 246, 0.3), inset 0 0 25px rgba(0,0,0,0.85)'
+      : 'inset 0 0 25px rgba(0,0,0,0.8)'
   };
 
   const bgStyle = animateExploration ? explorationBgStyle : defaultBgStyle;
@@ -113,118 +138,185 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
         }
       : {};
 
-  // Victory pose animations
-  const victoryBodyJump = animateVictory
+  // === ANIMATION DEFINITIONS ===
+
+  // 1. Body motion
+  const bodyMotion = currentEmotion === 'happy'
     ? {
         animate: { 
-          y: [0, -10, 0, -6, 0],
-          scale: [1, 1.04, 1, 1.02, 1],
-          rotate: [0, -2, 2, -1, 0]
+          y: [0, -12, 0, -7, 0],
+          scale: [1, 1.06, 0.97, 1.03, 1],
+          rotate: [0, -3, 3, -1.5, 0]
         },
-        transition: { duration: 0.9, repeat: Infinity, ease: "easeInOut" }
+        transition: { duration: 0.8, repeat: Infinity, ease: "easeInOut" }
       }
-    : animateExploration
+    : currentEmotion === 'troubled'
+    ? {
+        // 困ってオロオロ震えて沈み込むモーション
+        animate: {
+          x: [-2, 2, -2, 2, 0],
+          y: [0, 3, 1, 4, 0],
+          rotate: [-3, 3, -2, 2, 0]
+        },
+        transition: { duration: 1.1, repeat: Infinity, ease: "easeInOut" }
+      }
+    : currentEmotion === 'searching'
     ? {
         animate: { 
           y: [0, -3, 0, -3, 0],
           rotate: [-1.5, 1.5, -1.5, 1.5, -1.5],
         },
-        transition: { duration: 0.7, repeat: Infinity, ease: "easeInOut" }
+        transition: { duration: walkDuration, repeat: Infinity, ease: "easeInOut" }
       }
     : {};
 
-  const victoryArmPump = animateVictory
+  // 2. Arms motion
+  const armsMotion = currentEmotion === 'happy'
     ? {
+        // 両手を高く上げて「やったー！」とバンザイ＆ガッツポーズ
         animate: { 
-          y: [-2, -14, -4, -14, -2], 
-          scaleY: [1, 1.15, 1, 1.15, 1],
-          rotate: [-4, 6, -4, 6, -4]
+          y: [-4, -16, -6, -16, -4], 
+          scaleY: [1, 1.18, 1, 1.18, 1],
+          rotate: [-20, 20, -20, 20, -20]
         },
-        transition: { duration: 0.9, repeat: Infinity, ease: "easeInOut" }
+        transition: { duration: 0.8, repeat: Infinity, ease: "easeInOut" }
       }
-    : animateExploration
+    : currentEmotion === 'troubled'
+    ? {
+        // 頭を抱えてオロオロする動き
+        animate: { 
+          y: [-12, -8, -12, -8, -12],
+          rotate: [-15, 15, -15, 15, -15],
+          scaleX: [0.95, 1.05, 0.95, 1.05, 0.95]
+        },
+        transition: { duration: 1.1, repeat: Infinity, ease: "easeInOut" }
+      }
+    : currentEmotion === 'searching'
     ? {
         animate: { 
           rotate: [-8, 8, -8, 8, -8],
           y: [0, -2, 0, -2, 0]
         },
-        transition: { duration: 0.7, repeat: Infinity, ease: "easeInOut" }
+        transition: { duration: walkDuration, repeat: Infinity, ease: "easeInOut" }
       }
     : {};
 
-  const victoryHeadTilt = animateVictory
+  // 3. Head motion
+  const headMotion = currentEmotion === 'happy'
     ? {
+        // 嬉しそうに頷く＆笑顔で左右に傾げる
         animate: { 
-          rotate: [-6, 6, -6],
-          y: [0, -3, 0]
+          rotate: [-8, 8, -8],
+          y: [-3, 1, -3],
+          scale: [1, 1.05, 1]
         },
-        transition: { duration: 0.9, repeat: Infinity, ease: "easeInOut" }
+        transition: { duration: 0.8, repeat: Infinity, ease: "easeInOut" }
       }
-    : animateExploration
+    : currentEmotion === 'troubled'
     ? {
-        // 頭をキョロキョロ左右に見回して洞窟を探索するモーション
+        // 困惑して首をかしげたりオロオロ左右に振る
+        animate: { 
+          rotate: [-14, 14, -14, 0, -10, 10, 0],
+          y: [2, 5, 2, 4, 2],
+          x: [-1, 1, -1, 1, 0]
+        },
+        transition: { duration: 1.3, repeat: Infinity, ease: "easeInOut" }
+      }
+    : currentEmotion === 'searching'
+    ? {
+        // 頭をキョロキョロ左右に見回して探索するモーション
         animate: { 
           rotate: [0, -14, -14, 0, 14, 14, 0, -6, 0],
           x: [0, -3, -3, 0, 3, 3, 0, -1, 0],
           y: [0, -1, -1, 0, 1, 1, 0, 0, 0]
         },
-        transition: { duration: 2.8, repeat: Infinity, ease: "easeInOut" }
+        transition: { duration: headSearchDuration, repeat: Infinity, ease: "easeInOut" }
       }
     : {};
 
-  const explorationLegsWalk = animateExploration && !animateVictory
+  // 4. Legs motion
+  const legsMotion = currentEmotion === 'happy'
+    ? {
+        // ぴょんぴょん跳ねる＆足踏み
+        animate: {
+          y: [0, -5, 0, -3, 0],
+          skewX: [-4, 4, -4, 4, -4],
+          scaleY: [1, 0.92, 1, 0.95, 1]
+        },
+        transition: { duration: 0.8, repeat: Infinity, ease: "easeInOut" }
+      }
+    : currentEmotion === 'troubled'
+    ? {
+        // モジモジ立ち止まる
+        animate: {
+          skewX: [4, -4, 4, -4, 4],
+          scaleX: [0.96, 1.04, 0.96, 1.04, 0.96],
+          y: [0, 1, 0, 1, 0]
+        },
+        transition: { duration: 1.1, repeat: Infinity, ease: "easeInOut" }
+      }
+    : currentEmotion === 'searching'
     ? {
         animate: {
-          skewX: [-5, 5, -5, 5, -5],
+          skewX: [-6, 6, -6, 6, -6],
           y: [0, -2, 0, -2, 0],
-          scaleY: [1, 0.94, 1, 0.94, 1]
+          scaleY: [1, 0.93, 1, 0.93, 1]
         },
-        transition: { duration: 0.7, repeat: Infinity, ease: "easeInOut" }
-      }
-    : {};
-
-  const explorationBodyBob = animateExploration && !animateVictory
-    ? {
-        animate: {
-          y: [0, -1.5, 0, -1.5, 0],
-        },
-        transition: { duration: 0.7, repeat: Infinity, ease: "easeInOut" }
+        transition: { duration: walkDuration, repeat: Infinity, ease: "easeInOut" }
       }
     : {};
 
   return (
     <motion.div 
-      className={`isolate relative flex justify-center items-center ${theme.radius.md} overflow-hidden border-2 ${animateVictory ? 'border-amber-400 ring-2 ring-amber-300' : 'border-stone-300'}`} 
+      className={`isolate relative flex justify-center items-center ${theme.radius.md} overflow-hidden border-2 ${
+        currentEmotion === 'happy'
+          ? 'border-amber-400 ring-2 ring-amber-300' 
+          : currentEmotion === 'troubled'
+          ? 'border-blue-400 ring-2 ring-blue-300/60'
+          : 'border-stone-300'
+      }`} 
       style={bgStyle}
-      animate={animateExploration ? { backgroundPosition: ["0px 0px", "-120px 0px"] } : {}}
-      transition={animateExploration ? { duration: 1.5, repeat: Infinity, ease: "linear" } : {}}
     >
-      {/* Victory sparkles effect */}
-      {animateVictory && (
+      {/* エリア環境・天候背景 (自動探索中) */}
+      {animateExploration && (
+        <LocationEnvironment 
+          locationId={locationId} 
+          speedMultiplier={speedMultiplier} 
+        />
+      )}
+      {/* 1. Happy Particles & Effects */}
+      {currentEmotion === 'happy' && (
         <>
           <motion.div 
-            className="absolute top-1 left-2 text-amber-400 text-xs sm:text-sm z-10 pointer-events-none select-none font-bold"
-            animate={{ scale: [0.6, 1.2, 0.8, 1.3, 0.6], opacity: [0.4, 1, 0.5, 1, 0.4], y: [-2, -6, -2] }}
+            className="absolute top-2 left-3 text-amber-400 text-xs sm:text-sm z-10 pointer-events-none select-none font-bold"
+            animate={{ scale: [0.6, 1.3, 0.8, 1.4, 0.6], opacity: [0.4, 1, 0.5, 1, 0.4], y: [-2, -8, -2] }}
             transition={{ duration: 1.2, repeat: Infinity }}
           >
             ✨
           </motion.div>
           <motion.div 
-            className="absolute top-1 right-2 text-yellow-500 text-xs sm:text-sm z-10 pointer-events-none select-none font-bold"
-            animate={{ scale: [1.2, 0.7, 1.3, 0.6, 1.2], opacity: [1, 0.4, 1, 0.5, 1], y: [-4, 0, -4] }}
+            className="absolute top-2 right-3 text-yellow-400 text-xs sm:text-sm z-10 pointer-events-none select-none font-bold"
+            animate={{ scale: [1.3, 0.7, 1.4, 0.6, 1.3], opacity: [1, 0.4, 1, 0.5, 1], y: [-6, 0, -6] }}
             transition={{ duration: 1.4, repeat: Infinity }}
           >
             ⭐
           </motion.div>
           <motion.div 
-            className="absolute bottom-1 right-2 text-amber-500 text-[10px] sm:text-xs z-10 pointer-events-none select-none font-bold"
+            className="absolute top-1 left-1/2 -translate-x-1/2 bg-amber-500/90 text-white text-[10px] px-2 py-0.5 rounded-full font-bold shadow-sm z-20 pointer-events-none whitespace-nowrap border border-amber-300 flex items-center gap-1"
+            animate={{ y: [-1, -4, -1], scale: [0.95, 1.05, 0.95] }}
+            transition={{ duration: 1.0, repeat: Infinity }}
+          >
+            <span>🎁 素材発見！</span>
+          </motion.div>
+          <motion.div 
+            className="absolute bottom-2 right-3 text-amber-500 text-[10px] sm:text-xs z-10 pointer-events-none select-none font-bold"
             animate={{ scale: [0.8, 1.3, 0.7, 1.2, 0.8], opacity: [0.5, 1, 0.4, 1, 0.5] }}
             transition={{ duration: 1.1, repeat: Infinity }}
           >
-            ✨
+            ♪
           </motion.div>
           <motion.div 
-            className="absolute bottom-1 left-2 text-yellow-400 text-[10px] sm:text-xs z-10 pointer-events-none select-none font-bold"
+            className="absolute bottom-2 left-3 text-yellow-400 text-[10px] sm:text-xs z-10 pointer-events-none select-none font-bold"
             animate={{ scale: [1.3, 0.8, 1.2, 0.7, 1.3], opacity: [1, 0.5, 1, 0.4, 1] }}
             transition={{ duration: 1.3, repeat: Infinity }}
           >
@@ -233,26 +325,87 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
         </>
       )}
 
+      {/* 2. Troubled Particles & Effects */}
+      {currentEmotion === 'troubled' && (
+        <>
+          <motion.div 
+            className="absolute top-2 right-4 text-blue-400 text-sm sm:text-base z-10 pointer-events-none select-none font-bold"
+            animate={{ y: [-2, 4, -2], opacity: [0.5, 1, 0.5], scale: [0.8, 1.2, 0.8] }}
+            transition={{ duration: 0.9, repeat: Infinity }}
+          >
+            💦
+          </motion.div>
+          <motion.div 
+            className="absolute top-3 left-4 text-cyan-300 text-xs sm:text-sm z-10 pointer-events-none select-none font-bold"
+            animate={{ y: [-3, 2, -3], opacity: [0.4, 0.9, 0.4], rotate: [-10, 10, -10] }}
+            transition={{ duration: 1.1, repeat: Infinity }}
+          >
+            💧
+          </motion.div>
+          <motion.div 
+            className="absolute top-1 left-1/2 -translate-x-1/2 bg-blue-900/90 text-blue-200 text-[10px] px-2 py-0.5 rounded-full font-bold shadow-sm z-20 pointer-events-none whitespace-nowrap border border-blue-400 flex items-center gap-1"
+            animate={{ y: [0, 2, 0] }}
+            transition={{ duration: 1.2, repeat: Infinity }}
+          >
+            <span>🌀 見つからない…</span>
+          </motion.div>
+          <motion.div 
+            className="absolute bottom-2 right-5 text-indigo-300 text-xs z-10 pointer-events-none select-none font-bold"
+            animate={{ scale: [0.8, 1.2, 0.8], opacity: [0.4, 0.8, 0.4] }}
+            transition={{ duration: 1.4, repeat: Infinity }}
+          >
+            ❓
+          </motion.div>
+        </>
+      )}
+
       {/* Robot Parts with animations */}
-      <motion.div style={{ width: size, height: size }} className="relative z-0" {...victoryBodyJump}>
+      <motion.div style={{ width: size, height: size }} className="relative z-0" {...bodyMotion}>
         {LegsComp && (
-          <motion.div className="absolute inset-0 w-full h-full z-[1]" {...(animateCrafting ? animProps(0, 50) : explorationLegsWalk)}>
+          <motion.div className="absolute inset-0 w-full h-full z-[1]" {...(animateCrafting ? animProps(0, 50) : legsMotion)}>
             <LegsComp color={legsColor} className="w-full h-full" />
           </motion.div>
         )}
         {BodyComp && (
-          <motion.div className="absolute inset-0 w-full h-full z-[2]" {...(animateCrafting ? animProps(0.3, -50) : explorationBodyBob)}>
+          <motion.div className="absolute inset-0 w-full h-full z-[2]" {...(animateCrafting ? animProps(0.3, -50) : {})}>
             <BodyComp color={bodyColor} className="w-full h-full" />
           </motion.div>
         )}
         {ArmsComp && (
-          <motion.div className="absolute inset-0 w-full h-full z-[3]" {...(animateCrafting ? animProps(0.6, -30) : victoryArmPump)}>
+          <motion.div className="absolute inset-0 w-full h-full z-[3]" {...(animateCrafting ? animProps(0.6, -30) : armsMotion)}>
             <ArmsComp color={armsColor} className="w-full h-full" />
           </motion.div>
         )}
         {HeadComp && (
-          <motion.div className="absolute inset-0 w-full h-full z-[4]" {...(animateCrafting ? animProps(0.9, -80) : victoryHeadTilt)}>
+          <motion.div className="absolute inset-0 w-full h-full z-[4]" {...(animateCrafting ? animProps(0.9, -80) : headMotion)}>
             <HeadComp color={headColor} className="w-full h-full" />
+            
+            {/* Dynamic Facial Emotion Overlay on Head */}
+            {currentEmotion === 'happy' && (
+              <motion.div 
+                className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                style={{ top: '-18%' }}
+                animate={{ scale: [0.95, 1.1, 0.95] }}
+                transition={{ duration: 0.8, repeat: Infinity }}
+              >
+                <div className="bg-amber-400 text-stone-900 font-extrabold text-[9px] sm:text-[10px] px-1 py-0.5 rounded shadow-sm flex items-center gap-0.5 border border-amber-300">
+                  <span>^ ▽ ^</span>
+                </div>
+              </motion.div>
+            )}
+
+            {currentEmotion === 'troubled' && (
+              <motion.div 
+                className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                style={{ top: '-18%' }}
+                animate={{ y: [0, 2, 0] }}
+                transition={{ duration: 1.1, repeat: Infinity }}
+              >
+                <div className="bg-blue-600 text-white font-extrabold text-[9px] sm:text-[10px] px-1 py-0.5 rounded shadow-sm flex items-center gap-0.5 border border-blue-400">
+                  <span>&gt; _ &lt;</span>
+                </div>
+              </motion.div>
+            )}
           </motion.div>
         )}
       </motion.div>

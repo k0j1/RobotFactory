@@ -208,10 +208,19 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                 {battleResult !== 'win' && activeRobot && (
                   <div className="flex flex-col items-center">
                     <div className="p-2 bg-stone-200/60 rounded-xl border border-stone-300">
-                      <RobotVisual robot={activeRobot} size={100} />
+                      <RobotVisual 
+                        robot={activeRobot} 
+                        size={100} 
+                        emotion={battleResult === 'lose' ? 'troubled' : 'normal'}
+                      />
                     </div>
-                    <div className="mt-1 font-bold text-stone-600 text-sm">
-                      {activeRobot.name}
+                    <div className="mt-1 font-bold text-stone-600 text-sm flex items-center gap-1">
+                      <span>{activeRobot.name}</span>
+                      {battleResult === 'lose' && (
+                        <span className="text-blue-500 text-xs px-1.5 py-0.2 bg-blue-50 rounded border border-blue-200 font-bold">
+                          💦 困惑中
+                        </span>
+                      )}
                     </div>
                   </div>
                 )}

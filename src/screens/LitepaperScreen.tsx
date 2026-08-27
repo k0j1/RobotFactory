@@ -11,7 +11,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
       </div>
 
       <Card className="bg-stone-50 border-2 border-stone-200">
-        <h3 className={`${theme.typography.h3} mb-4 text-stone-700`}>ポンコツロボット工房 v1.0.61 仕様まとめ</h3>
+        <h3 className={`${theme.typography.h3} mb-4 text-stone-700`}>ポンコツロボット工房 v1.0.64 仕様まとめ</h3>
         
         <div className="space-y-6 text-sm text-stone-800">
           <section>
@@ -23,15 +23,19 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
           </section>
 
           <section>
-            <h4 className="font-bold text-lg text-amber-700 border-b border-stone-300 mb-2">2. 遠征と自動探索（素材収集）</h4>
+            <h4 className="font-bold text-lg text-amber-700 border-b border-stone-300 mb-2">2. 遠征と自動探索（環境演出・敏捷性短縮・感情アニメーション）</h4>
             <ul className="list-disc list-inside space-y-1 ml-2">
               <li><strong>通常遠征:</strong> リアルタイムの時間経過によって遠征が完了し、ランダムな種類の素材をまとまった数（スタック）で獲得できます。</li>
               <li><strong>成功率:</strong> 失敗はありません。常に100%成功し、素材を持ち帰ります。</li>
               <li><strong>ロボット派遣ボーナス:</strong> 任意のロボットを派遣すると、獲得できる素材の「抽選回数（ドロップ枠）」が基本値から大幅に増加します。</li>
-              <li><strong>ステータス補正:</strong> 派遣するロボットの<strong>「パワー」</strong>が高いほど、さらにドロップ枠が追加されます。<strong>「敏捷」</strong>が高いほど、遠征にかかる時間が最大で半減します。</li>
+              <li><strong>敏捷性（Agility）による時間短縮:</strong> 派遣するロボットの<strong>「敏捷 (Agility)」</strong>1につき所要時間が1秒短縮されます（最大80%短縮）。自動探索でも<strong>Agility 1につき発見周期が1秒短縮</strong>され、よりハイペースで素材を蓄積できます。</li>
+              <li><strong>探索地の環境・天候演出（CSSアニメーション）:</strong> 探索場所に応じて背景グラフィックと天候演出（砂漠の砂塵、火山の熱気と火の粉、廃工場の酸性雨、渓谷の磁気嵐と突風、雪原の猛吹雪、水晶洞窟の星雲粒子、電脳遺跡のデジタルグリッド）がダイナミックに変化します。</li>
+              <li><strong>敏捷性による歩行・探索スピードの高速化:</strong> ロボットのAgilityが高いほど、探索中の足踏み歩行や首振り、背景のスクロール速度がキビキビと高速化します。</li>
+              <li><strong>ステータス補正（パワー）:</strong> 派遣するロボットの<strong>「パワー」</strong>が高いほど、さらにドロップ枠が追加されます。</li>
               <li><strong>属性相性:</strong> 派遣先と有利な属性を持つロボット（例：火の地域に水属性）を派遣すると、さらにドロップ枠が追加されます。</li>
-              <li><strong>自動探索（放置探索）:</strong> ロボットを自動探索へ派遣しておくと、<strong>1時間に1つ</strong>の素材を自動的に発見・蓄積します（工房画面から随時回収可能）。</li>
-              <li><strong>探索中の演出:</strong> 自動探索中のロボットは背景が洞窟になり、脚を動かして歩きながら頭をキョロキョロ見渡して素材を探すアニメーションが再生されます。</li>
+              <li><strong>自動探索（放置探索）:</strong> ロボットを自動探索へ派遣しておくと、定期的に素材を自動発見・蓄積します（工房画面から随時回収可能）。</li>
+              <li><strong>素材発見時の大喜びアニメーション:</strong> 素材を発見したロボットは、目元が笑顔（^ ▽ ^）になり、両手を上に掲げて「やったー！」とバンザイ＆ガッツポーズをしながらぴょんぴょん飛び跳ね、音符やキラキラエフェクトを放ちます。</li>
+              <li><strong>探索難航・失敗時の困り顔アニメーション:</strong> 探索中に素材が見つからない時やバトル敗北時には、困り目（&gt; _ &lt;）になり、頭を抱えてオロオロ震えながら冷や汗（💦）を流すアニメーションが再生されます。</li>
               <li><strong>回収演出（紙ふぶき）:</strong> 遠征完了や自動探索の回収時には、お祝いの紙ふぶき（Confetti）が途切れることなく画面いっぱいに舞い散る持続エフェクトが発生します。</li>
             </ul>
           </section>

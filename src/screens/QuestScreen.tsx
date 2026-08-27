@@ -98,10 +98,41 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
           const isUnlocked = state.unlockedLocations.includes(loc.id);
           const canUnlock = !isUnlocked && state.gold >= loc.unlockCostG;
 
+          // Agilityによる短縮計算
+          const baseSec = loc.baseTimeMs / 1000;
+          const agiReductionSec = selectedRobot ? Math.min(baseSec * 0.8, selectedRobot.stats.agility) : 0;
+          const finalSec = Math.max(3, Math.round(baseSec - agiReductionSec));
+
+          // 気候・天候タグの取得
+          const weatherTag = 
+            loc.id === 'loc1' ? '🏜️ 砂塵・熱風' :
+            loc.id === 'loc2' ? '🌋 灼熱・火の粉' :
+            loc.id === 'loc3' ? '🌧️ 鉱毒雨・水滴' :
+            loc.id === 'loc4' ? '🌀 磁気嵐・突風' :
+            loc.id === 'loc5' ? '❄️ 極寒・猛吹雪' :
+            loc.id === 'loc6' ? '✨ 星雲・宇宙線' :
+            '⚡ デジタル粒子';
+
           return (
             <Card key={loc.id} className={!isUnlocked ? 'opacity-75 bg-stone-200' : ''}>
-              <h3 className={theme.typography.h3}>{loc.name}</h3>
-              <p className={`${theme.typography.small} text-stone-500 mb-2`}>所要時間: {loc.baseTimeMs / 1000}秒</p>
+              <div className="flex justify-between items-start mb-1">
+                <h3 className={theme.typography.h3}>{loc.name}</h3>
+                <span className="text-[11px] bg-stone-100 text-stone-700 px-2 py-0.5 rounded-full font-medium border border-stone-200">
+                  {weatherTag}
+                </span>
+              </div>
+              
+              <div className="flex items-center gap-2 mb-2">
+                <p className={`${theme.typography.small} text-stone-500`}>
+                  所要時間: <span className={selectedRobot && agiReductionSec > 0 ? "line-through text-stone-400" : "font-mono font-bold text-stone-700"}>{baseSec}秒</span>
+                </p>
+                {selectedRobot && agiReductionSec > 0 && (
+                  <span className="text-xs font-mono font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
+                    ➔ {finalSec}秒 (-{Math.round(agiReductionSec)}秒短縮⚡)
+                  </span>
+                )}
+              </div>
+
               <p className="mb-4 text-sm">{loc.description}</p>
 
               {isUnlocked ? (

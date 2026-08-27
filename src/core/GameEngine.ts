@@ -212,21 +212,29 @@ export class GameEngine {
     return { drops: allDrops };
   }
 
+  public getAutoDispatchIntervalMs(robotId?: string): number {
+    const BASE_INTERVAL = 60 * 60 * 1000; // 3600秒 (1時間)
+    if (!robotId) return BASE_INTERVAL;
+    const robot = this.state.robots.find(r => r.id === robotId);
+    if (!robot) return BASE_INTERVAL;
+    // Agility 1につき 1秒 (1000ms) 短縮。最小下限は 60秒 (60000ms)
+    const agilityReduction = (robot.stats.agility || 0) * 1000;
+    return Math.max(60 * 1000, BASE_INTERVAL - agilityReduction);
+  }
+
   public processAutoDispatches() {
     const now = Date.now();
     let changed = false;
-
-    // Auto dispatch takes 1 hour (3600000ms) for collecting 1 material per hour
-    const COLLECTION_INTERVAL = 60 * 60 * 1000;
 
     for (const d of this.state.autoDispatches) {
       if (!d.pendingDrops) {
         d.pendingDrops = [];
       }
 
+      const intervalMs = this.getAutoDispatchIntervalMs(d.robotId);
       const elapsed = now - d.lastCollectedAt;
-      if (elapsed >= COLLECTION_INTERVAL) {
-        const collectionsCount = Math.floor(elapsed / COLLECTION_INTERVAL);
+      if (elapsed >= intervalMs) {
+        const collectionsCount = Math.floor(elapsed / intervalMs);
         const maxCollections = 200; // max cap to prevent huge calculations if offline for weeks
         const actualCollections = Math.min(collectionsCount, maxCollections);
         
@@ -237,14 +245,15 @@ export class GameEngine {
              const newFoundDrops: string[] = [];
 
              for (let i = 0; i < actualCollections; i++) {
-                // 1時間に1つの素材を回収
+                // 素材を回収
                 const dropId = loc.drops[Math.floor(Math.random() * loc.drops.length)];
                 newFoundDrops.push(dropId);
                 d.pendingDrops.push(dropId);
              }
 
              if (newFoundDrops.length > 0) {
-                d.logs.push(`${actualCollections}時間の自動探索で${newFoundDrops.length}個の素材を発見！(未回収: ${d.pendingDrops.length}個)`);
+                const minText = Math.round((intervalMs / 60000) * 10) / 10;
+                d.logs.push(`自動探索(${minText}分間隔)で素材を${newFoundDrops.length}個発見！(未回収: ${d.pendingDrops.length}個)`);
                 // Keep only last 5 logs
                 if (d.logs.length > 5) d.logs.shift();
                 changed = true;
@@ -252,7 +261,7 @@ export class GameEngine {
           }
         }
         
-        d.lastCollectedAt += collectionsCount * COLLECTION_INTERVAL;
+        d.lastCollectedAt += collectionsCount * intervalMs;
       }
     }
 
@@ -312,16 +321,18 @@ export class GameEngine {
     if (robotId) {
       const robot = this.state.robots.find(r => r.id === robotId);
       if (robot) {
-        // Reduce time based on agility (max 50% reduction for high agility)
-        const agilityBonus = Math.min(0.5, robot.stats.agility / 200);
-        timeReduction = loc.baseTimeMs * agilityBonus;
+        // Agility 1につき 1秒 (1000ms) 短縮（ベース時間の最大80%まで短縮可能）
+        const agilityReduction = (robot.stats.agility || 0) * 1000;
+        timeReduction = Math.min(loc.baseTimeMs * 0.8, agilityReduction);
       }
     }
+
+    const finalDuration = Math.max(3000, loc.baseTimeMs - timeReduction);
 
     this.state.activeQuest = {
       locationId,
       startTime: Date.now(),
-      endTime: Date.now() + Math.floor(loc.baseTimeMs - timeReduction),
+      endTime: Date.now() + Math.floor(finalDuration),
       dispatchedRobotId: robotId
     };
     if (this.state.tutorialStep === 0) this.advanceTutorial();
