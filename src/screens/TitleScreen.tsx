@@ -13,7 +13,7 @@ export const TitleScreen: React.FC<{ onStart: () => void }> = ({ onStart }) => {
           工房を開く
         </Button>
 
-        <p className="mt-12 text-stone-400">v1.0.65</p>
+        <p className="mt-12 text-stone-400">v1.0.68</p>
       </div>
       
       {/* Decorative background elements */}

@@ -31,6 +31,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
   const [battleResult, setBattleResult] = useState<'win' | 'lose' | 'draw' | null>(null);
   const [speed, setSpeed] = useState(1);
   const [isPaused, setIsPaused] = useState(false);
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
 
   const activeRobot = state.robots.find(r => r.id === selectedRobotId);
   const activeOpponent = OPPONENTS.find(o => o.id === selectedOpponentId);
@@ -53,7 +54,13 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
       alert("HPが足りません。バトルに参加するにはHPが1必要です。");
       return;
     }
+    setIsConfirmModalOpen(true);
+  };
+
+  const confirmBattleStart = () => {
+    if (!activeRobot || !activeOpponent) return;
     (engine as any).consumeRobotHp(activeRobot.id, 1);
+    setIsConfirmModalOpen(false);
     setIsBattleActive(true);
     setBattleResult(null);
     setIsPaused(false);
@@ -204,7 +211,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
 
                     {/* Victorious Robot Visual */}
                     <div className="p-3 bg-gradient-to-b from-amber-100/80 to-yellow-50/80 rounded-2xl border-2 border-amber-300 shadow-lg">
-                      <RobotVisual robot={activeRobot} size={140} animateVictory={true} />
+                      <RobotVisual robot={activeRobot} size={140} animateVictory={true} emotion="normal" />
                     </div>
 
                     <div className="mt-2 font-bold text-stone-800 text-base flex items-center gap-1">
@@ -220,16 +227,11 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                       <RobotVisual 
                         robot={activeRobot} 
                         size={100} 
-                        emotion={battleResult === 'lose' ? 'troubled' : 'normal'}
+                        emotion="normal"
                       />
                     </div>
                     <div className="mt-1 font-bold text-stone-600 text-sm flex items-center gap-1">
                       <span>{activeRobot.name}</span>
-                      {battleResult === 'lose' && (
-                        <span className="text-blue-500 text-xs px-1.5 py-0.2 bg-blue-50 rounded border border-blue-200 font-bold">
-                          💦 困惑中
-                        </span>
-                      )}
                     </div>
                   </div>
                 )}
@@ -259,6 +261,54 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
             )}
           </div>
         </Card>
+      )}
+
+      {isConfirmModalOpen && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <motion.div 
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white rounded-xl shadow-xl max-w-sm w-full overflow-hidden"
+          >
+            <div className="bg-red-500 text-white p-4 font-bold text-lg text-center flex items-center justify-center gap-2">
+              <span>⚠️</span>
+              <span>HP消費の確認</span>
+            </div>
+            <div className="p-6 text-center space-y-4">
+              <p className="text-stone-700 font-bold">
+                バトルに参加すると<br/>
+                <span className="text-red-500 text-xl font-black">HPを1消費</span> します。
+              </p>
+              <div className="flex flex-col items-center bg-stone-100 rounded-lg p-3 border border-stone-200">
+                <p className="text-xs text-stone-500 mb-1">現在のHP</p>
+                <div className="flex items-center gap-2 font-bold text-lg">
+                  <span className="text-stone-700">{activeRobot?.currentHp ?? 12}</span>
+                  <span className="text-stone-400">→</span>
+                  <span className="text-red-600">{(activeRobot?.currentHp ?? 12) - 1}</span>
+                </div>
+              </div>
+              <p className="text-sm text-stone-500">
+                よろしいですか？
+              </p>
+            </div>
+            <div className="flex bg-stone-100 border-t border-stone-200 p-2 gap-2">
+              <Button 
+                variant="outline" 
+                className="flex-1 bg-white"
+                onClick={() => setIsConfirmModalOpen(false)}
+              >
+                キャンセル
+              </Button>
+              <Button 
+                variant="danger" 
+                className="flex-1"
+                onClick={confirmBattleStart}
+              >
+                出撃する
+              </Button>
+            </div>
+          </motion.div>
+        </div>
       )}
     </div>
   );

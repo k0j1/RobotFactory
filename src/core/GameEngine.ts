@@ -770,6 +770,32 @@ export class GameEngine {
     this.saveState();
   }
 
+  public exchangeRepairKit(materialId: string, count: number = 1) {
+    const mat = MATERIALS.find(m => m.id === materialId);
+    if (!mat) throw new Error("素材が見つかりません");
+    if (count <= 0) throw new Error("数量が不正です");
+
+    // レア度に応じた必要個数と獲得個数
+    // ★1: 3個で1個
+    // ★2: 1個で1個
+    // ★3: 1個で3個
+    const requiredPerKit = mat.rarity === 1 ? 3 : 1;
+    const yieldPerKit = mat.rarity === 3 ? 3 : 1;
+
+    const totalRequired = requiredPerKit * count;
+    const totalYield = yieldPerKit * count;
+
+    const currentAmount = this.state.materials[materialId] || 0;
+    if (currentAmount < totalRequired) {
+      throw new Error(`素材「${mat.name}」が足りません（必要数: ${totalRequired}個 / 所持数: ${currentAmount}個）`);
+    }
+
+    this.state.materials[materialId] -= totalRequired;
+    this.state.repairKits = (this.state.repairKits || 0) + totalYield;
+    this.saveState();
+    return { materialName: mat.name, usedCount: totalRequired, gainedKits: totalYield };
+  }
+
   // Shop
   public buyMaterial(materialId: string) {
     const mat = MATERIALS.find(m => m.id === materialId);

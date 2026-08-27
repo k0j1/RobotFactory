@@ -26,6 +26,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
   const [isDispatchModalOpen, setIsDispatchModalOpen] = useState(false);
   const [selectedLocationId, setSelectedLocationId] = useState<string>('');
   const [selectedRobotId, setSelectedRobotId] = useState<string>('');
+  const [isConfirmDispatchOpen, setIsConfirmDispatchOpen] = useState(false);
   const [previewEmotions, setPreviewEmotions] = useState<{ [dispatchId: string]: 'auto' | 'happy' | 'troubled' | 'searching' }>({});
 
   const triggerConfetti = () => {
@@ -635,16 +636,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                 className="flex-1" 
                 variant="primary" 
                 disabled={!selectedLocationId || !selectedRobotId}
-                onClick={() => {
-                  try {
-                    engine.startAutoDispatch(selectedRobotId, selectedLocationId);
-                    setIsDispatchModalOpen(false);
-                    setSelectedLocationId('');
-                    setSelectedRobotId('');
-                  } catch (e: any) {
-                    alert(e.message);
-                  }
-                }}
+                onClick={() => setIsConfirmDispatchOpen(true)}
               >
                 派遣する
               </Button>
@@ -654,6 +646,62 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
         </div>
       )}
 
+      {/* Auto Dispatch Confirm Modal */}
+      {isConfirmDispatchOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <motion.div 
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white rounded-xl shadow-xl max-w-sm w-full overflow-hidden"
+          >
+            <div className="bg-blue-600 text-white p-4 font-bold text-lg text-center flex items-center justify-center gap-2">
+              <span>🤖</span>
+              <span>自動探索の確認</span>
+            </div>
+            <div className="p-6 text-center space-y-4">
+              <p className="text-stone-700 font-bold leading-relaxed">
+                自動探索中は<span className="text-red-500 font-black">1回の素材発見（周期）ごとにHPを1消費</span>します。<br/>
+                （残りHPが1になると自動帰還します）
+              </p>
+              <div className="flex flex-col items-center bg-stone-100 rounded-lg p-3 border border-stone-200">
+                <p className="text-xs text-stone-500 mb-1">現在のHP</p>
+                <div className="font-bold text-lg text-stone-700">
+                  {selectedModalRobot?.currentHp ?? 12} / {selectedModalRobot?.maxHp ?? 12}
+                </div>
+              </div>
+              <p className="text-sm text-stone-500">
+                よろしいですか？
+              </p>
+            </div>
+            <div className="flex bg-stone-100 border-t border-stone-200 p-2 gap-2">
+              <Button 
+                variant="outline" 
+                className="flex-1 bg-white"
+                onClick={() => setIsConfirmDispatchOpen(false)}
+              >
+                キャンセル
+              </Button>
+              <Button 
+                variant="primary" 
+                className="flex-1"
+                onClick={() => {
+                  try {
+                    engine.startAutoDispatch(selectedRobotId, selectedLocationId);
+                    setIsConfirmDispatchOpen(false);
+                    setIsDispatchModalOpen(false);
+                    setSelectedLocationId('');
+                    setSelectedRobotId('');
+                  } catch (e: any) {
+                    alert(e.message);
+                  }
+                }}
+              >
+                出撃する
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      )}
 
       {/* Loot Result Modal (Quest & Auto Dispatch) */}
       <AnimatePresence>

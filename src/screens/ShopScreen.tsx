@@ -1,14 +1,25 @@
 import React, { useState } from 'react';
 import { GameState } from '../core/models';
 import { GameEngine } from '../core/GameEngine';
-import { Card, Button, Badge } from '../components/ui/core';
+import { Card, Button } from '../components/ui/core';
 import { theme } from '../styles/theme';
 import { MATERIALS } from '../core/data';
 import { MaterialIcon } from '../components/ui/MaterialIcon';
 import { INTERIORS } from '../core/interiors';
 
 export const ShopScreen: React.FC<{ state: GameState, engine: GameEngine, onBack: () => void }> = ({ state, engine, onBack }) => {
-  const [tab, setTab] = useState<'materials' | 'interiors'>('materials');
+  const [tab, setTab] = useState<'materials' | 'repairKits' | 'interiors'>('materials');
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const handleExchange = (materialId: string) => {
+    try {
+      const res = engine.exchangeRepairKit(materialId);
+      setSuccessMessage(`素材「${res.materialName}」を${res.usedCount}個消費して、修理キットを${res.gainedKits}個獲得しました！`);
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (e: any) {
+      alert(e.message || '交換に失敗しました');
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -22,7 +33,13 @@ export const ShopScreen: React.FC<{ state: GameState, engine: GameEngine, onBack
           className={`flex-1 py-2 font-bold rounded-t-md border-b-4 ${tab === 'materials' ? 'border-amber-500 text-amber-700 bg-amber-50' : 'border-transparent text-stone-500 hover:bg-stone-100'}`}
           onClick={() => setTab('materials')}
         >
-          素材
+          素材購入
+        </button>
+        <button 
+          className={`flex-1 py-2 font-bold rounded-t-md border-b-4 ${tab === 'repairKits' ? 'border-amber-500 text-amber-700 bg-amber-50' : 'border-transparent text-stone-500 hover:bg-stone-100'}`}
+          onClick={() => setTab('repairKits')}
+        >
+          修理キット交換
         </button>
         <button 
           className={`flex-1 py-2 font-bold rounded-t-md border-b-4 ${tab === 'interiors' ? 'border-amber-500 text-amber-700 bg-amber-50' : 'border-transparent text-stone-500 hover:bg-stone-100'}`}
@@ -32,10 +49,25 @@ export const ShopScreen: React.FC<{ state: GameState, engine: GameEngine, onBack
         </button>
       </div>
 
-      <div className={`p-4 ${theme.colors.surface} ${theme.radius.md} ${theme.shadow.sm} flex justify-between items-center`}>
-        <span>所持金</span>
-        <span className={`${theme.typography.h2} text-amber-600`}>{state.gold} G</span>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className={`p-4 ${theme.colors.surface} ${theme.radius.md} ${theme.shadow.sm} flex justify-between items-center`}>
+          <span className="font-bold text-stone-700">所持金</span>
+          <span className={`${theme.typography.h2} text-amber-600`}>{state.gold} G</span>
+        </div>
+        <div className={`p-4 ${theme.colors.surface} ${theme.radius.md} ${theme.shadow.sm} flex justify-between items-center`}>
+          <span className="font-bold text-stone-700">所持修理キット</span>
+          <span className={`${theme.typography.h2} text-green-600 flex items-center gap-1`}>
+            <span>🔧</span>
+            <span>{state.repairKits || 0} 個</span>
+          </span>
+        </div>
       </div>
+
+      {successMessage && (
+        <div className="p-3 bg-green-100 border border-green-300 text-green-800 rounded-md text-sm font-bold animate-fadeIn">
+          {successMessage}
+        </div>
+      )}
 
       {tab === 'materials' && (
         <>
@@ -63,9 +95,75 @@ export const ShopScreen: React.FC<{ state: GameState, engine: GameEngine, onBack
                   <Button 
                     size="sm" 
                     disabled={state.gold < mat.price}
-                    onClick={() => engine.buyMaterial(mat.id)}
+                    onClick={() => {
+                      try {
+                        engine.buyMaterial(mat.id);
+                      } catch (e: any) {
+                        alert(e.message || '購入に失敗しました');
+                      }
+                    }}
                   >
                     {mat.price} G
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {tab === 'repairKits' && (
+        <>
+          <div className="space-y-2">
+            <h3 className={theme.typography.h3}>素材を修理キットに交換</h3>
+            <p className="text-sm text-stone-600">
+              余った素材を分解・再構成して、ロボットの体力を全回復する【修理キット】と交換できます。
+            </p>
+            <div className="flex flex-wrap gap-2 text-xs text-stone-600 bg-stone-100 p-2.5 rounded-md border border-stone-200">
+              <span>【交換レート】</span>
+              <span className="font-bold text-stone-700">★1素材: 3個 → 1個</span>
+              <span>/</span>
+              <span className="font-bold text-sky-700">★2素材: 1個 → 1個</span>
+              <span>/</span>
+              <span className="font-bold text-amber-700">★3素材: 1個 → 3個</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {MATERIALS.map(mat => {
+              const rStyle = theme.rarity[mat.rarity];
+              const ownedCount = state.materials[mat.id] || 0;
+              const requiredCount = mat.rarity === 1 ? 3 : 1;
+              const yieldCount = mat.rarity === 3 ? 3 : 1;
+              const canExchange = ownedCount >= requiredCount;
+
+              return (
+                <div 
+                  key={mat.id} 
+                  className={`p-4 rounded-lg border-2 ${rStyle.border} ${rStyle.bg} ${rStyle.ring} flex justify-between items-center transition-shadow shadow-xs hover:shadow-md`}
+                >
+                  <div>
+                    <p className={`font-bold flex items-center gap-2 ${rStyle.text}`}>
+                      <MaterialIcon materialId={mat.id} size={18} />
+                      {mat.name}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1.5 text-xs">
+                      <span className="text-stone-600">
+                        所持: <span className={ownedCount >= requiredCount ? 'font-bold text-stone-800' : 'text-stone-400'}>{ownedCount}</span> 個
+                      </span>
+                      <span className="text-stone-400">|</span>
+                      <span className="text-stone-600">
+                        必要: <span className="font-bold text-red-600">{requiredCount}</span> 個 → 獲得: <span className="font-bold text-green-600">+{yieldCount}</span> 個
+                      </span>
+                    </div>
+                  </div>
+                  <Button 
+                    size="sm" 
+                    variant={canExchange ? 'primary' : 'secondary'}
+                    disabled={!canExchange}
+                    onClick={() => handleExchange(mat.id)}
+                  >
+                    交換する
                   </Button>
                 </div>
               );
