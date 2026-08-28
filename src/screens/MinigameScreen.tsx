@@ -8,14 +8,23 @@ import { OthelloGame } from '../components/minigames/OthelloGame';
 import { GomokuGame } from '../components/minigames/GomokuGame';
 import { ChessGame } from '../components/minigames/ChessGame';
 import { TicTacToeGame } from '../components/minigames/TicTacToeGame';
+import { SpaceShooterGame } from '../components/minigames/SpaceShooterGame';
+import { DanmakuSurvivalGame } from '../components/minigames/DanmakuSurvivalGame';
 import { RobotVisual } from '../components/robot/RobotVisual';
 import { motion } from 'motion/react';
 
+const CATEGORIES = [
+  { id: 'puzzle', name: 'パズル' },
+  { id: 'shooting', name: '射撃' }
+];
+
 const GAMES = [
-  { id: 'othello', name: 'オセロ', desc: '挟んで裏返す定番ボードゲーム' },
-  { id: 'gomoku', name: '五目並べ', desc: '先に5つ並べたら勝ちのパズル' },
-  { id: 'chess', name: 'チェス', desc: 'キャスリング無しの実力勝負' },
-  { id: 'tictactoe', name: 'マルバツ', desc: '3つ並べたら勝ちの基本ゲーム' }
+  { id: 'othello', category: 'puzzle', name: 'オセロ', desc: '挟んで裏返す定番ボードゲーム', requiresOpponent: true },
+  { id: 'gomoku', category: 'puzzle', name: '五目並べ', desc: '先に5つ並べたら勝ちのパズル', requiresOpponent: true },
+  { id: 'chess', category: 'puzzle', name: 'チェス', desc: 'キャスリング無しの実力勝負', requiresOpponent: true },
+  { id: 'tictactoe', category: 'puzzle', name: 'マルバツ', desc: '3つ並べたら勝ちの基本ゲーム', requiresOpponent: true },
+  { id: 'space_shooter', category: 'shooting', name: 'シューティング', desc: '弾を避けながら10秒以内に撃破', requiresOpponent: false },
+  { id: 'danmaku', category: 'shooting', name: '弾幕よけ', desc: '10秒間、敵の弾幕から生き残る', requiresOpponent: false }
 ];
 
 interface MinigameScreenProps {
@@ -24,6 +33,7 @@ interface MinigameScreenProps {
 }
 
 export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine }) => {
+  const [selectedCategory, setSelectedCategory] = useState('puzzle');
   const [selectedGame, setSelectedGame] = useState('othello');
   const [selectedRobotId, setSelectedRobotId] = useState<string | null>(null);
   const [selectedOpponentId, setSelectedOpponentId] = useState<string | null>(null);
@@ -36,20 +46,30 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
   const activeRobot = state.robots.find(r => r.id === selectedRobotId);
   const activeOpponent = OPPONENTS.find(o => o.id === selectedOpponentId);
 
+  const selectedGameDef = GAMES.find(g => g.id === selectedGame);
+  const requiresOpponent = selectedGameDef?.requiresOpponent ?? true;
+
   const handleFinish = (result: 'win' | 'lose' | 'draw') => {
     if (activeRobot) {
       (engine as any).recordBattleResult(activeRobot.id, result);
     }
     setBattleResult(result);
-    if (result === 'win' && activeOpponent) {
-      (engine as any).addGold(activeOpponent.reward);
-      const kits = activeOpponent.id === 'op4' ? 5 : activeOpponent.id === 'op3' ? 3 : activeOpponent.id === 'op2' ? 2 : 1;
-      (engine as any).addRepairKits(kits);
+    if (result === 'win') {
+      if (requiresOpponent && activeOpponent) {
+        (engine as any).addGold(activeOpponent.reward);
+        const kits = activeOpponent.id === 'op4' ? 5 : activeOpponent.id === 'op3' ? 3 : activeOpponent.id === 'op2' ? 2 : 1;
+        (engine as any).addRepairKits(kits);
+      } else if (!requiresOpponent) {
+        // Flat reward for solo games
+        (engine as any).addGold(50);
+        (engine as any).addRepairKits(1);
+      }
     }
   };
 
   const handleStartBattle = () => {
-    if (!activeRobot || !activeOpponent) return;
+    if (!activeRobot) return;
+    if (requiresOpponent && !activeOpponent) return;
     if ((activeRobot.currentHp ?? 12) < 1) {
       alert("HPが足りません。バトルに参加するにはHPが1必要です。");
       return;
@@ -58,7 +78,8 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
   };
 
   const confirmBattleStart = () => {
-    if (!activeRobot || !activeOpponent) return;
+    if (!activeRobot) return;
+    if (requiresOpponent && !activeOpponent) return;
     (engine as any).consumeRobotHp(activeRobot.id, 1);
     setIsConfirmModalOpen(false);
     setIsBattleActive(true);
@@ -68,12 +89,19 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
   };
 
   const renderGame = () => {
-    if (!activeRobot || !activeOpponent) return null;
+    if (!activeRobot) return null;
+    if (requiresOpponent && !activeOpponent) return null;
+    
+    // We can pass a dummy opponent for games that don't need it but require the prop type, or just cast it
+    const opponent = activeOpponent || OPPONENTS[0];
+
     switch (selectedGame) {
-      case 'othello': return <OthelloGame activeRobot={activeRobot} activeOpponent={activeOpponent} onFinish={handleFinish} speed={speed} isPaused={isPaused} isFinished={battleResult !== null} battleResult={battleResult} />;
-      case 'gomoku': return <GomokuGame activeRobot={activeRobot} activeOpponent={activeOpponent} onFinish={handleFinish} speed={speed} isPaused={isPaused} isFinished={battleResult !== null} battleResult={battleResult} />;
-      case 'chess': return <ChessGame activeRobot={activeRobot} activeOpponent={activeOpponent} onFinish={handleFinish} speed={speed} isPaused={isPaused} isFinished={battleResult !== null} battleResult={battleResult} />;
-      case 'tictactoe': return <TicTacToeGame activeRobot={activeRobot} activeOpponent={activeOpponent} onFinish={handleFinish} speed={speed} isPaused={isPaused} isFinished={battleResult !== null} battleResult={battleResult} />;
+      case 'othello': return <OthelloGame activeRobot={activeRobot} activeOpponent={opponent} onFinish={handleFinish} speed={speed} isPaused={isPaused} isFinished={battleResult !== null} battleResult={battleResult} />;
+      case 'gomoku': return <GomokuGame activeRobot={activeRobot} activeOpponent={opponent} onFinish={handleFinish} speed={speed} isPaused={isPaused} isFinished={battleResult !== null} battleResult={battleResult} />;
+      case 'chess': return <ChessGame activeRobot={activeRobot} activeOpponent={opponent} onFinish={handleFinish} speed={speed} isPaused={isPaused} isFinished={battleResult !== null} battleResult={battleResult} />;
+      case 'tictactoe': return <TicTacToeGame activeRobot={activeRobot} activeOpponent={opponent} onFinish={handleFinish} speed={speed} isPaused={isPaused} isFinished={battleResult !== null} battleResult={battleResult} />;
+      case 'space_shooter': return <SpaceShooterGame activeRobot={activeRobot} activeOpponent={opponent} onFinish={handleFinish} speed={speed} isPaused={isPaused} isFinished={battleResult !== null} battleResult={battleResult} />;
+      case 'danmaku': return <DanmakuSurvivalGame activeRobot={activeRobot} activeOpponent={opponent} onFinish={handleFinish} speed={speed} isPaused={isPaused} isFinished={battleResult !== null} battleResult={battleResult} />;
       default: return null;
     }
   };
@@ -82,15 +110,32 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
     <div className="p-4 pb-24 space-y-6 max-w-4xl mx-auto">
       <div className="text-center space-y-2">
         <h2 className={theme.typography.h2}>ロボット・バトル</h2>
-        <p className="text-stone-600 text-sm">様々なボードゲームで企業のAIとオートバトル！<br/>賢さ(Int)が高いほど、ロボットはより良い手を選びます。</p>
+        <p className="text-stone-600 text-sm">様々な競技で企業のAIとオートバトル！<br/>種目に応じたステータス（Int/Agi/Dex）が高いほど有利になります。</p>
       </div>
 
       {!isBattleActive && !battleResult ? (
         <div className="space-y-4">
           <Card className="bg-white">
             <h3 className={`${theme.typography.h3} mb-4 text-stone-800 border-b pb-2`}>種目を選ぶ</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-              {GAMES.map(g => (
+            
+            <div className="flex gap-2 mb-4 border-b border-stone-200 pb-2">
+              {CATEGORIES.map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => {
+                    setSelectedCategory(cat.id);
+                    const firstGame = GAMES.find(g => g.category === cat.id);
+                    if (firstGame) setSelectedGame(firstGame.id);
+                  }}
+                  className={`px-4 py-2 text-sm font-bold rounded-t-lg transition-colors border-b-4 ${selectedCategory === cat.id ? 'border-primary text-primary bg-primary/10' : 'border-transparent text-stone-500 hover:bg-stone-50 hover:text-stone-800'}`}
+                >
+                  {cat.name}
+                </button>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              {GAMES.filter(g => g.category === selectedCategory).map(g => (
                 <button
                   key={g.id}
                   onClick={() => setSelectedGame(g.id)}
@@ -103,10 +148,10 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
             </div>
           </Card>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className={`grid grid-cols-1 ${!requiresOpponent ? '' : 'md:grid-cols-2'} gap-4`}>
             <Card className="bg-white">
               <h3 className={`${theme.typography.h3} mb-4 text-stone-800 border-b pb-2`}>自機を選ぶ</h3>
-              <div className="space-y-2 max-h-60 overflow-y-auto">
+              <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
                 {state.robots.length === 0 ? (
                   <p className="text-stone-500 text-sm">ロボットがいません。</p>
                 ) : (
@@ -121,9 +166,11 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                       >
                         <div className="flex justify-between items-center">
                           <span className="font-bold">{r.name}</span>
-                          <div className="flex gap-3 text-xs text-stone-600">
+                          <div className="flex gap-2 text-[10px] sm:text-xs text-stone-600 font-mono">
                             <span>HP: {r.currentHp ?? 12}/{r.maxHp ?? 12}</span>
-                            <span>Int: {r.stats.intelligence}</span>
+                            <span className={selectedCategory === 'puzzle' ? 'font-black text-blue-600' : ''}>Int:{r.stats.intelligence}</span>
+                            <span className={selectedGame === 'danmaku' ? 'font-black text-blue-600' : ''}>Agi:{r.stats.agility}</span>
+                            <span className={selectedCategory === 'shooting' ? 'font-black text-blue-600' : ''}>Dex:{r.stats.dexterity}</span>
                           </div>
                         </div>
                         {isDispatched && <span className="text-[10px] text-red-500">※出撃中</span>}
@@ -135,32 +182,39 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
               </div>
             </Card>
 
-            <Card className="bg-white">
-              <h3 className={`${theme.typography.h3} mb-4 text-stone-800 border-b pb-2`}>対戦相手を選ぶ</h3>
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                {OPPONENTS.map(o => (
-                  <button
-                    key={o.id}
-                    onClick={() => setSelectedOpponentId(o.id)}
-                    className={`w-full text-left p-3 rounded border transition-colors flex justify-between items-center ${selectedOpponentId === o.id ? 'border-primary bg-primary/10' : 'border-stone-200 hover:bg-stone-50'}`}
-                  >
-                    <div>
-                      <div className="font-bold">{o.name}</div>
-                      <div className="text-xs text-stone-500">{o.org} / AI: {o.int}</div>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-xs text-amber-700 font-bold block">報酬: {o.reward} G</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </Card>
+            {requiresOpponent && (
+              <Card className="bg-white">
+                <h3 className={`${theme.typography.h3} mb-4 text-stone-800 border-b pb-2`}>対戦相手を選ぶ</h3>
+                <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
+                  {OPPONENTS.map(o => (
+                    <button
+                      key={o.id}
+                      onClick={() => setSelectedOpponentId(o.id)}
+                      className={`w-full text-left p-3 rounded border transition-colors flex justify-between items-center ${selectedOpponentId === o.id ? 'border-primary bg-primary/10' : 'border-stone-200 hover:bg-stone-50'}`}
+                    >
+                      <div>
+                        <div className="font-bold">{o.name}</div>
+                        <div className="flex gap-2 text-[10px] sm:text-xs text-stone-500 font-mono mt-0.5">
+                          <span className={selectedCategory === 'puzzle' ? 'font-black text-blue-600' : ''}>Int:{o.int}</span>
+                          <span>Agi:{o.agi}</span>
+                          <span className={selectedCategory === 'shooting' ? 'font-black text-blue-600' : ''}>Dex:{o.dex}</span>
+                        </div>
+                        <div className="text-[10px] text-stone-400 mt-0.5">{o.org}</div>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-xs text-amber-700 font-bold block">報酬: {o.reward} G</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </Card>
+            )}
           </div>
 
           <div className="text-center pt-4">
             <Button
               onClick={handleStartBattle}
-              disabled={!selectedRobotId || !selectedOpponentId}
+              disabled={!selectedRobotId || (requiresOpponent && !selectedOpponentId)}
               className="w-full md:w-1/2 py-4 text-lg"
             >
               バトル開始！
@@ -205,7 +259,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                       transition={{ duration: 1.5, repeat: Infinity }}
                     >
                       <span>🏆</span>
-                      <span>ガッツポーズ！勝利の雄叫び！</span>
+                      <span>{!requiresOpponent ? 'ガッツポーズ！ミッションクリア！' : 'ガッツポーズ！勝利の雄叫び！'}</span>
                       <span>✨</span>
                     </motion.div>
 
@@ -237,16 +291,24 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                 )}
 
                 <div className="text-3xl font-black">
-                  {battleResult === 'win' && <span className="text-emerald-600 drop-shadow-sm">🎉 勝利！</span>}
+                  {battleResult === 'win' && <span className="text-emerald-600 drop-shadow-sm">{!requiresOpponent ? '🎉 MISSION CLEAR！' : '🎉 勝利！'}</span>}
                   {battleResult === 'lose' && <span className="text-red-500">💀 敗北...</span>}
                   {battleResult === 'draw' && <span className="text-stone-500">🤝 引き分け</span>}
                 </div>
 
-                {battleResult === 'win' && (
+                {battleResult === 'win' && requiresOpponent && (
                   <div className="bg-amber-50 border border-amber-200 px-6 py-2.5 rounded-xl shadow-sm">
                     <p className="text-amber-800 font-bold text-lg flex items-center justify-center gap-2">
                       <span>💰</span>
                       <span>獲得報酬: +{activeOpponent?.reward} G</span>
+                    </p>
+                  </div>
+                )}
+                {battleResult === 'win' && !requiresOpponent && (
+                  <div className="bg-amber-50 border border-amber-200 px-6 py-2.5 rounded-xl shadow-sm">
+                    <p className="text-amber-800 font-bold text-lg flex items-center justify-center gap-2">
+                      <span>💰</span>
+                      <span>クリア報酬: +50 G</span>
                     </p>
                   </div>
                 )}

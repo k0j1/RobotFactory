@@ -19,6 +19,7 @@ interface RobotVisualProps {
   isTroubled?: boolean;
   locationId?: string; // 探索地に応じた背景・天気
   agility?: number; // ロボットの素早さ（歩行・アニメーション速度に反映）
+  hideBackground?: boolean;
 }
 
 export const PartVisual: React.FC<{ part: any, size?: number }> = ({ part, size = 64 }) => {
@@ -68,7 +69,8 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
   hasPendingDrops = false,
   isTroubled = false,
   locationId,
-  agility
+  agility,
+  hideBackground = false
 }) => {
   const parts = robot?.parts || {};
   const { head, body, arms, legs } = parts;
@@ -268,14 +270,14 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
 
   return (
     <motion.div 
-      className={`isolate relative flex justify-center items-center ${theme.radius.md} overflow-hidden border-2 ${
+      className={hideBackground ? "isolate relative flex justify-center items-center" : `isolate relative flex justify-center items-center ${theme.radius.md} overflow-hidden border-2 ${
         currentEmotion === 'happy'
           ? 'border-amber-400 ring-2 ring-amber-300' 
           : currentEmotion === 'troubled'
           ? 'border-blue-400 ring-2 ring-blue-300/60'
           : 'border-stone-300'
       }`} 
-      style={bgStyle}
+      style={hideBackground ? { width: containerWidth || size, height: containerHeight || size } : bgStyle}
     >
       {/* エリア環境・天候背景 (自動探索中) */}
       {animateExploration && (

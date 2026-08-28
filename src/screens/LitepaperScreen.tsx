@@ -11,7 +11,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
       </div>
 
       <Card className="bg-stone-50 border-2 border-stone-200">
-        <h3 className={`${theme.typography.h3} mb-4 text-stone-700`}>ポンコツロボット工房 v1.0.76 仕様まとめ</h3>
+        <h3 className={`${theme.typography.h3} mb-4 text-stone-700`}>ポンコツロボット工房 v1.0.83 仕様まとめ</h3>
         
         <div className="space-y-6 text-sm text-stone-800">
           <section>
@@ -67,10 +67,12 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
           <section>
             <h4 className="font-bold text-lg text-amber-700 border-b border-stone-300 mb-2">5. ミニゲーム（ロボット・バトル）</h4>
             <ul className="list-disc list-inside space-y-1 ml-2">
-              <li>自作のロボットを出撃させ、オセロ・五目並べ・チェス・マルバツのボードゲームで各企業のAIとオート対決ができます。</li>
-              <li>ロボットの<strong>「賢さ (Int)」</strong>が高いほど、より精度の高い次の一手を選択します。</li>
-              <li><strong>参加コストと報酬:</strong> 参加にはロボットのHPを1消費します。勝利するとG（ゴールド）に加え、相手のレベル（Int）に応じた個数の「修理キット」を獲得できます。修理キットは倉庫で使用することでロボットのHPを全回復できます。</li>
-              <li><strong>バトル演出:</strong> 対戦に勝利すると、使用したロボットが両腕を突き上げて飛び跳ねる<strong>「ガッツポーズアニメーション」</strong>（表情は通常表示）とキラキラエフェクトで勝利を祝います。敗北時も表情の変更は行われず通常表示となります。</li>
+              <li>自作のロボットを出撃させ、パズル・射撃の各カテゴリでミニゲームに挑戦できます。</li>
+              <li><strong>パズル（オセロ・五目並べ・チェス・マルバツ）:</strong> ロボットの<strong>「賢さ (Int)」</strong>が高いほど、より精度の高い次の一手を選択します。企業のAIと対決します。</li>
+              <li><strong>射撃（シューティングゲーム）:</strong> 横スクロールのステージで巨大宇宙船と対決するソロモードです。<strong>「力 (Pow)」</strong>で攻撃力、<strong>「器用さ (Dex)」</strong>で攻撃頻度、<strong>「敏捷 (Agi)」</strong>で回避率が上がり、10秒以内に敵を倒せばクリアです。攻撃を当てるとアイテムが落ちることも。</li>
+              <li><strong>射撃（弾幕よけ）:</strong> 縦スクロールのステージで巨大宇宙船の多様な弾幕（放射状、波状など）を避けるサバイバルモードです。<strong>「敏捷 (Agi)」</strong>で移動速度と回避率、<strong>「器用さ (Dex)」</strong>で回避率が上がり、<strong>「賢さ (Int)」</strong>が高いほど画面全体を使って危険をより早く予知し、自律的に安全地帯へ退避する能力が高まります。10秒間生き残ればクリアです。</li>
+              <li><strong>参加コストと報酬:</strong> 参加にはロボットのHPを1消費します。パズルで企業のAIに勝利すると相手に応じたG（ゴールド）と「修理キット」を獲得できます。ソロモード（シューティング、弾幕よけ）のクリア時には固定で50Gと修理キットを1つ獲得できます。</li>
+              <li><strong>バトル演出:</strong> 対戦に勝利、またはミッションをクリアすると、使用したロボットが両腕を突き上げて飛び跳ねる<strong>「ガッツポーズアニメーション」</strong>（表情は通常表示）とキラキラエフェクトで勝利を祝います。敗北時も表情の変更は行われず通常表示となります。</li>
             </ul>
           </section>
 

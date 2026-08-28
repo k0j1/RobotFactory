@@ -81,10 +81,54 @@ export const BodyBasicSVG = ({ color, viewBox="0 0 100 100", className }: SVGPro
 );
 
 export const BodyRoundSVG = ({ color, viewBox="0 0 100 100", className }: SVGProps) => (
-  <svg width="100%" height="100%" viewBox={viewBox} className={className}>
-    <circle cx="50" cy="55" r="22" fill={color} stroke="#333" strokeWidth="3" />
-    <circle cx="50" cy="55" r="12" fill="#fff" opacity="0.3" />
-    <circle cx="50" cy="55" r="5" fill="#fff" stroke="#333" strokeWidth="2" />
+  <svg width="100%" height="100%" viewBox={viewBox} className={className} shapeRendering="crispEdges">
+    <g transform="translate(30.8, 35.8) scale(1.6)">
+      {/* 外枠角丸ベース */}
+      <rect x="2" y="0" width="20" height="24" fill="#1a1d24" rx="2" />
+      <rect x="0" y="2" width="24" height="20" fill="#1a1d24" rx="2" />
+
+      {/* 内側ダークベース */}
+      <rect x="2" y="1" width="20" height="22" fill="#0f1626" />
+      <rect x="1" y="2" width="22" height="20" fill="#0f1626" />
+
+      {/* メインブルー背景 */}
+      <rect x="2" y="2" width="20" height="20" fill={color || "#1d61d1"} />
+
+      {/* 四隅のダークドット */}
+      <rect x="2" y="2" width="2" height="2" fill="#0f1626" />
+      <rect x="20" y="2" width="2" height="2" fill="#0f1626" />
+      <rect x="2" y="20" width="2" height="2" fill="#0f1626" />
+      <rect x="20" y="20" width="2" height="2" fill="#0f1626" />
+
+      {/* 外周フレームハイライト / 影 */}
+      <path d="M 4 2 L 20 2 M 2 4 L 2 20" stroke={color || "#1d61d1"} strokeWidth="1" />
+      <path d="M 4 22 L 20 22 M 22 4 L 22 20" stroke="#0f1626" strokeWidth="1" />
+
+      {/* 上部メイン画面の外枠 */}
+      <rect x="4" y="4" width="16" height="11" fill="#10418c" />
+      
+      {/* 上部メイン画面のフレーム */}
+      <rect x="5" y="5" width="14" height="9" fill="#0f1626" />
+      <rect x="6" y="6" width="12" height="7" fill="#10418c" />
+
+      {/* 上部画面のディスプレイ表示 (白/水色) */}
+      <rect x="7" y="7" width="10" height="5" fill="#388eff" />
+      <rect x="8" y="8" width="8" height="3" fill="#e8f4ff" />
+
+      {/* 中央のグレーのスリット/ライン */}
+      <rect x="3" y="15" width="18" height="2" fill="#48505e" />
+
+      {/* 下部ボタン・インターフェース領域 */}
+      <rect x="4" y="18" width="16" height="4" fill="#10418c" />
+      <rect x="7" y="19" width="10" height="2" fill="#0f1626" />
+      <rect x="8" y="19" width="8" height="2" fill="#388eff" />
+      <rect x="9" y="19" width="6" height="1" fill="#e8f4ff" />
+
+      {/* コーナーアクセント */}
+      <rect x="3" y="3" width="1" height="1" fill="#388eff" />
+      <rect x="3" y="18" width="1" height="1" fill="#388eff" />
+      <rect x="20" y="18" width="1" height="1" fill="#388eff" />
+    </g>
   </svg>
 );
 
@@ -243,12 +287,42 @@ export const LegsSpiderSVG = ({ color, viewBox="0 0 100 100", className }: SVGPr
 );
 
 export const LegsWheelSVG = ({ color, viewBox="0 0 100 100", className }: SVGProps) => (
-  <svg width="100%" height="100%" viewBox={viewBox} className={className}>
-    <rect x="46" y="70" width="8" height="12" fill={color} stroke="#333" strokeWidth="2" />
-    <circle cx="50" cy="85" r="12" fill="#222" stroke="#444" strokeWidth="3" />
-    <circle cx="50" cy="85" r="4" fill={color} stroke="#333" strokeWidth="2" />
-    <line x1="50" y1="73" x2="50" y2="97" stroke="#555" strokeWidth="1" />
-    <line x1="38" y1="85" x2="62" y2="85" stroke="#555" strokeWidth="1" />
+  <svg width="100%" height="100%" viewBox={viewBox} className={className} shapeRendering="crispEdges">
+    <g transform="translate(34.8, 69) scale(0.95)">
+      {/* 左脚 (Left Leg) */}
+      {/* 外枠 */}
+      <path fill="#1a1d24" d="M 4,3 h 8 v 1 h 2 v 13 h -1 v 11 h 1 v 1 h -10 v -1 h 1 v -11 h -1 v -13 h 2 Z" />
+      {/* ダークグレー装甲 */}
+      <path fill="#2b303a" d="M 5,4 h 6 v 12 h -1 v 11 h -4 v -11 h -1 Z" />
+      {/* 青色アーマー（太もも〜膝） */}
+      <path fill={color || "#1d61d1"} d="M 6,5 h 4 v 1 h 1 v 8 h -1 v 2 h -4 v -2 h -1 v -8 h 1 Z" />
+      {/* 青色アーマー（すね） */}
+      <path fill={color || "#1d61d1"} d="M 6,20 h 4 v 6 h -4 Z" />
+      <path fill={color || "#1d61d1"} d="M 5,27 h 6 v 1 h -6 Z" />
+      {/* 水色・白色ハイライト */}
+      <rect x="5" y="5" width="1" height="1" fill="#e8f4ff" />
+      <rect x="7" y="7" width="2" height="5" fill="#388eff" />
+      <rect x="7" y="17" width="2" height="1" fill="#e8f4ff" />
+      <rect x="7" y="21" width="2" height="3" fill="#388eff" />
+      <rect x="4" y="23" width="1" height="1" fill="#e8f4ff" />
+
+      {/* 右脚 (Right Leg) */}
+      {/* 外枠 */}
+      <path fill="#1a1d24" d="M 18,3 h 8 v 1 h 2 v 13 h -1 v 11 h 1 v 1 h -10 v -1 h 1 v -11 h -1 v -13 h 2 Z" />
+      {/* ダークグレー装甲 */}
+      <path fill="#2b303a" d="M 19,4 h 6 v 12 h -1 v 11 h -4 v -11 h -1 Z" />
+      {/* 青色アーマー（太もも〜膝） */}
+      <path fill={color || "#1d61d1"} d="M 20,5 h 4 v 1 h 1 v 8 h -1 v 2 h -4 v -2 h -1 v -8 h 1 Z" />
+      {/* 青色アーマー（すね） */}
+      <path fill={color || "#1d61d1"} d="M 20,20 h 4 v 6 h -4 Z" />
+      <path fill={color || "#1d61d1"} d="M 19,27 h 6 v 1 h -6 Z" />
+      {/* 水色・白色ハイライト */}
+      <rect x="25" y="5" width="1" height="1" fill="#e8f4ff" />
+      <rect x="21" y="7" width="2" height="5" fill="#388eff" />
+      <rect x="21" y="17" width="2" height="1" fill="#e8f4ff" />
+      <rect x="21" y="21" width="2" height="3" fill="#388eff" />
+      <rect x="26" y="23" width="1" height="1" fill="#e8f4ff" />
+    </g>
   </svg>
 );
 
