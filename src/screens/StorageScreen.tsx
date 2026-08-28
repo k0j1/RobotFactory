@@ -11,6 +11,7 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
   const [tab, setTab] = useState<'robots'|'parts'|'materials'>('robots');
   const [confirmRobotId, setConfirmRobotId] = useState<string | null>(null);
   const [confirmPartId, setConfirmPartId] = useState<string | null>(null);
+  const [activeTooltipRobotId, setActiveTooltipRobotId] = useState<string | null>(null);
   const [now, setNow] = useState(Date.now());
   
   const disassemblyRef = useRef<HTMLDivElement>(null);
@@ -315,8 +316,97 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                         </div>
                       </div>
 
-                      <div className="flex-shrink-0 bg-stone-50 p-1.5 rounded-lg border border-stone-200">
-                        <RobotVisual robot={r} size={84} />
+                      <div className="flex-shrink-0 relative">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveTooltipRobotId(activeTooltipRobotId === r.id ? null : r.id);
+                          }}
+                          className={`block bg-stone-50 p-1.5 rounded-lg border-2 transition text-left cursor-pointer group relative ${
+                            activeTooltipRobotId === r.id 
+                              ? 'border-amber-500 shadow-md ring-2 ring-amber-200' 
+                              : 'border-stone-200 hover:border-amber-400 hover:shadow-sm'
+                          }`}
+                          title="タップして構成パーツと属性を確認"
+                        >
+                          <RobotVisual robot={r} size={84} />
+                          <div className="absolute bottom-1 right-1 bg-stone-900/80 text-[9px] text-white px-1.5 py-0.5 rounded-full font-bold flex items-center gap-0.5 shadow-xs group-hover:bg-amber-600 transition-colors">
+                            <span>🔍</span>
+                            <span className="hidden sm:inline">パーツ</span>
+                          </div>
+                        </button>
+
+                        {/* 構成パーツ & 属性ツールチップ */}
+                        {activeTooltipRobotId === r.id && (
+                          <div 
+                            className="absolute right-0 top-full mt-2 w-72 sm:w-80 bg-stone-900/95 text-stone-100 p-3 rounded-xl shadow-2xl border-2 border-stone-700 z-30 backdrop-blur-xs animate-in fade-in zoom-in-95 duration-150"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {/* 吹き出しの三角矢印 */}
+                            <div className="absolute -top-2 right-6 w-3 h-3 bg-stone-900 border-t-2 border-l-2 border-stone-700 transform rotate-45" />
+
+                            <div className="flex justify-between items-center border-b border-stone-700 pb-1.5 mb-2 relative z-10">
+                              <span className="font-bold text-xs text-amber-400 flex items-center gap-1">
+                                🧩 構成パーツと属性
+                              </span>
+                              <button 
+                                onClick={() => setActiveTooltipRobotId(null)}
+                                className="text-stone-400 hover:text-white font-bold text-xs p-1 leading-none rounded hover:bg-stone-800 transition"
+                              >
+                                ✕
+                              </button>
+                            </div>
+
+                            <div className="space-y-2 relative z-10">
+                              {[
+                                { key: 'head', label: '頭部', part: r.parts.head },
+                                { key: 'body', label: '胴体', part: r.parts.body },
+                                { key: 'arms', label: '腕部', part: r.parts.arms },
+                                { key: 'legs', label: '脚部', part: r.parts.legs },
+                              ].map(({ key, label, part }) => {
+                                if (!part) return null;
+                                const attrColor = AttributeColors[part.attribute];
+                                const attrName = AttributeNames[part.attribute];
+                                return (
+                                  <div 
+                                    key={key} 
+                                    className="flex items-center gap-2 bg-stone-800/90 p-2 rounded-lg border border-stone-700/80 shadow-xs"
+                                  >
+                                    <div className="shrink-0 bg-stone-900 p-1 rounded border border-stone-700 flex items-center justify-center">
+                                      <PartVisual part={part} size={36} />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                      <div className="flex items-center justify-between gap-1 mb-0.5">
+                                        <span className="text-[10px] font-bold text-stone-400 bg-stone-700 px-1.5 py-0.2 rounded">
+                                          {label}
+                                        </span>
+                                        <span 
+                                          className="text-[10px] px-1.5 py-0.2 rounded font-bold text-white leading-none shadow-2xs"
+                                          style={{ backgroundColor: attrColor }}
+                                        >
+                                          {attrName}属性
+                                        </span>
+                                      </div>
+                                      <div className="text-xs font-bold text-stone-100 truncate">
+                                        {part.name}
+                                      </div>
+                                      <div className="text-[10px] text-stone-400 font-mono mt-0.5 flex gap-2">
+                                        <span>HP:{part.stats.hp}</span>
+                                        <span>Pow:{part.stats.power}</span>
+                                        <span>Def:{part.stats.defense}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+
+                            <div className="mt-2.5 pt-1.5 border-t border-stone-800 text-[10px] text-stone-400 text-center relative z-10">
+                              ※画像を再タップまたは✕で閉じます
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
 
