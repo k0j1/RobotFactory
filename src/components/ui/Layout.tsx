@@ -58,7 +58,7 @@ export const Layout: React.FC<{
       <header className={`${theme.colors.secondary} ${theme.colors.textLight} ${theme.spacing.sm} sticky top-0 ${theme.zIndex.header} ${theme.shadow.sm}`}>
         <div className="max-w-4xl mx-auto flex justify-between items-center">
           <h1 className={theme.typography.h2}>ポンコツロボット工房</h1>
-          <div className="text-sm">v1.0.85</div>
+          <div className="text-sm">v1.0.87</div>
         </div>
       </header>
 

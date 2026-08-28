@@ -182,10 +182,30 @@ export const RequestScreen: React.FC<{ state: GameState; engine: GameEngine }> =
                 </Badge>
 
                 {/* Affection Display */}
-                <span className="text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded">
-                  好感度: Lv.{state.clientAffection?.[state.currentRequest.rank] || 1}/10
-                  {(state.clientAffection?.[state.currentRequest.rank] || 1) >= 10 && ' ★MAX(1.5倍)'}
-                </span>
+                <div className="flex items-center gap-1.5 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded">
+                  <span className="text-rose-500 text-xs">❤️</span>
+                  <span className="text-xs font-bold text-rose-700">
+                    好感度: {state.clientAffection?.[state.currentRequest.rank] || 1} / 10
+                  </span>
+                  {(state.clientAffection?.[state.currentRequest.rank] || 1) >= 10 ? (
+                    <span className="text-[10px] bg-rose-500 text-white font-bold px-1.5 py-0.5 rounded-full">
+                      ★MAX 1.5倍
+                    </span>
+                  ) : (
+                    <div className="flex items-center gap-0.5">
+                      {Array.from({ length: 10 }).map((_, i) => (
+                        <span 
+                          key={i} 
+                          className={`w-1.5 h-1.5 rounded-full ${
+                            i < (state.clientAffection?.[state.currentRequest.rank] || 1)
+                              ? 'bg-rose-500' 
+                              : 'bg-rose-200'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
 
                 <span className="text-xs text-stone-500 font-sans ml-auto">
                   {CLIENT_SCHEDULE_INFO[state.currentRequest.rank].interval} ({CLIENT_SCHEDULE_INFO[state.currentRequest.rank].times})
@@ -345,10 +365,30 @@ export const RequestScreen: React.FC<{ state: GameState; engine: GameEngine }> =
                             {schedule.interval} ({schedule.times})
                           </span>
 
-                          <span className="text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded whitespace-nowrap leading-none inline-flex items-center">
-                            好感度: Lv.{affection}/10
-                            {affection >= 10 && ' ★MAX(1.5倍)'}
-                          </span>
+                          <div className="flex items-center gap-1 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded whitespace-nowrap leading-none">
+                            <span className="text-rose-500 text-xs">❤️</span>
+                            <span className="text-xs font-bold text-rose-700">
+                              好感度: {affection} / 10
+                            </span>
+                            {affection >= 10 ? (
+                              <span className="text-[10px] bg-rose-500 text-white font-bold px-1.5 py-0.5 rounded-full ml-0.5">
+                                ★MAX 1.5倍
+                              </span>
+                            ) : (
+                              <div className="flex items-center gap-0.5 ml-1">
+                                {Array.from({ length: 10 }).map((_, i) => (
+                                  <span 
+                                    key={i} 
+                                    className={`w-1.5 h-1.5 rounded-full ${
+                                      i < affection
+                                        ? 'bg-rose-500' 
+                                        : 'bg-rose-200'
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         </div>
 
                         {/* Status Badge */}
@@ -375,8 +415,10 @@ export const RequestScreen: React.FC<{ state: GameState; engine: GameEngine }> =
                           >
                             {schedule.label}
                           </Badge>
-                          <span className="text-[10px] font-bold text-rose-600 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded whitespace-nowrap leading-none">
-                            Lv.{affection} {affection >= 10 ? '★MAX' : ''}
+                          <span className="text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded whitespace-nowrap leading-none flex items-center gap-0.5">
+                            <span>❤️</span>
+                            <span>好感度 {affection}/10</span>
+                            {affection >= 10 && <span className="bg-rose-500 text-white px-1 rounded-full text-[9px]">MAX</span>}
                           </span>
                         </div>
                         <div className="shrink-0">

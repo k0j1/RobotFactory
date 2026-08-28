@@ -26,7 +26,6 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
   const [isDispatchModalOpen, setIsDispatchModalOpen] = useState(false);
   const [selectedLocationId, setSelectedLocationId] = useState<string>('');
   const [selectedRobotId, setSelectedRobotId] = useState<string>('');
-  const [isConfirmDispatchOpen, setIsConfirmDispatchOpen] = useState(false);
   const [previewEmotions, setPreviewEmotions] = useState<{ [dispatchId: string]: 'auto' | 'happy' | 'troubled' | 'searching' }>({});
 
   const triggerConfetti = () => {
@@ -202,52 +201,29 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
       {/* Shop & Material Trade Feature Card (商店・素材売買・交換所) */}
       <div 
         onClick={() => onNavigate('shop')}
-        className="relative overflow-hidden bg-gradient-to-br from-amber-50 via-orange-50/80 to-amber-100/70 border-2 border-amber-400/90 rounded-xl p-4 shadow-sm hover:shadow-md hover:border-amber-500 transition-all cursor-pointer group"
+        className="relative overflow-hidden bg-gradient-to-r from-amber-50 via-orange-50/90 to-amber-100/80 border-2 border-amber-400 hover:border-amber-500 rounded-xl px-3.5 py-2 shadow-xs hover:shadow-md transition-all cursor-pointer group flex items-center justify-between gap-3"
       >
-        {/* 背景の装飾的な薄いアイコン */}
-        <div className="absolute -right-3 -bottom-3 text-7xl opacity-10 select-none pointer-events-none group-hover:scale-110 transition-transform">
-          🏪
-        </div>
-
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative z-10">
-          <div className="flex items-start sm:items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 text-white flex items-center justify-center text-2xl shadow-md border border-amber-300 shrink-0 group-hover:rotate-3 transition-transform">
-              🏪
-            </div>
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="font-black text-base sm:text-lg text-amber-950 flex items-center gap-1.5">
-                  <span>素材商店・交換所</span>
-                </h3>
-                <span className="text-[10px] bg-amber-200/90 text-amber-900 font-bold px-2 py-0.5 rounded-full border border-amber-300 whitespace-nowrap">
-                  素材の売買 &amp; キット交換
-                </span>
-              </div>
-              <p className="text-xs text-stone-600 mt-1 leading-snug">
-                💰 Gで素材を購入 ｜ 🔧 素材を修理キットへ交換 ｜ 🎨 工房の内装変更
-              </p>
-            </div>
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 text-white flex items-center justify-center text-lg shadow-xs border border-amber-300 shrink-0 group-hover:scale-105 transition-transform">
+            🏪
           </div>
-
-          <div className="flex items-center justify-between sm:justify-end gap-3 mt-1 sm:mt-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-amber-200/60">
-            <div className="flex items-center gap-2 text-xs font-mono">
-              <span className="bg-white/85 px-2 py-1 rounded border border-amber-200 text-amber-800 font-bold shadow-2xs">
-                所持: <span className="text-amber-600">{state.gold} G</span>
-              </span>
-              <span className="bg-white/85 px-2 py-1 rounded border border-amber-200 text-stone-700 font-bold shadow-2xs flex items-center gap-1">
-                <span>🔧</span>
-                <span>{state.repairKits || 0}個</span>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <h3 className="font-black text-sm sm:text-base text-amber-950 truncate">
+                素材商店・交換所
+              </h3>
+              <span className="text-[10px] bg-amber-200/90 text-amber-900 font-bold px-1.5 py-0.2 rounded border border-amber-300 hidden sm:inline whitespace-nowrap">
+                素材の売買 &amp; キット交換
               </span>
             </div>
-            <Button 
-              size="sm" 
-              className="bg-amber-600 hover:bg-amber-500 text-white font-bold shadow-xs whitespace-nowrap px-3 py-1.5 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform"
-            >
-              <span>商店へ</span>
-              <span>→</span>
-            </Button>
+            <p className="text-[11px] text-stone-600 truncate mt-0.5">
+              素材の購入・売却 ｜ 修理キット交換 ｜ 工房の内装変更
+            </p>
           </div>
         </div>
+        <span className="text-stone-400 group-hover:text-amber-600 group-hover:translate-x-0.5 transition-all text-sm shrink-0 font-bold">
+          ›
+        </span>
       </div>
 
       {/* Crafting in Progress Banner (if any) */}
@@ -746,70 +722,22 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                 className="flex-1" 
                 variant="primary" 
                 disabled={!selectedLocationId || !selectedRobotId}
-                onClick={() => setIsConfirmDispatchOpen(true)}
+                onClick={() => {
+                  try {
+                    engine.startAutoDispatch(selectedRobotId, selectedLocationId);
+                    setIsDispatchModalOpen(false);
+                    setSelectedLocationId('');
+                    setSelectedRobotId('');
+                  } catch (e: any) {
+                    alert(e.message || '自動探索の派遣に失敗しました');
+                  }
+                }}
               >
                 派遣する
               </Button>
               <Button className="flex-1" variant="secondary" onClick={() => setIsDispatchModalOpen(false)}>キャンセル</Button>
             </div>
           </Card>
-        </div>
-      )}
-
-      {/* Auto Dispatch Confirm Modal */}
-      {isConfirmDispatchOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <motion.div 
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="bg-white rounded-xl shadow-xl max-w-sm w-full overflow-hidden"
-          >
-            <div className="bg-blue-600 text-white p-4 font-bold text-lg text-center flex items-center justify-center gap-2">
-              <span>🤖</span>
-              <span>自動探索の確認</span>
-            </div>
-            <div className="p-6 text-center space-y-4">
-              <p className="text-stone-700 font-bold leading-relaxed">
-                自動探索中は<span className="text-red-500 font-black">1回の素材発見（周期）ごとにHPを1消費</span>します。<br/>
-                （残りHPが1になると自動帰還します）
-              </p>
-              <div className="flex flex-col items-center bg-stone-100 rounded-lg p-3 border border-stone-200">
-                <p className="text-xs text-stone-500 mb-1">現在のHP</p>
-                <div className="font-bold text-lg text-stone-700">
-                  {selectedModalRobot?.currentHp ?? 12} / {selectedModalRobot?.maxHp ?? 12}
-                </div>
-              </div>
-              <p className="text-sm text-stone-500">
-                よろしいですか？
-              </p>
-            </div>
-            <div className="flex bg-stone-100 border-t border-stone-200 p-2 gap-2">
-              <Button 
-                variant="outline" 
-                className="flex-1 bg-white"
-                onClick={() => setIsConfirmDispatchOpen(false)}
-              >
-                キャンセル
-              </Button>
-              <Button 
-                variant="primary" 
-                className="flex-1"
-                onClick={() => {
-                  try {
-                    engine.startAutoDispatch(selectedRobotId, selectedLocationId);
-                    setIsConfirmDispatchOpen(false);
-                    setIsDispatchModalOpen(false);
-                    setSelectedLocationId('');
-                    setSelectedRobotId('');
-                  } catch (e: any) {
-                    alert(e.message);
-                  }
-                }}
-              >
-                出撃する
-              </Button>
-            </div>
-          </motion.div>
         </div>
       )}
 
