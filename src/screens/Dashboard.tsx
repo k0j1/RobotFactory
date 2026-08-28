@@ -170,20 +170,84 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
         </Card>
       )}
 
-      {/* Navigation Buttons for Shop, Encyclopedia, Litepaper */}
-      <div className="grid grid-cols-3 gap-2 sm:gap-4">
-        <Button variant="secondary" onClick={() => onNavigate('shop')} className="py-6 flex flex-col gap-2 px-1">
-          <span className="text-2xl">🏪</span>
-          <span className="text-xs sm:text-base">商店</span>
-        </Button>
-        <Button variant="secondary" onClick={() => onNavigate('encyclopedia')} className="py-6 flex flex-col gap-2 px-1">
-          <span className="text-2xl">📖</span>
-          <span className="text-xs sm:text-base">図鑑・実績</span>
-        </Button>
-        <Button variant="secondary" onClick={() => onNavigate('litepaper')} className="py-6 flex flex-col gap-2 px-1">
-          <span className="text-2xl">📜</span>
-          <span className="text-xs sm:text-base">仕様書</span>
-        </Button>
+      {/* Information & Archive Utility Menu (図鑑・仕様書) */}
+      <div className="grid grid-cols-2 gap-2.5">
+        <button
+          onClick={() => onNavigate('encyclopedia')}
+          className="flex items-center gap-2 p-2.5 bg-stone-100/90 hover:bg-stone-200 border border-stone-300 rounded-lg text-stone-700 transition shadow-2xs group text-left cursor-pointer"
+        >
+          <span className="text-xl p-1 bg-white rounded-md border border-stone-200 shadow-2xs group-hover:scale-110 transition-transform">📖</span>
+          <div className="min-w-0">
+            <div className="text-xs sm:text-sm font-bold text-stone-800 flex items-center gap-1">
+              <span>図鑑・実績</span>
+            </div>
+            <div className="text-[10px] text-stone-500 truncate">納品履歴 / パーツ・素材詳細</div>
+          </div>
+        </button>
+
+        <button
+          onClick={() => onNavigate('litepaper')}
+          className="flex items-center gap-2 p-2.5 bg-stone-100/90 hover:bg-stone-200 border border-stone-300 rounded-lg text-stone-700 transition shadow-2xs group text-left cursor-pointer"
+        >
+          <span className="text-xl p-1 bg-white rounded-md border border-stone-200 shadow-2xs group-hover:scale-110 transition-transform">📜</span>
+          <div className="min-w-0">
+            <div className="text-xs sm:text-sm font-bold text-stone-800 flex items-center gap-1">
+              <span>仕様書</span>
+            </div>
+            <div className="text-[10px] text-stone-500 truncate">工房ルール / ガイド確認</div>
+          </div>
+        </button>
+      </div>
+
+      {/* Shop & Material Trade Feature Card (商店・素材売買・交換所) */}
+      <div 
+        onClick={() => onNavigate('shop')}
+        className="relative overflow-hidden bg-gradient-to-br from-amber-50 via-orange-50/80 to-amber-100/70 border-2 border-amber-400/90 rounded-xl p-4 shadow-sm hover:shadow-md hover:border-amber-500 transition-all cursor-pointer group"
+      >
+        {/* 背景の装飾的な薄いアイコン */}
+        <div className="absolute -right-3 -bottom-3 text-7xl opacity-10 select-none pointer-events-none group-hover:scale-110 transition-transform">
+          🏪
+        </div>
+
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative z-10">
+          <div className="flex items-start sm:items-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 text-white flex items-center justify-center text-2xl shadow-md border border-amber-300 shrink-0 group-hover:rotate-3 transition-transform">
+              🏪
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="font-black text-base sm:text-lg text-amber-950 flex items-center gap-1.5">
+                  <span>素材商店・交換所</span>
+                </h3>
+                <span className="text-[10px] bg-amber-200/90 text-amber-900 font-bold px-2 py-0.5 rounded-full border border-amber-300 whitespace-nowrap">
+                  素材の売買 &amp; キット交換
+                </span>
+              </div>
+              <p className="text-xs text-stone-600 mt-1 leading-snug">
+                💰 Gで素材を購入 ｜ 🔧 素材を修理キットへ交換 ｜ 🎨 工房の内装変更
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between sm:justify-end gap-3 mt-1 sm:mt-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-amber-200/60">
+            <div className="flex items-center gap-2 text-xs font-mono">
+              <span className="bg-white/85 px-2 py-1 rounded border border-amber-200 text-amber-800 font-bold shadow-2xs">
+                所持: <span className="text-amber-600">{state.gold} G</span>
+              </span>
+              <span className="bg-white/85 px-2 py-1 rounded border border-amber-200 text-stone-700 font-bold shadow-2xs flex items-center gap-1">
+                <span>🔧</span>
+                <span>{state.repairKits || 0}個</span>
+              </span>
+            </div>
+            <Button 
+              size="sm" 
+              className="bg-amber-600 hover:bg-amber-500 text-white font-bold shadow-xs whitespace-nowrap px-3 py-1.5 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform"
+            >
+              <span>商店へ</span>
+              <span>→</span>
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* Crafting in Progress Banner (if any) */}
