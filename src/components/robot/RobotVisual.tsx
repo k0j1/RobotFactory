@@ -318,7 +318,7 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
             animate={{ y: [-1, -4, -1], scale: [0.95, 1.05, 0.95] }}
             transition={{ duration: 1.0, repeat: Infinity }}
           >
-            <span>{animateVictory ? '🏆 勝利！' : '🎁 素材発見！'}</span>
+            <span>{animateVictory ? '🏆 勝利！' : hasPendingDrops ? '🎁 素材発見！' : '✨ やったー！'}</span>
           </motion.div>
           <motion.div 
             className="absolute bottom-2 right-3 text-amber-500 text-[10px] sm:text-xs z-10 pointer-events-none select-none font-bold"
@@ -391,33 +391,6 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
         {HeadComp && (
           <motion.div className="absolute inset-0 w-full h-full z-[4]" {...(animateCrafting ? animProps(0.9, -80) : headMotion)}>
             <HeadComp color={headColor} viewBox={headR === 3 ? "-122 -30 500 500" : headR === 2 ? "-24 -4 80 80" : "0 0 100 100"} className="w-full h-full" />
-            
-            {/* Dynamic Facial Emotion Overlay on Head */}
-            {currentEmotion === 'happy' && (
-              <motion.div 
-                className="absolute inset-0 flex items-center justify-center pointer-events-none"
-                style={{ top: '-18%' }}
-                animate={{ scale: [0.95, 1.1, 0.95] }}
-                transition={{ duration: 0.8, repeat: Infinity }}
-              >
-                <div className="bg-amber-400 text-stone-900 font-extrabold text-[9px] sm:text-[10px] px-1 py-0.5 rounded shadow-sm flex items-center gap-0.5 border border-amber-300">
-                  <span>^ ▽ ^</span>
-                </div>
-              </motion.div>
-            )}
-
-            {currentEmotion === 'troubled' && (
-              <motion.div 
-                className="absolute inset-0 flex items-center justify-center pointer-events-none"
-                style={{ top: '-18%' }}
-                animate={{ y: [0, 2, 0] }}
-                transition={{ duration: 1.1, repeat: Infinity }}
-              >
-                <div className="bg-blue-600 text-white font-extrabold text-[9px] sm:text-[10px] px-1 py-0.5 rounded shadow-sm flex items-center gap-0.5 border border-blue-400">
-                  <span>&gt; _ &lt;</span>
-                </div>
-              </motion.div>
-            )}
           </motion.div>
         )}
       </motion.div>

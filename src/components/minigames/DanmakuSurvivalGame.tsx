@@ -85,12 +85,12 @@ export const DanmakuSurvivalGame: React.FC<DanmakuProps> = ({
   }, [activeRobot, battleResult]);
 
   useEffect(() => {
-    if (!hasStarted || isPaused || isFinished || battleResult) return;
+    if (!hasStarted || isFinished || battleResult) return;
 
     const interval = 1000 / FPS;
     
     const timer = setInterval(() => {
-      timeMsRef.current += interval * speed;
+      timeMsRef.current += interval;
       frameCountRef.current += 1;
       setTimeMs(timeMsRef.current);
 
@@ -577,7 +577,13 @@ export const DanmakuSurvivalGame: React.FC<DanmakuProps> = ({
             }}
             className="relative"
           >
-            <RobotVisual robot={activeRobot} size={46} emotion={battleResult === 'lose' ? 'troubled' : battleResult === 'win' ? 'happy' : 'normal'} hideBackground={true} />
+            <RobotVisual 
+              robot={activeRobot} 
+              size={46} 
+              animateVictory={battleResult === 'win'}
+              emotion={battleResult === 'lose' ? 'troubled' : battleResult === 'win' ? 'happy' : 'normal'} 
+              hideBackground={true} 
+            />
             <AnimatePresence>
               {hitEffect && (
                 <motion.div 

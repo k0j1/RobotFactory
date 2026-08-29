@@ -471,7 +471,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                   robot={questRobot} 
                   size={60} 
                   animateExploration={!questDone}
-                  animateVictory={questDone}
+                  animateVictory={false}
                   hasPendingDrops={questDone}
                   locationId={state.activeQuest?.locationId}
                   agility={questRobot.stats.agility}

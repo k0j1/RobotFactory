@@ -5,9 +5,7 @@ import { theme } from '../styles/theme';
 import { Card, Button } from '../components/ui/core';
 import { OPPONENTS, DanmakuDifficulty, DANMAKU_DIFFICULTIES } from '../components/minigames/Shared';
 import { OthelloGame } from '../components/minigames/OthelloGame';
-import { GomokuGame } from '../components/minigames/GomokuGame';
 import { ChessGame } from '../components/minigames/ChessGame';
-import { TicTacToeGame } from '../components/minigames/TicTacToeGame';
 import { DanmakuSurvivalGame } from '../components/minigames/DanmakuSurvivalGame';
 import { RobotVisual } from '../components/robot/RobotVisual';
 import { motion } from 'motion/react';
@@ -19,9 +17,7 @@ const CATEGORIES = [
 
 const GAMES = [
   { id: 'othello', category: 'puzzle', name: 'オセロ', desc: '挟んで裏返す定番ボードゲーム', requiresOpponent: true },
-  { id: 'gomoku', category: 'puzzle', name: '五目並べ', desc: '先に5つ並べたら勝ちのパズル', requiresOpponent: true },
   { id: 'chess', category: 'puzzle', name: 'チェス', desc: 'キャスリング無しの実力勝負', requiresOpponent: true },
-  { id: 'tictactoe', category: 'puzzle', name: 'マルバツ', desc: '3つ並べたら勝ちの基本ゲーム', requiresOpponent: true },
   { id: 'danmaku', category: 'shooting', name: '弾幕よけ', desc: '10秒間、敵の弾幕から生き残る', requiresOpponent: false }
 ];
 
@@ -118,9 +114,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
 
     switch (selectedGame) {
       case 'othello': return <OthelloGame activeRobot={activeRobot} activeOpponent={opponent} onFinish={handleFinish} speed={speed} isPaused={isPaused} isFinished={battleResult !== null} battleResult={battleResult} />;
-      case 'gomoku': return <GomokuGame activeRobot={activeRobot} activeOpponent={opponent} onFinish={handleFinish} speed={speed} isPaused={isPaused} isFinished={battleResult !== null} battleResult={battleResult} />;
       case 'chess': return <ChessGame activeRobot={activeRobot} activeOpponent={opponent} onFinish={handleFinish} speed={speed} isPaused={isPaused} isFinished={battleResult !== null} battleResult={battleResult} />;
-      case 'tictactoe': return <TicTacToeGame activeRobot={activeRobot} activeOpponent={opponent} onFinish={handleFinish} speed={speed} isPaused={isPaused} isFinished={battleResult !== null} battleResult={battleResult} />;
       case 'danmaku': return <DanmakuSurvivalGame activeRobot={activeRobot} activeOpponent={opponent} onFinish={handleFinish} speed={speed} isPaused={isPaused} isFinished={battleResult !== null} battleResult={battleResult} difficulty={danmakuDifficulty} />;
       default: return null;
     }
@@ -291,7 +285,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
             {renderGame()}
           </div>
           
-          {isBattleActive && !battleResult && (
+          {isBattleActive && !battleResult && selectedGame !== 'danmaku' && (
             <div className="flex justify-center gap-2 mt-4 mb-4">
               <Button onClick={() => setIsPaused(!isPaused)} className="w-32 text-sm">
                 {isPaused ? '▶ 再開' : '⏸ 一時停止'}
@@ -305,7 +299,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
           <div className="text-center mt-6">
             {!battleResult ? (
               <p className="text-lg font-bold text-stone-700 animate-pulse">
-                バトル進行中...
+                {selectedGame === 'danmaku' ? 'ミッション進行中...' : 'バトル進行中...'}
               </p>
             ) : (
               <div className="space-y-5 flex flex-col items-center">
@@ -329,7 +323,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
 
                     {/* Victorious Robot Visual */}
                     <div className="p-3 bg-gradient-to-b from-amber-100/80 to-yellow-50/80 rounded-2xl border-2 border-amber-300 shadow-lg">
-                      <RobotVisual robot={activeRobot} size={140} animateVictory={true} emotion="normal" />
+                      <RobotVisual robot={activeRobot} size={140} animateVictory={true} emotion="happy" />
                     </div>
 
                     <div className="mt-2 font-bold text-stone-800 text-base flex items-center gap-1">
