@@ -3,12 +3,11 @@ import { GameState } from '../core/models';
 import { GameEngine } from '../core/GameEngine';
 import { theme } from '../styles/theme';
 import { Card, Button } from '../components/ui/core';
-import { OPPONENTS } from '../components/minigames/Shared';
+import { OPPONENTS, DanmakuDifficulty, DANMAKU_DIFFICULTIES } from '../components/minigames/Shared';
 import { OthelloGame } from '../components/minigames/OthelloGame';
 import { GomokuGame } from '../components/minigames/GomokuGame';
 import { ChessGame } from '../components/minigames/ChessGame';
 import { TicTacToeGame } from '../components/minigames/TicTacToeGame';
-import { SpaceShooterGame } from '../components/minigames/SpaceShooterGame';
 import { DanmakuSurvivalGame } from '../components/minigames/DanmakuSurvivalGame';
 import { RobotVisual } from '../components/robot/RobotVisual';
 import { motion } from 'motion/react';
@@ -23,7 +22,6 @@ const GAMES = [
   { id: 'gomoku', category: 'puzzle', name: '五目並べ', desc: '先に5つ並べたら勝ちのパズル', requiresOpponent: true },
   { id: 'chess', category: 'puzzle', name: 'チェス', desc: 'キャスリング無しの実力勝負', requiresOpponent: true },
   { id: 'tictactoe', category: 'puzzle', name: 'マルバツ', desc: '3つ並べたら勝ちの基本ゲーム', requiresOpponent: true },
-  { id: 'space_shooter', category: 'shooting', name: 'シューティング', desc: '弾を避けながら10秒以内に撃破', requiresOpponent: false },
   { id: 'danmaku', category: 'shooting', name: '弾幕よけ', desc: '10秒間、敵の弾幕から生き残る', requiresOpponent: false }
 ];
 
@@ -37,6 +35,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
   const [selectedGame, setSelectedGame] = useState('othello');
   const [selectedRobotId, setSelectedRobotId] = useState<string | null>(null);
   const [selectedOpponentId, setSelectedOpponentId] = useState<string | null>(null);
+  const [danmakuDifficulty, setDanmakuDifficulty] = useState<DanmakuDifficulty>('normal');
   const [isBattleActive, setIsBattleActive] = useState(false);
   const [battleResult, setBattleResult] = useState<'win' | 'lose' | 'draw' | null>(null);
   const [speed, setSpeed] = useState(1);
@@ -45,6 +44,24 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
 
   const activeRobot = state.robots.find(r => r.id === selectedRobotId);
   const activeOpponent = OPPONENTS.find(o => o.id === selectedOpponentId);
+  const activeDanmakuDiff = DANMAKU_DIFFICULTIES.find(d => d.id === danmakuDifficulty) || DANMAKU_DIFFICULTIES[1];
+
+  const getEstimatedWinRate = (difficultyId: string, robot: any) => {
+    if (!robot) return '--';
+    const agi = robot.stats.agility || 10;
+    const dex = robot.stats.dexterity || 10;
+    const score = (agi * 1.2 + dex * 0.8) / 2;
+
+    let rate = 0;
+    if (difficultyId === 'easy') {
+      rate = score * 1.0 + 30;
+    } else if (difficultyId === 'normal') {
+      rate = score * 1.0 - 10;
+    } else if (difficultyId === 'hard') {
+      rate = score * 0.8 - 40;
+    }
+    return Math.max(1, Math.min(99, Math.floor(rate)));
+  };
 
   const selectedGameDef = GAMES.find(g => g.id === selectedGame);
   const requiresOpponent = selectedGameDef?.requiresOpponent ?? true;
@@ -59,8 +76,12 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
         (engine as any).addGold(activeOpponent.reward);
         const kits = activeOpponent.id === 'op4' ? 5 : activeOpponent.id === 'op3' ? 3 : activeOpponent.id === 'op2' ? 2 : 1;
         (engine as any).addRepairKits(kits);
+      } else if (selectedGame === 'danmaku') {
+        // Difficulty-based reward for danmaku survival
+        (engine as any).addGold(activeDanmakuDiff.rewardGold);
+        (engine as any).addRepairKits(activeDanmakuDiff.rewardKits);
       } else if (!requiresOpponent) {
-        // Flat reward for solo games
+        // Flat reward for solo space shooter (if any other solo games added in future)
         (engine as any).addGold(50);
         (engine as any).addRepairKits(1);
       }
@@ -100,8 +121,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
       case 'gomoku': return <GomokuGame activeRobot={activeRobot} activeOpponent={opponent} onFinish={handleFinish} speed={speed} isPaused={isPaused} isFinished={battleResult !== null} battleResult={battleResult} />;
       case 'chess': return <ChessGame activeRobot={activeRobot} activeOpponent={opponent} onFinish={handleFinish} speed={speed} isPaused={isPaused} isFinished={battleResult !== null} battleResult={battleResult} />;
       case 'tictactoe': return <TicTacToeGame activeRobot={activeRobot} activeOpponent={opponent} onFinish={handleFinish} speed={speed} isPaused={isPaused} isFinished={battleResult !== null} battleResult={battleResult} />;
-      case 'space_shooter': return <SpaceShooterGame activeRobot={activeRobot} activeOpponent={opponent} onFinish={handleFinish} speed={speed} isPaused={isPaused} isFinished={battleResult !== null} battleResult={battleResult} />;
-      case 'danmaku': return <DanmakuSurvivalGame activeRobot={activeRobot} activeOpponent={opponent} onFinish={handleFinish} speed={speed} isPaused={isPaused} isFinished={battleResult !== null} battleResult={battleResult} />;
+      case 'danmaku': return <DanmakuSurvivalGame activeRobot={activeRobot} activeOpponent={opponent} onFinish={handleFinish} speed={speed} isPaused={isPaused} isFinished={battleResult !== null} battleResult={battleResult} difficulty={danmakuDifficulty} />;
       default: return null;
     }
   };
@@ -148,7 +168,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
             </div>
           </Card>
 
-          <div className={`grid grid-cols-1 ${!requiresOpponent ? '' : 'md:grid-cols-2'} gap-4`}>
+          <div className={`grid grid-cols-1 ${requiresOpponent || selectedGame === 'danmaku' ? 'md:grid-cols-2' : ''} gap-4`}>
             <Card className="bg-white">
               <h3 className={`${theme.typography.h3} mb-4 text-stone-800 border-b pb-2`}>自機を選ぶ</h3>
               <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
@@ -181,6 +201,50 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                 )}
               </div>
             </Card>
+
+            {/* 弾幕よけの難易度選択カード */}
+            {selectedGame === 'danmaku' && (
+              <Card className="bg-white">
+                <h3 className={`${theme.typography.h3} mb-4 text-stone-800 border-b pb-2 flex items-center justify-between`}>
+                  <span>難易度を選ぶ</span>
+                  <span className="text-xs text-stone-500 font-normal">弾速・密度が変化</span>
+                </h3>
+                <div className="space-y-2.5">
+                  {DANMAKU_DIFFICULTIES.map(diff => (
+                    <button
+                      key={diff.id}
+                      onClick={() => setDanmakuDifficulty(diff.id)}
+                      className={`w-full text-left p-3 rounded-lg border transition-all ${
+                        danmakuDifficulty === diff.id 
+                          ? 'border-primary bg-primary/10 shadow-sm ring-1 ring-primary' 
+                          : 'border-stone-200 hover:bg-stone-50'
+                      }`}
+                    >
+                      <div className="flex justify-between items-center mb-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-sm text-stone-800">{diff.label}</span>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded border font-bold ${diff.badgeClass}`}>
+                            {diff.subLabel}
+                          </span>
+                        </div>
+                        <div className="text-right font-mono text-xs text-amber-700 font-bold">
+                          +{diff.rewardGold}G / 修理×{diff.rewardKits}
+                        </div>
+                      </div>
+                      <div className="text-[11px] text-stone-500 leading-tight">
+                        {diff.desc}
+                      </div>
+                      <div className="text-[11px] font-bold mt-2 pt-1 border-t border-stone-200/50 flex justify-between items-center">
+                        <span className="text-stone-600">予想成功確率:</span>
+                        <span className={activeRobot ? (getEstimatedWinRate(diff.id, activeRobot) !== '--' && (getEstimatedWinRate(diff.id, activeRobot) as number) >= 50 ? 'text-emerald-600' : 'text-red-500') : 'text-stone-400'}>
+                          {activeRobot ? `約 ${getEstimatedWinRate(diff.id, activeRobot)}%` : '--%'}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </Card>
+            )}
 
             {requiresOpponent && (
               <Card className="bg-white">
@@ -217,7 +281,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
               disabled={!selectedRobotId || (requiresOpponent && !selectedOpponentId)}
               className="w-full md:w-1/2 py-4 text-lg"
             >
-              バトル開始！
+              {selectedGame === 'danmaku' ? `ミッション開始！ (${activeDanmakuDiff.label})` : 'バトル開始！'}
             </Button>
           </div>
         </div>
@@ -304,7 +368,18 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                     </p>
                   </div>
                 )}
-                {battleResult === 'win' && !requiresOpponent && (
+                {battleResult === 'win' && !requiresOpponent && selectedGame === 'danmaku' && (
+                  <div className="bg-amber-50 border border-amber-200 px-6 py-2.5 rounded-xl shadow-sm text-center">
+                    <p className="text-amber-800 font-bold text-lg flex items-center justify-center gap-2">
+                      <span>💰</span>
+                      <span>クリア報酬 ({activeDanmakuDiff.label}): +{activeDanmakuDiff.rewardGold} G</span>
+                    </p>
+                    <p className="text-xs text-amber-700 font-semibold mt-0.5">
+                      🔧 修理キット +{activeDanmakuDiff.rewardKits}個
+                    </p>
+                  </div>
+                )}
+                {battleResult === 'win' && !requiresOpponent && selectedGame !== 'danmaku' && (
                   <div className="bg-amber-50 border border-amber-200 px-6 py-2.5 rounded-xl shadow-sm">
                     <p className="text-amber-800 font-bold text-lg flex items-center justify-center gap-2">
                       <span>💰</span>

@@ -1,5 +1,5 @@
 import { GameState, Robot, ClientRequest, Attribute, RequestRank, RobotPart, PartType, AttributeNames } from './models';
-import { MATERIALS, LOCATIONS } from './data';
+import { MATERIALS, LOCATIONS, getMaterialCraftableVisuals } from './data';
 import { AttributeColors } from './models';
 
 const INITIAL_STATE: GameState = {
@@ -148,19 +148,29 @@ export class GameEngine {
     this.saveState();
   }
 
-  public cancelAutoDispatch(dispatchId: string) {
+  public cancelAutoDispatch(dispatchId: string): { drops: string[]; robotName: string; locationName: string } | null {
     const idx = this.state.autoDispatches.findIndex(d => d.id === dispatchId);
     if (idx !== -1) {
       const d = this.state.autoDispatches[idx];
+      const collectedDrops: string[] = [];
       // Collect any pending drops before leaving so items are not lost
       if (d.pendingDrops && d.pendingDrops.length > 0) {
         for (const dropId of d.pendingDrops) {
           this.state.materials[dropId] = (this.state.materials[dropId] || 0) + 1;
+          collectedDrops.push(dropId);
         }
       }
+      const robot = this.state.robots.find(r => r.id === d.robotId);
+      const loc = LOCATIONS.find(l => l.id === d.locationId);
       this.state.autoDispatches.splice(idx, 1);
       this.saveState();
+      return {
+        drops: collectedDrops,
+        robotName: robot?.name || 'ロボット',
+        locationName: loc?.name || '探索地'
+      };
     }
+    return null;
   }
 
   public claimAutoDispatch(dispatchId: string): { drops: string[]; robotName: string; locationName: string } {
@@ -496,6 +506,12 @@ export class GameEngine {
     if (!mainMat || !subMat) throw new Error("不明な素材");
 
     const typeNames: Record<PartType, string> = { head: 'ヘッド', body: 'ボディ', arms: 'アーム', legs: 'レッグ' };
+
+    const possibleCrafts = getMaterialCraftableVisuals(mainMat);
+    const chosenCraft = possibleCrafts[Math.floor(Math.random() * possibleCrafts.length)];
+    const craftRarity = chosenCraft.rarity;
+    
+    // Add star mark to name based on rarity to distinguish
     const name = `${mainMat.name}の${typeNames[type]}`;
 
     const newPart: RobotPart = {
@@ -503,7 +519,7 @@ export class GameEngine {
       type,
       name,
       attribute: mainMat.attribute, // Main material decides attribute
-      rarity: Math.max(mainMat.rarity, subMat.rarity),
+      rarity: craftRarity as 1 | 2 | 3,
       stats: {
         hp: mainMat.baseStats.hp + Math.floor(subMat.baseStats.hp * 0.5) + Math.floor(Math.random() * 5),
         power: mainMat.baseStats.power + Math.floor(subMat.baseStats.power * 0.5) + Math.floor(Math.random() * 5),
@@ -512,7 +528,7 @@ export class GameEngine {
         dexterity: mainMat.baseStats.dexterity + Math.floor(subMat.baseStats.dexterity * 0.5) + Math.floor(Math.random() * 5),
         intelligence: mainMat.baseStats.intelligence + Math.floor(subMat.baseStats.intelligence * 0.5) + Math.floor(Math.random() * 5),
       },
-      visualIndex: Math.floor(Math.random() * 24),
+      visualIndex: chosenCraft.visualIndex,
     };
 
     const durationMs = this.getPartCraftDuration(mainMaterialId, subMaterialId);
@@ -661,6 +677,11 @@ export class GameEngine {
     if (!mainMat || !subMat) throw new Error("不明な素材");
 
     const typeNames: Record<PartType, string> = { head: 'ヘッド', body: 'ボディ', arms: 'アーム', legs: 'レッグ' };
+
+    const possibleCrafts = getMaterialCraftableVisuals(mainMat);
+    const chosenCraft = possibleCrafts[Math.floor(Math.random() * possibleCrafts.length)];
+    const craftRarity = chosenCraft.rarity;
+    
     const name = `${mainMat.name}の${typeNames[type]}`;
 
     const newPart: RobotPart = {
@@ -668,7 +689,7 @@ export class GameEngine {
       type,
       name,
       attribute: mainMat.attribute, // Main material decides attribute
-      rarity: Math.max(mainMat.rarity, subMat.rarity),
+      rarity: craftRarity as 1 | 2 | 3,
       stats: {
         hp: mainMat.baseStats.hp + Math.floor(subMat.baseStats.hp * 0.5) + Math.floor(Math.random() * 5),
         power: mainMat.baseStats.power + Math.floor(subMat.baseStats.power * 0.5) + Math.floor(Math.random() * 5),
@@ -677,7 +698,7 @@ export class GameEngine {
         dexterity: mainMat.baseStats.dexterity + Math.floor(subMat.baseStats.dexterity * 0.5) + Math.floor(Math.random() * 5),
         intelligence: mainMat.baseStats.intelligence + Math.floor(subMat.baseStats.intelligence * 0.5) + Math.floor(Math.random() * 5),
       },
-      visualIndex: Math.floor(Math.random() * 24),
+      visualIndex: chosenCraft.visualIndex,
     };
     
     this.state.parts.push(newPart);

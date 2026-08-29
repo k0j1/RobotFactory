@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="256" height="256" shape-rendering="crispEdges">
+  <defs>
+    <style>
+      .out { fill: #1a1d24; }
+      .dark { fill: #101520; }
+      .base-blue { fill: #1d61d1; }
+      .light-blue { fill: #388eff; }
+      .white { fill: #e8f4ff; }
+      .gray { fill: #8a96a8; }
+    </style>
+  </defs>
+
+  <!-- 外枠シルエット -->
+  <path class="out" d="M 11,2 h 10 v 1 h 3 v 1 h 2 v 2 h 1 v 1 h -1 v 3 h 2 v 1 h 1 v 5 h -1 v 1 h -1 v 2 h -1 v 2 h -1 v 1 h -1 v 1 h -1 v 1 h -1 v 1 h -1 v 1 h -8 v -1 h -1 v -1 h -1 v -1 h -1 v -1 h -1 v -2 h -1 v -2 h -1 v -1 h -1 v -5 h 1 v -1 h 2 v -3 h -1 v -1 h 1 v -2 h 2 v -1 h 3 Z" />
+
+  <!-- 外側ダークグレーヘルメットベース -->
+  <path class="dark" d="M 12,3 h 8 v 1 h 3 v 1 h 2 v 2 h 1 v 1 h -2 v 3 h 1 v 6 h -1 v 2 h -1 v 2 h -1 v 1 h -1 v 1 h -1 v 1 h -1 v 1 h -6 v -1 h -1 v -1 h -1 v -1 h -1 v -1 h -1 v -2 h -1 v -2 h -1 v -6 h 1 v -3 h -2 v -1 h 1 v -2 h 2 v -1 h 3 Z" />
+
+  <!-- 上部メット部（ブルー装甲） -->
+  <path class="base-blue" d="M 12,4 h 8 v 1 h 3 v 1 h 2 v 2 h -1 v 1 h -18 v -1 h -1 v -2 h 2 v -1 h 3 Z" />
+  <rect x="14" y="3" width="4" height="1" class="light-blue" />
+  <rect x="9" y="6" width="2" height="1" class="white" />
+
+  <!-- 左右の耳パーツ / アンテナ -->
+  <path class="light-blue" d="M 3,6 h 1 v 2 h -1 Z M 28,6 h 1 v 2 h -1 Z" />
+  <path class="light-blue" d="M 4,14 h 4 v 6 h -4 Z M 24,14 h 4 v 6 h -4 Z" />
+  <rect x="6" y="16" width="1" height="2" class="white" />
+  <rect x="25" y="16" width="1" height="2" class="white" />
+
+  <!-- 4角の金属ボルト/リベット (グレー) -->
+  <rect x="7" y="9" width="2" height="1" class="gray" />
+  <rect x="23" y="9" width="2" height="1" class="gray" />
+  <rect x="7" y="21" width="2" height="1" class="gray" />
+  <rect x="23" y="21" width="2" height="1" class="gray" />
+
+  <!-- バイザー（中央のダークエリア） -->
+  <path class="dark" d="M 8,12 h 16 v 8 h -16 Z" />
+
+  <!-- ツインアイ（目）および中央センサー -->
+  <!-- 左目 -->
+  <rect x="9" y="15" width="4" height="3" class="base-blue" />
+  <rect x="10" y="16" width="2" height="1" class="white" />
+  <!-- 右目 -->
+  <rect x="19" y="15" width="4" height="3" class="base-blue" />
+  <rect x="20" y="16" width="2" height="1" class="white" />
+  <!-- 中央メインセンサー -->
+  <rect x="15" y="14" width="2" height="4" class="base-blue" />
+  <rect x="15" y="15" width="2" height="2" class="white" />
+
+  <!-- 口元・マスク部（ブルー） -->
+  <path class="base-blue" d="M 10,22 h 12 v 1 h -1 v 1 h -1 v 1 h -8 v -1 h -1 v -1 h -1 Z" />
+  <rect x="13" y="23" width="6" height="1" class="light-blue" />
+</svg>

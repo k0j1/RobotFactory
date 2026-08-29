@@ -119,6 +119,23 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
     }
   };
 
+  const handleCancelAutoDispatch = (dispatchId: string) => {
+    try {
+      const res = engine.cancelAutoDispatch(dispatchId);
+      if (res && res.drops.length > 0) {
+        setLootResult({
+          title: '🤖 自動探索 帰還・素材回収！',
+          subtitle: `${res.robotName} が ${res.locationName} から帰還し、探索で見つけた素材を獲得しました！`,
+          drops: res.drops,
+          type: 'auto_dispatch'
+        });
+        triggerConfetti();
+      }
+    } catch (e: any) {
+      alert(e.message || '帰還に失敗しました');
+    }
+  };
+
   const handleCloseModal = () => {
     setIsAnimating(true);
     setTimeout(() => {
@@ -615,7 +632,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                           </div>
                         </div>
                       </div>
-                      <Button size="sm" variant="danger" onClick={() => engine.cancelAutoDispatch(dispatch.id)}>帰還</Button>
+                      <Button size="sm" variant="danger" onClick={() => handleCancelAutoDispatch(dispatch.id)}>帰還</Button>
                     </div>
 
                   {/* 回収アクションエリア */}

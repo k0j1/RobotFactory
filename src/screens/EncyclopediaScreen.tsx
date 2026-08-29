@@ -5,19 +5,22 @@ import { Card, Button, Badge } from '../components/ui/core';
 import { theme } from '../styles/theme';
 import { RobotVisual, PartVisual } from '../components/robot/RobotVisual';
 import { SVG_HEADS, SVG_BODIES, SVG_ARMS, SVG_LEGS } from '../components/robot/RobotSVGs';
-import { MATERIALS } from '../core/data';
+import { MATERIALS, getMaterialCraftableVisuals } from '../core/data';
 import { FaRobot, FaBox, FaWrench, FaShoePrints, FaStar } from 'react-icons/fa';
 import { MaterialIcon } from '../components/ui/MaterialIcon';
 
 const SinglePart: React.FC<{ Comp: React.FC<{color: string, viewBox?: string}>, color: string, type: 'head'|'body'|'arms'|'legs', rarityLabel?: number }> = ({ Comp, color, type, rarityLabel }) => {
-  const viewBox = type === 'head' ? '20 0 60 45' :
-                  type === 'body' ? '25 32 50 48' :
-                  type === 'arms' ? '5 38 90 42' :
-                  '20 68 60 32';
+  const r = rarityLabel || 1;
+  const viewBox = r === 3
+    ? (type === 'head' ? '0 0 256 256' : '0 0 256 256')
+    : r === 2
+    ? (type === 'head' ? '0 -2 32 36' : type === 'arms' ? '0 2 32 28' : '0 0 32 32')
+    : (type === 'head' ? '20 0 60 45' :
+       type === 'body' ? '25 32 50 48' :
+       type === 'arms' ? '5 38 90 42' :
+       '20 68 60 32');
 
-  
-                  return (
-
+  return (
     <div className="bg-stone-100 rounded p-1 flex flex-col items-center border border-stone-200 overflow-hidden w-full aspect-square justify-center">
       {rarityLabel !== undefined && (
         <span className="text-[10px] flex items-center gap-0.5 mb-1 text-amber-600 font-bold">
@@ -204,6 +207,14 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
             const color = AttributeColors[mat.attribute];
             const visibleTypesCount = filterPartType === 'All' ? 4 : 1;
             const gridColsClass = visibleTypesCount === 4 ? 'grid-cols-4' : 'grid-cols-1';
+            const craftableVisuals = getMaterialCraftableVisuals(mat);
+
+            const getPartSVG = (type: 'head' | 'body' | 'arms' | 'legs', r: number, vIdx: number) => {
+              const map = type === 'head' ? SVG_HEADS : type === 'body' ? SVG_BODIES : type === 'arms' ? SVG_ARMS : SVG_LEGS;
+              const list = (map[r] && map[r].length > 0) ? map[r] : map[1];
+              return list[vIdx % list.length];
+            };
+
             return (
               <Card key={mat.id} className="border-2" style={{ borderColor: color + '40' }}>
                 <div className="flex justify-between items-center mb-2">
@@ -227,32 +238,40 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
                   {(!filterPartType || filterPartType === 'All' || filterPartType === 'head') && (
                     <div className="flex flex-col items-center">
                       <p className="mb-2 flex items-center justify-center gap-1"><FaRobot size={14} />アタマ</p>
-                      <div className="grid grid-cols-2 gap-2">
-                        {SVG_HEADS.map((Comp, idx) => <SinglePart key={idx} Comp={Comp} color={color} type="head" rarityLabel={1} />)}
+                      <div className="grid grid-cols-2 gap-2 w-full">
+                        {craftableVisuals.map((v, idx) => (
+                          <SinglePart key={`head-${idx}`} Comp={getPartSVG('head', v.rarity, v.visualIndex)} color={color} type="head" rarityLabel={v.rarity} />
+                        ))}
                       </div>
                     </div>
                   )}
                   {(!filterPartType || filterPartType === 'All' || filterPartType === 'body') && (
                     <div className="flex flex-col items-center">
                       <p className="mb-2 flex items-center justify-center gap-1"><FaBox size={14} />ボディ</p>
-                      <div className="grid grid-cols-2 gap-2">
-                        {SVG_BODIES.map((Comp, idx) => <SinglePart key={idx} Comp={Comp} color={color} type="body" rarityLabel={1} />)}
+                      <div className="grid grid-cols-2 gap-2 w-full">
+                        {craftableVisuals.map((v, idx) => (
+                          <SinglePart key={`body-${idx}`} Comp={getPartSVG('body', v.rarity, v.visualIndex)} color={color} type="body" rarityLabel={v.rarity} />
+                        ))}
                       </div>
                     </div>
                   )}
                   {(!filterPartType || filterPartType === 'All' || filterPartType === 'arms') && (
                     <div className="flex flex-col items-center">
                       <p className="mb-2 flex items-center justify-center gap-1"><FaWrench size={14} />ウデ</p>
-                      <div className="grid grid-cols-2 gap-2">
-                        {SVG_ARMS.map((Comp, idx) => <SinglePart key={idx} Comp={Comp} color={color} type="arms" rarityLabel={1} />)}
+                      <div className="grid grid-cols-2 gap-2 w-full">
+                        {craftableVisuals.map((v, idx) => (
+                          <SinglePart key={`arms-${idx}`} Comp={getPartSVG('arms', v.rarity, v.visualIndex)} color={color} type="arms" rarityLabel={v.rarity} />
+                        ))}
                       </div>
                     </div>
                   )}
                   {(!filterPartType || filterPartType === 'All' || filterPartType === 'legs') && (
                     <div className="flex flex-col items-center">
                       <p className="mb-2 flex items-center justify-center gap-1"><FaShoePrints size={14} />アシ</p>
-                      <div className="grid grid-cols-2 gap-2">
-                        {SVG_LEGS.map((Comp, idx) => <SinglePart key={idx} Comp={Comp} color={color} type="legs" rarityLabel={1} />)}
+                      <div className="grid grid-cols-2 gap-2 w-full">
+                        {craftableVisuals.map((v, idx) => (
+                          <SinglePart key={`legs-${idx}`} Comp={getPartSVG('legs', v.rarity, v.visualIndex)} color={color} type="legs" rarityLabel={v.rarity} />
+                        ))}
                       </div>
                     </div>
                   )}

@@ -2,6 +2,134 @@ import React from 'react';
 
 export interface SVGProps { color: string; viewBox?: string; className?: string; }
 
+export const getAttributePalette = (color: string) => {
+  const c = (color || '').toLowerCase();
+  // Fire (#ef4444)
+  if (c.includes('ef4444') || c === '#ef4444' || c === 'fire') {
+    return {
+      base: '#dc2626',
+      light: '#f87171',
+      white: '#fee2e2',
+      dark: '#2a1a1f',
+      out: '#1a1014',
+      gray: '#9ca3af',
+      // ☆3 Gradient palette
+      glow0: '#ff8a72',
+      glow60: '#ef4444',
+      glow100: '#b91c1c',
+      armor0: '#f87171',
+      armor100: '#dc2626',
+      solidAccent: '#b91c1c',
+      dark0: '#381e22',
+      dark100: '#1f1013',
+      stroke: '#1a0a0d'
+    };
+  }
+  // Wind (#10b981)
+  if (c.includes('10b981') || c === '#10b981' || c === 'wind') {
+    return {
+      base: '#059669',
+      light: '#34d399',
+      white: '#d1fae5',
+      dark: '#1a2923',
+      out: '#0f1c16',
+      gray: '#9ca3af',
+      // ☆3 Gradient palette
+      glow0: '#a7f3d0',
+      glow60: '#34d399',
+      glow100: '#059669',
+      armor0: '#34d399',
+      armor100: '#059669',
+      solidAccent: '#047857',
+      dark0: '#1e332a',
+      dark100: '#111f19',
+      stroke: '#0a1410'
+    };
+  }
+  // Earth (#d97706)
+  if (c.includes('d97706') || c === '#d97706' || c === 'earth') {
+    return {
+      base: '#b45309',
+      light: '#f59e0b',
+      white: '#fef3c7',
+      dark: '#2d251d',
+      out: '#1c1712',
+      gray: '#a8a29e',
+      // ☆3 Gradient palette
+      glow0: '#fef08a',
+      glow60: '#f59e0b',
+      glow100: '#b45309',
+      armor0: '#f59e0b',
+      armor100: '#b45309',
+      solidAccent: '#92400e',
+      dark0: '#3b2e23',
+      dark100: '#211811',
+      stroke: '#17110c'
+    };
+  }
+  // Light (#eab308)
+  if (c.includes('eab308') || c === '#eab308' || c === 'light') {
+    return {
+      base: '#ca8a04',
+      light: '#facc15',
+      white: '#fef9c3',
+      dark: '#29261a',
+      out: '#19180f',
+      gray: '#9ca3af',
+      // ☆3 Gradient palette
+      glow0: '#ffffff',
+      glow60: '#fde047',
+      glow100: '#eab308',
+      armor0: '#fde047',
+      armor100: '#ca8a04',
+      solidAccent: '#a16207',
+      dark0: '#383522',
+      dark100: '#211f11',
+      stroke: '#17160c'
+    };
+  }
+  // Dark (#8b5cf6)
+  if (c.includes('8b5cf6') || c === '#8b5cf6' || c === 'dark') {
+    return {
+      base: '#7c3aed',
+      light: '#a78bfa',
+      white: '#ede9fe',
+      dark: '#231e33',
+      out: '#151221',
+      gray: '#9ca3af',
+      // ☆3 Gradient palette
+      glow0: '#f3e8ff',
+      glow60: '#c084fc',
+      glow100: '#7e22ce',
+      armor0: '#a855f7',
+      armor100: '#6b21a8',
+      solidAccent: '#581c87',
+      dark0: '#2d213f',
+      dark100: '#191124',
+      stroke: '#120a1c'
+    };
+  }
+  // Water (#3b82f6) / Default
+  return {
+    base: color || '#1d61d1',
+    light: '#388eff',
+    white: '#e8f4ff',
+    dark: '#2b303a',
+    out: '#1a1d24',
+    gray: '#a0aab8',
+    // ☆3 Gradient palette
+    glow0: '#72f5ff',
+    glow60: '#00c8ff',
+    glow100: '#0088cc',
+    armor0: '#2b82ff',
+    armor100: '#004cd6',
+    solidAccent: '#0055ff',
+    dark0: '#2d3748',
+    dark100: '#1a202c',
+    stroke: '#0e1726'
+  };
+};
+
 // === HEAD SVGs (y: 5~40, x: 25~75) ===
 export const HeadBasicSVG = ({ color, viewBox="0 0 100 100", className }: SVGProps) => (
   <svg width="100%" height="100%" viewBox={viewBox} className={className}>
@@ -349,19 +477,389 @@ export const LegsJetSVG = ({ color, viewBox="0 0 100 100", className }: SVGProps
   </svg>
 );
 
-export const SVG_HEADS = [
-  HeadBasicSVG, HeadRoundSVG, HeadTVSVG, HeadHornSVG, 
-  HeadCylinderSVG, HeadVisorSVG, HeadTriangleSVG, HeadDomeSVG
-];
-export const SVG_BODIES = [
-  BodyBasicSVG, BodyRoundSVG, BodyHeavySVG, BodyBarrelSVG, 
-  BodySlimSVG, BodyFurnaceSVG, BodyDiamondSVG, BodyEngineSVG
-];
-export const SVG_ARMS = [
-  ArmsBasicSVG, ArmsClawSVG, ArmsCannonSVG, ArmsDrillSVG, 
-  ArmsBladeSVG, ArmsWhipSVG, ArmsShieldSVG, ArmsMultiSVG
-];
-export const SVG_LEGS = [
-  LegsBasicSVG, LegsTreadsSVG, LegsHoverSVG, LegsSpiderSVG, 
-  LegsWheelSVG, LegsSpringSVG, LegsPegSVG, LegsJetSVG
-];
+
+
+
+
+
+export const HeadStar2SVG = ({ color, viewBox = "0 -2 32 36", className }: SVGProps) => {
+  const pal = getAttributePalette(color);
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox={viewBox} className={className} shapeRendering="crispEdges" width="100%" height="100%">
+      <path fill={pal.out} d="M 11,2 h 10 v 1 h 3 v 1 h 2 v 2 h 1 v 1 h -1 v 3 h 2 v 1 h 1 v 5 h -1 v 1 h -1 v 2 h -1 v 2 h -1 v 1 h -1 v 1 h -1 v 1 h -1 v 1 h -1 v 1 h -8 v -1 h -1 v -1 h -1 v -1 h -1 v -1 h -1 v -2 h -1 v -2 h -1 v -1 h -1 v -5 h 1 v -1 h 2 v -3 h -1 v -1 h 1 v -2 h 2 v -1 h 3 Z" />
+      <path fill={pal.dark} d="M 12,3 h 8 v 1 h 3 v 1 h 2 v 2 h 1 v 1 h -2 v 3 h 1 v 6 h -1 v 2 h -1 v 2 h -1 v 1 h -1 v 1 h -1 v 1 h -1 v 1 h -6 v -1 h -1 v -1 h -1 v -1 h -1 v -1 h -1 v -2 h -1 v -2 h -1 v -6 h 1 v -3 h -2 v -1 h 1 v -2 h 2 v -1 h 3 Z" />
+      <path fill={pal.base} d="M 12,4 h 8 v 1 h 3 v 1 h 2 v 2 h -1 v 1 h -18 v -1 h -1 v -2 h 2 v -1 h 3 Z" />
+      <rect x="14" y="3" width="4" height="1" fill={pal.light} />
+      <rect x="9" y="6" width="2" height="1" fill={pal.white} />
+      <path fill={pal.light} d="M 3,6 h 1 v 2 h -1 Z M 28,6 h 1 v 2 h -1 Z" />
+      <path fill={pal.light} d="M 4,14 h 4 v 6 h -4 Z M 24,14 h 4 v 6 h -4 Z" />
+      <rect x="6" y="16" width="1" height="2" fill={pal.white} />
+      <rect x="25" y="16" width="1" height="2" fill={pal.white} />
+      <rect x="7" y="9" width="2" height="1" fill={pal.gray} />
+      <rect x="23" y="9" width="2" height="1" fill={pal.gray} />
+      <rect x="7" y="21" width="2" height="1" fill={pal.gray} />
+      <rect x="23" y="21" width="2" height="1" fill={pal.gray} />
+      <path fill={pal.dark} d="M 8,12 h 16 v 8 h -16 Z" />
+      <rect x="9" y="15" width="4" height="3" fill={pal.base} />
+      <rect x="10" y="16" width="2" height="1" fill={pal.white} />
+      <rect x="19" y="15" width="4" height="3" fill={pal.base} />
+      <rect x="20" y="16" width="2" height="1" fill={pal.white} />
+      <rect x="15" y="14" width="2" height="4" fill={pal.base} />
+      <rect x="15" y="15" width="2" height="2" fill={pal.white} />
+      <path fill={pal.base} d="M 10,22 h 12 v 1 h -1 v 1 h -1 v 1 h -8 v -1 h -1 v -1 h -1 Z" />
+      <rect x="13" y="23" width="6" height="1" fill={pal.light} />
+    </svg>
+  );
+};
+
+export const ArmsStar2SVG = ({ color, viewBox = "0 0 32 32", className }: SVGProps) => {
+  const pal = getAttributePalette(color);
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox={viewBox} className={className} shapeRendering="crispEdges" width="100%" height="100%">
+      {/* 左腕 (Left Arm) */}
+      {/* 外枠 */}
+      <path fill={pal.out} d="M 4,4 h 6 v 1 h 2 v 6 h -1 v 2 h 1 v 10 h 1 v 1 h -2 v 3 h -1 v 1 h -6 v -1 h -1 v -3 h -2 v -1 h 1 v -10 h 1 v -2 h -1 v -6 h 2 Z" />
+      {/* ダークグレー骨格・ベース */}
+      <path fill={pal.dark} d="M 5,5 h 4 v 5 h -1 v 2 h 1 v 10 h -1 v 3 h -2 v -3 h -1 v -10 h 1 v -2 h -1 Z" />
+      {/* 肩アーマー (属性メインカラー) */}
+      <path fill={pal.base} d="M 5,5 h 4 v 5 h -4 Z" />
+      <rect x="5" y="6" width="1" height="1" fill={pal.white} />
+      {/* 関節 (関節・肘部分) */}
+      <rect x="6" y="11" width="2" height="1" fill={pal.light} />
+      {/* 前腕アーマー (属性メインカラー) */}
+      <path fill={pal.base} d="M 5,14 h 4 v 8 h -2 v -2 h -1 v -5 h -1 Z" />
+      <rect x="4" y="15" width="1" height="1" fill={pal.gray} />
+      {/* マニピュレータ/手 (ダーク & 属性ライトカラー) */}
+      <path fill={pal.dark} d="M 4,23 h 6 v 3 h -6 Z" />
+      <rect x="5" y="24" width="4" height="1" fill={pal.light} />
+      <rect x="5" y="27" width="4" height="1" fill={pal.light} />
+
+      {/* 右腕 (Right Arm) */}
+      {/* 外枠 */}
+      <path fill={pal.out} d="M 20,4 h 6 v 1 h 2 v 6 h -1 v 2 h 1 v 10 h 1 v 1 h -2 v 3 h -1 v 1 h -6 v -1 h -1 v -3 h -2 v -1 h 1 v -10 h 1 v -2 h -1 v -6 h 2 Z" />
+      {/* ダークグレー骨格・ベース */}
+      <path fill={pal.dark} d="M 21,5 h 4 v 5 h -1 v 2 h 1 v 10 h -1 v 3 h -2 v -3 h -1 v -10 h 1 v -2 h -1 Z" />
+      {/* 肩アーマー (属性メインカラー) */}
+      <path fill={pal.base} d="M 21,5 h 4 v 5 h -4 Z" />
+      <rect x="24" y="6" width="1" height="1" fill={pal.white} />
+      {/* 関節 (関節・肘部分) */}
+      <rect x="22" y="11" width="2" height="1" fill={pal.light} />
+      {/* 前腕アーマー (属性メインカラー) */}
+      <path fill={pal.base} d="M 21,14 h 4 v 5 h -1 v 2 h -2 v -8 Z" />
+      <rect x="25" y="15" width="1" height="1" fill={pal.gray} />
+      {/* マニピュレータ/手 (ダーク & 属性ライトカラー) */}
+      <path fill={pal.dark} d="M 20,23 h 6 v 3 h -6 Z" />
+      <rect x="21" y="24" width="4" height="1" fill={pal.light} />
+      <rect x="21" y="27" width="4" height="1" fill={pal.light} />
+    </svg>
+  );
+};
+
+export const HeadStar3SVG = ({ color, viewBox = "0 0 256 256", className }: SVGProps) => {
+  const pal = getAttributePalette(color);
+  const uid = React.useId().replace(/:/g, '');
+
+  const glowId = `glow-${uid}`;
+  const armorId = `armor-${uid}`;
+  const silverPlateId = `silver-plate-${uid}`;
+  const darkMetalId = `dark-metal-${uid}`;
+
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox={viewBox} className={className} width="100%" height="100%">
+      <defs>
+        {/* グラデーション定義（属性カラー対応） */}
+        <linearGradient id={glowId} x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor={pal.glow0 || '#72f5ff'} />
+          <stop offset="60%" stopColor={pal.glow60 || '#00c8ff'} />
+          <stop offset="100%" stopColor={pal.glow100 || '#0088cc'} />
+        </linearGradient>
+
+        <linearGradient id={armorId} x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor={pal.armor0 || '#2b82ff'} />
+          <stop offset="100%" stopColor={pal.armor100 || '#004cd6'} />
+        </linearGradient>
+
+        <linearGradient id={silverPlateId} x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#e2e8f0" />
+          <stop offset="100%" stopColor="#94a3b8" />
+        </linearGradient>
+
+        <linearGradient id={darkMetalId} x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor={pal.dark0 || '#2d3748'} />
+          <stop offset="100%" stopColor={pal.dark100 || '#1a202c'} />
+        </linearGradient>
+      </defs>
+
+      {/* 外側ストローク用グラフィックグループ */}
+      <g stroke={pal.stroke || '#0e1726'} strokeWidth="8" strokeLinecap="round" strokeLinejoin="round">
+        {/* 背面ツノ・ウィング（左右・中央） */}
+        <path d="M 128,10 L 142,32 L 128,38 L 114,32 Z" fill={pal.solidAccent || '#0055ff'} />
+        <path d="M 32,12 L 68,54 L 52,82 L 20,40 Z" fill={`url(#${armorId})`} />
+        <path d="M 224,12 L 236,40 L 204,82 L 188,54 Z" fill={`url(#${armorId})`} />
+
+        {/* 耳アーマー（左右の丸型イヤーユニット） */}
+        <circle cx="50" cy="120" r="28" fill={`url(#${darkMetalId})`} />
+        <circle cx="50" cy="120" r="20" fill={pal.solidAccent || '#0066ff'} />
+        <circle cx="50" cy="120" r="12" fill={`url(#${glowId})`} />
+
+        <circle cx="206" cy="120" r="28" fill={`url(#${darkMetalId})`} />
+        <circle cx="206" cy="120" r="20" fill={pal.solidAccent || '#0066ff'} />
+        <circle cx="206" cy="120" r="12" fill={`url(#${glowId})`} />
+
+        {/* 後頭部・メインヘルメットベース */}
+        <path d="M 68,50 Q 128,25 188,50 L 182,90 L 74,90 Z" fill={`url(#${armorId})`} />
+
+        {/* 頭頂部シルバープレート */}
+        <path d="M 100,40 L 128,30 L 156,40 L 150,88 L 106,88 Z" fill={`url(#${silverPlateId})`} />
+        <path d="M 108,38 L 128,88 L 148,38 Z" fill="#cbd5e1" />
+
+        {/* 額中央のトサカ・額結晶ユニット */}
+        <path d="M 116,60 L 128,40 L 140,60 L 136,110 L 128,118 L 120,110 Z" fill={`url(#${darkMetalId})`} />
+        <path d="M 122,64 L 128,48 L 134,64 L 132,106 L 128,110 L 124,106 Z" fill={`url(#${glowId})`} />
+        <polygon points="128,100 134,106 132,116 124,116 122,106" fill="none" stroke={`url(#${silverPlateId})`} strokeWidth="3" />
+
+        {/* バイザー枠・ひさし（シルバーアーマー） */}
+        <path d="M 56,98 L 102,90 L 128,102 L 154,90 L 200,98 L 184,138 L 158,112 L 128,122 L 98,112 L 72,138 Z" fill={`url(#${silverPlateId})`} />
+
+        {/* 顔面メインバイザー (発光) */}
+        <path d="M 68,108 L 104,102 L 128,114 L 152,102 L 188,108 L 172,148 L 128,162 L 84,148 Z" fill={`url(#${glowId})`} />
+
+        {/* バイザー内反射・ハイライト */}
+        <path d="M 72,112 L 102,106 L 128,118 L 154,106 L 184,112 L 176,128 Q 128,110 80,128 Z" fill="#ffffff" opacity="0.5" stroke="none" />
+
+        {/* 頬・下顎サイドアーマー */}
+        <path d="M 60,146 L 80,140 L 90,182 L 68,190 L 58,168 Z" fill={`url(#${armorId})`} />
+        <rect x="70" y="156" width="8" height="12" fill={`url(#${glowId})`} rx="1" />
+
+        <path d="M 196,146 L 176,140 L 166,182 L 188,190 L 198,168 Z" fill={`url(#${armorId})`} />
+        <rect x="178" y="156" width="8" height="12" fill={`url(#${glowId})`} rx="1" />
+
+        {/* 口元フェイスガード (ダークグレー & シルバーダクト) */}
+        <path d="M 84,148 L 128,162 L 172,148 L 162,192 L 128,210 L 94,192 Z" fill={`url(#${darkMetalId})`} />
+        
+        {/* 口元ダクト（スリット状インテーク） */}
+        <path d="M 104,166 L 152,166 L 148,188 L 108,188 Z" fill={`url(#${silverPlateId})`} />
+        <line x1="120" y1="170" x2="120" y2="184" stroke={pal.stroke || '#1a202c'} strokeWidth="4" />
+        <line x1="128" y1="170" x2="128" y2="184" stroke={pal.stroke || '#1a202c'} strokeWidth="4" />
+        <line x1="136" y1="170" x2="136" y2="184" stroke={pal.stroke || '#1a202c'} strokeWidth="4" />
+
+        {/* 顎先端アーマー */}
+        <path d="M 106,192 L 150,192 L 142,220 L 114,220 Z" fill={`url(#${darkMetalId})`} />
+        <path d="M 110,196 L 146,196 L 138,216 L 118,216 Z" fill={`url(#${armorId})`} />
+        <polygon points="120,200 136,200 132,212 124,212" fill={`url(#${glowId})`} stroke="none" />
+      </g>
+    </svg>
+  );
+};
+
+export const HeadStar3_2SVG = ({ color, viewBox = "0 0 256 256", className }: SVGProps) => {
+  const pal = getAttributePalette(color);
+  const uid = React.useId().replace(/:/g, '');
+
+  const glowId = `cyan-glow-${uid}`;
+  const armorId = `blue-armor-${uid}`;
+  const silverPlateId = `silver-plate-${uid}`;
+  const darkMetalId = `dark-metal-${uid}`;
+
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox={viewBox} className={className} width="100%" height="100%">
+      <defs>
+        {/* グラデーション定義 */}
+        <linearGradient id={glowId} x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor={pal.glow0 || '#80f5ff'} />
+          <stop offset="50%" stopColor={pal.glow60 || '#00d0ff'} />
+          <stop offset="100%" stopColor={pal.glow100 || '#0088cc'} />
+        </linearGradient>
+
+        <linearGradient id={armorId} x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor={pal.armor0 || '#2b82ff'} />
+          <stop offset="100%" stopColor={pal.armor100 || '#004cd6'} />
+        </linearGradient>
+
+        <linearGradient id={silverPlateId} x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#ffffff" />
+          <stop offset="50%" stopColor="#cbd5e1" />
+          <stop offset="100%" stopColor="#64748b" />
+        </linearGradient>
+
+        <linearGradient id={darkMetalId} x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor={pal.dark0 || '#2d3748'} />
+          <stop offset="100%" stopColor={pal.dark100 || '#111827'} />
+        </linearGradient>
+      </defs>
+
+      {/* 全体太ストロークグループ */}
+      <g stroke={pal.stroke || '#0f172a'} strokeWidth="8" strokeLinecap="round" strokeLinejoin="round">
+        {/* 最上部カメラ/センサーユニット */}
+        <path d="M 96,36 L 112,18 L 144,18 L 160,36 L 152,60 L 104,60 Z" fill={`url(#${armorId})`} />
+        <path d="M 108,26 L 148,26 L 144,52 L 112,52 Z" fill={`url(#${darkMetalId})`} />
+        <rect x="114" y="30" width="28" height="16" rx="2" fill={`url(#${glowId})`} />
+        <rect x="118" y="32" width="12" height="3" fill="#ffffff" stroke="none" />
+
+        {/* 後頭部・ショルダーベース (シルバー/ブルー) */}
+        <path d="M 56,76 L 80,56 L 176,56 L 200,76 L 204,150 L 52,150 Z" fill={`url(#${silverPlateId})`} />
+        <path d="M 64,68 L 192,68 L 184,124 L 72,124 Z" fill={`url(#${armorId})`} />
+
+        {/* メインフレーム（ダークメタルインナー） */}
+        <path d="M 72,74 L 184,74 L 180,126 L 76,126 Z" fill={`url(#${darkMetalId})`} />
+
+        {/* 額中央センサー/カメラ */}
+        <path d="M 112,78 L 144,78 L 144,122 L 112,122 Z" fill={`url(#${armorId})`} />
+        <rect x="120" y="84" width="16" height="12" fill={`url(#${glowId})`} />
+        <rect x="122" y="102" width="12" height="16" fill={`url(#${glowId})`} />
+        <rect x="124" y="104" width="4" height="8" fill="#ffffff" stroke="none" />
+
+        {/* ゴーグル/バイザー（V字発光） */}
+        <path d="M 68,124 L 128,142 L 188,124 L 184,136 L 128,154 L 72,136 Z" fill={`url(#${glowId})`} />
+        <path d="M 74,127 L 128,143 L 182,127" stroke="#ffffff" strokeWidth="3" fill="none" />
+
+        {/* 頬・下部サイドアーマー (シルバー/ブルー) */}
+        {/* 左頬 */}
+        <path d="M 52,132 L 88,132 L 96,176 L 68,188 L 52,170 Z" fill={`url(#${silverPlateId})`} />
+        <rect x="64" y="146" width="16" height="18" fill={`url(#${armorId})`} />
+        <rect x="68" y="152" width="8" height="6" fill={`url(#${glowId})`} />
+
+        {/* 右頬 */}
+        <path d="M 204,132 L 168,132 L 160,176 L 188,188 L 204,170 Z" fill={`url(#${silverPlateId})`} />
+        <rect x="176" y="146" width="16" height="18" fill={`url(#${armorId})`} />
+        <rect x="180" y="152" width="8" height="6" fill={`url(#${glowId})`} />
+
+        {/* 口元・フェースマスク (ダークグレー) */}
+        <path d="M 64,170 L 192,170 L 176,230 L 128,242 L 80,230 Z" fill={`url(#${darkMetalId})`} />
+
+        {/* マスク部金属ボルト/リベット */}
+        <rect x="88" y="180" width="6" height="6" fill="#ffffff" stroke="none" />
+        <rect x="162" y="180" width="6" height="6" fill="#ffffff" stroke="none" />
+
+        {/* 口元スリット・インテーク (シルバー) */}
+        <rect x="96" y="190" width="64" height="22" rx="2" fill={`url(#${silverPlateId})`} />
+        <line x1="112" y1="194" x2="112" y2="208" stroke={pal.stroke || '#111827'} strokeWidth="4" />
+        <line x1="122" y1="194" x2="122" y2="208" stroke={pal.stroke || '#111827'} strokeWidth="4" />
+        <line x1="134" y1="194" x2="134" y2="208" stroke={pal.stroke || '#111827'} strokeWidth="4" />
+        <line x1="144" y1="194" x2="144" y2="208" stroke={pal.stroke || '#111827'} strokeWidth="4" />
+
+        {/* 顎部（青色アーマー） */}
+        <path d="M 104,220 L 152,220 L 144,236 L 112,236 Z" fill={`url(#${armorId})`} />
+        <rect x="112" y="224" width="32" height="8" fill={`url(#${glowId})`} />
+      </g>
+    </svg>
+  );
+};
+
+export const HeadStar3_3SVG = ({ color, viewBox = "0 0 256 256", className }: SVGProps) => {
+  const pal = getAttributePalette(color);
+  const uid = React.useId().replace(/:/g, '');
+
+  const glowId = `cyan-glow-${uid}`;
+  const armorId = `blue-armor-${uid}`;
+  const silverPlateId = `silver-plate-${uid}`;
+  const darkMetalId = `dark-metal-${uid}`;
+
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox={viewBox} className={className} width="100%" height="100%">
+      <defs>
+        {/* グラデーション定義 */}
+        <linearGradient id={glowId} x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor={pal.glow0 || '#80f5ff'} />
+          <stop offset="50%" stopColor={pal.glow60 || '#00d0ff'} />
+          <stop offset="100%" stopColor={pal.glow100 || '#0088cc'} />
+        </linearGradient>
+
+        <linearGradient id={armorId} x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor={pal.armor0 || '#2b82ff'} />
+          <stop offset="100%" stopColor={pal.armor100 || '#004cd6'} />
+        </linearGradient>
+
+        <linearGradient id={silverPlateId} x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#ffffff" />
+          <stop offset="50%" stopColor="#cbd5e1" />
+          <stop offset="100%" stopColor="#64748b" />
+        </linearGradient>
+
+        <linearGradient id={darkMetalId} x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor={pal.dark0 || '#2d3748'} />
+          <stop offset="100%" stopColor={pal.dark100 || '#111827'} />
+        </linearGradient>
+      </defs>
+
+      {/* 全体太ストロークグループ */}
+      <g stroke={pal.stroke || '#0f172a'} strokeWidth="8" strokeLinecap="round" strokeLinejoin="round">
+        {/* 頭上フローティングセンサーユニット */}
+        <rect x="104" y="12" width="48" height="24" rx="6" fill={`url(#${armorId})`} />
+        <rect x="114" y="18" width="28" height="12" rx="2" fill={`url(#${glowId})`} />
+        <rect x="118" y="20" width="12" height="3" fill="#ffffff" stroke="none" />
+
+        {/* 後頭部・ショルダーベース (シルバー/ブルー) */}
+        <path d="M 56,66 L 80,48 L 176,48 L 200,66 L 204,140 L 52,140 Z" fill={`url(#${silverPlateId})`} />
+        <path d="M 64,58 L 192,58 L 184,114 L 72,114 Z" fill={`url(#${armorId})`} />
+
+        {/* メインフレーム（ダークメタルインナー） */}
+        <path d="M 72,64 L 184,64 L 180,116 L 76,116 Z" fill={`url(#${darkMetalId})`} />
+
+        {/* 額中央スクエアカメラ / センサー */}
+        <rect x="100" y="70" width="56" height="42" rx="6" fill={`url(#${armorId})`} />
+        <rect x="108" y="76" width="40" height="30" rx="3" fill={`url(#${darkMetalId})`} />
+        <rect x="116" y="82" width="24" height="18" rx="2" fill={`url(#${glowId})`} />
+        <rect x="120" y="84" width="10" height="3" fill="#ffffff" stroke="none" />
+
+        {/* 左右側面サイドダクト / センサー */}
+        <rect x="52" y="84" width="16" height="36" fill={`url(#${darkMetalId})`} />
+        <rect x="56" y="88" width="8" height="28" fill={`url(#${armorId})`} />
+        <rect x="58" y="94" width="4" height="16" fill={`url(#${glowId})`} />
+
+        <rect x="188" y="84" width="16" height="36" fill={`url(#${darkMetalId})`} />
+        <rect x="192" y="88" width="8" height="28" fill={`url(#${armorId})`} />
+        <rect x="194" y="94" width="4" height="16" fill={`url(#${glowId})`} />
+
+        {/* 大型バイザー（V字発光・スクエアフレーム） */}
+        <path d="M 48,118 L 208,118 L 196,168 L 60,168 Z" fill={`url(#${darkMetalId})`} />
+        <path d="M 58,124 L 198,124 L 188,160 L 68,160 Z" fill={`url(#${glowId})`} />
+        
+        {/* バイザー内インナーフレーム＆V字ライン */}
+        <path d="M 72,128 L 184,128 L 176,156 L 80,156 Z" fill={`url(#${armorId})`} />
+        <path d="M 92,134 L 128,150 L 164,134" stroke="#ffffff" strokeWidth="4" fill="none" />
+        <path d="M 92,142 L 128,158 L 164,142" stroke="#ffffff" strokeWidth="4" fill="none" />
+
+        {/* 口元・フェースマスク (ダークグレー) */}
+        <path d="M 60,168 L 196,168 L 180,228 L 128,240 L 76,228 Z" fill={`url(#${darkMetalId})`} />
+
+        {/* マスク部金属ボルト/リベット */}
+        <rect x="74" y="178" width="6" height="6" fill="#ffffff" stroke="none" />
+        <rect x="176" y="178" width="6" height="6" fill="#ffffff" stroke="none" />
+
+        {/* 口元スリット・インテーク (シルバー) */}
+        <rect x="84" y="188" width="88" height="24" rx="2" fill={`url(#${silverPlateId})`} />
+        <line x1="100" y1="192" x2="100" y2="208" stroke={pal.stroke || '#111827'} strokeWidth="4" />
+        <line x1="114" y1="192" x2="114" y2="208" stroke={pal.stroke || '#111827'} strokeWidth="4" />
+        <line x1="128" y1="192" x2="128" y2="208" stroke={pal.stroke || '#111827'} strokeWidth="4" />
+        <line x1="142" y1="192" x2="142" y2="208" stroke={pal.stroke || '#111827'} strokeWidth="4" />
+        <line x1="156" y1="192" x2="156" y2="208" stroke={pal.stroke || '#111827'} strokeWidth="4" />
+
+        {/* 顎部（青色アーマー） */}
+        <path d="M 100,222 L 156,222 L 148,240 L 108,240 Z" fill={`url(#${armorId})`} />
+        <rect x="110" y="226" width="36" height="8" fill={`url(#${glowId})`} />
+      </g>
+    </svg>
+  );
+};
+
+export const SVG_HEADS: Record<number, React.FC<SVGProps>[]> = {
+  1: [HeadBasicSVG, HeadRoundSVG, HeadTVSVG, HeadHornSVG, HeadCylinderSVG, HeadVisorSVG, HeadTriangleSVG, HeadDomeSVG],
+  2: [HeadStar2SVG],
+  3: [HeadStar3SVG, HeadStar3_2SVG, HeadStar3_3SVG]
+};
+export const SVG_BODIES: Record<number, React.FC<SVGProps>[]> = {
+  1: [BodyBasicSVG, BodyRoundSVG, BodyHeavySVG, BodyBarrelSVG, BodySlimSVG, BodyFurnaceSVG, BodyDiamondSVG, BodyEngineSVG],
+  2: [],
+  3: []
+};
+export const SVG_ARMS: Record<number, React.FC<SVGProps>[]> = {
+  1: [ArmsBasicSVG, ArmsClawSVG, ArmsCannonSVG, ArmsDrillSVG, ArmsBladeSVG, ArmsWhipSVG, ArmsShieldSVG, ArmsMultiSVG],
+  2: [ArmsStar2SVG],
+  3: []
+};
+export const SVG_LEGS: Record<number, React.FC<SVGProps>[]> = {
+  1: [LegsBasicSVG, LegsTreadsSVG, LegsHoverSVG, LegsSpiderSVG, LegsWheelSVG, LegsSpringSVG, LegsPegSVG, LegsJetSVG],
+  2: [],
+  3: []
+};
