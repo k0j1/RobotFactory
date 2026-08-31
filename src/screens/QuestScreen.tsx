@@ -20,13 +20,20 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
     if (state.activeQuest) return;
     
     try {
-      // 事前にチェックするため、ダミーで実行できないか確認したいが、
-      // 実際はボタンがdisabledになるため基本成功する。
+      if (!selectedRobotId) {
+        // ロボットが選択されていない場合はアニメーションなしで即時出発
+        engine.startQuest(locId, undefined);
+        if (onNavigate) {
+          onNavigate('dashboard');
+        }
+        return;
+      }
+
       setDepartingState({ isDeparting: true, locId });
       
       setTimeout(() => {
         try {
-          engine.startQuest(locId, selectedRobotId || undefined);
+          engine.startQuest(locId, selectedRobotId);
           if (onNavigate) {
             onNavigate('dashboard');
           }
@@ -52,9 +59,9 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
             transition={{ duration: 1.5, ease: "easeInOut" }}
             className="flex flex-col items-center justify-center drop-shadow-2xl"
           >
-            {selectedRobot ? (
+            {selectedRobot && (
               <div className="relative">
-                <RobotVisual robot={selectedRobot} size={120} />
+                <RobotVisual robot={selectedRobot} size={120} hideBackground={true} />
                 <motion.div 
                   animate={{ y: [0, 10, 0], opacity: [0.5, 1, 0.5] }}
                   transition={{ repeat: Infinity, duration: 0.2 }}
@@ -63,8 +70,6 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
                   🔥
                 </motion.div>
               </div>
-            ) : (
-              <div className="text-8xl">🎒</div>
             )}
           </motion.div>
           <motion.h2
