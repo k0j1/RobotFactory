@@ -1,4 +1,15 @@
 export type Attribute = 'Fire' | 'Water' | 'Wind' | 'Earth' | 'Light' | 'Dark';
+
+export type WeatherType = 'CLEAR' | 'ACID_RAIN' | 'MAGNETIC_STORM' | 'HEAT_WAVE';
+
+export interface WeatherInfo {
+  type: WeatherType;
+  name: string;
+  description: string;
+  timeMultiplier: number;
+  bonusAttribute?: Attribute;
+}
+
 export const AttributeNames: Record<Attribute, string> = {
   Fire: '火', Water: '水', Wind: '風', Earth: '土', Light: '光', Dark: '闇'
 };

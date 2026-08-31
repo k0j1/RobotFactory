@@ -300,6 +300,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
               const pending = d.pendingDrops?.length || 0;
               const isResting = (dRobot?.currentHp ?? 12) <= 1;
               const selectedEmotion = isResting ? 'troubled' : (previewEmotions[d.id] || 'auto');
+              const weather = dLoc ? engine.getLocationWeather(dLoc.id, Date.now()) : null;
 
               return (
                 <div key={d.id} className={`p-3 rounded-xl border transition-all ${isResting ? 'bg-red-50/50 border-red-300 ring-1 ring-red-200' : pending > 0 ? 'bg-emerald-50/50 border-emerald-300 ring-1 ring-emerald-200' : 'bg-stone-50/90 border-stone-200'}`}>
@@ -315,6 +316,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                         emotion={selectedEmotion}
                         hasPendingDrops={pending > 0 && !isResting}
                         locationId={d.locationId}
+                        weatherType={weather?.type}
                         agility={dRobot.stats.agility}
                       />
 
@@ -349,6 +351,14 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                         <span className="text-[10px] bg-purple-200 text-purple-900 font-bold px-1.5 py-0.2 rounded">自動探索</span>
                         <span className="font-bold text-xs sm:text-sm text-stone-800">{dRobot?.name || 'ロボット'}</span>
                         <span className="text-[11px] text-stone-500">📍 {dLoc?.name}</span>
+                        {weather && (
+                          <span className="flex items-center gap-1 text-[10px] bg-sky-100 text-sky-800 border border-sky-200 px-1 rounded cursor-help" title={weather.description}>
+                            {weather.name}
+                            <span className={`px-0.5 rounded text-[8px] ${weather.timeMultiplier > 1 ? 'bg-red-200 text-red-800' : 'bg-emerald-200 text-emerald-800'}`}>
+                              x{weather.timeMultiplier.toFixed(1)}
+                            </span>
+                          </span>
+                        )}
                         <span className="text-[10px] text-red-600 font-mono bg-red-50 border border-red-200 px-1 rounded">
                           ❤️ {dRobot?.currentHp ?? 12}/{dRobot?.maxHp ?? 12}
                         </span>

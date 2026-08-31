@@ -164,14 +164,7 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
           const finalSec = Math.max(3, Math.round(baseSec - agiReductionSec));
 
           // 気候・天候タグの取得
-          const weatherTag = 
-            loc.id === 'loc1' ? '🏜️ 砂塵・熱風' :
-            loc.id === 'loc2' ? '🌋 灼熱・火の粉' :
-            loc.id === 'loc3' ? '🌧️ 鉱毒雨・水滴' :
-            loc.id === 'loc4' ? '🌀 磁気嵐・突風' :
-            loc.id === 'loc5' ? '❄️ 極寒・猛吹雪' :
-            loc.id === 'loc6' ? '✨ 星雲・宇宙線' :
-            '⚡ デジタル粒子';
+          const weather = engine.getLocationWeather(loc.id, Date.now());
 
           return (
             <Card key={loc.id} className={`relative overflow-hidden ${!isUnlocked ? 'opacity-75' : ''}`}>
@@ -189,7 +182,12 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
                     onClick={() => setShowDropsForLoc(showDropsForLoc === loc.id ? null : loc.id)}
                     className="text-[11px] bg-stone-900/80 hover:bg-stone-800 text-stone-100 px-2.5 py-1 rounded-full font-bold border border-stone-600 shadow-md transition-colors flex items-center gap-1.5 cursor-pointer"
                   >
-                    <span>{weatherTag}</span>
+                    <span title={weather.description} className="flex items-center gap-1">
+                      {weather.name}
+                      <span className={`px-1 rounded text-[9px] ${weather.timeMultiplier > 1 ? 'bg-red-900/80 text-red-200' : 'bg-emerald-900/80 text-emerald-200'}`}>
+                        x{weather.timeMultiplier.toFixed(1)}
+                      </span>
+                    </span>
                     <span className="text-[10px] text-stone-400">{showDropsForLoc === loc.id ? '▲ 閉じる' : '▼ 報酬'}</span>
                   </button>
                 </div>

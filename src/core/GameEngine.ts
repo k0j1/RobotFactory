@@ -1,4 +1,4 @@
-import { GameState, Robot, ClientRequest, Attribute, RequestRank, RobotPart, PartType, AttributeNames } from './models';
+import { GameState, Robot, ClientRequest, Attribute, RequestRank, RobotPart, PartType, AttributeNames, WeatherType, WeatherInfo } from './models';
 import { MATERIALS, LOCATIONS, getMaterialCraftableVisuals } from './data';
 import { AttributeColors } from './models';
 
@@ -36,6 +36,20 @@ export class GameEngine {
     this.onStateChange = onStateChange;
     this.state = this.loadState();
     this.update();
+  }
+
+  public getLocationWeather(locationId: string, timestamp: number = Date.now()): WeatherInfo {
+    const timeBlock = Math.floor(timestamp / (30 * 60 * 1000)); // 30 minutes
+    let seed = timeBlock;
+    for (let i = 0; i < locationId.length; i++) {
+      seed += locationId.charCodeAt(i) * (i + 1);
+    }
+    const random = Math.abs((Math.sin(seed) * 10000) % 1);
+
+    if (random < 0.5) return { type: 'CLEAR', name: '☀️ 晴天', description: '穏やかな気候。探索への影響なし。', timeMultiplier: 1 };
+    if (random < 0.66) return { type: 'ACID_RAIN', name: '🌧️ 酸性雨', description: '探索時間1.5倍。水属性の素材が出やすい。', timeMultiplier: 1.5, bonusAttribute: 'Water' };
+    if (random < 0.83) return { type: 'MAGNETIC_STORM', name: '⚡ 磁気嵐', description: '探索時間2倍。風素材が出やすい。', timeMultiplier: 2, bonusAttribute: 'Wind' };
+    return { type: 'HEAT_WAVE', name: '🔥 熱波', description: '探索時間1.5倍。火属性素材が出やすい。', timeMultiplier: 1.5, bonusAttribute: 'Fire' };
   }
 
   private loadState(): GameState {
@@ -228,14 +242,38 @@ export class GameEngine {
     return { drops: allDrops };
   }
 
-  public getAutoDispatchIntervalMs(robotId?: string): number {
+  public getAutoDispatchIntervalMs(robotId?: string, locationId?: string): number {
     const BASE_INTERVAL = 60 * 60 * 1000; // 3600秒 (1時間)
-    if (!robotId) return BASE_INTERVAL;
-    const robot = this.state.robots.find(r => r.id === robotId);
-    if (!robot) return BASE_INTERVAL;
-    // Agility 1につき 1秒 (1000ms) 短縮。最小下限は 60秒 (60000ms)
-    const agilityReduction = (robot.stats.agility || 0) * 1000;
-    return Math.max(60 * 1000, BASE_INTERVAL - agilityReduction);
+    let interval = BASE_INTERVAL;
+    if (robotId) {
+      const robot = this.state.robots.find(r => r.id === robotId);
+      if (robot) {
+        // Agility 1につき 1秒 (1000ms) 短縮。最小下限は 60秒 (60000ms)
+        const agilityReduction = (robot.stats.agility || 0) * 1000;
+        interval = Math.max(60 * 1000, BASE_INTERVAL - agilityReduction);
+      }
+    }
+    if (locationId) {
+      const weather = this.getLocationWeather(locationId, Date.now());
+      interval = Math.floor(interval * weather.timeMultiplier);
+    }
+    return interval;
+  }
+
+  private getRandomDrop(loc: typeof LOCATIONS[0], weather: WeatherInfo): string {
+    let dropId = loc.drops[Math.floor(Math.random() * loc.drops.length)];
+    if (weather.bonusAttribute) {
+      if (Math.random() < 0.5) {
+        const bonusDrops = loc.drops.filter(id => {
+          const mat = MATERIALS.find(m => m.id === id);
+          return mat && mat.attribute === weather.bonusAttribute;
+        });
+        if (bonusDrops.length > 0) {
+          dropId = bonusDrops[Math.floor(Math.random() * bonusDrops.length)];
+        }
+      }
+    }
+    return dropId;
   }
 
   public processAutoDispatches() {
@@ -247,39 +285,47 @@ export class GameEngine {
         d.pendingDrops = [];
       }
 
-      const intervalMs = this.getAutoDispatchIntervalMs(d.robotId);
+      const intervalMs = this.getAutoDispatchIntervalMs(d.robotId, d.locationId);
       const elapsed = now - d.lastCollectedAt;
       if (elapsed >= intervalMs) {
         const collectionsCount = Math.floor(elapsed / intervalMs);
         const maxCollections = 200; // max cap to prevent huge calculations if offline for weeks
-        let actualCollections = Math.min(collectionsCount, maxCollections);
         
         const loc = LOCATIONS.find(l => l.id === d.locationId);
         let canceled = false;
+        let actualCollections = 0;
 
         if (loc) {
           const robot = this.state.robots.find(r => r.id === d.robotId);
           if (robot) {
              const currentHp = robot.currentHp ?? 10;
-             // Remaining collections possible without hitting 0 HP. Stop at 1 HP.
-             const maxPossibleCollections = Math.max(0, currentHp - 1);
-             actualCollections = Math.min(actualCollections, maxPossibleCollections);
+             const weather = this.getLocationWeather(loc.id, now);
+             
+             let hpToConsume = 0;
+             const requestedCollections = Math.min(collectionsCount, maxCollections);
+             
+             for (let i = 0; i < requestedCollections; i++) {
+               const cost = 1; // HP消費は1固定
+               if (currentHp - hpToConsume - cost < 1) {
+                 break;
+               }
+               hpToConsume += cost;
+               actualCollections++;
+             }
 
              const newFoundDrops: string[] = [];
 
              if (actualCollections > 0) {
                for (let i = 0; i < actualCollections; i++) {
-                  // 素材を回収
-                  const dropId = loc.drops[Math.floor(Math.random() * loc.drops.length)];
+                  const dropId = this.getRandomDrop(loc, weather);
                   newFoundDrops.push(dropId);
                   d.pendingDrops.push(dropId);
                }
 
-               // HP消費
-               robot.currentHp = currentHp - actualCollections;
+               robot.currentHp = currentHp - hpToConsume;
 
                const minText = Math.round((intervalMs / 60000) * 10) / 10;
-               d.logs.push(`自動探索(${minText}分間隔)で素材を${newFoundDrops.length}個発見！(未回収: ${d.pendingDrops.length}個, 残りHP: ${robot.currentHp})`);
+               d.logs.push(`自動探索(${minText}分間隔)で素材を${newFoundDrops.length}個発見！(未回収: ${d.pendingDrops.length}個, 残りHP: ${robot.currentHp}) [天候: ${weather.name}]`);
                if (d.logs.length > 5) d.logs.shift();
                changed = true;
              }
@@ -287,19 +333,15 @@ export class GameEngine {
              if (robot.currentHp! <= 1) {
                d.logs.push(`⚠️ HPが残りわずか(1)のため、これ以上探索を継続できません。帰還してください。`);
                if (d.logs.length > 5) d.logs.shift();
-               canceled = true; // wait for player to manually collect and cancel, or we can auto cancel
+               canceled = true; 
              }
           }
         }
         
-        // If they had more collections left but got canceled due to HP, we shouldn't advance lastCollectedAt by full elapsed time.
-        // We advance it by the actualCollections time, so they don't get free elapsed time when healed.
         d.lastCollectedAt += actualCollections * intervalMs;
         
         if (canceled) {
-           // We just let the dispatch stay but it won't collect anymore because HP is 1.
-           // They have to click "帰還" to collect drops and then repair.
-           d.lastCollectedAt = now; // Prevent building up time while at 1 HP.
+           d.lastCollectedAt = now; 
         }
       }
     }
@@ -380,7 +422,8 @@ export class GameEngine {
       }
     }
 
-    const finalDuration = Math.max(3000, loc.baseTimeMs - timeReduction);
+    const weather = this.getLocationWeather(locationId, Date.now());
+    const finalDuration = Math.floor(Math.max(3000, loc.baseTimeMs - timeReduction) * weather.timeMultiplier);
 
     this.state.activeQuest = {
       locationId,
@@ -399,6 +442,7 @@ export class GameEngine {
     const loc = LOCATIONS.find(l => l.id === this.state.activeQuest!.locationId);
     if (!loc) return null;
 
+    const weather = this.getLocationWeather(loc.id, Date.now());
     const isSuccess = true; // Always 100% success
     const obtained: string[] = [];
 
@@ -423,7 +467,7 @@ export class GameEngine {
     }
 
     for (let i = 0; i < dropCount; i++) {
-      const dropId = loc.drops[Math.floor(Math.random() * loc.drops?.length)];
+      const dropId = this.getRandomDrop(loc, weather);
       const amount = Math.floor(Math.random() * 3) + 2;
       for (let j = 0; j < amount; j++) obtained.push(dropId);
       this.state.materials[dropId] = (this.state.materials[dropId] || 0) + amount;

@@ -6,6 +6,8 @@ import { LocationEnvironment } from './LocationEnvironment';
 
 import { motion } from 'motion/react';
 
+import { WeatherType } from '../../core/models';
+
 interface RobotVisualProps {
   robot: any;
   size?: number; // width/height in px for the robot itself
@@ -18,6 +20,7 @@ interface RobotVisualProps {
   hasPendingDrops?: boolean;
   isTroubled?: boolean;
   locationId?: string; // 探索地に応じた背景・天気
+  weatherType?: WeatherType;
   agility?: number; // ロボットの素早さ（歩行・アニメーション速度に反映）
   hideBackground?: boolean;
 }
@@ -74,6 +77,7 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
   hasPendingDrops = false,
   isTroubled = false,
   locationId,
+  weatherType,
   agility,
   hideBackground = false
 }) => {
@@ -295,6 +299,7 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
           locationId={locationId} 
           animateScroll={animateExploration}
           speedMultiplier={speedMultiplier} 
+          weatherType={weatherType}
         />
       )}
       {/* 1. Happy Particles & Effects */}

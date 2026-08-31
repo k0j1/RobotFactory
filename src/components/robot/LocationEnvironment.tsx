@@ -1,22 +1,150 @@
 import React from 'react';
 import { motion } from 'motion/react';
+import { WeatherType } from '../../core/models';
 
 interface LocationEnvironmentProps {
   locationId?: string;
   speedMultiplier?: number; // Agilityによる速度倍率
   animateScroll?: boolean; // 背景の横スクロールアニメーション
+  weatherType?: WeatherType;
 }
 
 export const LocationEnvironment: React.FC<LocationEnvironmentProps> = ({ 
   locationId = 'default',
   speedMultiplier = 1.0,
-  animateScroll = true
+  animateScroll = true,
+  weatherType = 'CLEAR'
 }) => {
   // スピード倍率に応じたアニメーション時間調整（Agilityが高いほど早く流れる）
   const dur = (baseDuration: number) => Math.max(0.2, baseDuration / speedMultiplier);
   const scrollDuration = dur(1.5); // 背景の横スクロール周期
 
-  switch (locationId) {
+  // 共通の天候エフェクト（全ロケーションに重ねて表示）
+  const renderWeatherEffects = () => {
+    switch (weatherType) {
+      case 'ACID_RAIN':
+        return (
+          <div className="absolute inset-0 pointer-events-none z-10 bg-green-900/10">
+            {/* 酸性雨の雨粒 */}
+            {[...Array(15)].map((_, i) => (
+              <motion.div
+                key={`acid-rain-${i}`}
+                className="absolute bg-gradient-to-b from-green-300/40 via-lime-200/80 to-transparent"
+                style={{
+                  width: '1.5px',
+                  height: 15 + (i % 3) * 8,
+                  top: '-20%',
+                  left: `${(i * 7.5) % 105}%`,
+                  transform: 'rotate(10deg)'
+                }}
+                animate={{
+                  y: ['0%', '700%'],
+                  x: [0, 20],
+                  opacity: [0, 0.7, 0]
+                }}
+                transition={{
+                  duration: dur(0.5 + (i % 3) * 0.2),
+                  repeat: Infinity,
+                  delay: i * 0.08,
+                  ease: 'linear'
+                }}
+              />
+            ))}
+          </div>
+        );
+      case 'MAGNETIC_STORM':
+        return (
+          <div className="absolute inset-0 pointer-events-none z-10 bg-purple-900/10">
+            {/* 磁気嵐の稲妻・スパーク */}
+            {[...Array(8)].map((_, i) => (
+              <motion.div
+                key={`spark-${i}`}
+                className="absolute w-1 h-3 bg-purple-300 rounded-full blur-[1px]"
+                style={{
+                  top: `${10 + (i * 12) % 80}%`,
+                  left: `${5 + (i * 15) % 90}%`,
+                  transform: `rotate(${(i * 45) % 180}deg)`
+                }}
+                animate={{
+                  opacity: [0, 1, 0, 0.8, 0],
+                  scale: [0.5, 1.5, 0.5, 1.2, 0.5]
+                }}
+                transition={{
+                  duration: dur(0.4 + (i % 2) * 0.2),
+                  repeat: Infinity,
+                  delay: i * 0.3,
+                  repeatDelay: dur(1.5 + (i % 3)),
+                  ease: 'steps(3)'
+                }}
+              />
+            ))}
+            {/* 強風の筋 */}
+            {[...Array(5)].map((_, i) => (
+              <motion.div
+                key={`storm-wind-${i}`}
+                className="absolute h-0.5 rounded-full bg-purple-200/50"
+                style={{
+                  width: 60 + (i % 3) * 20,
+                  top: `${20 + (i * 15) % 60}%`,
+                  left: '-40%'
+                }}
+                animate={{
+                  x: ['0%', '600%'],
+                  opacity: [0, 0.8, 0]
+                }}
+                transition={{
+                  duration: dur(0.5 + (i % 2) * 0.2),
+                  repeat: Infinity,
+                  delay: i * 0.2,
+                  ease: 'linear'
+                }}
+              />
+            ))}
+          </div>
+        );
+      case 'HEAT_WAVE':
+        return (
+          <div className="absolute inset-0 pointer-events-none z-10">
+            {/* 熱波の揺らぎ（オーバーレイ） */}
+            <motion.div
+              className="absolute inset-0 bg-red-600/10 mix-blend-color-burn"
+              animate={{ opacity: [0.3, 0.6, 0.3] }}
+              transition={{ duration: dur(2.0), repeat: Infinity, ease: 'easeInOut' }}
+            />
+            {/* 立ち昇る熱気 */}
+            {[...Array(10)].map((_, i) => (
+              <motion.div
+                key={`heat-${i}`}
+                className="absolute rounded-full bg-orange-400/20 blur-[2px]"
+                style={{
+                  width: 10 + (i % 3) * 5,
+                  height: 15 + (i % 3) * 10,
+                  bottom: '-10%',
+                  left: `${(i * 10) % 95}%`
+                }}
+                animate={{
+                  y: ['0%', '-400%'],
+                  x: [0, (i % 2 === 0 ? 10 : -10), 0],
+                  opacity: [0, 0.5, 0]
+                }}
+                transition={{
+                  duration: dur(2.0 + (i % 4) * 0.5),
+                  repeat: Infinity,
+                  delay: i * 0.3,
+                  ease: 'easeIn'
+                }}
+              />
+            ))}
+          </div>
+        );
+      case 'CLEAR':
+      default:
+        return null;
+    }
+  };
+
+  const renderLocation = () => {
+    switch (locationId) {
     case 'loc1': {
       // 裏山のスクラップ場: 砂埃・鉄くずの微風・薄暗いスクラップの山
       const scrapSvg = encodeURIComponent(`
@@ -620,4 +748,12 @@ export const LocationEnvironment: React.FC<LocationEnvironmentProps> = ({
       );
     }
   }
+  };
+
+  return (
+    <>
+      {renderLocation()}
+      {renderWeatherEffects()}
+    </>
+  );
 };
