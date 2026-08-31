@@ -6,12 +6,17 @@ import { RobotVisual, PartVisual } from '../components/robot/RobotVisual';
 import { theme } from '../styles/theme';
 import { MATERIALS, STORAGE_UPGRADE_COST, MAX_STORAGE_LEVELS } from '../core/data';
 import { MaterialIcon } from '../components/ui/MaterialIcon';
+import { RobotRadarChart, STAT_CONFIGS } from '../components/robot/RobotRadarChart';
 
 export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> = ({ state, engine }) => {
   const [tab, setTab] = useState<'robots'|'parts'|'materials'>('robots');
   const [confirmRobotId, setConfirmRobotId] = useState<string | null>(null);
   const [confirmPartId, setConfirmPartId] = useState<string | null>(null);
   const [activeTooltipRobotId, setActiveTooltipRobotId] = useState<string | null>(null);
+  const [expandedRadarRobotId, setExpandedRadarRobotId] = useState<string | null>(null);
+  const [isCompareMode, setIsCompareMode] = useState(false);
+  const [compareRobotAId, setCompareRobotAId] = useState<string | null>(null);
+  const [compareRobotBId, setCompareRobotBId] = useState<string | null>(null);
   const [now, setNow] = useState(Date.now());
   
   const disassemblyRef = useRef<HTMLDivElement>(null);
@@ -240,6 +245,138 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
               </Button>
             </Card>
           )}
+
+          {/* 性能比較モード切替バー */}
+          {state.robots && state.robots.length > 1 && (
+            <div className="bg-stone-800 text-stone-100 p-3 rounded-xl border border-stone-700 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-base">📊</span>
+                  <span className="font-bold text-sm text-amber-400">ロボット性能比較</span>
+                  <span className="text-[10px] bg-stone-700 text-stone-300 px-1.5 py-0.5 rounded font-mono">VS MODE</span>
+                </div>
+                <p className="text-[11px] text-stone-400 mt-0.5">
+                  2体のロボットの能力（速度・探索力・攻撃力など）をレーダーチャートで重ねて比較します。
+                </p>
+              </div>
+              <Button
+                size="sm"
+                variant={isCompareMode ? 'primary' : 'secondary'}
+                onClick={() => {
+                  setIsCompareMode(!isCompareMode);
+                  if (!isCompareMode && state.robots.length >= 2) {
+                    setCompareRobotAId(state.robots[0].id);
+                    setCompareRobotBId(state.robots[1].id);
+                  }
+                }}
+                className="whitespace-nowrap"
+              >
+                {isCompareMode ? '✕ 比較モード終了' : '⚔️ 2体を比較する'}
+              </Button>
+            </div>
+          )}
+
+          {/* 性能比較パネル (isCompareMode === true) */}
+          {isCompareMode && state.robots && state.robots.length >= 2 && (
+            <Card className="bg-stone-900 text-stone-100 border-2 border-amber-500/80 p-4 shadow-xl">
+              <div className="flex justify-between items-center border-b border-stone-700 pb-2 mb-4">
+                <h3 className="font-bold text-amber-400 text-sm flex items-center gap-1.5">
+                  <span>⚔️</span> ロボット能力レーダー比較
+                </h3>
+                <span className="text-[11px] text-stone-400 font-mono">
+                  GREEN: 基準ロボット / BLUE: 比較ロボット
+                </span>
+              </div>
+
+              {/* 比較対象セレクター */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                {/* Robot A */}
+                <div className="bg-stone-950/80 p-3 rounded-lg border border-emerald-500/50">
+                  <label className="text-[11px] font-bold text-emerald-400 block mb-1.5 flex items-center gap-1">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" /> 基準ロボット (A)
+                  </label>
+                  <select
+                    value={compareRobotAId || ''}
+                    onChange={(e) => setCompareRobotAId(e.target.value)}
+                    className="w-full bg-stone-900 text-stone-100 border border-stone-700 rounded p-2 text-xs font-bold"
+                  >
+                    {state.robots.map(r => (
+                      <option key={`a-${r.id}`} value={r.id}>
+                        {r.name} (HP:{r.stats.hp} AGI:{r.stats.agility} POW:{r.stats.power})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Robot B */}
+                <div className="bg-stone-950/80 p-3 rounded-lg border border-blue-500/50">
+                  <label className="text-[11px] font-bold text-blue-400 block mb-1.5 flex items-center gap-1">
+                    <span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block" /> 比較対象ロボット (B)
+                  </label>
+                  <select
+                    value={compareRobotBId || ''}
+                    onChange={(e) => setCompareRobotBId(e.target.value)}
+                    className="w-full bg-stone-900 text-stone-100 border border-stone-700 rounded p-2 text-xs font-bold"
+                  >
+                    {state.robots.map(r => (
+                      <option key={`b-${r.id}`} value={r.id} disabled={r.id === compareRobotAId}>
+                        {r.name} (HP:{r.stats.hp} AGI:{r.stats.agility} POW:{r.stats.power})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* レーダーチャート & 比較ステータステーブル */}
+              {(() => {
+                const robotA = state.robots.find(r => r.id === compareRobotAId) || state.robots[0];
+                const robotB = state.robots.find(r => r.id === compareRobotBId) || state.robots[1];
+                if (!robotA || !robotB) return null;
+
+                return (
+                  <div className="flex flex-col md:flex-row items-center justify-center gap-6 bg-stone-950/60 p-4 rounded-xl border border-stone-800">
+                    <div className="shrink-0 flex flex-col items-center">
+                      <RobotRadarChart
+                        robot={robotA}
+                        compareRobot={robotB}
+                        size={210}
+                        themeStyle="cyber"
+                      />
+                    </div>
+
+                    <div className="flex-1 w-full space-y-2">
+                      <div className="grid grid-cols-3 text-[11px] font-bold border-b border-stone-700 pb-1 text-stone-400">
+                        <span>能力項目</span>
+                        <span className="text-emerald-400 text-center truncate">{robotA.name}</span>
+                        <span className="text-blue-400 text-center truncate">{robotB.name}</span>
+                      </div>
+
+                      {STAT_CONFIGS.map(stat => {
+                        const valA = robotA.stats[stat.key];
+                        const valB = robotB.stats[stat.key];
+                        const diff = valA - valB;
+
+                        return (
+                          <div key={stat.key} className="grid grid-cols-3 items-center text-xs font-mono py-1 border-b border-stone-800/60">
+                            <span className="text-stone-300 font-sans flex items-center gap-1">
+                              <span>{stat.icon}</span>
+                              <span className="font-bold">{stat.label}</span>
+                            </span>
+                            <span className={`text-center font-bold ${diff > 0 ? 'text-emerald-400' : diff < 0 ? 'text-stone-400' : 'text-stone-200'}`}>
+                              {valA} {diff > 0 && <span className="text-[10px] text-emerald-400">(+{diff})</span>}
+                            </span>
+                            <span className={`text-center font-bold ${diff < 0 ? 'text-blue-400' : diff > 0 ? 'text-stone-400' : 'text-stone-200'}`}>
+                              {valB} {diff < 0 && <span className="text-[10px] text-blue-400">(+{Math.abs(diff)})</span>}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+            </Card>
+          )}
           
           {state.robots?.length === 0 ? (
             <p className="text-center text-stone-500 py-8">ロボットがいません</p>
@@ -248,6 +385,7 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
               {state.robots.map((r, idx) => {
                 const isAutoDispatched = state.autoDispatches?.some(d => d.robotId === r.id);
                 const isQuesting = state.activeQuest?.dispatchedRobotId === r.id;
+                const isRadarExpanded = expandedRadarRobotId === r.id;
 
                 return (
                   <Card key={`${r.id}-${idx}`} className="relative p-4">
@@ -303,12 +441,25 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                           </div>
                         )}
 
-                        {/* 左側のスペースに配置したシェアボタン */}
-                        <div className="mt-2.5 flex items-center gap-2">
+                        {/* アクションボタン群 */}
+                        <div className="mt-2.5 flex items-center gap-2 flex-wrap">
+                          <button
+                            type="button"
+                            onClick={() => setExpandedRadarRobotId(isRadarExpanded ? null : r.id)}
+                            className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded border transition cursor-pointer ${
+                              isRadarExpanded
+                                ? 'bg-amber-600 text-white border-amber-700 shadow-xs'
+                                : 'bg-stone-100 hover:bg-stone-200 text-stone-700 border-stone-300'
+                            }`}
+                          >
+                            <span>📊</span>
+                            <span>{isRadarExpanded ? 'レーダー閉じる' : 'レーダー'}</span>
+                          </button>
+
                           <button
                             type="button"
                             onClick={() => handleShare(r.name)}
-                            className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded border border-stone-300 transition"
+                            className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded border border-stone-300 transition cursor-pointer"
                           >
                             <span>𝕏</span>
                             <span>シェア</span>
@@ -409,6 +560,52 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                         )}
                       </div>
                     </div>
+
+                    {/* レーダーチャート展開表示 */}
+                    {isRadarExpanded && (
+                      <div className="mt-3 pt-3 border-t border-stone-200 bg-stone-900 text-stone-100 p-3 rounded-lg animate-in fade-in zoom-in-95 duration-150">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-xs font-bold text-amber-400 flex items-center gap-1">
+                            <span>📊</span> {r.name} のステータス特性
+                          </span>
+                          <button
+                            onClick={() => setExpandedRadarRobotId(null)}
+                            className="text-stone-400 hover:text-white text-xs font-bold px-1.5 py-0.5 rounded hover:bg-stone-800"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                          <RobotRadarChart robot={r} size={160} themeStyle="cyber" />
+                          <div className="w-full grid grid-cols-2 gap-1.5 text-[10px] font-mono">
+                            <div className="bg-stone-950/80 p-1.5 rounded border border-stone-800">
+                              <span className="text-rose-400 font-bold block">❤️ HP: {r.stats.hp}</span>
+                              <span className="text-stone-400 text-[9px]">耐久力</span>
+                            </div>
+                            <div className="bg-stone-950/80 p-1.5 rounded border border-stone-800">
+                              <span className="text-orange-400 font-bold block">⚔️ POW: {r.stats.power}</span>
+                              <span className="text-stone-400 text-[9px]">攻撃力(ドロップ枠)</span>
+                            </div>
+                            <div className="bg-stone-950/80 p-1.5 rounded border border-stone-800">
+                              <span className="text-blue-400 font-bold block">🛡️ DEF: {r.stats.defense}</span>
+                              <span className="text-stone-400 text-[9px]">防御力</span>
+                            </div>
+                            <div className="bg-stone-950/80 p-1.5 rounded border border-stone-800">
+                              <span className="text-amber-400 font-bold block">⚡ AGI: {r.stats.agility}</span>
+                              <span className="text-stone-400 text-[9px]">速度(時間短縮)</span>
+                            </div>
+                            <div className="bg-stone-950/80 p-1.5 rounded border border-stone-800">
+                              <span className="text-emerald-400 font-bold block">🎯 DEX: {r.stats.dexterity}</span>
+                              <span className="text-stone-400 text-[9px]">探索力(レア発見)</span>
+                            </div>
+                            <div className="bg-stone-950/80 p-1.5 rounded border border-stone-800">
+                              <span className="text-purple-400 font-bold block">🔮 INT: {r.stats.intelligence}</span>
+                              <span className="text-stone-400 text-[9px]">解析力(幸運値)</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     <div className="mt-3 pt-2 border-t border-stone-200 flex flex-col gap-2">
                       {confirmRobotId === r.id ? (

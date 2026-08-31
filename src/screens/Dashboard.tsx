@@ -8,6 +8,7 @@ import { LOCATIONS, MATERIALS } from '../core/data';
 import { MaterialIcon } from '../components/ui/MaterialIcon';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
+import { RobotRadarChart } from '../components/robot/RobotRadarChart';
 
 const formatTime = (ms: number) => {
   if (ms <= 0) return '00:00';
@@ -155,50 +156,58 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
   return (
     <div className="space-y-4">
       {/* 統合ダッシュボードカード (Unified Workshop Dashboard) */}
-      <Card className="bg-white border-2 border-stone-200/90 shadow-sm p-3.5 sm:p-5">
-        {/* 上部ステータスバー (アイコン中心・直感的デザイン) */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-4">
-          <div className="bg-amber-50/80 border border-amber-200/80 rounded-xl p-2.5 flex items-center gap-2.5">
-            <span className="text-2xl p-1.5 bg-amber-100/90 rounded-lg shrink-0">💰</span>
-            <div className="min-w-0">
-              <span className="text-[10px] font-bold text-amber-800/80 uppercase tracking-wider block">所持金</span>
-              <span className="text-base sm:text-lg font-black text-amber-700 font-mono truncate block leading-tight">{state.gold} G</span>
+      <Card className="bg-stone-900 border-2 border-stone-700 shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)] p-3">
+        {/* 上部ステータスバー (コンパクトな計器盤デザイン) */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+          <div className="bg-stone-950 border border-stone-800 rounded flex items-center p-1.5 shadow-inner">
+            <div className="w-6 h-6 bg-amber-900/40 rounded flex items-center justify-center shrink-0 border border-amber-800/50 mr-2">
+              <span className="text-xs">💰</span>
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-[9px] font-bold text-amber-600/80 uppercase tracking-widest leading-none mb-0.5">GOLD</div>
+              <div className="text-sm font-black text-amber-500 font-mono truncate leading-none">{state.gold}</div>
             </div>
           </div>
 
-          <div className="bg-blue-50/80 border border-blue-200/80 rounded-xl p-2.5 flex items-center gap-2.5">
-            <span className="text-2xl p-1.5 bg-blue-100/90 rounded-lg shrink-0">🤖</span>
-            <div className="min-w-0">
-              <span className="text-[10px] font-bold text-blue-800/80 uppercase tracking-wider block">ロボット倉庫</span>
-              <span className="text-base sm:text-lg font-black text-blue-900 font-mono truncate block leading-tight">
-                {state.robots?.length} <span className="text-xs font-normal text-stone-500">/ {state.storageSize}</span>
-              </span>
+          <div className="bg-stone-950 border border-stone-800 rounded flex items-center p-1.5 shadow-inner">
+            <div className="w-6 h-6 bg-blue-900/40 rounded flex items-center justify-center shrink-0 border border-blue-800/50 mr-2">
+              <span className="text-xs">🤖</span>
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-[9px] font-bold text-blue-600/80 uppercase tracking-widest leading-none mb-0.5">ROBOTS</div>
+              <div className="text-sm font-black text-blue-400 font-mono truncate leading-none">
+                {state.robots?.length} <span className="text-[10px] text-stone-500">/ {state.storageSize}</span>
+              </div>
             </div>
           </div>
 
-          <div className="bg-emerald-50/80 border border-emerald-200/80 rounded-xl p-2.5 flex items-center gap-2.5">
-            <span className="text-2xl p-1.5 bg-emerald-100/90 rounded-lg shrink-0">🏆</span>
-            <div className="min-w-0">
-              <span className="text-[10px] font-bold text-emerald-800/80 uppercase tracking-wider block">納品実績</span>
-              <span className="text-base sm:text-lg font-black text-emerald-800 font-mono truncate block leading-tight">{state.deliveredRobotsCount} 体</span>
+          <div className="bg-stone-950 border border-stone-800 rounded flex items-center p-1.5 shadow-inner">
+            <div className="w-6 h-6 bg-emerald-900/40 rounded flex items-center justify-center shrink-0 border border-emerald-800/50 mr-2">
+              <span className="text-xs">🏆</span>
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-[9px] font-bold text-emerald-600/80 uppercase tracking-widest leading-none mb-0.5">DELIVERED</div>
+              <div className="text-sm font-black text-emerald-500 font-mono truncate leading-none">{state.deliveredRobotsCount}</div>
             </div>
           </div>
 
-          <div className="bg-purple-50/80 border border-purple-200/80 rounded-xl p-2.5 flex items-center gap-2.5">
-            <span className="text-2xl p-1.5 bg-purple-100/90 rounded-lg shrink-0">🔧</span>
-            <div className="min-w-0">
-              <span className="text-[10px] font-bold text-purple-800/80 uppercase tracking-wider block">修理キット</span>
-              <span className="text-base sm:text-lg font-black text-purple-800 font-mono truncate block leading-tight">{state.repairKits ?? 0} 個</span>
+          <div className="bg-stone-950 border border-stone-800 rounded flex items-center p-1.5 shadow-inner">
+            <div className="w-6 h-6 bg-purple-900/40 rounded flex items-center justify-center shrink-0 border border-purple-800/50 mr-2">
+              <span className="text-xs">🔧</span>
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-[9px] font-bold text-purple-600/80 uppercase tracking-widest leading-none mb-0.5">REPAIRS</div>
+              <div className="text-sm font-black text-purple-400 font-mono truncate leading-none">{state.repairKits ?? 0}</div>
             </div>
           </div>
         </div>
 
         {/* 出撃・探索ヘッダー */}
-        <div className="border-t border-stone-200/80 pt-3.5 mb-3 flex items-center justify-between flex-wrap gap-2">
+        <div className="border-t border-stone-800 pt-3 flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 font-black text-stone-800 text-sm sm:text-base">
-              <span>📡</span>
-              <span>出撃・探索状況</span>
+            <div className="flex items-center gap-1.5 font-bold text-stone-300 text-sm font-mono tracking-wider">
+              <span className="text-emerald-400">📡</span>
+              RADAR: ACTIVE
             </div>
             <span className="flex h-2 w-2 relative">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -208,12 +217,12 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
 
           <div className="flex items-center gap-1.5">
             {totalAutoPendingDrops > 0 && (
-              <Button size="sm" variant="success" onClick={handleClaimAllAutoDispatches} className="animate-pulse text-xs px-2.5 py-1 font-bold shadow-xs">
-                📦 全回収 ({totalAutoPendingDrops})
+              <Button size="sm" variant="success" onClick={handleClaimAllAutoDispatches} className="animate-pulse text-xs px-2.5 py-1 font-bold shadow-xs border border-emerald-600 bg-emerald-700/80">
+                📦 CLAIM ALL ({totalAutoPendingDrops})
               </Button>
             )}
-            <Button size="sm" onClick={() => setIsDispatchModalOpen(true)} className="text-xs px-2.5 py-1 bg-stone-800 hover:bg-stone-700 text-white font-bold">
-              ＋ 自動探索
+            <Button size="sm" onClick={() => setIsDispatchModalOpen(true)} className="text-xs px-2.5 py-1 bg-stone-800 hover:bg-stone-700 text-stone-300 border border-stone-600 font-mono">
+              + DEPLOY
             </Button>
           </div>
         </div>
@@ -585,24 +594,30 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
 
             {/* Selected Robot Preview in Modal */}
             {selectedModalRobot && (
-              <div className="mb-4 p-2.5 bg-white rounded border border-stone-200 flex items-center justify-between">
-                <div>
-                  <p className="font-bold text-xs text-stone-800">{selectedModalRobot.name}</p>
-                  <p className="text-[11px] text-stone-600 mt-0.5">
-                    パワー: <span className="font-bold">{selectedModalRobot.stats.power}</span> / 敏捷: <span className="font-bold text-blue-600">{selectedModalRobot.stats.agility}</span>
-                  </p>
-                  <p className="text-[10px] text-blue-600 font-mono mt-1">
-                    ⚡ 敏捷補正: -{selectedModalRobot.stats.agility}秒短縮 (周期: {Math.round(engine.getAutoDispatchIntervalMs(selectedModalRobot.id) / 60000 * 10) / 10}分)
-                  </p>
+              <div className="mb-4 p-3 bg-stone-900 text-stone-100 rounded-lg border border-stone-700">
+                <div className="flex items-center justify-between gap-3 mb-2">
+                  <div>
+                    <p className="font-bold text-xs text-amber-400">{selectedModalRobot.name}</p>
+                    <p className="text-[11px] text-stone-300 mt-0.5">
+                      パワー: <span className="font-bold text-orange-400">{selectedModalRobot.stats.power}</span> / 速度: <span className="font-bold text-yellow-400">{selectedModalRobot.stats.agility}</span>
+                    </p>
+                    <p className="text-[10px] text-emerald-400 font-mono mt-0.5">
+                      ⚡ 敏捷補正: -{selectedModalRobot.stats.agility}秒短縮 (周期: {Math.round(engine.getAutoDispatchIntervalMs(selectedModalRobot.id) / 60000 * 10) / 10}分)
+                    </p>
+                  </div>
+                  <div className="bg-stone-950 p-1 rounded border border-stone-700 shrink-0">
+                    <RobotVisual 
+                      robot={selectedModalRobot} 
+                      size={48} 
+                      locationId={selectedLocationId || 'loc1'}
+                      agility={selectedModalRobot.stats.agility}
+                      animateExploration={true}
+                    />
+                  </div>
                 </div>
-                <div className="bg-stone-900 p-1 rounded border border-stone-200 overflow-hidden">
-                  <RobotVisual 
-                    robot={selectedModalRobot} 
-                    size={48} 
-                    locationId={selectedLocationId || 'loc1'}
-                    agility={selectedModalRobot.stats.agility}
-                    animateExploration={true}
-                  />
+
+                <div className="pt-2 border-t border-stone-800 flex items-center justify-center">
+                  <RobotRadarChart robot={selectedModalRobot} size={150} themeStyle="cyber" />
                 </div>
               </div>
             )}

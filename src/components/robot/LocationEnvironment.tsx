@@ -74,7 +74,7 @@ export const LocationEnvironment: React.FC<LocationEnvironmentProps> = ({
                   repeat: Infinity,
                   delay: i * 0.3,
                   repeatDelay: dur(1.5 + (i % 3)),
-                  ease: 'steps(3)'
+                  ease: 'linear'
                 }}
               />
             ))}

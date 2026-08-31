@@ -52,7 +52,7 @@ export const AttributeEffects: React.FC<{ attributes: Attribute[] }> = ({ attrib
             style={{ originX: 0.5, originY: 0.5, x: '-50%', y: '-50%' }}
             initial={{ opacity: 0 }}
             animate={{ opacity: [0, 0.4, 0, 0.8, 0] }}
-            transition={{ duration: 0.5 + Math.random(), repeat: Infinity, ease: 'steps(3)', delay: Math.random() * 3 }}
+            transition={{ duration: 0.5 + Math.random(), repeat: Infinity, ease: 'linear', delay: Math.random() * 3 }}
           />
         ))
       )}
