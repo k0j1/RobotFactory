@@ -10,13 +10,31 @@ import { theme } from '../styles/theme';
 import { TutorialPopup } from '../components/ui/TutorialPopup';
 import { motion, AnimatePresence } from 'motion/react';
 
-export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine }> = ({ state, engine }) => {
+export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNavigate?: (v: string) => void }> = ({ state, engine, onNavigate }) => {
   const [selectedRobotId, setSelectedRobotId] = useState<string | null>(null);
   const [showDropsForLoc, setShowDropsForLoc] = useState<string | null>(null);
+  const [departingState, setDepartingState] = useState<{ isDeparting: boolean, locId: string | null }>({ isDeparting: false, locId: null });
 
   const handleStartQuest = (locId: string) => {
+    // 進行中のクエストがあるかチェック（二重送信防止）
+    if (state.activeQuest) return;
+    
     try {
-      engine.startQuest(locId, selectedRobotId || undefined);
+      // 事前にチェックするため、ダミーで実行できないか確認したいが、
+      // 実際はボタンがdisabledになるため基本成功する。
+      setDepartingState({ isDeparting: true, locId });
+      
+      setTimeout(() => {
+        try {
+          engine.startQuest(locId, selectedRobotId || undefined);
+          if (onNavigate) {
+            onNavigate('dashboard');
+          }
+        } catch (e: any) {
+          alert(e.message || '遠征の開始に失敗しました');
+          setDepartingState({ isDeparting: false, locId: null });
+        }
+      }, 1500); // 1.5秒のアニメーション
     } catch (e: any) {
       alert(e.message || '遠征の開始に失敗しました');
     }
@@ -25,7 +43,40 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
   const selectedRobot = state.robots.find(r => r.id === selectedRobotId);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
+      {departingState.isDeparting && (
+        <div className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-stone-900/60 backdrop-blur-sm`}>
+          <motion.div
+            initial={{ y: 200, scale: 0.5, opacity: 0 }}
+            animate={{ y: -500, scale: 1.5, opacity: [0, 1, 1, 0] }}
+            transition={{ duration: 1.5, ease: "easeInOut" }}
+            className="flex flex-col items-center justify-center drop-shadow-2xl"
+          >
+            {selectedRobot ? (
+              <div className="relative">
+                <RobotVisual robot={selectedRobot} size={120} />
+                <motion.div 
+                  animate={{ y: [0, 10, 0], opacity: [0.5, 1, 0.5] }}
+                  transition={{ repeat: Infinity, duration: 0.2 }}
+                  className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-4xl"
+                >
+                  🔥
+                </motion.div>
+              </div>
+            ) : (
+              <div className="text-8xl">🎒</div>
+            )}
+          </motion.div>
+          <motion.h2
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="mt-8 text-2xl font-bold text-white drop-shadow-md"
+          >
+            出発！
+          </motion.h2>
+        </div>
+      )}
+
 
       <TutorialPopup 
         tutorialId="quest_first_visit" 

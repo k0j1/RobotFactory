@@ -40,7 +40,7 @@ export default function App() {
   return (
     <Layout activeView={view} onNavigate={setView} interiorBg={interiorBg} state={state}>
       {view === 'dashboard' && <Dashboard state={state} engine={engine} onNavigate={setView} />}
-      {view === 'quest' && <QuestScreen state={state} engine={engine} />}
+      {view === 'quest' && <QuestScreen state={state} engine={engine} onNavigate={setView} />}
       {view === 'craft' && <CraftScreen state={state} engine={engine} />}
       {view === 'requests' && <RequestScreen state={state} engine={engine} />}
       {view === 'storage' && <StorageScreen state={state} engine={engine} />}
