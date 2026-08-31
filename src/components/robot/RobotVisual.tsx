@@ -290,9 +290,10 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
       style={hideBackground ? { width: containerWidth || size, height: containerHeight || size } : bgStyle}
     >
       {/* エリア環境・天候背景 (自動探索中) */}
-      {animateExploration && (
+      {locationId && (
         <LocationEnvironment 
           locationId={locationId} 
+          animateScroll={animateExploration}
           speedMultiplier={speedMultiplier} 
         />
       )}

@@ -1,14 +1,18 @@
 import React, { useState } from 'react';
 import { GameState } from '../core/models';
 import { GameEngine } from '../core/GameEngine';
-import { Card, Button } from '../components/ui/core';
+import { Card, Button, Badge } from '../components/ui/core';
 import { RobotVisual } from '../components/robot/RobotVisual';
-import { LOCATIONS } from '../core/data';
+import { LOCATIONS, MATERIALS } from '../core/data';
+import { MaterialIcon } from '../components/ui/MaterialIcon';
+import { LocationEnvironment } from '../components/robot/LocationEnvironment';
 import { theme } from '../styles/theme';
 import { TutorialPopup } from '../components/ui/TutorialPopup';
+import { motion, AnimatePresence } from 'motion/react';
 
 export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine }> = ({ state, engine }) => {
   const [selectedRobotId, setSelectedRobotId] = useState<string | null>(null);
+  const [showDropsForLoc, setShowDropsForLoc] = useState<string | null>(null);
 
   const handleStartQuest = (locId: string) => {
     try {
@@ -114,47 +118,90 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
             '⚡ デジタル粒子';
 
           return (
-            <Card key={loc.id} className={!isUnlocked ? 'opacity-75 bg-stone-200' : ''}>
-              <div className="flex justify-between items-start mb-1">
-                <h3 className={theme.typography.h3}>{loc.name}</h3>
-                <span className="text-[11px] bg-stone-100 text-stone-700 px-2 py-0.5 rounded-full font-medium border border-stone-200">
-                  {weatherTag}
-                </span>
+            <Card key={loc.id} className={`relative overflow-hidden ${!isUnlocked ? 'opacity-75' : ''}`}>
+              {/* 自動探索時の背景を背面に表示 */}
+              <div className="absolute inset-0 z-0 pointer-events-none">
+                <LocationEnvironment locationId={loc.id} animateScroll={true} speedMultiplier={0.2} />
               </div>
-              
-              <div className="flex items-center gap-2 mb-2">
-                <p className={`${theme.typography.small} text-stone-500`}>
-                  所要時間: <span className={selectedRobot && agiReductionSec > 0 ? "line-through text-stone-400" : "font-mono font-bold text-stone-700"}>{baseSec}秒</span>
-                </p>
-                {selectedRobot && agiReductionSec > 0 && (
-                  <span className="text-xs font-mono font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
-                    ➔ {finalSec}秒 (-{Math.round(agiReductionSec)}秒短縮⚡)
-                  </span>
+              {/* 薄い暗幕をかけて文字を読みやすくする */}
+              <div className="absolute inset-0 z-0 pointer-events-none bg-stone-900/40 backdrop-blur-[2px]"></div>
+
+              <div className="relative z-10">
+                <div className="flex justify-between items-start mb-2">
+                  <h3 className="text-xl font-bold text-white drop-shadow-md">{loc.name}</h3>
+                  <button 
+                    onClick={() => setShowDropsForLoc(showDropsForLoc === loc.id ? null : loc.id)}
+                    className="text-[11px] bg-stone-900/80 hover:bg-stone-800 text-stone-100 px-2.5 py-1 rounded-full font-bold border border-stone-600 shadow-md transition-colors flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <span>{weatherTag}</span>
+                    <span className="text-[10px] text-stone-400">{showDropsForLoc === loc.id ? '▲ 閉じる' : '▼ 報酬'}</span>
+                  </button>
+                </div>
+                
+                <div className="flex items-center gap-2 mb-3">
+                  <p className={`${theme.typography.small} text-stone-200 bg-stone-900/60 px-2 py-0.5 rounded font-medium border border-stone-700/50`}>
+                    所要時間: <span className={selectedRobot && agiReductionSec > 0 ? "line-through text-stone-400" : "font-mono font-bold text-white"}>{baseSec}秒</span>
+                  </p>
+                  {selectedRobot && agiReductionSec > 0 && (
+                    <span className="text-xs font-mono font-bold text-blue-300 bg-blue-900/60 px-2 py-0.5 rounded border border-blue-700/50 shadow-sm">
+                      ➔ {finalSec}秒 (-{Math.round(agiReductionSec)}秒短縮⚡)
+                    </span>
+                  )}
+                </div>
+
+                <p className="mb-4 text-sm text-stone-100 bg-stone-900/50 p-2 rounded border border-stone-700/50 drop-shadow">{loc.description}</p>
+
+                <AnimatePresence>
+                  {showDropsForLoc === loc.id && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden mb-4"
+                    >
+                      <div className="p-2.5 bg-stone-900/80 border border-stone-600/80 rounded-lg shadow-inner">
+                        <div className="text-[10px] text-stone-400 mb-1.5 font-bold">獲得可能な素材一覧</div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {loc.drops.map((dropId, i) => {
+                            const mat = MATERIALS.find(m => m.id === dropId);
+                            if (!mat) return null;
+                            const rarityStyle = theme.rarity[mat.rarity] || theme.rarity[1];
+                            return (
+                              <Badge key={`${dropId}-${i}`} className={`${rarityStyle.bg} ${rarityStyle.text} border ${rarityStyle.border} px-1.5 py-0.5 text-[10px] flex items-center gap-1 shadow-xs`}>
+                                <MaterialIcon materialId={mat.id} size={12} />
+                                <span>{mat.name}</span>
+                                <span className={rarityStyle.starColor}>{rarityStyle.stars}</span>
+                              </Badge>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {isUnlocked ? (
+                  <Button 
+                    className="w-full shadow-lg border border-stone-700/50 bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm" 
+                    disabled={!!state.activeQuest}
+                    onClick={() => handleStartQuest(loc.id)}
+                  >
+                    ここへ遠征する
+                  </Button>
+                ) : (
+                  <div className="flex items-center justify-between bg-stone-900/80 p-2.5 rounded-lg border border-amber-500/50 shadow-inner">
+                    <span className="font-bold text-amber-400">解放費用: {loc.unlockCostG} G</span>
+                    <Button 
+                      variant="secondary" 
+                      disabled={!canUnlock}
+                      onClick={() => engine.unlockLocation(loc.id)}
+                      className="bg-amber-600 hover:bg-amber-500 text-white border-none"
+                    >
+                      解放する
+                    </Button>
+                  </div>
                 )}
               </div>
-
-              <p className="mb-4 text-sm">{loc.description}</p>
-
-              {isUnlocked ? (
-                <Button 
-                  className="w-full" 
-                  disabled={!!state.activeQuest}
-                  onClick={() => handleStartQuest(loc.id)}
-                >
-                  ここへ遠征する
-                </Button>
-              ) : (
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-amber-600">解放費用: {loc.unlockCostG} G</span>
-                  <Button 
-                    variant="secondary" 
-                    disabled={!canUnlock}
-                    onClick={() => engine.unlockLocation(loc.id)}
-                  >
-                    解放する
-                  </Button>
-                </div>
-              )}
             </Card>
           );
         })}

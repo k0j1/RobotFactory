@@ -69,16 +69,12 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
     setBattleResult(result);
     if (result === 'win') {
       if (requiresOpponent && activeOpponent) {
-        (engine as any).addGold(activeOpponent.reward);
-        const kits = activeOpponent.id === 'op4' ? 5 : activeOpponent.id === 'op3' ? 3 : activeOpponent.id === 'op2' ? 2 : 1;
-        (engine as any).addRepairKits(kits);
+        (engine as any).addRepairKits(activeOpponent.rewardKits);
       } else if (selectedGame === 'danmaku') {
-        // Difficulty-based reward for danmaku survival
-        (engine as any).addGold(activeDanmakuDiff.rewardGold);
+        // Difficulty-based reward for danmaku survival (repair kits only)
         (engine as any).addRepairKits(activeDanmakuDiff.rewardKits);
       } else if (!requiresOpponent) {
-        // Flat reward for solo space shooter (if any other solo games added in future)
-        (engine as any).addGold(50);
+        // Flat reward for solo games (repair kits only)
         (engine as any).addRepairKits(1);
       }
     }
@@ -221,8 +217,8 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                             {diff.subLabel}
                           </span>
                         </div>
-                        <div className="text-right font-mono text-xs text-amber-700 font-bold">
-                          +{diff.rewardGold}G / 修理×{diff.rewardKits}
+                        <div className="text-right font-mono text-xs text-blue-700 font-bold">
+                          🔧 修理キット×{diff.rewardKits}
                         </div>
                       </div>
                       <div className="text-[11px] text-stone-500 leading-tight">
@@ -260,7 +256,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                         <div className="text-[10px] text-stone-400 mt-0.5">{o.org}</div>
                       </div>
                       <div className="text-right">
-                        <span className="text-xs text-amber-700 font-bold block">報酬: {o.reward} G</span>
+                        <span className="text-xs text-blue-700 font-bold block">報酬: 🔧×{o.rewardKits}</span>
                       </div>
                     </button>
                   ))}
@@ -355,29 +351,26 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                 </div>
 
                 {battleResult === 'win' && requiresOpponent && (
-                  <div className="bg-amber-50 border border-amber-200 px-6 py-2.5 rounded-xl shadow-sm">
-                    <p className="text-amber-800 font-bold text-lg flex items-center justify-center gap-2">
-                      <span>💰</span>
-                      <span>獲得報酬: +{activeOpponent?.reward} G</span>
+                  <div className="bg-blue-50 border border-blue-200 px-6 py-2.5 rounded-xl shadow-sm">
+                    <p className="text-blue-900 font-bold text-lg flex items-center justify-center gap-2">
+                      <span>🔧</span>
+                      <span>獲得報酬: 修理キット +{activeOpponent?.rewardKits}個</span>
                     </p>
                   </div>
                 )}
                 {battleResult === 'win' && !requiresOpponent && selectedGame === 'danmaku' && (
-                  <div className="bg-amber-50 border border-amber-200 px-6 py-2.5 rounded-xl shadow-sm text-center">
-                    <p className="text-amber-800 font-bold text-lg flex items-center justify-center gap-2">
-                      <span>💰</span>
-                      <span>クリア報酬 ({activeDanmakuDiff.label}): +{activeDanmakuDiff.rewardGold} G</span>
-                    </p>
-                    <p className="text-xs text-amber-700 font-semibold mt-0.5">
-                      🔧 修理キット +{activeDanmakuDiff.rewardKits}個
+                  <div className="bg-blue-50 border border-blue-200 px-6 py-2.5 rounded-xl shadow-sm text-center">
+                    <p className="text-blue-900 font-bold text-lg flex items-center justify-center gap-2">
+                      <span>🔧</span>
+                      <span>クリア報酬 ({activeDanmakuDiff.label}): 修理キット +{activeDanmakuDiff.rewardKits}個</span>
                     </p>
                   </div>
                 )}
                 {battleResult === 'win' && !requiresOpponent && selectedGame !== 'danmaku' && (
-                  <div className="bg-amber-50 border border-amber-200 px-6 py-2.5 rounded-xl shadow-sm">
-                    <p className="text-amber-800 font-bold text-lg flex items-center justify-center gap-2">
-                      <span>💰</span>
-                      <span>クリア報酬: +50 G</span>
+                  <div className="bg-blue-50 border border-blue-200 px-6 py-2.5 rounded-xl shadow-sm">
+                    <p className="text-blue-900 font-bold text-lg flex items-center justify-center gap-2">
+                      <span>🔧</span>
+                      <span>クリア報酬: 修理キット +1個</span>
                     </p>
                   </div>
                 )}
