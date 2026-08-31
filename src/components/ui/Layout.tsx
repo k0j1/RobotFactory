@@ -58,7 +58,13 @@ export const Layout: React.FC<{
       <header className={`${theme.colors.secondary} ${theme.colors.textLight} ${theme.spacing.sm} sticky top-0 ${theme.zIndex.header} ${theme.shadow.sm}`}>
         <div className="max-w-4xl mx-auto flex justify-between items-center">
           <h1 className={theme.typography.h2}>ポンコツロボット工房</h1>
-          <div className="text-sm">v1.0.112</div>
+          <div className="flex items-center gap-1.5 bg-stone-900/80 border border-amber-500/50 px-2.5 py-1 rounded-full shadow-xs">
+            <span className="text-amber-400 text-sm">💰</span>
+            <span className="font-mono font-bold text-amber-300 text-sm tracking-wide">
+              {state?.gold ?? 0}
+            </span>
+            <span className="text-[11px] font-bold text-amber-500">G</span>
+          </div>
         </div>
       </header>
 

@@ -371,13 +371,24 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                         <span className="text-[10px] text-red-600 font-mono bg-red-50 border border-red-200 px-1 rounded">
                           ❤️ {dRobot?.currentHp ?? 12}/{dRobot?.maxHp ?? 12}
                         </span>
+                        {isResting && (
+                          <span className="text-[10px] bg-rose-600 text-white font-bold px-1.5 py-0.2 rounded animate-pulse">
+                            HP切れ
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center gap-2 mt-1 text-[10px] text-stone-500 font-mono">
-                        <span>⏳ 次回: {formatTime(remain)}</span>
-                        {dRobot && dRobot.stats.agility > 0 && (
-                          <span className="text-blue-600 bg-blue-50 px-1 rounded border border-blue-200">
-                            ⚡ -{dRobot.stats.agility}s
-                          </span>
+                        {isResting ? (
+                          <span className="text-rose-600 font-bold">⚠️ HP切れのため探索中断中（帰還させて修理してください）</span>
+                        ) : (
+                          <>
+                            <span>⏳ 次回: {formatTime(remain)}</span>
+                            {dRobot && dRobot.stats.agility > 0 && (
+                              <span className="text-blue-600 bg-blue-50 px-1 rounded border border-blue-200">
+                                ⚡ -{dRobot.stats.agility}s
+                              </span>
+                            )}
+                          </>
                         )}
                       </div>
                     </div>
@@ -392,14 +403,23 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                         >
                           📦 回収 ({pending})
                         </Button>
+                      ) : isResting ? (
+                        <Button 
+                          size="sm" 
+                          variant="danger" 
+                          disabled={true}
+                          className="text-xs px-2 py-1 opacity-90 bg-rose-100 text-rose-700 border border-rose-300 font-bold"
+                        >
+                          💔 HP切れ
+                        </Button>
                       ) : (
                         <Button 
                           size="sm" 
                           variant="secondary" 
                           disabled={true}
-                          className="text-xs px-2 py-1 opacity-60"
+                          className="text-xs px-2 py-1 opacity-80 bg-stone-100 text-stone-600 border border-stone-300 font-bold"
                         >
-                          待機中
+                          🔍 探索中
                         </Button>
                       )}
                       <Button size="sm" variant="danger" onClick={() => handleCancelAutoDispatch(d.id)} className="text-xs px-2 py-1">
