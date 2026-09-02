@@ -174,46 +174,46 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
         <div className="absolute inset-0 pointer-events-none opacity-[0.03] z-0 bg-[linear-gradient(45deg,transparent_25%,rgba(0,0,0,1)_25%,rgba(0,0,0,1)_50%,transparent_50%,transparent_75%,rgba(0,0,0,1)_75%,rgba(0,0,0,1)_100%)] bg-[length:20px_20px]"></div>
         <div className="absolute top-0 right-0 p-2 opacity-10 pointer-events-none z-0"><Gi.GiSpanner size={80} className="text-stone-400" /></div>
         <div className="relative z-10">
-        {/* 上部ステータスバー (コンパクトな明るい計器盤デザイン) */}
+        {/* 上部ステータスバー (コンパクトな明るい計器盤デザイン・枠線をくっきり視認性向上) */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
-          <div className="bg-white border border-stone-200 rounded flex items-center p-1.5 shadow-xs">
-            <div className="w-6 h-6 bg-amber-100 rounded flex items-center justify-center shrink-0 border border-amber-200 mr-2">
+          <div className="bg-white border-2 border-stone-300 rounded-lg flex items-center p-2 shadow-xs">
+            <div className="w-7 h-7 bg-amber-100 rounded-md flex items-center justify-center shrink-0 border border-amber-300 mr-2">
               <span className="text-xs">💰</span>
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-[9px] font-bold text-amber-800/80 uppercase tracking-widest leading-none mb-0.5">GOLD</div>
+              <div className="text-[9px] font-bold text-amber-900/80 uppercase tracking-widest leading-none mb-0.5">GOLD</div>
               <div className="text-sm font-black text-amber-600 font-mono truncate leading-none">{state.gold}</div>
             </div>
           </div>
 
-          <div className="bg-white border border-stone-200 rounded flex items-center p-1.5 shadow-xs">
-            <div className="w-6 h-6 bg-blue-100 rounded flex items-center justify-center shrink-0 border border-blue-200 mr-2">
+          <div className="bg-white border-2 border-stone-300 rounded-lg flex items-center p-2 shadow-xs">
+            <div className="w-7 h-7 bg-blue-100 rounded-md flex items-center justify-center shrink-0 border border-blue-300 mr-2">
               <span className="text-xs">🤖</span>
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-[9px] font-bold text-blue-800/80 uppercase tracking-widest leading-none mb-0.5">ROBOTS</div>
+              <div className="text-[9px] font-bold text-blue-900/80 uppercase tracking-widest leading-none mb-0.5">ROBOTS</div>
               <div className="text-sm font-black text-blue-600 font-mono truncate leading-none">
-                {state.robots?.length} <span className="text-[10px] text-stone-400">/ {state.storageSize}</span>
+                {state.robots?.length} <span className="text-[10px] text-stone-500 font-normal">/ {state.storageSize}</span>
               </div>
             </div>
           </div>
 
-          <div className="bg-white border border-stone-200 rounded flex items-center p-1.5 shadow-xs">
-            <div className="w-6 h-6 bg-emerald-100 rounded flex items-center justify-center shrink-0 border border-emerald-200 mr-2">
+          <div className="bg-white border-2 border-stone-300 rounded-lg flex items-center p-2 shadow-xs">
+            <div className="w-7 h-7 bg-emerald-100 rounded-md flex items-center justify-center shrink-0 border border-emerald-300 mr-2">
               <span className="text-xs">🏆</span>
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-[9px] font-bold text-emerald-800/80 tracking-widest leading-none mb-0.5">納品数</div>
+              <div className="text-[9px] font-bold text-emerald-900/80 tracking-widest leading-none mb-0.5">納品数</div>
               <div className="text-sm font-black text-emerald-600 font-mono truncate leading-none">{state.deliveredRobotsCount}</div>
             </div>
           </div>
 
-          <div className="bg-white border border-stone-200 rounded flex items-center p-1.5 shadow-xs">
-            <div className="w-6 h-6 bg-purple-100 rounded flex items-center justify-center shrink-0 border border-purple-200 mr-2">
+          <div className="bg-white border-2 border-stone-300 rounded-lg flex items-center p-2 shadow-xs">
+            <div className="w-7 h-7 bg-purple-100 rounded-md flex items-center justify-center shrink-0 border border-purple-300 mr-2">
               <span className="text-xs"><Gi.GiSpanner className="inline mr-1 text-purple-700" /></span>
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-[9px] font-bold text-purple-800/80 uppercase tracking-widest leading-none mb-0.5">REPAIRS</div>
+              <div className="text-[9px] font-bold text-purple-900/80 uppercase tracking-widest leading-none mb-0.5">REPAIRS</div>
               <div className="text-sm font-black text-purple-600 font-mono truncate leading-none">{state.repairKits ?? 0}</div>
             </div>
           </div>
@@ -221,10 +221,10 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
 
         {/* まとめて回収バー (遠征の上に配置) */}
         {totalAutoPendingDrops > 0 && (
-          <div className="border-t border-stone-200 pt-3 pb-1 flex items-center justify-between bg-amber-50/80 border border-amber-300 p-2 rounded-xl mb-3">
+          <div className="border-t border-stone-300 pt-3 pb-1 flex items-center justify-between bg-amber-50/90 border-2 border-amber-400 p-2.5 rounded-xl mb-3 shadow-xs">
             <div className="flex items-center gap-2">
               <span className="text-sm">📦</span>
-              <span className="text-xs font-bold text-amber-900">自動探索で獲得した素材があります</span>
+              <span className="text-xs font-bold text-amber-950">自動探索で獲得した素材があります</span>
             </div>
             <Button size="sm" variant="success" onClick={handleClaimAllAutoDispatches} className="animate-bounce text-xs px-3 py-1 font-bold shadow-xs bg-emerald-600 hover:bg-emerald-500 text-white">
               📦 まとめて回収 ({totalAutoPendingDrops})
@@ -233,7 +233,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
         )}
 
         {/* 通常遠征ヘッダー */}
-        <div className="border-t border-stone-200 pt-3 mb-2 flex items-center justify-between flex-wrap gap-2">
+        <div className="border-t border-stone-300 pt-3 mb-2 flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1.5 font-bold text-stone-800 text-sm tracking-wider">
               <Gi.GiWalkingScout className="text-amber-600" size={18} />
@@ -244,10 +244,10 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
 
         <div className="mb-4">
           {state.activeQuest ? (
-            <div className={`p-3 rounded-xl border transition-all ${questDone ? 'bg-emerald-50/70 border-emerald-300 ring-2 ring-emerald-200' : 'bg-stone-50/90 border-amber-200'}`}>
+            <div className={`p-3 rounded-xl border-2 transition-all shadow-xs ${questDone ? 'bg-emerald-50/80 border-emerald-400 ring-2 ring-emerald-200' : 'bg-white border-amber-300'}`}>
               <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="p-1 bg-amber-100/80 rounded-lg border border-amber-200 shrink-0">
+                  <div className="p-1 bg-amber-100 rounded-lg border border-amber-300 shrink-0">
                     {questRobot ? (
                       <RobotVisual robot={questRobot} size={36} />
                     ) : (
@@ -256,7 +256,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] bg-amber-200 text-amber-900 font-bold px-1.5 py-0.2 rounded shrink-0">通常遠征</span>
+                      <span className="text-[10px] bg-amber-200 text-amber-900 font-bold px-1.5 py-0.2 rounded shrink-0 border border-amber-300">通常遠征</span>
                       <span className="font-bold text-xs sm:text-sm text-stone-800 truncate">📍 {activeQuestLoc?.name}</span>
                       {questDone && (
                         <span className="text-[10px] bg-amber-500 text-white font-bold px-1.5 py-0.2 rounded-full animate-bounce shrink-0">
@@ -264,8 +264,8 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                         </span>
                       )}
                     </div>
-                    <p className="text-[11px] text-stone-500 truncate mt-0.5">
-                      同行: <span className="font-bold text-stone-700">{questRobot ? questRobot.name : 'なし'}</span>
+                    <p className="text-[11px] text-stone-600 truncate mt-0.5">
+                      同行: <span className="font-bold text-stone-800">{questRobot ? questRobot.name : 'なし'}</span>
                     </p>
                   </div>
                 </div>
@@ -276,8 +276,8 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                     </Button>
                   ) : (
                     <div className="text-right">
-                      <span className="text-[10px] text-stone-400 block font-mono">残り時間</span>
-                      <span className="text-xs sm:text-sm font-bold font-mono text-amber-700 bg-amber-100/60 px-2 py-0.5 rounded border border-amber-200">
+                      <span className="text-[10px] text-stone-500 block font-mono">残り時間</span>
+                      <span className="text-xs sm:text-sm font-bold font-mono text-amber-800 bg-amber-100 px-2 py-0.5 rounded border border-amber-300">
                         ⏳ {formatTime(timeRemaining)}
                       </span>
                     </div>
@@ -286,12 +286,12 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
               </div>
             </div>
           ) : (
-            <div className="p-2.5 bg-stone-50/60 rounded-xl border border-stone-200 flex items-center justify-between gap-2">
+            <div className="p-3 bg-white rounded-xl border-2 border-stone-300 shadow-xs flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <span className="text-lg"><Gi.GiWalkingScout className="text-stone-400" /></span>
-                <span className="text-xs text-stone-600 font-bold">通常遠征: 未出撃</span>
+                <span className="text-lg"><Gi.GiWalkingScout className="text-amber-700" /></span>
+                <span className="text-xs text-stone-700 font-bold">通常遠征: 未出撃</span>
               </div>
-              <Button size="sm" onClick={() => onNavigate('quest')} className="text-xs px-2.5 py-1 bg-amber-600 hover:bg-amber-500 text-white font-bold shadow-sm">
+              <Button size="sm" onClick={() => onNavigate('quest')} className="text-xs px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white font-bold shadow-xs border border-amber-600">
                 遠征へ向かう →
               </Button>
             </div>
@@ -299,7 +299,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
         </div>
 
         {/* 自動探索ヘッダー */}
-        <div className="border-t border-stone-200 pt-3 mb-2 flex items-center justify-between flex-wrap gap-2">
+        <div className="border-t border-stone-300 pt-3 mb-2 flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1.5 font-bold text-stone-800 text-sm tracking-wider">
               <Gi.GiFactory className="text-amber-600" size={18} />
@@ -313,17 +313,17 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
             )}
           </div>
           <div className="flex items-center gap-1.5">
-            <Button size="sm" onClick={() => setIsDispatchModalOpen(true)} className="text-xs px-2.5 py-1 bg-amber-600 hover:bg-amber-500 text-white border border-amber-500 font-bold shadow-sm">
+            <Button size="sm" onClick={() => setIsDispatchModalOpen(true)} className="text-xs px-2.5 py-1 bg-amber-600 hover:bg-amber-500 text-white border border-amber-600 font-bold shadow-xs">
               <Gi.GiWalkingScout className="inline mr-1" /> 派遣する
             </Button>
           </div>
         </div>
 
-        <div className="space-y-2.5">
+        <div className="space-y-3">
           {(!state.autoDispatches || state.autoDispatches.length === 0) && (
-            <div className="p-4 bg-stone-50/80 rounded-xl border border-dashed border-stone-300 text-center flex flex-col items-center justify-center gap-2">
+            <div className="p-4 bg-white rounded-xl border-2 border-dashed border-stone-300 text-center flex flex-col items-center justify-center gap-2 shadow-xs">
               <Gi.GiSleepy className="text-3xl text-stone-400" />
-              <p className="text-xs text-stone-500 font-bold">現在、自動探索中のロボットはいません</p>
+              <p className="text-xs text-stone-600 font-bold">現在、自動探索中のロボットはいません</p>
             </div>
           )}
           {/* 自動探索ロボット一覧 (Auto Dispatches) */}
@@ -339,10 +339,10 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
               const weather = dLoc ? engine.getLocationWeather(dLoc.id, Date.now()) : null;
 
               return (
-                <div key={d.id} className={`p-3 rounded-xl border transition-all ${isResting ? 'bg-red-50/50 border-red-300 ring-1 ring-red-200' : pending > 0 ? 'bg-emerald-50/50 border-emerald-300 ring-1 ring-emerald-200' : 'bg-stone-50/90 border-stone-200'}`}>
+                <div key={d.id} className={`p-3 rounded-xl border-2 shadow-xs transition-all ${isResting ? 'bg-red-50/80 border-red-300 ring-1 ring-red-200' : pending > 0 ? 'bg-emerald-50/80 border-emerald-400 ring-1 ring-emerald-200' : 'bg-white border-stone-300'}`}>
                   {/* ロボット探索アニメーション（コンパクト） */}
                   {dRobot && (
-                    <div className="w-full bg-stone-900 rounded-lg overflow-hidden border border-stone-300 relative mb-2">
+                    <div className="w-full bg-stone-900 rounded-lg overflow-hidden border-2 border-stone-300 relative mb-2">
                       <RobotVisual 
                         robot={dRobot} 
                         size={40} 
@@ -587,11 +587,11 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
       <div className="grid grid-cols-2 gap-2.5">
         <button
           onClick={() => onNavigate('encyclopedia')}
-          className="flex items-center gap-2 p-2.5 bg-stone-100/90 hover:bg-stone-200 border border-stone-300 rounded-lg text-stone-700 transition shadow-2xs group text-left cursor-pointer"
+          className="flex items-center gap-2 p-2.5 bg-white hover:bg-stone-100 border-2 border-stone-300 rounded-xl text-stone-700 transition shadow-xs group text-left cursor-pointer"
         >
-          <span className="text-xl p-1 bg-white rounded-md border border-stone-200 shadow-2xs group-hover:scale-110 transition-transform">📖</span>
+          <span className="text-xl p-1.5 bg-stone-100 rounded-lg border border-stone-300 shadow-2xs group-hover:scale-110 transition-transform">📖</span>
           <div className="min-w-0">
-            <div className="text-xs sm:text-sm font-bold text-stone-800">
+            <div className="text-xs sm:text-sm font-bold text-stone-900">
               図鑑・実績
             </div>
             <div className="text-[10px] text-stone-500 truncate">納品履歴 / パーツ詳細</div>
@@ -600,11 +600,11 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
 
         <button
           onClick={() => onNavigate('litepaper')}
-          className="flex items-center gap-2 p-2.5 bg-stone-100/90 hover:bg-stone-200 border border-stone-300 rounded-lg text-stone-700 transition shadow-2xs group text-left cursor-pointer"
+          className="flex items-center gap-2 p-2.5 bg-white hover:bg-stone-100 border-2 border-stone-300 rounded-xl text-stone-700 transition shadow-xs group text-left cursor-pointer"
         >
-          <span className="text-xl p-1 bg-white rounded-md border border-stone-200 shadow-2xs group-hover:scale-110 transition-transform">📜</span>
+          <span className="text-xl p-1.5 bg-stone-100 rounded-lg border border-stone-300 shadow-2xs group-hover:scale-110 transition-transform">📜</span>
           <div className="min-w-0">
-            <div className="text-xs sm:text-sm font-bold text-stone-800">
+            <div className="text-xs sm:text-sm font-bold text-stone-900">
               仕様書
             </div>
             <div className="text-[10px] text-stone-500 truncate">工房ルール / ガイド</div>

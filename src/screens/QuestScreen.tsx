@@ -178,9 +178,9 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
 
         {/* 横スライド案内バー */}
         <div className="flex items-center justify-between text-[10px] text-stone-500 font-bold px-1 mb-1.5 bg-amber-100/60 py-0.5 rounded border border-amber-200/60">
-          <span>◀ スライドで一覧表示</span>
+          <span>◀ スライド</span>
           <span className="text-amber-800">全 {state.robots.length} 体</span>
-          <span>スライドで一覧表示 ▶</span>
+          <span>スライド ▶</span>
         </div>
         
         <div className="flex overflow-x-auto gap-2.5 pb-2 pt-1 snap-x scroll-smooth relative z-10 px-0.5">
@@ -193,8 +193,10 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
                 : 'bg-white border-stone-200 hover:border-amber-300 opacity-80 hover:opacity-100 shadow-2xs'
             }`}
           >
-            <span className="text-2xl mb-1 opacity-60 grayscale"><Gi.GiWalkingScout className="mx-auto text-stone-600" /></span>
-            <span className={`font-bold text-[10px] truncate max-w-full px-1 ${selectedRobotId === null ? 'text-amber-900 font-black' : 'text-stone-600'}`}>同伴なし</span>
+            <span className="text-2xl mb-1 flex items-center justify-center">
+              <Gi.GiWalk size={26} className={selectedRobotId === null ? "text-amber-800" : "text-stone-600"} />
+            </span>
+            <span className={`font-bold text-[10px] truncate max-w-full px-1 ${selectedRobotId === null ? 'text-amber-900 font-black' : 'text-stone-600'}`}>同行なし</span>
             <span className={`text-[8px] mt-0.5 px-1 text-center leading-tight ${selectedRobotId === null ? 'text-amber-700 font-bold' : 'text-stone-400'}`}>基本素材のみ</span>
           </button>
           
@@ -437,8 +439,8 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
                       <RobotVisual robot={selectedRobot} size={32} />
                     </div>
                   ) : (
-                    <div className="shrink-0 w-8 h-8 bg-stone-100 border border-stone-300 rounded-lg flex items-center justify-center text-sm grayscale opacity-60">
-                      🚶
+                    <div className="shrink-0 w-8 h-8 bg-stone-100 border border-stone-300 rounded-lg flex items-center justify-center text-sm text-stone-700">
+                      <Gi.GiWalk size={20} className="text-stone-700" />
                     </div>
                   )}
 
@@ -448,7 +450,7 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
                         選択中
                       </span>
                       <span className="text-xs font-bold text-stone-900 truncate max-w-[90px] sm:max-w-[120px]">
-                        {selectedRobot ? selectedRobot.name : '同伴なし'}
+                        {selectedRobot ? selectedRobot.name : '同行なし'}
                       </span>
                     </div>
                     {selectedRobot ? (
