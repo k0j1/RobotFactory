@@ -169,7 +169,11 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
   ];
 
   return (
-    <div className="space-y-6 bg-stone-900 min-h-full p-4 rounded-xl border border-stone-800 shadow-inner relative overflow-hidden">
+    <div className="space-y-6 bg-stone-800 min-h-full p-4 rounded-xl border border-stone-700 shadow-inner relative overflow-hidden">
+      {/* Factory Garage Background Elements */}
+      <div className="absolute inset-0 pointer-events-none opacity-[0.03] z-0" style={{ backgroundImage: "repeating-linear-gradient(45deg, #000 0, #000 2px, transparent 2px, transparent 8px)" }}></div>
+      <Gi.GiAnvil className="absolute top-20 right-10 opacity-10 text-9xl text-stone-900 pointer-events-none z-0" />
+      <Gi.GiSpanner className="absolute bottom-20 left-10 opacity-10 text-8xl text-stone-900 pointer-events-none z-0" />
       {/* Factory background grid/stripes */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: "linear-gradient(0deg, transparent 24%, rgba(255, 255, 255, 1) 25%, rgba(255, 255, 255, 1) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, 1) 75%, rgba(255, 255, 255, 1) 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, rgba(255, 255, 255, 1) 25%, rgba(255, 255, 255, 1) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, 1) 75%, rgba(255, 255, 255, 1) 76%, transparent 77%, transparent)", backgroundSize: "40px 40px" }}></div>
 
@@ -184,7 +188,7 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
       {/* タブ切り替え */}
       <div className="flex gap-2 relative z-10">
         <button 
-          className={`flex-1 py-2.5 font-bold rounded-t-md border-b-4 flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap ${tab === 'part' ? 'border-amber-500 text-amber-400 bg-stone-800' : 'border-transparent text-stone-500 hover:bg-stone-800'}`}
+          className={`flex-1 py-2.5 font-bold rounded-t-md border-b-4 flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap ${tab === 'part' ? 'border-amber-500 text-amber-400 bg-stone-700/50' : 'border-transparent text-stone-500 hover:bg-stone-700/30'}`}
           onClick={() => setTab('part')}
         >
           <span>パーツ製造</span>
@@ -197,7 +201,7 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
           ) : null}
         </button>
         <button 
-          className={`flex-1 py-2.5 font-bold rounded-t-md border-b-4 flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap ${tab === 'robot' ? 'border-amber-500 text-amber-400 bg-stone-800' : 'border-transparent text-stone-500 hover:bg-stone-800'}`}
+          className={`flex-1 py-2.5 font-bold rounded-t-md border-b-4 flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap ${tab === 'robot' ? 'border-amber-500 text-amber-400 bg-stone-700/50' : 'border-transparent text-stone-500 hover:bg-stone-700/30'}`}
           onClick={() => setTab('robot')}
         >
           <span>ロボット組立</span>
@@ -285,7 +289,7 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                   <button
                     key={pt.id}
                     onClick={() => setSelectedPartType(pt.id)}
-                    className={`relative p-2 rounded border text-left transition-all flex-1 min-w-[120px] shrink-0 flex flex-col justify-between ${isSelected ? 'border-amber-500 bg-stone-800 ring-1 ring-amber-400 shadow-sm' : 'border-stone-700 bg-stone-900 hover:border-stone-500 hover:bg-stone-800'}`}
+                    className={`relative p-2 rounded border text-left transition-all flex-1 min-w-[120px] shrink-0 flex flex-col justify-between ${isSelected ? 'border-amber-500 bg-stone-800 ring-1 ring-amber-400 shadow-sm' : 'border-stone-700 bg-stone-800 hover:border-stone-500 hover:bg-stone-800'}`}
                   >
                     <div className="flex justify-between items-center gap-1">
                       <span className="font-bold text-xs text-stone-300 whitespace-nowrap flex items-center gap-1"><Gi.GiCog /> {pt.label}</span>
@@ -306,7 +310,7 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                     {/* 部位ごとのリアルタイムタイマー表示 */}
                     <div className="mt-1 text-[11px]">
                       {isThisPartReady ? (
-                        <span className="text-emerald-400 font-bold">✨ READY</span>
+                        <span className="text-amber-400 font-bold">✨ READY</span>
                       ) : isThisPartCrafting ? (
                         <div className="space-y-1">
                           <span className="text-blue-400 font-bold font-mono text-[9px]">
@@ -339,7 +343,7 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
 
           {/* 製造中カード（進行中または完成受け取り待ち） */}
           {activePart && (
-            <div className="bg-stone-900 border-2 border-stone-800 text-white p-5 shadow-xl relative overflow-hidden">
+            <div className="bg-stone-800 border-2 border-stone-800 text-white p-5 shadow-xl relative overflow-hidden">
               <div className="flex justify-between items-start mb-3">
                 <div>
                   <div className="flex items-center gap-2">
@@ -464,9 +468,9 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                         className={`relative flex flex-col items-center justify-center p-2 border-2 ${theme.radius.md} transition-all ${isSelected ? 'border-amber-500 bg-amber-100/90 ring-2 ring-amber-400 shadow-md transform scale-105 z-10' : `${rStyle.border} ${rStyle.bg} hover:border-stone-400 hover:-translate-y-1`}`}
                       >
                         <div className="absolute top-1.5 left-1.5 text-[9px] leading-none drop-shadow-sm">{rStyle.stars}</div>
-                        <Badge className="absolute top-1.5 right-1.5 bg-stone-900/90 text-white font-bold text-[9px] px-1 py-0.5 leading-none font-mono z-10 shadow-sm border border-stone-600">x{count}</Badge>
+                        <Badge className="absolute top-1.5 right-1.5 bg-stone-800/90 text-white font-bold text-[9px] px-1 py-0.5 leading-none font-mono z-10 shadow-sm border border-stone-600">x{count}</Badge>
                         
-                        <div className={`mt-3 mb-1 ${rStyle.text} drop-shadow-sm`}>
+                        <div className="mt-3 mb-1 drop-shadow-sm" style={{ color: AttributeColors[mat.attribute] }}>
                           <MaterialIcon materialId={mat.id} size={36} />
                         </div>
                         
@@ -508,9 +512,9 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                         className={`relative flex flex-col items-center justify-center p-2 border-2 ${theme.radius.md} transition-all ${isSelected ? 'border-blue-500 bg-blue-100/90 ring-2 ring-blue-400 shadow-md transform scale-105 z-10' : `${rStyle.border} ${rStyle.bg} hover:border-stone-400 hover:-translate-y-1`}`}
                       >
                         <div className="absolute top-1.5 left-1.5 text-[9px] leading-none drop-shadow-sm">{rStyle.stars}</div>
-                        <Badge className="absolute top-1.5 right-1.5 bg-stone-900/90 text-white font-bold text-[9px] px-1 py-0.5 leading-none font-mono z-10 shadow-sm border border-stone-600">x{count}</Badge>
+                        <Badge className="absolute top-1.5 right-1.5 bg-stone-800/90 text-white font-bold text-[9px] px-1 py-0.5 leading-none font-mono z-10 shadow-sm border border-stone-600">x{count}</Badge>
                         
-                        <div className={`mt-3 mb-1 ${rStyle.text} drop-shadow-sm`}>
+                        <div className="mt-3 mb-1 drop-shadow-sm" style={{ color: AttributeColors[mat.attribute] }}>
                           <MaterialIcon materialId={mat.id} size={32} />
                         </div>
                         
@@ -559,7 +563,7 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
         <div className="space-y-5">
           {/* 組立中カード（進行中または完成受け取り待ち） */}
           {activeRobot ? (
-            <div className="bg-stone-900 border-2 border-stone-800 text-white p-6 shadow-xl relative overflow-hidden">
+            <div className="bg-stone-800 border-2 border-stone-800 text-white p-6 shadow-xl relative overflow-hidden">
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <Badge className={isRobotReady ? "bg-emerald-500 text-white text-xs px-2.5 py-1" : "bg-blue-600 text-white text-xs px-2.5 py-1"}>

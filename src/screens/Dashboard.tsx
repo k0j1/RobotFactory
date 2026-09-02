@@ -169,7 +169,11 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
   return (
     <div className="space-y-4">
       {/* 統合ダッシュボードカード (Unified Workshop Dashboard) */}
-      <Card className="bg-stone-900 border-2 border-stone-700 shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)] p-3">
+      <Card className="bg-stone-800 border-4 border-stone-600 shadow-xl p-3 relative overflow-hidden">
+        {/* Factory Background */}
+        <div className="absolute inset-0 pointer-events-none opacity-10 z-0 bg-[linear-gradient(45deg,transparent_25%,rgba(0,0,0,1)_25%,rgba(0,0,0,1)_50%,transparent_50%,transparent_75%,rgba(0,0,0,1)_75%,rgba(0,0,0,1)_100%)] bg-[length:20px_20px]"></div>
+        <div className="absolute top-0 right-0 p-2 opacity-20 pointer-events-none z-0"><Gi.GiSpanner size={80} className="text-stone-900" /></div>
+        <div className="relative z-10">
         {/* 上部ステータスバー (コンパクトな計器盤デザイン) */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
           <div className="bg-stone-950 border border-stone-800 rounded flex items-center p-1.5 shadow-inner">
@@ -199,8 +203,8 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
               <span className="text-xs">🏆</span>
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-[9px] font-bold text-emerald-600/80 uppercase tracking-widest leading-none mb-0.5">DELIVERED</div>
-              <div className="text-sm font-black text-emerald-500 font-mono truncate leading-none">{state.deliveredRobotsCount}</div>
+              <div className="text-[9px] font-bold text-emerald-600/80 tracking-widest leading-none mb-0.5">納品数</div>
+              <div className="text-sm font-black text-amber-500 font-mono truncate leading-none">{state.deliveredRobotsCount}</div>
             </div>
           </div>
 
@@ -215,105 +219,107 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
           </div>
         </div>
 
-        {/* 出撃・探索ヘッダー */}
-        <div className="border-t border-stone-800 pt-3 flex items-center justify-between flex-wrap gap-2">
+        {/* 通常遠征ヘッダー */}
+        <div className="border-t border-stone-800 pt-3 mb-2 flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 font-bold text-stone-300 text-sm font-mono tracking-wider">
-              <span className="text-emerald-400">📡</span>
-              RADAR: ACTIVE
+            <div className="flex items-center gap-1.5 font-bold text-stone-300 text-sm tracking-wider">
+              <Gi.GiWalkingScout className="text-amber-500" size={18} />
+              通常遠征
             </div>
-            <span className="flex h-2 w-2 relative">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
           </div>
+          {totalAutoPendingDrops > 0 && (
+            <Button size="sm" variant="success" onClick={handleClaimAllAutoDispatches} className="animate-pulse text-xs px-2.5 py-1 font-bold shadow-xs border border-emerald-600 bg-emerald-700/80">
+              📦 まとめて回収 ({totalAutoPendingDrops})
+            </Button>
+          )}
+        </div>
 
-          <div className="flex items-center gap-1.5">
-            {totalAutoPendingDrops > 0 && (
-              <Button size="sm" variant="success" onClick={handleClaimAllAutoDispatches} className="animate-pulse text-xs px-2.5 py-1 font-bold shadow-xs border border-emerald-600 bg-emerald-700/80">
-                📦 CLAIM ALL ({totalAutoPendingDrops})
+        <div className="mb-4">
+          {state.activeQuest ? (
+            <div className={`p-3 rounded-xl border transition-all ${questDone ? 'bg-emerald-50/70 border-emerald-300 ring-2 ring-emerald-200' : 'bg-stone-50/90 border-amber-200'}`}>
+              <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="p-1 bg-amber-100/80 rounded-lg border border-amber-200 shrink-0">
+                    {questRobot ? (
+                      <RobotVisual robot={questRobot} size={36} />
+                    ) : (
+                      <span className="text-xl">🎒</span>
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] bg-amber-200 text-amber-900 font-bold px-1.5 py-0.2 rounded shrink-0">通常遠征</span>
+                      <span className="font-bold text-xs sm:text-sm text-stone-800 truncate">📍 {activeQuestLoc?.name}</span>
+                      {questDone && (
+                        <span className="text-[10px] bg-amber-500 text-white font-bold px-1.5 py-0.2 rounded-full animate-bounce shrink-0">
+                          完了！
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-stone-500 truncate mt-0.5">
+                      同行: <span className="font-bold text-stone-700">{questRobot ? questRobot.name : 'なし'}</span>
+                    </p>
+                  </div>
+                </div>
+                <div className="shrink-0 flex items-center gap-2 ml-auto sm:ml-0">
+                  {questDone ? (
+                    <Button size="sm" variant="success" onClick={handleCompleteQuest} className="animate-bounce shadow-xs font-bold text-xs px-3 py-1.5">
+                      🎁 素材を受取る
+                    </Button>
+                  ) : (
+                    <div className="text-right">
+                      <span className="text-[10px] text-stone-400 block font-mono">残り時間</span>
+                      <span className="text-xs sm:text-sm font-bold font-mono text-amber-700 bg-amber-100/60 px-2 py-0.5 rounded border border-amber-200">
+                        ⏳ {formatTime(timeRemaining)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="p-2.5 bg-stone-50/60 rounded-xl border border-stone-200 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-lg"><Gi.GiWalkingScout className="text-stone-400" /></span>
+                <span className="text-xs text-stone-600 font-bold">通常遠征: 未出撃</span>
+              </div>
+              <Button size="sm" onClick={() => onNavigate('quest')} className="text-xs px-2.5 py-1 bg-amber-600 hover:bg-amber-500 text-white font-bold shadow-sm">
+                遠征へ向かう →
               </Button>
+            </div>
+          )}
+        </div>
+
+        {/* 自動探索ヘッダー */}
+        <div className="border-t border-stone-800 pt-3 mb-2 flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 font-bold text-stone-300 text-sm tracking-wider">
+              <Gi.GiFactory className="text-amber-500" size={18} />
+              自動探索
+            </div>
+            {(state.autoDispatches && state.autoDispatches.length > 0) && (
+              <span className="flex h-2 w-2 relative">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+              </span>
             )}
-            <Button size="sm" onClick={() => setIsDispatchModalOpen(true)} className="text-xs px-2.5 py-1 bg-stone-800 hover:bg-stone-700 text-stone-300 border border-stone-600 font-mono">
-              + DEPLOY
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Button size="sm" onClick={() => setIsDispatchModalOpen(true)} className="text-xs px-2.5 py-1 bg-stone-800 hover:bg-stone-700 text-stone-300 border border-stone-600 font-mono shadow-sm">
+              <Gi.GiWalkingScout className="inline mr-1" /> 派遣する
             </Button>
           </div>
         </div>
 
-        {/* 出撃中のアクティビティリスト */}
-        {!hasActiveMission ? (
-          <div className="p-4 bg-stone-50/80 rounded-xl border border-dashed border-stone-300 text-center flex flex-col items-center justify-center gap-2">
-            <span className="text-3xl">🏕️</span>
-            <p className="text-xs text-stone-500 font-bold">現在、出撃中のロボットはいません</p>
-            <div className="flex gap-2 mt-1">
-              <Button size="sm" onClick={() => onNavigate('quest')} className="text-xs px-3 py-1 bg-amber-600 hover:bg-amber-500 text-white">
-                🎒 遠征へ出発
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => setIsDispatchModalOpen(true)} className="text-xs px-3 py-1">
-                <Gi.GiWalkingScout className="inline mr-1" /> 自動探索へ派遣
-              </Button>
+        <div className="space-y-2.5">
+          {(!state.autoDispatches || state.autoDispatches.length === 0) && (
+            <div className="p-4 bg-stone-50/80 rounded-xl border border-dashed border-stone-300 text-center flex flex-col items-center justify-center gap-2">
+              <Gi.GiSleepy className="text-3xl text-stone-400" />
+              <p className="text-xs text-stone-500 font-bold">現在、自動探索中のロボットはいません</p>
             </div>
-          </div>
-        ) : (
-          <div className="space-y-2.5">
-            {/* 通常遠征 (Quest) */}
-            {state.activeQuest ? (
-              <div className={`p-3 rounded-xl border transition-all ${questDone ? 'bg-emerald-50/70 border-emerald-300 ring-2 ring-emerald-200' : 'bg-stone-50/90 border-amber-200'}`}>
-                <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="p-1 bg-amber-100/80 rounded-lg border border-amber-200 shrink-0">
-                      {questRobot ? (
-                        <RobotVisual robot={questRobot} size={36} />
-                      ) : (
-                        <span className="text-xl">🎒</span>
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] bg-amber-200 text-amber-900 font-bold px-1.5 py-0.2 rounded shrink-0">通常遠征</span>
-                        <span className="font-bold text-xs sm:text-sm text-stone-800 truncate">📍 {activeQuestLoc?.name}</span>
-                        {questDone && (
-                          <span className="text-[10px] bg-emerald-500 text-white font-bold px-1.5 py-0.2 rounded-full animate-bounce shrink-0">
-                            完了！
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[11px] text-stone-500 truncate mt-0.5">
-                        同行: <span className="font-bold text-stone-700">{questRobot ? questRobot.name : 'なし'}</span>
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="shrink-0 flex items-center gap-2 ml-auto sm:ml-0">
-                    {questDone ? (
-                      <Button size="sm" variant="success" onClick={handleCompleteQuest} className="animate-bounce shadow-xs font-bold text-xs px-3 py-1.5">
-                        🎁 素材を受取る
-                      </Button>
-                    ) : (
-                      <div className="text-right">
-                        <span className="text-[10px] text-stone-400 block font-mono">残り時間</span>
-                        <span className="text-xs sm:text-sm font-bold font-mono text-amber-700 bg-amber-100/60 px-2 py-0.5 rounded border border-amber-200">
-                          ⏳ {formatTime(timeRemaining)}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="p-2.5 bg-stone-50/60 rounded-xl border border-stone-200 flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">🎒</span>
-                  <span className="text-xs text-stone-600 font-bold">通常遠征: 未出撃</span>
-                </div>
-                <Button size="sm" onClick={() => onNavigate('quest')} className="text-xs px-2.5 py-1 bg-amber-600 hover:bg-amber-500 text-white font-bold">
-                  遠征へ向かう →
-                </Button>
-              </div>
-            )}
-
-            {/* 自動探索ロボット一覧 (Auto Dispatches) */}
-            {state.autoDispatches?.map(d => {
+          )}
+          {/* 自動探索ロボット一覧 (Auto Dispatches) */}
+          {state.autoDispatches?.map(d => {
               const dRobot = state.robots.find(r => r.id === d.robotId);
               const dLoc = LOCATIONS.find(l => l.id === d.locationId);
               const intervalMs = engine.getAutoDispatchIntervalMs(d.robotId, d.locationId);
@@ -457,7 +463,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
               );
             })}
           </div>
-        )}
+        </div>
       </Card>
 
       {/* Tutorial Banner */}
@@ -496,7 +502,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                     (state.activePartCraft && state.activePartCraft.endTime <= Date.now()) ||
                     (state.activeRobotAssembly && state.activeRobotAssembly.endTime <= Date.now())
                   ) && (
-                    <Badge className="bg-emerald-500 text-white text-[10px] whitespace-nowrap animate-bounce leading-none">
+                    <Badge className="bg-amber-500 text-white text-[10px] whitespace-nowrap animate-bounce leading-none">
                       🎉 完成！
                     </Badge>
                   )}
@@ -647,7 +653,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                     <p className="text-[11px] text-stone-300 mt-0.5">
                       パワー: <span className="font-bold text-orange-400">{selectedModalRobot.stats.power}</span> / 速度: <span className="font-bold text-yellow-400">{selectedModalRobot.stats.agility}</span>
                     </p>
-                    <p className="text-[10px] text-emerald-400 font-mono mt-0.5">
+                    <p className="text-[10px] text-amber-500 font-mono mt-0.5">
                       ⚡ 敏捷補正: -{selectedModalRobot.stats.agility}秒短縮 (周期: {Math.round(engine.getAutoDispatchIntervalMs(selectedModalRobot.id) / 60000 * 10) / 10}分)
                     </p>
                   </div>

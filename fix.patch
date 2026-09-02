@@ -1,0 +1,7 @@
+--- src/screens/Dashboard.tsx
++++ src/screens/Dashboard.tsx
+@@ -460,2 +460,4 @@
+               );
++            })}
++          </div>
+       </div>

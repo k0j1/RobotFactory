@@ -1,3 +1,4 @@
+import * as Gi from "react-icons/gi";
 import React, { useState, useRef, useEffect } from 'react';
 import { GameState } from '../core/models';
 import { GameEngine } from '../core/GameEngine';
@@ -95,7 +96,9 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
   return (
     <div className="space-y-6 relative">
       {departingState.isDeparting && (
-        <div className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-stone-900/60 backdrop-blur-sm`}>
+        <div className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-stone-800/90 backdrop-blur-sm`}>
+          <Gi.GiHammerBreak className="absolute top-10 left-10 opacity-5 text-9xl text-amber-900 pointer-events-none z-0" />
+          <Gi.GiGears className="absolute bottom-10 right-10 opacity-5 text-9xl text-amber-900 pointer-events-none z-0" />
           <motion.div
             initial={{ x: -50, y: 0, scale: 1.5, opacity: 0 }}
             animate={{ x: [-50, 100, 400], y: [0, -20, -50], scale: [1.5, 1, 0.2], opacity: [0, 1, 0] }}
@@ -138,23 +141,23 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
       <div className="flex items-center justify-between border-b-2 border-stone-300 pb-2">
         <h2 className={theme.typography.h2}>遠征先を選ぶ</h2>
         {state.activeQuest && (
-          <Badge className="bg-emerald-500 text-white font-bold animate-pulse">遠征中</Badge>
+          <Badge className="bg-amber-600 text-white font-bold animate-pulse">遠征中</Badge>
         )}
       </div>
       <p className={theme.typography.body}>場所を指定して素材を集めます。時間経過で帰還します。</p>
 
       {/* Robot Selection (Scouter Style) */}
-      <div ref={topSelectionRef} className={`p-4 bg-stone-950 ${theme.radius.md} border border-emerald-800/50 overflow-hidden relative shadow-inner mb-6`}>
+      <div ref={topSelectionRef} className={`p-4 bg-stone-800 ${theme.radius.md} border border-stone-600 border-4 overflow-hidden relative shadow-inner mb-6`}>
         {/* Scouter background grid / scanline */}
-        <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(16,185,129,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(16,185,129,0.05)_1px,transparent_1px)] bg-[size:20px_20px]" />
+        <div className="absolute inset-0 pointer-events-none opacity-[0.03] bg-[repeating-linear-gradient(45deg,#000_0,#000_2px,transparent_2px,transparent_8px)]" />
         
         <div className="flex justify-between items-center gap-2 mb-3 relative z-10">
           <div className="min-w-0">
-            <h3 className="font-bold text-emerald-400 font-mono tracking-wider flex items-center gap-2 text-xs sm:text-sm truncate">
-              <span className="animate-pulse shrink-0">▶</span> TARGET SELECTION
+            <h3 className="font-bold text-amber-500 font-mono tracking-wider flex items-center gap-2 text-xs sm:text-sm truncate">
+              <span className="animate-pulse shrink-0">▶</span> 同行ロボ選択
             </h3>
-            <p className="text-[10px] text-emerald-600/80 font-mono mt-0.5 uppercase truncate">
-              Select unit. Agility reduces quest time.
+            <p className="text-[10px] text-amber-700/80 font-mono mt-0.5 uppercase truncate">
+              同行するユニットを選択してください。俊敏性が高いほど遠征時間が短縮されます。
             </p>
           </div>
           {selectedRobot && (
@@ -163,8 +166,8 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
               onClick={() => setShowRadarChart(!showRadarChart)}
               className={`text-xs font-mono px-2.5 py-1 rounded border transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 ${
                 showRadarChart 
-                  ? 'bg-emerald-900/60 border-emerald-400 text-emerald-300 shadow-[0_0_8px_rgba(16,185,129,0.4)]' 
-                  : 'bg-stone-900 border-emerald-800/60 text-emerald-500 hover:border-emerald-500 hover:text-emerald-400'
+                  ? 'bg-stone-700/60 border-amber-500 text-amber-400 shadow-[0_0_8px_rgba(16,185,129,0.4)]' 
+                  : 'bg-stone-900 border-amber-900/60 text-amber-600 hover:border-amber-600 hover:text-amber-500'
               }`}
             >
               <span>📊</span>
@@ -181,18 +184,18 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
           >
             {selectedRobotId === null && (
               <>
-                <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-emerald-400" />
-                <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-emerald-400" />
-                <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-emerald-400" />
-                <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-emerald-400" />
-                <div className="absolute inset-0 bg-emerald-500/10 animate-pulse pointer-events-none" />
+                <div className="absolute top-0 left-0 w-3 h-3 border-t-4 border-l-4 border-amber-500" />
+                <div className="absolute top-0 right-0 w-3 h-3 border-t-4 border-r-4 border-amber-500" />
+                <div className="absolute bottom-0 left-0 w-3 h-3 border-b-4 border-l-4 border-amber-500" />
+                <div className="absolute bottom-0 right-0 w-3 h-3 border-b-4 border-r-4 border-amber-500" />
+                <div className="absolute inset-0 bg-amber-600/10 animate-pulse pointer-events-none" />
               </>
             )}
-            <div className={`absolute inset-0 border border-emerald-800/30 ${selectedRobotId === null ? 'bg-emerald-950/40' : 'bg-stone-900/40'}`} />
+            <div className={`absolute inset-0 border border-amber-900/30 ${selectedRobotId === null ? 'bg-stone-800/40' : 'bg-stone-900/40'}`} />
             
-            <span className="text-4xl mb-2 relative z-10 opacity-50 grayscale">🚶</span>
-            <span className={`font-bold text-xs font-mono relative z-10 ${selectedRobotId === null ? 'text-emerald-300' : 'text-emerald-700'}`}>NO UNIT</span>
-            <span className={`text-[9px] font-mono mt-1 relative z-10 ${selectedRobotId === null ? 'text-emerald-500' : 'text-emerald-800/50'}`}>BASE MATERIAL ONLY</span>
+            <span className="text-4xl mb-2 relative z-10 opacity-50 grayscale"><Gi.GiWalkingScout className="mx-auto" /></span>
+            <span className={`font-bold text-xs font-mono relative z-10 ${selectedRobotId === null ? 'text-amber-400' : 'text-stone-400'}`}>同伴なし</span>
+            <span className={`text-[9px] font-mono mt-1 relative z-10 ${selectedRobotId === null ? 'text-amber-600' : 'text-amber-900/50'}`}>基本素材のみ獲得</span>
           </button>
           
           {/* ロボット一覧 */}
@@ -210,19 +213,19 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
                 {/* ターゲット枠 (選択時) */}
                 {isSelected && (
                   <>
-                    <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-emerald-400 z-20" />
-                    <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-emerald-400 z-20" />
-                    <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-emerald-400 z-20" />
-                    <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-emerald-400 z-20" />
-                    <div className="absolute inset-0 bg-emerald-500/10 animate-pulse pointer-events-none z-10" />
+                    <div className="absolute top-0 left-0 w-3 h-3 border-t-4 border-l-4 border-amber-500 z-20" />
+                    <div className="absolute top-0 right-0 w-3 h-3 border-t-4 border-r-4 border-amber-500 z-20" />
+                    <div className="absolute bottom-0 left-0 w-3 h-3 border-b-4 border-l-4 border-amber-500 z-20" />
+                    <div className="absolute bottom-0 right-0 w-3 h-3 border-b-4 border-r-4 border-amber-500 z-20" />
+                    <div className="absolute inset-0 bg-amber-600/10 animate-pulse pointer-events-none z-10" />
                   </>
                 )}
                 
                 {/* ベース背景 */}
-                <div className={`absolute inset-0 border z-0 ${isSelected ? 'border-emerald-500/50 bg-emerald-900/20' : 'border-emerald-900/30 bg-stone-900/60'}`} />
+                <div className={`absolute inset-0 border z-0 ${isSelected ? 'border-amber-600/50 bg-stone-700/20' : 'border-stone-700/30 bg-stone-800/80'}`} />
                 
                 {isAutoDispatched && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center z-30 bg-stone-900/60 backdrop-blur-[1px] rounded">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center z-30 bg-stone-800/80 backdrop-blur-[1px] rounded">
                     <span className="bg-red-950/90 text-red-400 border border-red-800 text-[10px] px-2 py-0.5 font-bold mb-1">選択不可</span>
                     <span className="text-[9px] text-red-300 font-mono text-center leading-tight">自動探索中<br/>(AUTO)</span>
                   </div>
@@ -231,7 +234,7 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
                 {/* スキャンライン (選択時) */}
                 {isSelected && (
                   <motion.div 
-                    className="absolute left-0 right-0 h-[1px] bg-emerald-400/50 shadow-[0_0_8px_rgba(52,211,153,0.8)] z-20"
+                    className="absolute left-0 right-0 h-[1px] bg-amber-500/50 shadow-[0_0_8px_rgba(52,211,153,0.8)] z-20"
                     animate={{ top: ['0%', '100%', '0%'] }}
                     transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
                   />
@@ -242,10 +245,10 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
                 </div>
                 
                 <div className="w-full px-2 mt-1 relative z-10">
-                  <div className={`font-bold text-xs truncate text-center ${isSelected ? 'text-emerald-300' : 'text-emerald-600'}`}>
+                  <div className={`font-bold text-xs truncate text-center ${isSelected ? 'text-amber-400' : 'text-amber-700'}`}>
                     {r.name}
                   </div>
-                  <div className={`flex justify-center gap-2 mt-1 text-[9px] font-mono ${isSelected ? 'text-emerald-400' : 'text-emerald-700'}`}>
+                  <div className={`flex justify-center gap-2 mt-1 text-[9px] font-mono ${isSelected ? 'text-amber-500' : 'text-stone-400'}`}>
                     <span>PWR:{r.stats.power}</span>
                     <span>AGI:{r.stats.agility}</span>
                   </div>
@@ -262,44 +265,44 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              className="overflow-hidden border-t border-emerald-900/60 pt-3 mt-1 relative z-10"
+              className="overflow-hidden border-t border-stone-700/60 pt-3 mt-1 relative z-10"
             >
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 bg-stone-900/80 p-3 rounded-lg border border-emerald-800/40">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 bg-stone-900/80 p-3 rounded-lg border border-amber-900/40">
                 <div className="shrink-0 flex flex-col items-center">
-                  <span className="text-xs font-mono font-bold text-emerald-400 mb-1 flex items-center gap-1">
+                  <span className="text-xs font-mono font-bold text-amber-500 mb-1 flex items-center gap-1">
                     <span>📡</span> {selectedRobot.name} の性能解析
                   </span>
                   <RobotRadarChart robot={selectedRobot} size={180} themeStyle="cyber" />
                 </div>
                 <div className="flex-1 w-full grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11px] font-mono">
-                  <div className="bg-stone-950/70 border border-emerald-900/50 p-2 rounded">
-                    <span className="text-emerald-500 font-bold block">❤️ 耐久 (HP)</span>
-                    <span className="text-sm font-bold text-emerald-300">{selectedRobot.stats.hp}</span>
+                  <div className="bg-stone-800/70 border border-stone-700/50 p-2 rounded">
+                    <span className="text-amber-600 font-bold block">❤️ 耐久 (HP)</span>
+                    <span className="text-sm font-bold text-amber-400">{selectedRobot.stats.hp}</span>
                     <span className="text-[9px] text-stone-500 block">タフネス</span>
                   </div>
-                  <div className="bg-stone-950/70 border border-emerald-900/50 p-2 rounded">
-                    <span className="text-emerald-500 font-bold block">⚔️ 攻撃 (POW)</span>
-                    <span className="text-sm font-bold text-emerald-300">{selectedRobot.stats.power}</span>
+                  <div className="bg-stone-800/70 border border-stone-700/50 p-2 rounded">
+                    <span className="text-amber-600 font-bold block">⚔️ 攻撃 (POW)</span>
+                    <span className="text-sm font-bold text-amber-400">{selectedRobot.stats.power}</span>
                     <span className="text-[9px] text-stone-500 block">素材枠増加</span>
                   </div>
-                  <div className="bg-stone-950/70 border border-emerald-900/50 p-2 rounded">
-                    <span className="text-emerald-500 font-bold block">🛡️ 防御 (DEF)</span>
-                    <span className="text-sm font-bold text-emerald-300">{selectedRobot.stats.defense}</span>
+                  <div className="bg-stone-800/70 border border-stone-700/50 p-2 rounded">
+                    <span className="text-amber-600 font-bold block">🛡️ 防御 (DEF)</span>
+                    <span className="text-sm font-bold text-amber-400">{selectedRobot.stats.defense}</span>
                     <span className="text-[9px] text-stone-500 block">ダメージ軽減</span>
                   </div>
-                  <div className="bg-stone-950/70 border border-emerald-900/50 p-2 rounded">
-                    <span className="text-emerald-500 font-bold block">⚡ 速度 (AGI)</span>
-                    <span className="text-sm font-bold text-emerald-300">{selectedRobot.stats.agility}</span>
+                  <div className="bg-stone-800/70 border border-stone-700/50 p-2 rounded">
+                    <span className="text-amber-600 font-bold block">⚡ 速度 (AGI)</span>
+                    <span className="text-sm font-bold text-amber-400">{selectedRobot.stats.agility}</span>
                     <span className="text-[9px] text-stone-500 block">所要時間短縮</span>
                   </div>
-                  <div className="bg-stone-950/70 border border-emerald-900/50 p-2 rounded">
-                    <span className="text-emerald-500 font-bold block">🎯 探索 (DEX)</span>
-                    <span className="text-sm font-bold text-emerald-300">{selectedRobot.stats.dexterity}</span>
+                  <div className="bg-stone-800/70 border border-stone-700/50 p-2 rounded">
+                    <span className="text-amber-600 font-bold block">🎯 探索 (DEX)</span>
+                    <span className="text-sm font-bold text-amber-400">{selectedRobot.stats.dexterity}</span>
                     <span className="text-[9px] text-stone-500 block">発見精度向上</span>
                   </div>
-                  <div className="bg-stone-950/70 border border-emerald-900/50 p-2 rounded">
-                    <span className="text-emerald-500 font-bold block">🔮 解析 (INT)</span>
-                    <span className="text-sm font-bold text-emerald-300">{selectedRobot.stats.intelligence}</span>
+                  <div className="bg-stone-800/70 border border-stone-700/50 p-2 rounded">
+                    <span className="text-amber-600 font-bold block">🔮 解析 (INT)</span>
+                    <span className="text-sm font-bold text-amber-400">{selectedRobot.stats.intelligence}</span>
                     <span className="text-[9px] text-stone-500 block">幸運・属性適性</span>
                   </div>
                 </div>
@@ -345,7 +348,7 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
                 </div>
                 
                 <div className="flex items-center gap-2 mb-3">
-                  <p className={`${theme.typography.small} text-stone-200 bg-stone-900/60 px-2 py-0.5 rounded font-medium border border-stone-700/50`}>
+                  <p className={`${theme.typography.small} text-stone-200 bg-stone-800/80 px-2 py-0.5 rounded font-medium border border-stone-700/50`}>
                     所要時間: <span className={selectedRobot && agiReductionSec > 0 ? "line-through text-stone-400" : "font-mono font-bold text-white"}>{baseFinalSec}秒</span>
                   </p>
                   {selectedRobot && agiReductionSec > 0 && (
@@ -358,15 +361,15 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
                 <p className="mb-2 text-sm text-stone-100 bg-stone-900/50 p-2 rounded border border-stone-700/50 drop-shadow">{loc.description}</p>
                 
                 {/* 天候情報の表示 */}
-                <div className={`mb-4 flex items-center gap-3 text-sm p-2 rounded border drop-shadow ${weather.timeMultiplier > 1 ? 'bg-red-900/50 border-red-700/50 text-red-50' : 'bg-emerald-900/50 border-emerald-700/50 text-emerald-50'}`}>
-                  <div className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded bg-stone-900/60 shadow-inner">
+                <div className={`mb-4 flex items-center gap-3 text-sm p-2 rounded border drop-shadow ${weather.timeMultiplier > 1 ? 'bg-red-900/50 border-red-700/50 text-red-50' : 'bg-stone-700/50 border-stone-400/50 text-emerald-50'}`}>
+                  <div className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded bg-stone-800/80 shadow-inner">
                     <span className="text-xl">{weather.name.split(' ')[0]}</span>
                   </div>
                   <div>
                     <div className="font-bold text-[13px]">{weather.name}</div>
                     <div className="text-[11px] opacity-90">{weather.description}</div>
                   </div>
-                  <div className="ml-auto font-mono font-bold text-lg bg-stone-900/60 px-2 py-1 rounded border border-stone-700/50 whitespace-nowrap">
+                  <div className="ml-auto font-mono font-bold text-lg bg-stone-800/80 px-2 py-1 rounded border border-stone-700/50 whitespace-nowrap">
                     x{weather.timeMultiplier.toFixed(1)}
                   </div>
                 </div>
@@ -437,7 +440,7 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
             transition={{ duration: 0.2 }}
             className="fixed top-14 sm:top-16 right-2 sm:right-4 z-40 max-w-[calc(100vw-1rem)] sm:max-w-xs"
           >
-            <div className="bg-stone-950/95 border-2 border-emerald-500/80 rounded-xl p-2.5 shadow-2xl backdrop-blur-md text-stone-100 flex flex-col gap-2">
+            <div className="bg-stone-800/95 border-2 border-amber-600/80 rounded-xl p-2.5 shadow-2xl backdrop-blur-md text-stone-100 flex flex-col gap-2">
               {/* メインHUD行 */}
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0">
@@ -454,7 +457,7 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
                   )}
 
                   {selectedRobot ? (
-                    <div className="shrink-0 bg-stone-900 border border-emerald-500/40 p-0.5 rounded-lg flex items-center justify-center">
+                    <div className="shrink-0 bg-stone-900 border border-amber-600/40 p-0.5 rounded-lg flex items-center justify-center">
                       <RobotVisual robot={selectedRobot} size={32} />
                     </div>
                   ) : (
@@ -465,7 +468,7 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
 
                   <div className="min-w-0">
                     <div className="flex items-center gap-1">
-                      <span className="text-[9px] font-mono font-bold text-emerald-400 bg-emerald-950/90 px-1 rounded border border-emerald-800/60 whitespace-nowrap">
+                      <span className="text-[9px] font-mono font-bold text-amber-500 bg-stone-800/90 px-1 rounded border border-amber-900/60 whitespace-nowrap">
                         選択中
                       </span>
                       <span className="text-xs font-bold text-white truncate max-w-[90px] sm:max-w-[120px]">
@@ -473,7 +476,7 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
                       </span>
                     </div>
                     {selectedRobot ? (
-                      <div className="text-[10px] font-mono text-emerald-400 flex items-center gap-1.5 mt-0.5 whitespace-nowrap">
+                      <div className="text-[10px] font-mono text-amber-500 flex items-center gap-1.5 mt-0.5 whitespace-nowrap">
                         <span>⚡ -{selectedRobot.stats.agility}s</span>
                         <span>❤️ {selectedRobot.currentHp}/{selectedRobot.stats.hp}</span>
                       </div>
@@ -504,8 +507,8 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
                       onClick={() => setShowHudRadar(!showHudRadar)}
                       className={`text-[11px] font-mono font-bold px-1.5 py-1 rounded border transition-all flex items-center gap-0.5 cursor-pointer whitespace-nowrap ${
                         showHudRadar
-                          ? 'bg-emerald-900/90 border-emerald-400 text-emerald-300 shadow-[0_0_6px_rgba(16,185,129,0.3)]'
-                          : 'bg-emerald-950/80 text-emerald-300 hover:bg-emerald-900 border-emerald-600/60'
+                          ? 'bg-stone-700/90 border-amber-500 text-amber-400 shadow-[0_0_6px_rgba(16,185,129,0.3)]'
+                          : 'bg-stone-800/80 text-amber-400 hover:bg-stone-700 border-amber-700/60'
                       }`}
                       title="性能レーダーチャートを表示"
                     >
@@ -531,27 +534,27 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: 'auto', opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
-                    className="overflow-hidden border-t border-emerald-900/60 pt-2"
+                    className="overflow-hidden border-t border-stone-700/60 pt-2"
                   >
-                    <div className="flex flex-col items-center justify-center gap-2 bg-stone-900/90 p-2 rounded-lg border border-emerald-800/50">
+                    <div className="flex flex-col items-center justify-center gap-2 bg-stone-900/90 p-2 rounded-lg border border-stone-600 border-4">
                       <RobotRadarChart robot={selectedRobot} size={140} themeStyle="cyber" />
                       <div className="w-full grid grid-cols-3 gap-1 text-[9px] font-mono">
-                        <div className="bg-stone-950/80 p-1 rounded border border-emerald-900/50 text-center">
+                        <div className="bg-stone-800/80 p-1 rounded border border-stone-700/50 text-center">
                           <span className="text-rose-400 font-bold block">❤️ HP {selectedRobot.stats.hp}</span>
                         </div>
-                        <div className="bg-stone-950/80 p-1 rounded border border-emerald-900/50 text-center">
+                        <div className="bg-stone-800/80 p-1 rounded border border-stone-700/50 text-center">
                           <span className="text-orange-400 font-bold block">⚔️ POW {selectedRobot.stats.power}</span>
                         </div>
-                        <div className="bg-stone-950/80 p-1 rounded border border-emerald-900/50 text-center">
+                        <div className="bg-stone-800/80 p-1 rounded border border-stone-700/50 text-center">
                           <span className="text-yellow-400 font-bold block">⚡ AGI {selectedRobot.stats.agility}</span>
                         </div>
-                        <div className="bg-stone-950/80 p-1 rounded border border-emerald-900/50 text-center">
+                        <div className="bg-stone-800/80 p-1 rounded border border-stone-700/50 text-center">
                           <span className="text-blue-400 font-bold block">🛡️ DEF {selectedRobot.stats.defense}</span>
                         </div>
-                        <div className="bg-stone-950/80 p-1 rounded border border-emerald-900/50 text-center">
-                          <span className="text-emerald-400 font-bold block">🎯 DEX {selectedRobot.stats.dexterity}</span>
+                        <div className="bg-stone-800/80 p-1 rounded border border-stone-700/50 text-center">
+                          <span className="text-amber-500 font-bold block">🎯 DEX {selectedRobot.stats.dexterity}</span>
                         </div>
-                        <div className="bg-stone-950/80 p-1 rounded border border-emerald-900/50 text-center">
+                        <div className="bg-stone-800/80 p-1 rounded border border-stone-700/50 text-center">
                           <span className="text-purple-400 font-bold block">🔮 INT {selectedRobot.stats.intelligence}</span>
                         </div>
                       </div>
