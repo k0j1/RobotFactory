@@ -169,13 +169,13 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
   ];
 
   return (
-    <div className="space-y-6 bg-stone-800 min-h-full p-4 rounded-xl border border-stone-700 shadow-inner relative overflow-hidden">
+    <div className="space-y-6 bg-stone-50 min-h-full p-4 rounded-xl border-2 border-stone-300 shadow-sm relative overflow-hidden text-stone-800">
       {/* Factory Garage Background Elements */}
       <div className="absolute inset-0 pointer-events-none opacity-[0.03] z-0" style={{ backgroundImage: "repeating-linear-gradient(45deg, #000 0, #000 2px, transparent 2px, transparent 8px)" }}></div>
-      <Gi.GiAnvil className="absolute top-20 right-10 opacity-10 text-9xl text-stone-900 pointer-events-none z-0" />
-      <Gi.GiSpanner className="absolute bottom-20 left-10 opacity-10 text-8xl text-stone-900 pointer-events-none z-0" />
-      {/* Factory background grid/stripes */}
-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: "linear-gradient(0deg, transparent 24%, rgba(255, 255, 255, 1) 25%, rgba(255, 255, 255, 1) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, 1) 75%, rgba(255, 255, 255, 1) 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, rgba(255, 255, 255, 1) 25%, rgba(255, 255, 255, 1) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, 1) 75%, rgba(255, 255, 255, 1) 76%, transparent 77%, transparent)", backgroundSize: "40px 40px" }}></div>
+      <Gi.GiAnvil className="absolute top-20 right-10 opacity-5 text-9xl text-stone-400 pointer-events-none z-0" />
+      <Gi.GiSpanner className="absolute bottom-20 left-10 opacity-5 text-8xl text-stone-400 pointer-events-none z-0" />
+      {/* Factory background subtle grid */}
+      <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{ backgroundImage: "linear-gradient(0deg, transparent 24%, rgba(0, 0, 0, 1) 25%, rgba(0, 0, 0, 1) 26%, transparent 27%, transparent 74%, rgba(0, 0, 0, 1) 75%, rgba(0, 0, 0, 1) 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, rgba(0, 0, 0, 1) 25%, rgba(0, 0, 0, 1) 26%, transparent 27%, transparent 74%, rgba(0, 0, 0, 1) 75%, rgba(0, 0, 0, 1) 76%, transparent 77%, transparent)", backgroundSize: "40px 40px" }}></div>
 
       <TutorialPopup 
         tutorialId="craft_first_visit" 
@@ -186,14 +186,14 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
       />
   
       {/* タブ切り替え */}
-      <div className="flex gap-2 relative z-10">
+      <div className="flex gap-2 relative z-10 border-b border-stone-300 pb-1">
         <button 
-          className={`flex-1 py-2.5 font-bold rounded-t-md border-b-4 flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap ${tab === 'part' ? 'border-amber-500 text-amber-400 bg-stone-700/50' : 'border-transparent text-stone-500 hover:bg-stone-700/30'}`}
+          className={`flex-1 py-2.5 font-bold rounded-t-lg border-b-4 flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap ${tab === 'part' ? 'border-amber-600 text-amber-900 bg-amber-100/70 shadow-2xs' : 'border-transparent text-stone-600 hover:bg-stone-200/50'}`}
           onClick={() => setTab('part')}
         >
-          <span>パーツ製造</span>
+          <span className="flex items-center gap-1"><Gi.GiHammerNails className="text-amber-700" /> パーツ製造</span>
           {isPartReady ? (
-            <Badge className="bg-amber-500 text-white text-[10px] sm:text-xs animate-bounce px-1.5 py-0.5 leading-none">受取可！</Badge>
+            <Badge className="bg-amber-600 text-white text-[10px] sm:text-xs animate-bounce px-1.5 py-0.5 leading-none">受取可！</Badge>
           ) : isPartCrafting ? (
             <Badge className="bg-blue-600 text-white text-[10px] sm:text-[11px] font-mono animate-pulse px-1.5 py-0.5 leading-none">
               あと{partRemainingSec}秒
@@ -201,12 +201,12 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
           ) : null}
         </button>
         <button 
-          className={`flex-1 py-2.5 font-bold rounded-t-md border-b-4 flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap ${tab === 'robot' ? 'border-amber-500 text-amber-400 bg-stone-700/50' : 'border-transparent text-stone-500 hover:bg-stone-700/30'}`}
+          className={`flex-1 py-2.5 font-bold rounded-t-lg border-b-4 flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap ${tab === 'robot' ? 'border-amber-600 text-amber-900 bg-amber-100/70 shadow-2xs' : 'border-transparent text-stone-600 hover:bg-stone-200/50'}`}
           onClick={() => setTab('robot')}
         >
-          <span>ロボット組立</span>
+          <span className="flex items-center gap-1"><Gi.GiSpanner className="text-amber-700" /> ロボット組立</span>
           {isRobotReady ? (
-            <Badge className="bg-amber-500 text-white text-[10px] sm:text-xs animate-bounce px-1.5 py-0.5 leading-none">受取可！</Badge>
+            <Badge className="bg-amber-600 text-white text-[10px] sm:text-xs animate-bounce px-1.5 py-0.5 leading-none">受取可！</Badge>
           ) : isRobotAssembling ? (
             <Badge className="bg-blue-600 text-white text-[10px] sm:text-[11px] font-mono animate-pulse px-1.5 py-0.5 leading-none">
               あと{robotRemainingSec}秒
@@ -268,9 +268,9 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
       {tab === 'part' && !lastCraftedPart && (
         <div ref={craftingStatusRef} className="space-y-5">
           {/* 各パーツ製造項目のステータス＆部位選択バー */}
-          <div className="bg-stone-950 border border-stone-700 rounded-lg p-2 shadow-inner">
+          <div className="bg-stone-100 border border-stone-300 rounded-lg p-2.5 shadow-xs">
             <div className="flex justify-between items-center mb-2">
-              <h4 className="font-bold text-xs text-amber-500 mb-1 flex items-center gap-1"><Gi.GiNetworkBars /> パーツ部位別ステータス &amp; リアルタイム状況</h4>
+              <h4 className="font-bold text-xs text-amber-900 mb-1 flex items-center gap-1"><Gi.GiHammerNails className="text-amber-700" /> パーツ部位別ステータス &amp; リアルタイム状況</h4>
               {isPartCrafting && (
                 <span className="text-[11px] font-bold text-blue-700 animate-pulse bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
                   ⏱️ {isPartReady ? '完成受取待ち' : `製造中: あと ${partRemainingSec} 秒`}
@@ -289,31 +289,31 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                   <button
                     key={pt.id}
                     onClick={() => setSelectedPartType(pt.id)}
-                    className={`relative p-2 rounded border text-left transition-all flex-1 min-w-[120px] shrink-0 flex flex-col justify-between ${isSelected ? 'border-amber-500 bg-stone-800 ring-1 ring-amber-400 shadow-sm' : 'border-stone-700 bg-stone-800 hover:border-stone-500 hover:bg-stone-800'}`}
+                    className={`relative p-2 rounded-lg border text-left transition-all flex-1 min-w-[120px] shrink-0 flex flex-col justify-between ${isSelected ? 'border-amber-600 bg-white ring-2 ring-amber-300 shadow-sm' : 'border-stone-200 bg-stone-50 hover:border-amber-300 hover:bg-white'}`}
                   >
                     <div className="flex justify-between items-center gap-1">
-                      <span className="font-bold text-xs text-stone-300 whitespace-nowrap flex items-center gap-1"><Gi.GiCog /> {pt.label}</span>
+                      <span className="font-bold text-xs text-stone-800 whitespace-nowrap flex items-center gap-1"><Gi.GiCog className="text-amber-700" /> {pt.label}</span>
                       {isThisPartReady ? (
                         <Badge className="bg-emerald-600 text-white text-[9px] sm:text-[10px] animate-bounce px-1.5 py-0.5 leading-none shrink-0">
                           完成！
                         </Badge>
                       ) : isThisPartCrafting ? (
-                        <Badge className="bg-blue-600 text-white text-[9px] sm:text-[10px] font-mono px-1.5 py-0.5 flex items-center gap-1 shadow-[0_0_8px_rgba(37,99,235,0.6)] leading-none shrink-0 whitespace-nowrap">
+                        <Badge className="bg-blue-600 text-white text-[9px] sm:text-[10px] font-mono px-1.5 py-0.5 flex items-center gap-1 shadow-xs leading-none shrink-0 whitespace-nowrap">
                           <motion.span animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 2, ease: "linear" }} className="inline-block text-[9px]">⚙️</motion.span>
                           <span>あと{partRemainingSec}秒</span>
                         </Badge>
                       ) : (
-                        <span className="text-[9px] text-stone-500 whitespace-nowrap leading-none font-mono">IDLE</span>
+                        <span className="text-[9px] text-stone-400 whitespace-nowrap leading-none font-mono">待機中</span>
                       )}
                     </div>
 
                     {/* 部位ごとのリアルタイムタイマー表示 */}
                     <div className="mt-1 text-[11px]">
                       {isThisPartReady ? (
-                        <span className="text-amber-400 font-bold">✨ READY</span>
+                        <span className="text-amber-700 font-bold">✨ 完成！</span>
                       ) : isThisPartCrafting ? (
                         <div className="space-y-1">
-                          <span className="text-blue-400 font-bold font-mono text-[9px]">
+                          <span className="text-blue-700 font-bold font-mono text-[9px]">
                             あと {partRemainingSec} 秒で完成
                           </span>
                           <div className="w-full bg-stone-200 rounded-full h-1.5 overflow-hidden relative">
@@ -343,35 +343,35 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
 
           {/* 製造中カード（進行中または完成受け取り待ち） */}
           {activePart && (
-            <div className="bg-stone-800 border-2 border-stone-800 text-white p-5 shadow-xl relative overflow-hidden">
+            <div className="bg-white border-2 border-amber-300 text-stone-800 p-5 shadow-md rounded-xl relative overflow-hidden">
               <div className="flex justify-between items-start mb-3">
                 <div>
                   <div className="flex items-center gap-2">
-                    <Badge className={isPartReady ? "bg-emerald-500 text-white text-xs px-2.5 py-0.5" : "bg-blue-600 text-white text-xs px-2.5 py-0.5"}>
+                    <Badge className={isPartReady ? "bg-emerald-600 text-white text-xs px-2.5 py-0.5" : "bg-blue-600 text-white text-xs px-2.5 py-0.5"}>
                       {isPartReady ? "製造完了" : "パーツ製造中..."}
                     </Badge>
-                    <span className="text-xs text-amber-300 font-bold font-mono">
+                    <span className="text-xs text-amber-800 font-bold font-mono bg-amber-100 px-2 py-0.5 rounded">
                       {partTypes.find(p => p.id === activePart.partType)?.label}パーツ
                     </span>
                   </div>
-                  <h3 className="text-base font-bold text-stone-100 mt-1.5">
+                  <h3 className="text-base font-bold text-stone-900 mt-1.5">
                     {activePart.resultPart.name} を加工中
                   </h3>
                 </div>
 
                 {/* リアルタイムタイマー表示 (秒数カウントダウン) */}
                 <div className="text-right">
-                  <div className="text-xs text-amber-400 font-bold font-mono">
+                  <div className="text-xs text-amber-700 font-bold font-mono">
                     {isPartReady ? '✨ 完成！' : formatRemainingSecondsText(partRemainingMs)}
                   </div>
-                  <span className="text-2xl font-mono font-bold text-amber-400">
+                  <span className="text-2xl font-mono font-bold text-amber-600">
                     {isPartReady ? '00:00' : formatSeconds(partRemainingMs)}
                   </span>
                 </div>
               </div>
 
               {/* プログレスバー */}
-              <div className="w-full bg-stone-800 rounded-full h-3 mb-4 overflow-hidden border border-stone-700 relative">
+              <div className="w-full bg-stone-200 rounded-full h-3 mb-4 overflow-hidden border border-stone-300 relative">
                 <div 
                   className={`h-full transition-all duration-200 relative overflow-hidden ${isPartReady ? 'bg-emerald-500' : 'bg-gradient-to-r from-amber-500 to-amber-400'}`}
                   style={{ width: `${partProgress}%` }}
@@ -387,20 +387,21 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
               </div>
 
               {/* ビジュアル演出 */}
-              <div className="flex items-center justify-between bg-stone-800/60 p-3 rounded-lg border border-stone-700/80">
+              <div className="flex items-center justify-between bg-stone-50 p-3 rounded-lg border border-stone-200">
                 <div className="flex items-center gap-3">
                   <motion.div 
                     animate={{ rotate: isPartReady ? 0 : [0, 360], scale: isPartReady ? [1, 1.08, 1] : 1 }}
                     transition={{ duration: isPartReady ? 1.5 : 8, repeat: Infinity, ease: "linear" }}
-                    className="w-12 h-12 rounded-full bg-stone-800 border border-stone-600 flex items-center justify-center shadow-inner"
+                    className="w-12 h-12 rounded-full bg-white border border-stone-200 flex items-center justify-center shadow-xs"
+                    style={{ color: AttributeColors[MATERIALS.find(m => m.id === activePart.mainMaterialId)?.attribute || 'Normal'] }}
                   >
                     <MaterialIcon materialId={activePart.mainMaterialId} size={28} />
                   </motion.div>
                   <div>
-                    <div className="text-xs text-stone-300">
-                      メイン素材: <span className="font-bold text-amber-300">{MATERIALS.find(m => m.id === activePart.mainMaterialId)?.name}</span> <span className="text-amber-400 font-bold ml-1">{'★'.repeat(MATERIALS.find(m => m.id === activePart.mainMaterialId)?.rarity || 1)}</span>
+                    <div className="text-xs text-stone-800">
+                      メイン素材: <span className="font-bold text-amber-800">{MATERIALS.find(m => m.id === activePart.mainMaterialId)?.name}</span> <span className="text-amber-600 font-bold ml-1">{'★'.repeat(MATERIALS.find(m => m.id === activePart.mainMaterialId)?.rarity || 1)}</span>
                     </div>
-                    <div className="text-[11px] text-stone-400 mt-0.5">
+                    <div className="text-[11px] text-stone-500 mt-0.5">
                       所要時間: {formatDurationLabel(activePart.durationMs)}
                     </div>
                   </div>
@@ -408,14 +409,14 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
 
                 {!isPartReady ? (
                   <div className="text-right">
-                    <span className="inline-block px-2.5 py-1 bg-amber-500/20 border border-amber-400/40 rounded text-amber-300 font-mono font-bold text-xs animate-pulse">
+                    <span className="inline-block px-2.5 py-1 bg-amber-100 border border-amber-300 rounded text-amber-800 font-mono font-bold text-xs animate-pulse">
                       あと {partRemainingSec} 秒
                     </span>
                   </div>
                 ) : (
                   <Button 
                     size="sm"
-                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 text-xs shadow-lg animate-pulse"
+                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 text-xs shadow-md animate-pulse"
                     onClick={handleClaimPart}
                   >
                     🎉 受け取る
@@ -427,7 +428,7 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
               {isPartReady && (
                 <div className="mt-3">
                   <Button 
-                    className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 text-sm shadow-lg animate-pulse"
+                    className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 text-sm shadow-md animate-pulse"
                     onClick={handleClaimPart}
                   >
                     🎉 完成したパーツを受け取る！
@@ -440,7 +441,7 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
           {/* 製造フォーム（製造中でも素材確認・次期選択が可能） */}
           <div className={`space-y-4 ${activePart ? 'opacity-60 pointer-events-none' : ''}`}>
             {activePart && (
-              <div className="bg-amber-50 border border-amber-300 text-amber-800 text-xs px-3 py-1.5 rounded-md font-bold text-center">
+              <div className="bg-amber-100 border border-amber-300 text-amber-900 text-xs px-3 py-1.5 rounded-md font-bold text-center">
                 ※ 現在パーツを製造中です。完成後に受け取ると次の製造を行えます。
               </div>
             )}
@@ -451,10 +452,10 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
               {/* メイン素材選択 */}
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <h4 className="font-bold text-stone-300 text-sm">メイン素材 (3個消費) - 属性・レア度・製造時間を決定</h4>
+                  <h4 className="font-bold text-stone-800 text-sm">メイン素材 (3個消費) - 属性・レア度・製造時間を決定</h4>
                 </div>
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-                  {availableMainMats?.length === 0 && <p className="text-stone-500 col-span-full text-xs font-mono">WARNING: INSUFFICIENT MATERIALS</p>}
+                  {availableMainMats?.length === 0 && <p className="text-stone-500 col-span-full text-xs font-mono">※製造に必要な素材（3個以上）がありません</p>}
                   
                   {availableMainMats.map(mat => {
                     const count = state.materials[mat.id] || 0;
@@ -493,10 +494,10 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
               {/* サブ素材選択 */}
               <div className="pt-2">
                 <div className="flex justify-between items-center mb-2">
-                  <h4 className="font-bold text-stone-300 text-sm">サブ素材 (2個消費) - 追加性能を決定</h4>
+                  <h4 className="font-bold text-stone-800 text-sm">サブ素材 (2個消費) - 追加性能を決定</h4>
                 </div>
                 <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2">
-                  {availableSubMats?.length === 0 && <p className="text-stone-500 col-span-full text-xs font-mono">WARNING: INSUFFICIENT MATERIALS</p>}
+                  {availableSubMats?.length === 0 && <p className="text-stone-500 col-span-full text-xs font-mono">※サブ素材（2個以上）がありません</p>}
                   
                   {availableSubMats.map(mat => {
                     // Ignore if it's the main mat and we don't have enough to use both
@@ -563,31 +564,31 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
         <div className="space-y-5">
           {/* 組立中カード（進行中または完成受け取り待ち） */}
           {activeRobot ? (
-            <div className="bg-stone-800 border-2 border-stone-800 text-white p-6 shadow-xl relative overflow-hidden">
+            <div className="bg-white border-2 border-amber-300 text-stone-800 p-6 shadow-md rounded-xl relative overflow-hidden">
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <Badge className={isRobotReady ? "bg-emerald-500 text-white text-xs px-2.5 py-1" : "bg-blue-600 text-white text-xs px-2.5 py-1"}>
+                  <Badge className={isRobotReady ? "bg-emerald-600 text-white text-xs px-2.5 py-1" : "bg-blue-600 text-white text-xs px-2.5 py-1"}>
                     {isRobotReady ? "組立完了" : "ロボット組立中..."}
                   </Badge>
-                  <h3 className="text-lg font-bold text-stone-100 mt-2">
+                  <h3 className="text-lg font-bold text-stone-900 mt-2">
                     「{activeRobot.resultRobot.name}」を組立中
                   </h3>
-                  <p className="text-xs text-stone-400 mt-0.5">
+                  <p className="text-xs text-stone-500 mt-0.5">
                     パーツ性能に応じた組立時間（所要時間: {formatDurationLabel(activeRobot.durationMs)}）
                   </p>
                 </div>
                 <div className="text-right">
-                  <div className="text-xs text-amber-400 font-bold font-mono">
+                  <div className="text-xs text-amber-700 font-bold font-mono">
                     {isRobotReady ? '✨ 完成！' : formatRemainingSecondsText(robotRemainingMs)}
                   </div>
-                  <span className="text-2xl font-mono font-bold text-amber-400">
+                  <span className="text-2xl font-mono font-bold text-amber-600">
                     {isRobotReady ? '00:00' : formatSeconds(robotRemainingMs)}
                   </span>
                 </div>
               </div>
 
               {/* プログレスバー */}
-              <div className="w-full bg-stone-800 rounded-full h-3.5 mb-6 overflow-hidden border border-stone-700 relative">
+              <div className="w-full bg-stone-200 rounded-full h-3.5 mb-6 overflow-hidden border border-stone-300 relative">
                 <div 
                   className={`h-full transition-all duration-200 relative overflow-hidden ${isRobotReady ? 'bg-emerald-500' : 'bg-gradient-to-r from-amber-500 to-amber-400'}`}
                   style={{ width: `${robotProgress}%` }}
@@ -603,11 +604,11 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
               </div>
 
               {/* ビジュアル演出 */}
-              <div className="flex flex-col items-center justify-center py-4 relative overflow-hidden rounded-xl bg-stone-800/30">
+              <div className="flex flex-col items-center justify-center py-4 relative overflow-hidden rounded-xl bg-stone-50 border border-stone-200">
                 {/* 稼働中エフェクト（背景ギア） */}
                 {!isRobotReady && (
                   <div className="absolute inset-0 pointer-events-none flex justify-center items-center">
-                    <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 10, ease: "linear" }} className="absolute -left-6 text-7xl opacity-20 filter grayscale">⚙️</motion.div>
+                    <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 10, ease: "linear" }} className="absolute -left-6 text-7xl opacity-10 filter grayscale">⚙️</motion.div>
                     <motion.div animate={{ rotate: -360 }} transition={{ repeat: Infinity, duration: 15, ease: "linear" }} className="absolute -right-6 text-8xl opacity-10 filter grayscale">⚙️</motion.div>
                   </div>
                 )}
@@ -615,7 +616,7 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                 <motion.div
                   animate={{ scale: isRobotReady ? [1, 1.05, 1] : [0.98, 1.02, 0.98] }}
                   transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                  className="opacity-90 filter drop-shadow-md relative"
+                  className="filter drop-shadow-md relative"
                 >
                   <RobotVisual robot={activeRobot.resultRobot} size={130} />
                   
@@ -624,13 +625,13 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                     <motion.div
                       animate={{ top: ['-10%', '110%', '-10%'] }}
                       transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                      className="absolute left-[-20%] right-[-20%] h-1 bg-cyan-400/80 shadow-[0_0_8px_2px_rgba(34,211,238,0.6)] z-10 rounded-full"
+                      className="absolute left-[-20%] right-[-20%] h-1 bg-amber-500/80 shadow-[0_0_8px_2px_rgba(245,158,11,0.5)] z-10 rounded-full"
                     />
                   )}
                 </motion.div>
 
                 {!isRobotReady ? (
-                  <div className="mt-3 font-bold text-xs tracking-wider text-amber-300/90 animate-pulse font-mono bg-stone-800/80 px-3 py-1 rounded-full border border-stone-700 relative z-20">
+                  <div className="mt-3 font-bold text-xs tracking-wider text-amber-900 animate-pulse font-mono bg-amber-100 px-3 py-1 rounded-full border border-amber-300 relative z-20">
                     🔧 接合・動作テスト中... あと {robotRemainingSec} 秒
                   </div>
                 ) : null}
@@ -640,13 +641,13 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
               <div className="mt-4 flex gap-3">
                 {isRobotReady ? (
                   <Button 
-                    className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 text-base shadow-lg animate-pulse"
+                    className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 text-base shadow-md animate-pulse"
                     onClick={handleClaimRobot}
                   >
                     🎉 完成したロボットを受け取る！
                   </Button>
                 ) : (
-                  <div className="w-full text-center py-2 text-xs text-stone-400">
+                  <div className="w-full text-center py-2 text-xs text-stone-500 font-bold">
                     完了するまでしばらくお待ちください（他の画面に移動しても進行します）
                   </div>
                 )}
@@ -658,7 +659,7 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
               <p className={theme.typography.body}>各部位のパーツを組み合わせてロボットを組み立てます。</p>
               
               {/* プレビューカード */}
-              <div className="flex flex-col items-center justify-center p-4 bg-stone-100 border-2 border-stone-300 border-dashed relative overflow-hidden">
+              <div className="flex flex-col items-center justify-center p-4 bg-white border-2 border-stone-300 border-dashed rounded-xl relative overflow-hidden shadow-xs">
                 <h3 className="font-bold text-stone-500 mb-2 z-10 text-xs">プレビュー</h3>
                 
                 <AttributeEffects 
@@ -753,9 +754,9 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
               </div>
 
               {/* 組立概要 & 開始ボタン */}
-              <div className="mt-8 flex flex-col sm:flex-row justify-between items-center bg-stone-100 gap-3">
+              <div className="mt-8 flex flex-col sm:flex-row justify-between items-center bg-stone-100 border border-stone-200 p-3 rounded-xl gap-3">
                 <div>
-                  <p className="text-xs text-stone-600 flex items-center gap-1.5">
+                  <p className="text-xs text-stone-700 flex items-center gap-1.5 font-bold">
                     ⏱️ 組立所要時間: <strong className="text-stone-900 text-sm bg-amber-100 px-2 py-0.5 rounded border border-amber-300 font-mono">{formatDurationLabel(estimatedRobotDuration)}</strong>
                     {hasSelectedAllParts && (
                       <span className="text-stone-500 text-[11px]">

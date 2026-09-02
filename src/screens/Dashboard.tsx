@@ -168,70 +168,78 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
 
   return (
     <div className="space-y-4">
-      {/* 統合ダッシュボードカード (Unified Workshop Dashboard) */}
-      <Card className="bg-stone-800 border-4 border-stone-600 shadow-xl p-3 relative overflow-hidden">
-        {/* Factory Background */}
-        <div className="absolute inset-0 pointer-events-none opacity-10 z-0 bg-[linear-gradient(45deg,transparent_25%,rgba(0,0,0,1)_25%,rgba(0,0,0,1)_50%,transparent_50%,transparent_75%,rgba(0,0,0,1)_75%,rgba(0,0,0,1)_100%)] bg-[length:20px_20px]"></div>
-        <div className="absolute top-0 right-0 p-2 opacity-20 pointer-events-none z-0"><Gi.GiSpanner size={80} className="text-stone-900" /></div>
+      {/* 統合ダッシュボードカード (Unified Workshop Dashboard - Bright Theme) */}
+      <Card className="bg-stone-100/90 border-2 border-stone-300 shadow-md p-3 relative overflow-hidden">
+        {/* Factory Background subtle pattern */}
+        <div className="absolute inset-0 pointer-events-none opacity-[0.03] z-0 bg-[linear-gradient(45deg,transparent_25%,rgba(0,0,0,1)_25%,rgba(0,0,0,1)_50%,transparent_50%,transparent_75%,rgba(0,0,0,1)_75%,rgba(0,0,0,1)_100%)] bg-[length:20px_20px]"></div>
+        <div className="absolute top-0 right-0 p-2 opacity-10 pointer-events-none z-0"><Gi.GiSpanner size={80} className="text-stone-400" /></div>
         <div className="relative z-10">
-        {/* 上部ステータスバー (コンパクトな計器盤デザイン) */}
+        {/* 上部ステータスバー (コンパクトな明るい計器盤デザイン) */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
-          <div className="bg-stone-950 border border-stone-800 rounded flex items-center p-1.5 shadow-inner">
-            <div className="w-6 h-6 bg-amber-900/40 rounded flex items-center justify-center shrink-0 border border-amber-800/50 mr-2">
+          <div className="bg-white border border-stone-200 rounded flex items-center p-1.5 shadow-xs">
+            <div className="w-6 h-6 bg-amber-100 rounded flex items-center justify-center shrink-0 border border-amber-200 mr-2">
               <span className="text-xs">💰</span>
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-[9px] font-bold text-amber-600/80 uppercase tracking-widest leading-none mb-0.5">GOLD</div>
-              <div className="text-sm font-black text-amber-500 font-mono truncate leading-none">{state.gold}</div>
+              <div className="text-[9px] font-bold text-amber-800/80 uppercase tracking-widest leading-none mb-0.5">GOLD</div>
+              <div className="text-sm font-black text-amber-600 font-mono truncate leading-none">{state.gold}</div>
             </div>
           </div>
 
-          <div className="bg-stone-950 border border-stone-800 rounded flex items-center p-1.5 shadow-inner">
-            <div className="w-6 h-6 bg-blue-900/40 rounded flex items-center justify-center shrink-0 border border-blue-800/50 mr-2">
+          <div className="bg-white border border-stone-200 rounded flex items-center p-1.5 shadow-xs">
+            <div className="w-6 h-6 bg-blue-100 rounded flex items-center justify-center shrink-0 border border-blue-200 mr-2">
               <span className="text-xs">🤖</span>
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-[9px] font-bold text-blue-600/80 uppercase tracking-widest leading-none mb-0.5">ROBOTS</div>
-              <div className="text-sm font-black text-blue-400 font-mono truncate leading-none">
-                {state.robots?.length} <span className="text-[10px] text-stone-500">/ {state.storageSize}</span>
+              <div className="text-[9px] font-bold text-blue-800/80 uppercase tracking-widest leading-none mb-0.5">ROBOTS</div>
+              <div className="text-sm font-black text-blue-600 font-mono truncate leading-none">
+                {state.robots?.length} <span className="text-[10px] text-stone-400">/ {state.storageSize}</span>
               </div>
             </div>
           </div>
 
-          <div className="bg-stone-950 border border-stone-800 rounded flex items-center p-1.5 shadow-inner">
-            <div className="w-6 h-6 bg-emerald-900/40 rounded flex items-center justify-center shrink-0 border border-emerald-800/50 mr-2">
+          <div className="bg-white border border-stone-200 rounded flex items-center p-1.5 shadow-xs">
+            <div className="w-6 h-6 bg-emerald-100 rounded flex items-center justify-center shrink-0 border border-emerald-200 mr-2">
               <span className="text-xs">🏆</span>
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-[9px] font-bold text-emerald-600/80 tracking-widest leading-none mb-0.5">納品数</div>
-              <div className="text-sm font-black text-amber-500 font-mono truncate leading-none">{state.deliveredRobotsCount}</div>
+              <div className="text-[9px] font-bold text-emerald-800/80 tracking-widest leading-none mb-0.5">納品数</div>
+              <div className="text-sm font-black text-emerald-600 font-mono truncate leading-none">{state.deliveredRobotsCount}</div>
             </div>
           </div>
 
-          <div className="bg-stone-950 border border-stone-800 rounded flex items-center p-1.5 shadow-inner">
-            <div className="w-6 h-6 bg-purple-900/40 rounded flex items-center justify-center shrink-0 border border-purple-800/50 mr-2">
-              <span className="text-xs"><Gi.GiSpanner className="inline mr-1" /></span>
+          <div className="bg-white border border-stone-200 rounded flex items-center p-1.5 shadow-xs">
+            <div className="w-6 h-6 bg-purple-100 rounded flex items-center justify-center shrink-0 border border-purple-200 mr-2">
+              <span className="text-xs"><Gi.GiSpanner className="inline mr-1 text-purple-700" /></span>
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-[9px] font-bold text-purple-600/80 uppercase tracking-widest leading-none mb-0.5">REPAIRS</div>
-              <div className="text-sm font-black text-purple-400 font-mono truncate leading-none">{state.repairKits ?? 0}</div>
+              <div className="text-[9px] font-bold text-purple-800/80 uppercase tracking-widest leading-none mb-0.5">REPAIRS</div>
+              <div className="text-sm font-black text-purple-600 font-mono truncate leading-none">{state.repairKits ?? 0}</div>
             </div>
           </div>
         </div>
 
+        {/* まとめて回収バー (遠征の上に配置) */}
+        {totalAutoPendingDrops > 0 && (
+          <div className="border-t border-stone-200 pt-3 pb-1 flex items-center justify-between bg-amber-50/80 border border-amber-300 p-2 rounded-xl mb-3">
+            <div className="flex items-center gap-2">
+              <span className="text-sm">📦</span>
+              <span className="text-xs font-bold text-amber-900">自動探索で獲得した素材があります</span>
+            </div>
+            <Button size="sm" variant="success" onClick={handleClaimAllAutoDispatches} className="animate-bounce text-xs px-3 py-1 font-bold shadow-xs bg-emerald-600 hover:bg-emerald-500 text-white">
+              📦 まとめて回収 ({totalAutoPendingDrops})
+            </Button>
+          </div>
+        )}
+
         {/* 通常遠征ヘッダー */}
-        <div className="border-t border-stone-800 pt-3 mb-2 flex items-center justify-between flex-wrap gap-2">
+        <div className="border-t border-stone-200 pt-3 mb-2 flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 font-bold text-stone-300 text-sm tracking-wider">
-              <Gi.GiWalkingScout className="text-amber-500" size={18} />
+            <div className="flex items-center gap-1.5 font-bold text-stone-800 text-sm tracking-wider">
+              <Gi.GiWalkingScout className="text-amber-600" size={18} />
               通常遠征
             </div>
           </div>
-          {totalAutoPendingDrops > 0 && (
-            <Button size="sm" variant="success" onClick={handleClaimAllAutoDispatches} className="animate-pulse text-xs px-2.5 py-1 font-bold shadow-xs border border-emerald-600 bg-emerald-700/80">
-              📦 まとめて回収 ({totalAutoPendingDrops})
-            </Button>
-          )}
         </div>
 
         <div className="mb-4">
@@ -291,10 +299,10 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
         </div>
 
         {/* 自動探索ヘッダー */}
-        <div className="border-t border-stone-800 pt-3 mb-2 flex items-center justify-between flex-wrap gap-2">
+        <div className="border-t border-stone-200 pt-3 mb-2 flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 font-bold text-stone-300 text-sm tracking-wider">
-              <Gi.GiFactory className="text-amber-500" size={18} />
+            <div className="flex items-center gap-1.5 font-bold text-stone-800 text-sm tracking-wider">
+              <Gi.GiFactory className="text-amber-600" size={18} />
               自動探索
             </div>
             {(state.autoDispatches && state.autoDispatches.length > 0) && (
@@ -305,7 +313,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
             )}
           </div>
           <div className="flex items-center gap-1.5">
-            <Button size="sm" onClick={() => setIsDispatchModalOpen(true)} className="text-xs px-2.5 py-1 bg-stone-800 hover:bg-stone-700 text-stone-300 border border-stone-600 font-mono shadow-sm">
+            <Button size="sm" onClick={() => setIsDispatchModalOpen(true)} className="text-xs px-2.5 py-1 bg-amber-600 hover:bg-amber-500 text-white border border-amber-500 font-bold shadow-sm">
               <Gi.GiWalkingScout className="inline mr-1" /> 派遣する
             </Button>
           </div>
@@ -646,18 +654,18 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
 
             {/* Selected Robot Preview in Modal */}
             {selectedModalRobot && (
-              <div className="mb-4 p-3 bg-stone-900 text-stone-100 rounded-lg border border-stone-700">
+              <div className="mb-4 p-3 bg-stone-50 text-stone-800 rounded-lg border border-stone-300 shadow-xs">
                 <div className="flex items-center justify-between gap-3 mb-2">
                   <div>
-                    <p className="font-bold text-xs text-amber-400">{selectedModalRobot.name}</p>
-                    <p className="text-[11px] text-stone-300 mt-0.5">
-                      パワー: <span className="font-bold text-orange-400">{selectedModalRobot.stats.power}</span> / 速度: <span className="font-bold text-yellow-400">{selectedModalRobot.stats.agility}</span>
+                    <p className="font-bold text-xs text-amber-900">{selectedModalRobot.name}</p>
+                    <p className="text-[11px] text-stone-600 mt-0.5">
+                      パワー: <span className="font-bold text-orange-600">{selectedModalRobot.stats.power}</span> / 速度: <span className="font-bold text-amber-600">{selectedModalRobot.stats.agility}</span>
                     </p>
-                    <p className="text-[10px] text-amber-500 font-mono mt-0.5">
+                    <p className="text-[10px] text-amber-700 font-mono mt-0.5">
                       ⚡ 敏捷補正: -{selectedModalRobot.stats.agility}秒短縮 (周期: {Math.round(engine.getAutoDispatchIntervalMs(selectedModalRobot.id) / 60000 * 10) / 10}分)
                     </p>
                   </div>
-                  <div className="bg-stone-950 p-1 rounded border border-stone-700 shrink-0">
+                  <div className="bg-white p-1 rounded border border-stone-200 shrink-0">
                     <RobotVisual 
                       robot={selectedModalRobot} 
                       size={48} 
@@ -668,8 +676,8 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                   </div>
                 </div>
 
-                <div className="pt-2 border-t border-stone-800 flex items-center justify-center">
-                  <RobotRadarChart robot={selectedModalRobot} size={150} themeStyle="cyber" />
+                <div className="pt-2 border-t border-stone-200 flex items-center justify-center">
+                  <RobotRadarChart robot={selectedModalRobot} size={150} themeStyle="light" />
                 </div>
               </div>
             )}

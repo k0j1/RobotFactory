@@ -420,22 +420,22 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                           </div>
                         </button>
 
-                        {/* 構成パーツ & 属性ツールチップ */}
+                        {/* 構成パーツ & 属性ツールチップ (Bright Theme) */}
                         {activeTooltipRobotId === r.id && (
                           <div 
-                            className="absolute right-0 top-full mt-2 w-72 sm:w-80 bg-stone-900/95 text-stone-100 p-3 rounded-xl shadow-2xl border-2 border-stone-700 z-30 backdrop-blur-xs animate-in fade-in zoom-in-95 duration-150"
+                            className="absolute right-0 top-full mt-2 w-72 sm:w-80 bg-white text-stone-800 p-3 rounded-xl shadow-2xl border-2 border-stone-300 z-30 animate-in fade-in zoom-in-95 duration-150"
                             onClick={(e) => e.stopPropagation()}
                           >
                             {/* 吹き出しの三角矢印 */}
-                            <div className="absolute -top-2 right-6 w-3 h-3 bg-stone-900 border-t-2 border-l-2 border-stone-700 transform rotate-45" />
+                            <div className="absolute -top-2 right-6 w-3 h-3 bg-white border-t-2 border-l-2 border-stone-300 transform rotate-45" />
 
-                            <div className="flex justify-between items-center border-b border-stone-700 pb-1.5 mb-2 relative z-10">
-                              <span className="font-bold text-xs text-amber-400 flex items-center gap-1">
+                            <div className="flex justify-between items-center border-b border-stone-200 pb-1.5 mb-2 relative z-10">
+                              <span className="font-bold text-xs text-amber-900 flex items-center gap-1">
                                 🧩 構成パーツと属性
                               </span>
                               <button 
                                 onClick={() => setActiveTooltipRobotId(null)}
-                                className="text-stone-400 hover:text-white font-bold text-xs p-1 leading-none rounded hover:bg-stone-800 transition"
+                                className="text-stone-400 hover:text-stone-700 font-bold text-xs p-1 leading-none rounded hover:bg-stone-100 transition"
                               >
                                 ✕
                               </button>
@@ -454,14 +454,14 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                                 return (
                                   <div 
                                     key={key} 
-                                    className="flex items-center gap-2 bg-stone-800/90 p-2 rounded-lg border border-stone-700/80 shadow-xs"
+                                    className="flex items-center gap-2 bg-stone-50 p-2 rounded-lg border border-stone-200 shadow-2xs"
                                   >
-                                    <div className="shrink-0 bg-stone-900 p-1 rounded border border-stone-700 flex items-center justify-center">
+                                    <div className="shrink-0 bg-stone-100 p-1 rounded border border-stone-200 flex items-center justify-center">
                                       <PartVisual part={part} size={36} />
                                     </div>
                                     <div className="min-w-0 flex-1">
                                       <div className="flex items-center justify-between gap-1 mb-0.5">
-                                        <span className="text-[10px] font-bold text-stone-400 bg-stone-700 px-1.5 py-0.2 rounded">
+                                        <span className="text-[10px] font-bold text-stone-600 bg-stone-200 px-1.5 py-0.2 rounded">
                                           {label}
                                         </span>
                                         <span 
@@ -471,10 +471,10 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                                           {attrName}属性
                                         </span>
                                       </div>
-                                      <div className="text-xs font-bold text-stone-100 truncate">
+                                      <div className="text-xs font-bold text-stone-800 truncate">
                                         {part.name}
                                       </div>
-                                      <div className="text-[10px] text-stone-400 font-mono mt-0.5 flex gap-2">
+                                      <div className="text-[10px] text-stone-500 font-mono mt-0.5 flex gap-2">
                                         <span>HP:{part.stats.hp}</span>
                                         <span>Pow:{part.stats.power}</span>
                                         <span>Def:{part.stats.defense}</span>
@@ -485,7 +485,7 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                               })}
                             </div>
 
-                            <div className="mt-2.5 pt-1.5 border-t border-stone-800 text-[10px] text-stone-400 text-center relative z-10">
+                            <div className="mt-2.5 pt-1.5 border-t border-stone-200 text-[10px] text-stone-500 text-center relative z-10">
                               ※画像を再タップまたは✕で閉じます
                             </div>
                           </div>
@@ -493,46 +493,46 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                       </div>
                     </div>
 
-                    {/* レーダーチャート展開表示 */}
+                    {/* レーダーチャート展開表示 (Bright Theme) */}
                     {isRadarExpanded && (
-                      <div className="mt-3 pt-3 border-t border-stone-200 bg-stone-900 text-stone-100 p-3 rounded-lg animate-in fade-in zoom-in-95 duration-150">
+                      <div className="mt-3 pt-3 border-t border-stone-200 bg-stone-50 text-stone-800 p-3 rounded-lg border border-stone-200 animate-in fade-in zoom-in-95 duration-150 shadow-inner">
                         <div className="flex justify-between items-center mb-2">
-                          <span className="text-xs font-bold text-amber-400 flex items-center gap-1">
+                          <span className="text-xs font-bold text-amber-900 flex items-center gap-1">
                             <span>📊</span> {r.name} のステータス特性
                           </span>
                           <button
                             onClick={() => setExpandedRadarRobotId(null)}
-                            className="text-stone-400 hover:text-white text-xs font-bold px-1.5 py-0.5 rounded hover:bg-stone-800"
+                            className="text-stone-400 hover:text-stone-700 text-xs font-bold px-1.5 py-0.5 rounded hover:bg-stone-200"
                           >
                             ✕
                           </button>
                         </div>
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                          <RobotRadarChart robot={r} size={160} themeStyle="cyber" />
+                          <RobotRadarChart robot={r} size={160} themeStyle="light" />
                           <div className="w-full grid grid-cols-2 gap-1.5 text-[10px] font-mono">
-                            <div className="bg-stone-950/80 p-1.5 rounded border border-stone-800">
-                              <span className="text-rose-400 font-bold block">❤️ HP: {r.stats.hp}</span>
-                              <span className="text-stone-400 text-[9px]">耐久力</span>
+                            <div className="bg-white p-1.5 rounded border border-stone-200">
+                              <span className="text-rose-600 font-bold block">❤️ HP: {r.stats.hp}</span>
+                              <span className="text-stone-500 text-[9px]">耐久力</span>
                             </div>
-                            <div className="bg-stone-950/80 p-1.5 rounded border border-stone-800">
-                              <span className="text-orange-400 font-bold block">⚔️ POW: {r.stats.power}</span>
-                              <span className="text-stone-400 text-[9px]">攻撃力(ドロップ枠)</span>
+                            <div className="bg-white p-1.5 rounded border border-stone-200">
+                              <span className="text-orange-600 font-bold block">⚔️ POW: {r.stats.power}</span>
+                              <span className="text-stone-500 text-[9px]">攻撃力(ドロップ枠)</span>
                             </div>
-                            <div className="bg-stone-950/80 p-1.5 rounded border border-stone-800">
-                              <span className="text-blue-400 font-bold block">🛡️ DEF: {r.stats.defense}</span>
-                              <span className="text-stone-400 text-[9px]">防御力</span>
+                            <div className="bg-white p-1.5 rounded border border-stone-200">
+                              <span className="text-blue-600 font-bold block">🛡️ DEF: {r.stats.defense}</span>
+                              <span className="text-stone-500 text-[9px]">防御力</span>
                             </div>
-                            <div className="bg-stone-950/80 p-1.5 rounded border border-stone-800">
-                              <span className="text-amber-400 font-bold block">⚡ AGI: {r.stats.agility}</span>
-                              <span className="text-stone-400 text-[9px]">速度(時間短縮)</span>
+                            <div className="bg-white p-1.5 rounded border border-stone-200">
+                              <span className="text-yellow-600 font-bold block">⚡ AGI: {r.stats.agility}</span>
+                              <span className="text-stone-500 text-[9px]">速度(時間短縮)</span>
                             </div>
-                            <div className="bg-stone-950/80 p-1.5 rounded border border-stone-800">
-                              <span className="text-emerald-400 font-bold block">🎯 DEX: {r.stats.dexterity}</span>
-                              <span className="text-stone-400 text-[9px]">探索力(レア発見)</span>
+                            <div className="bg-white p-1.5 rounded border border-stone-200">
+                              <span className="text-emerald-600 font-bold block">🎯 DEX: {r.stats.dexterity}</span>
+                              <span className="text-stone-500 text-[9px]">探索力(レア発見)</span>
                             </div>
-                            <div className="bg-stone-950/80 p-1.5 rounded border border-stone-800">
-                              <span className="text-purple-400 font-bold block">🔮 INT: {r.stats.intelligence}</span>
-                              <span className="text-stone-400 text-[9px]">解析力(幸運値)</span>
+                            <div className="bg-white p-1.5 rounded border border-stone-200">
+                              <span className="text-purple-600 font-bold block">🔮 INT: {r.stats.intelligence}</span>
+                              <span className="text-stone-500 text-[9px]">解析力(幸運値)</span>
                             </div>
                           </div>
                         </div>
