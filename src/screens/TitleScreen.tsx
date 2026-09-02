@@ -1,6 +1,7 @@
 import React from 'react';
 import { theme } from '../styles/theme';
 import { Button } from '../components/ui/core';
+import * as Gi from 'react-icons/gi';
 
 export const TitleScreen: React.FC<{ onStart: () => void }> = ({ onStart }) => {
   return (
@@ -13,13 +14,13 @@ export const TitleScreen: React.FC<{ onStart: () => void }> = ({ onStart }) => {
           工房を開く
         </Button>
 
-        <p className="mt-12 text-stone-400">v1.0.121</p>
+        <p className="mt-12 text-stone-400">v1.0.124</p>
       </div>
       
       {/* Decorative background elements */}
-      <div className="absolute top-10 left-10 opacity-20 text-6xl">⚙️</div>
-      <div className="absolute bottom-20 right-10 opacity-20 text-6xl">🔧</div>
-      <div className="absolute top-1/4 right-1/4 opacity-10 text-8xl">🤖</div>
+      <Gi.GiGears className="absolute top-10 left-10 opacity-20 text-6xl" />
+      <Gi.GiSpanner className="absolute bottom-20 right-10 opacity-20 text-6xl" />
+      <Gi.GiRobotGolem className="absolute top-1/4 right-1/4 opacity-10 text-8xl" />
     </div>
   );
 };

@@ -1,6 +1,7 @@
 import React from 'react';
 import { theme } from '../../styles/theme';
 import { GameState } from '../../core/models';
+import * as Gi from 'react-icons/gi';
 
 export const Layout: React.FC<{ 
   children: React.ReactNode; 
@@ -26,6 +27,7 @@ export const Layout: React.FC<{
     { 
       id: 'dashboard', 
       label: '工房',
+      icon: <Gi.GiFactory size={22} />,
       badge: (isQuestDone || totalPendingAutoDrops > 0 || isCraftDone || isStorageTaskDone) 
         ? (totalPendingAutoDrops > 0 ? (totalPendingAutoDrops > 99 ? '99+' : `${totalPendingAutoDrops}`) : '!') 
         : undefined,
@@ -34,23 +36,26 @@ export const Layout: React.FC<{
     { 
       id: 'quest', 
       label: '遠征',
+      icon: <Gi.GiWalkingScout size={22} />,
       badge: isQuestDone ? '完了' : undefined,
       badgeColor: 'bg-amber-500 text-white animate-bounce'
     },
     { 
       id: 'craft', 
       label: '製造',
+      icon: <Gi.GiAnvil size={22} />,
       badge: isCraftDone ? '完了' : (state?.activePartCraft || state?.activeRobotAssembly ? '作成中' : undefined),
       badgeColor: isCraftDone ? 'bg-amber-500 text-white animate-bounce' : 'bg-blue-500 text-white'
     },
-    { id: 'requests', label: '依頼板' },
+    { id: 'requests', label: '依頼', icon: <Gi.GiScrollUnfurled size={22} /> },
     { 
       id: 'storage', 
       label: '倉庫',
+      icon: <Gi.GiCardboardBox size={22} />,
       badge: isStorageTaskDone ? '完了' : (isStorageTaskActive ? '解体中' : undefined),
       badgeColor: isStorageTaskDone ? 'bg-amber-500 text-white animate-bounce' : 'bg-blue-500 text-white'
     },
-    { id: 'minigame', label: 'バトル' },
+    { id: 'minigame', label: 'バトル', icon: <Gi.GiCrossedSwords size={22} /> },
   ];
 
   return (
@@ -59,7 +64,7 @@ export const Layout: React.FC<{
         <div className="max-w-4xl mx-auto flex justify-between items-center">
           <h1 className={theme.typography.h2}>ポンコツロボット工房</h1>
           <div className="flex items-center gap-1.5 bg-stone-900/80 border border-amber-500/50 px-2.5 py-1 rounded-full shadow-xs">
-            <span className="text-amber-400 text-sm">💰</span>
+            <Gi.GiCoins className="text-amber-400" size={16} />
             <span className="font-mono font-bold text-amber-300 text-sm tracking-wide">
               {state?.gold ?? 0}
             </span>
@@ -72,17 +77,18 @@ export const Layout: React.FC<{
         {children}
       </main>
 
-      <nav className={`${theme.colors.surface} ${theme.shadow.lg} border-t ${theme.colors.border} fixed bottom-0 w-full ${theme.zIndex.nav}`}>
-        <div className="max-w-4xl mx-auto flex justify-around p-2 gap-1">
+      <nav className={`${theme.colors.surface} ${theme.shadow.lg} border-t ${theme.colors.border} fixed bottom-0 w-full ${theme.zIndex.nav} pb-safe`}>
+        <div className="max-w-4xl mx-auto flex justify-around p-1.5 gap-1">
           {navItems.map(item => (
             <button
               key={item.id}
               onClick={() => onNavigate(item.id)}
-              className={`relative flex-1 py-3 text-center transition-colors ${theme.radius.md} ${activeView === item.id ? theme.colors.primary : 'hover:bg-stone-200'}`}
+              className={`relative flex-1 py-1.5 flex flex-col items-center justify-center transition-colors ${theme.radius.md} ${activeView === item.id ? theme.colors.primary : 'hover:bg-stone-200'}`}
             >
-              <span className={`font-bold whitespace-nowrap ${activeView === item.id ? 'text-white' : theme.colors.textMuted}`}>{item.label}</span>
+              <div className={activeView === item.id ? 'text-white' : theme.colors.textMuted}>{item.icon}</div>
+              <span className={`font-bold text-[10px] mt-0.5 whitespace-nowrap ${activeView === item.id ? 'text-white' : theme.colors.textMuted}`}>{item.label}</span>
               {item.badge && (
-                <span className={`absolute -top-1 right-1 h-4.5 min-w-[1.25rem] px-1 inline-flex items-center justify-center text-[9px] font-bold rounded-full shadow-md border border-white whitespace-nowrap leading-none tracking-tight shrink-0 ${item.badgeColor}`}>
+                <span className={`absolute top-0.5 right-1 h-4 min-w-[1rem] px-1 inline-flex items-center justify-center text-[8px] font-bold rounded-full shadow-md border border-white whitespace-nowrap leading-none tracking-tight shrink-0 ${item.badgeColor}`}>
                   {item.badge}
                 </span>
               )}

@@ -6,7 +6,7 @@ import { theme } from '../styles/theme';
 import { RobotVisual, PartVisual } from '../components/robot/RobotVisual';
 import { SVG_HEADS, SVG_BODIES, SVG_ARMS, SVG_LEGS } from '../components/robot/RobotSVGs';
 import { MATERIALS, getMaterialCraftableVisuals } from '../core/data';
-import { FaRobot, FaBox, FaWrench, FaShoePrints, FaStar } from 'react-icons/fa';
+import * as Gi from 'react-icons/gi';
 import { MaterialIcon } from '../components/ui/MaterialIcon';
 
 const SinglePart: React.FC<{ Comp: React.FC<{color: string, viewBox?: string}>, color: string, type: 'head'|'body'|'arms'|'legs', rarityLabel?: number }> = ({ Comp, color, type, rarityLabel }) => {
@@ -24,7 +24,7 @@ const SinglePart: React.FC<{ Comp: React.FC<{color: string, viewBox?: string}>, 
     <div className="bg-stone-100 rounded p-1 flex flex-col items-center border border-stone-200 overflow-hidden w-full aspect-square justify-center">
       {rarityLabel !== undefined && (
         <span className="text-[10px] flex items-center gap-0.5 mb-1 text-amber-600 font-bold">
-          <FaStar size={10} />{rarityLabel}
+          <Gi.GiStarFormation size={10} />{rarityLabel}
         </span>
       )}
       <div className="flex-1 w-full flex items-center justify-center p-1">
@@ -225,7 +225,7 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
                   <div className="flex gap-2">
                     <Badge style={{ backgroundColor: color, color: '#fff' }}>{mat.attribute}</Badge>
                     <Badge className="bg-stone-800 text-stone-100 flex items-center gap-1">
-                      <FaStar size={12} color="#fbbf24" /> {mat.rarity}
+                      <Gi.GiStarFormation size={12} color="#fbbf24" /> {mat.rarity}
                     </Badge>
                   </div>
                 </div>
@@ -237,7 +237,7 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
                 <div className={`grid ${gridColsClass} gap-2 text-center text-xs font-bold text-stone-600`}>
                   {(!filterPartType || filterPartType === 'All' || filterPartType === 'head') && (
                     <div className="flex flex-col items-center">
-                      <p className="mb-2 flex items-center justify-center gap-1"><FaRobot size={14} />アタマ</p>
+                      <p className="mb-2 flex items-center justify-center gap-1"><Gi.GiMechaHead size={14} />アタマ</p>
                       <div className="grid grid-cols-2 gap-2 w-full">
                         {craftableVisuals.map((v, idx) => (
                           <SinglePart key={`head-${idx}`} Comp={getPartSVG('head', v.rarity, v.visualIndex)} color={color} type="head" rarityLabel={v.rarity} />
@@ -247,7 +247,7 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
                   )}
                   {(!filterPartType || filterPartType === 'All' || filterPartType === 'body') && (
                     <div className="flex flex-col items-center">
-                      <p className="mb-2 flex items-center justify-center gap-1"><FaBox size={14} />ボディ</p>
+                      <p className="mb-2 flex items-center justify-center gap-1"><Gi.GiChestArmor size={14} />ボディ</p>
                       <div className="grid grid-cols-2 gap-2 w-full">
                         {craftableVisuals.map((v, idx) => (
                           <SinglePart key={`body-${idx}`} Comp={getPartSVG('body', v.rarity, v.visualIndex)} color={color} type="body" rarityLabel={v.rarity} />
@@ -257,7 +257,7 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
                   )}
                   {(!filterPartType || filterPartType === 'All' || filterPartType === 'arms') && (
                     <div className="flex flex-col items-center">
-                      <p className="mb-2 flex items-center justify-center gap-1"><FaWrench size={14} />ウデ</p>
+                      <p className="mb-2 flex items-center justify-center gap-1"><Gi.GiMechanicalArm size={14} />ウデ</p>
                       <div className="grid grid-cols-2 gap-2 w-full">
                         {craftableVisuals.map((v, idx) => (
                           <SinglePart key={`arms-${idx}`} Comp={getPartSVG('arms', v.rarity, v.visualIndex)} color={color} type="arms" rarityLabel={v.rarity} />
@@ -267,7 +267,7 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
                   )}
                   {(!filterPartType || filterPartType === 'All' || filterPartType === 'legs') && (
                     <div className="flex flex-col items-center">
-                      <p className="mb-2 flex items-center justify-center gap-1"><FaShoePrints size={14} />アシ</p>
+                      <p className="mb-2 flex items-center justify-center gap-1"><Gi.GiLegArmor size={14} />アシ</p>
                       <div className="grid grid-cols-2 gap-2 w-full">
                         {craftableVisuals.map((v, idx) => (
                           <SinglePart key={`legs-${idx}`} Comp={getPartSVG('legs', v.rarity, v.visualIndex)} color={color} type="legs" rarityLabel={v.rarity} />

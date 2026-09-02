@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { GameState } from '../core/models';
+import * as Gi from 'react-icons/gi';
+import { GameState, Robot } from '../core/models';
 import { GameEngine } from '../core/GameEngine';
 import { Card, Button, Badge } from '../components/ui/core';
 import { RobotVisual } from '../components/robot/RobotVisual';
@@ -9,6 +10,7 @@ import { MaterialIcon } from '../components/ui/MaterialIcon';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
 import { RobotRadarChart } from '../components/robot/RobotRadarChart';
+import { RepairAnimationModal } from '../components/effects/RepairAnimationModal';
 
 const formatTime = (ms: number) => {
   if (ms <= 0) return '00:00';
@@ -27,6 +29,17 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
   const [selectedLocationId, setSelectedLocationId] = useState<string>('');
   const [selectedRobotId, setSelectedRobotId] = useState<string>('');
   const [previewEmotions, setPreviewEmotions] = useState<{ [dispatchId: string]: 'auto' | 'happy' | 'troubled' | 'searching' }>({});
+  const [repairingRobotState, setRepairingRobotState] = useState<{ robot: Robot; initialHp: number } | null>(null);
+
+  const handleRepairRobot = (robot: Robot) => {
+    try {
+      const initialHp = robot.currentHp ?? 0;
+      engine.useRepairKit(robot.id);
+      setRepairingRobotState({ robot, initialHp });
+    } catch (e: any) {
+      alert(e.message);
+    }
+  };
 
   const triggerConfetti = () => {
     // 初回の華やかなバースト
@@ -193,7 +206,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
 
           <div className="bg-stone-950 border border-stone-800 rounded flex items-center p-1.5 shadow-inner">
             <div className="w-6 h-6 bg-purple-900/40 rounded flex items-center justify-center shrink-0 border border-purple-800/50 mr-2">
-              <span className="text-xs">🔧</span>
+              <span className="text-xs"><Gi.GiSpanner className="inline mr-1" /></span>
             </div>
             <div className="min-w-0 flex-1">
               <div className="text-[9px] font-bold text-purple-600/80 uppercase tracking-widest leading-none mb-0.5">REPAIRS</div>
@@ -237,7 +250,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                 🎒 遠征へ出発
               </Button>
               <Button size="sm" variant="outline" onClick={() => setIsDispatchModalOpen(true)} className="text-xs px-3 py-1">
-                🤖 自動探索へ派遣
+                <Gi.GiWalkingScout className="inline mr-1" /> 自動探索へ派遣
               </Button>
             </div>
           </div>
@@ -401,17 +414,30 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                           onClick={() => handleClaimAutoDispatch(d.id)}
                           className="text-xs px-2.5 py-1 font-bold shadow-xs animate-pulse"
                         >
-                          📦 回収 ({pending})
+                          <Gi.GiCardboardBox className="inline mr-1" /> 回収 ({pending})
                         </Button>
                       ) : isResting ? (
-                        <Button 
-                          size="sm" 
-                          variant="danger" 
-                          disabled={true}
-                          className="text-xs px-2 py-1 opacity-90 bg-rose-100 text-rose-700 border border-rose-300 font-bold"
-                        >
-                          💔 HP切れ
-                        </Button>
+                        dRobot && state.repairKits && state.repairKits > 0 ? (
+                          <Button 
+                            size="sm" 
+                            variant="success" 
+                            onClick={() => handleRepairRobot(dRobot)}
+                            className="text-xs px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-xs flex items-center gap-1 animate-bounce"
+                            title="修理キットを使ってHPを全快にし探索を再開します"
+                          >
+                            <span><Gi.GiSpanner className="inline mr-1" /></span>
+                            <span>修理して再開</span>
+                          </Button>
+                        ) : (
+                          <Button 
+                            size="sm" 
+                            variant="danger" 
+                            disabled={true}
+                            className="text-xs px-2 py-1 opacity-90 bg-rose-100 text-rose-700 border border-rose-300 font-bold"
+                          >
+                            💔 HP切れ
+                          </Button>
+                        )
                       ) : (
                         <Button 
                           size="sm" 
@@ -419,7 +445,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                           disabled={true}
                           className="text-xs px-2 py-1 opacity-80 bg-stone-100 text-stone-600 border border-stone-300 font-bold"
                         >
-                          🔍 探索中
+                          <Gi.GiTreasureMap className="inline mr-1" /> 探索中
                         </Button>
                       )}
                       <Button size="sm" variant="danger" onClick={() => handleCancelAutoDispatch(d.id)} className="text-xs px-2 py-1">
@@ -792,6 +818,15 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
           </div>
         )}
       </AnimatePresence>
+
+      {/* ロボット修理演出モーダル */}
+      {repairingRobotState && (
+        <RepairAnimationModal
+          robot={repairingRobotState.robot}
+          initialHp={repairingRobotState.initialHp}
+          onClose={() => setRepairingRobotState(null)}
+        />
+      )}
     </div>
   );
 };

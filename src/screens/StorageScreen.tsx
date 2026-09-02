@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { GameState, AttributeColors, AttributeNames } from '../core/models';
+import { GameState, AttributeColors, AttributeNames, Robot } from '../core/models';
 import { GameEngine } from '../core/GameEngine';
 import { Card, Button, Badge } from '../components/ui/core';
 import { RobotVisual, PartVisual } from '../components/robot/RobotVisual';
@@ -7,6 +7,8 @@ import { theme } from '../styles/theme';
 import { MATERIALS, STORAGE_UPGRADE_COST, MAX_STORAGE_LEVELS } from '../core/data';
 import { MaterialIcon } from '../components/ui/MaterialIcon';
 import { RobotRadarChart, STAT_CONFIGS } from '../components/robot/RobotRadarChart';
+import { RepairAnimationModal } from '../components/effects/RepairAnimationModal';
+import * as Gi from 'react-icons/gi';
 
 export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> = ({ state, engine }) => {
   const [tab, setTab] = useState<'robots'|'parts'|'materials'>('robots');
@@ -17,6 +19,8 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
   const [isCompareMode, setIsCompareMode] = useState(false);
   const [compareRobotAId, setCompareRobotAId] = useState<string | null>(null);
   const [compareRobotBId, setCompareRobotBId] = useState<string | null>(null);
+  const [repairingRobotState, setRepairingRobotState] = useState<{ robot: Robot; initialHp: number } | null>(null);
+  const [recentlyRepairedRobotId, setRecentlyRepairedRobotId] = useState<string | null>(null);
   const [now, setNow] = useState(Date.now());
   
   const disassemblyRef = useRef<HTMLDivElement>(null);
@@ -58,6 +62,20 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
         recycleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 50);
     } catch(e: any) {
+      alert(e.message);
+    }
+  };
+
+  const handleRepairRobot = (robot: Robot) => {
+    try {
+      const initialHp = robot.currentHp ?? 0;
+      engine.useRepairKit(robot.id);
+      setRepairingRobotState({ robot, initialHp });
+      setRecentlyRepairedRobotId(robot.id);
+      setTimeout(() => {
+        setRecentlyRepairedRobotId(prev => prev === robot.id ? null : prev);
+      }, 2500);
+    } catch (e: any) {
       alert(e.message);
     }
   };
@@ -387,8 +405,29 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                 const isQuesting = state.activeQuest?.dispatchedRobotId === r.id;
                 const isRadarExpanded = expandedRadarRobotId === r.id;
 
+                const isRecentlyRepaired = recentlyRepairedRobotId === r.id;
+                const hpPercent = Math.max(0, Math.min(100, ((r.currentHp ?? 12) / (r.maxHp ?? 12)) * 100));
+                const isHpLow = (r.currentHp ?? 12) <= 1;
+
                 return (
-                  <Card key={`${r.id}-${idx}`} className="relative p-4">
+                  <Card 
+                    key={`${r.id}-${idx}`} 
+                    className={`relative p-4 transition-all duration-300 overflow-hidden ${
+                      isRecentlyRepaired 
+                        ? 'ring-2 ring-emerald-400 bg-emerald-50/40 shadow-lg' 
+                        : isHpLow 
+                        ? 'border-rose-300 bg-rose-50/30' 
+                        : ''
+                    }`}
+                  >
+                    {/* 最近修理された場合のエフェクトオーバーレイ */}
+                    {isRecentlyRepaired && (
+                      <div className="absolute top-2 right-2 pointer-events-none z-10 flex items-center gap-1 bg-emerald-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-md animate-bounce">
+                        <span>✨</span>
+                        <span>HP MAX 回復!</span>
+                      </div>
+                    )}
+
                     <div className="flex justify-between items-start gap-3">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -403,25 +442,53 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                               自動探索中
                             </span>
                           )}
+                          {isHpLow && !isRecentlyRepaired && (
+                            <span className="text-[10px] bg-rose-600 text-white px-1.5 py-0.5 rounded font-bold animate-pulse">
+                              HP切れ
+                            </span>
+                          )}
                         </div>
 
                         <div className="mt-2 space-y-1.5">
                           <div className="flex justify-between items-center text-xs">
-                            <span className="font-bold text-stone-700">残HP: {r.currentHp ?? 12}/{r.maxHp ?? 12}</span>
+                            <span className="font-bold text-stone-700 flex items-center gap-1">
+                              <span>残HP:</span>
+                              <span className={isHpLow ? 'text-rose-600 font-bold' : isRecentlyRepaired ? 'text-emerald-600 font-bold' : 'text-stone-800'}>
+                                {r.currentHp ?? 12}/{r.maxHp ?? 12}
+                              </span>
+                            </span>
                             {state.repairKits && state.repairKits > 0 ? (
                               <button
-                                onClick={() => engine.useRepairKit(r.id)}
+                                onClick={() => handleRepairRobot(r)}
                                 disabled={(r.currentHp ?? 12) >= (r.maxHp ?? 12)}
-                                className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded border border-green-300 font-bold hover:bg-green-200 disabled:opacity-50"
+                                className={`text-[10px] px-2 py-0.8 rounded border font-bold transition-all flex items-center gap-1 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+                                  (r.currentHp ?? 12) < (r.maxHp ?? 12)
+                                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-700 shadow-xs active:scale-95'
+                                    : 'bg-stone-100 text-stone-400 border-stone-300'
+                                }`}
+                                title="修理キットを使ってHPを全快にします"
                               >
-                                🔧 修理キット使用
+                                <span>🔧</span>
+                                <span>修理キット使用</span>
                               </button>
-                            ) : null}
+                            ) : (
+                              (r.currentHp ?? 12) < (r.maxHp ?? 12) && (
+                                <span className="text-[10px] text-amber-600 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                                  修理キット不足
+                                </span>
+                              )
+                            )}
                           </div>
-                          <div className="w-full bg-stone-200 rounded-full h-1.5">
+                          <div className="w-full bg-stone-200 rounded-full h-1.5 overflow-hidden">
                             <div 
-                              className="bg-green-500 h-1.5 rounded-full transition-all" 
-                              style={{ width: `${Math.max(0, Math.min(100, ((r.currentHp ?? 12) / (r.maxHp ?? 12)) * 100))}%` }} 
+                              className={`h-1.5 rounded-full transition-all duration-500 ${
+                                isRecentlyRepaired
+                                  ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]'
+                                  : isHpLow
+                                  ? 'bg-rose-500'
+                                  : 'bg-green-500'
+                              }`} 
+                              style={{ width: `${hpPercent}%` }} 
                             />
                           </div>
                         </div>
@@ -842,7 +909,7 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
               <p className="text-xs mt-1 text-stone-400">「遠征」や「自動探索」で素材を集めましょう！</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
               {ownedMaterialsList.map(mat => {
                 const count = state.materials[mat.id] || 0;
                 const rarityStyle = theme.rarity[mat.rarity];
@@ -852,53 +919,29 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                 return (
                   <div 
                     key={mat.id} 
-                    className={`p-3 rounded-lg border-2 ${rarityStyle.border} ${rarityStyle.bg} ${rarityStyle.ring} flex flex-col justify-between transition-shadow hover:shadow-md relative overflow-hidden`}
+                    className={`relative p-2 flex flex-col items-center justify-between rounded-lg border-2 ${rarityStyle.border} ${rarityStyle.bg} transition-shadow hover:shadow-md overflow-hidden hover:-translate-y-0.5 transform duration-200`}
                   >
-                    {/* Top row: Name, Attribute badge & Quantity badge */}
-                    <div className="flex justify-between items-start gap-1 mb-2">
-                      <div>
-                        <div className="flex items-center gap-1.5">
-                          <span 
-                            className="p-1 rounded-md text-white flex items-center justify-center shadow-2xs"
-                            style={{ backgroundColor: attrColor }}
-                          >
-                            <MaterialIcon materialId={mat.id} size={14} />
-                          </span>
-                          <span className={`font-bold text-sm ${rarityStyle.text}`}>
-                            {mat.name}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1.5 mt-1">
-                          <span 
-                            className="text-[10px] px-1.5 py-0.2 rounded font-bold text-white shadow-2xs"
-                            style={{ backgroundColor: attrColor }}
-                          >
-                            {attrName}
-                          </span>
-                          <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold border ${rarityStyle.badge}`}>
-                            {rarityStyle.label}
-                          </span>
-                        </div>
-                      </div>
+                    <div className="absolute top-1.5 left-1.5 text-[9px] leading-none drop-shadow-sm">{rarityStyle.stars}</div>
+                    <Badge className="absolute top-1.5 right-1.5 bg-stone-900/90 text-white font-bold text-[9px] px-1 py-0.5 leading-none font-mono z-10 shadow-sm border border-stone-600">x{count}</Badge>
 
-                      <div className="flex flex-col items-end gap-1 shrink-0">
-                        <Badge className="bg-stone-900 text-white font-bold text-[11px] sm:text-xs px-2 py-0.5 shadow-xs min-w-[2rem] text-center font-mono leading-none">
-                          x{count}
-                        </Badge>
-                        <span className="text-[10px] text-stone-500 font-mono whitespace-nowrap">
-                          単価 {mat.price} G
-                        </span>
-                      </div>
+                    <div className={`mt-3 mb-1 drop-shadow-md`} style={{ color: attrColor }}>
+                      <MaterialIcon materialId={mat.id} size={36} />
                     </div>
+                    
+                    <span className={`text-[10px] font-bold text-center leading-tight w-full truncate ${rarityStyle.text}`}>
+                      {mat.name}
+                    </span>
+                    <span className="text-[8px] font-bold mt-0.5 mb-1 px-1 rounded shadow-2xs" style={{ backgroundColor: attrColor, color: '#fff' }}>
+                      {attrName}
+                    </span>
 
-                    {/* Stats preview */}
-                    <div className="mt-2 pt-2 border-t border-stone-200/80 grid grid-cols-3 gap-x-2 gap-y-0.5 text-[10px] text-stone-600 font-mono">
-                      <span>HP: +{mat.baseStats.hp}</span>
-                      <span>Pow: +{mat.baseStats.power}</span>
-                      <span>Def: +{mat.baseStats.defense}</span>
-                      <span>Agi: +{mat.baseStats.agility}</span>
-                      <span>Dex: +{mat.baseStats.dexterity}</span>
-                      <span>Int: +{mat.baseStats.intelligence}</span>
+                    <div className="w-full mt-1 pt-1 border-t border-stone-200/50 grid grid-cols-2 gap-x-1 gap-y-0.5 text-[8px] sm:text-[9px] text-stone-600 font-mono text-center leading-none">
+                      <span>HP +{mat.baseStats.hp}</span>
+                      <span>PW +{mat.baseStats.power}</span>
+                      <span>DF +{mat.baseStats.defense}</span>
+                      <span>AG +{mat.baseStats.agility}</span>
+                      <span>DX +{mat.baseStats.dexterity}</span>
+                      <span>IN +{mat.baseStats.intelligence}</span>
                     </div>
                   </div>
                 );
@@ -906,6 +949,14 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
             </div>
           )}
         </div>
+      )}
+      {/* ロボット修理演出モーダル */}
+      {repairingRobotState && (
+        <RepairAnimationModal
+          robot={repairingRobotState.robot}
+          initialHp={repairingRobotState.initialHp}
+          onClose={() => setRepairingRobotState(null)}
+        />
       )}
     </div>
   );

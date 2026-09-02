@@ -6,6 +6,7 @@ import { theme } from '../styles/theme';
 import { MATERIALS } from '../core/data';
 import { MaterialIcon } from '../components/ui/MaterialIcon';
 import { INTERIORS } from '../core/interiors';
+import * as Gi from 'react-icons/gi';
 
 export const ShopScreen: React.FC<{ state: GameState, engine: GameEngine, onBack: () => void }> = ({ state, engine, onBack }) => {
   const [tab, setTab] = useState<'materials' | 'repairKits' | 'interiors'>('materials');
@@ -72,40 +73,38 @@ export const ShopScreen: React.FC<{ state: GameState, engine: GameEngine, onBack
       {tab === 'materials' && (
         <>
           <h3 className={theme.typography.h3}>素材を購入</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
             {MATERIALS.map(mat => {
               const rStyle = theme.rarity[mat.rarity];
+              const canBuy = state.gold >= mat.price;
               return (
-                <div 
+                <button 
                   key={mat.id} 
-                  className={`p-4 rounded-lg border-2 ${rStyle.border} ${rStyle.bg} ${rStyle.ring} flex justify-between items-center transition-shadow shadow-xs hover:shadow-md`}
+                  disabled={!canBuy}
+                  onClick={() => {
+                    try {
+                      engine.buyMaterial(mat.id);
+                    } catch (e: any) {
+                      alert(e.message || '購入に失敗しました');
+                    }
+                  }}
+                  className={`relative flex flex-col items-center justify-between p-2 rounded-lg border-2 ${rStyle.border} ${rStyle.bg} transition-all overflow-hidden ${canBuy ? 'hover:shadow-md hover:-translate-y-0.5 cursor-pointer' : 'opacity-60 cursor-not-allowed grayscale-[30%]'}`}
                 >
-                  <div>
-                    <p className={`font-bold flex items-center gap-2 ${rStyle.text}`}>
-                      <MaterialIcon materialId={mat.id} size={18} />
-                      {mat.name}
-                    </p>
-                    <div className="flex items-center gap-2 mt-1.5">
-                      <span className="text-xs text-stone-500">属性: {mat.attribute}</span>
-                      <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold border ${rStyle.badge}`}>
-                        {rStyle.stars}
-                      </span>
-                    </div>
+                  <div className="absolute top-1.5 left-1.5 text-[9px] leading-none drop-shadow-sm">{rStyle.stars}</div>
+                  
+                  <div className={`mt-3 mb-1 drop-shadow-md ${rStyle.text}`}>
+                    <MaterialIcon materialId={mat.id} size={36} />
                   </div>
-                  <Button 
-                    size="sm" 
-                    disabled={state.gold < mat.price}
-                    onClick={() => {
-                      try {
-                        engine.buyMaterial(mat.id);
-                      } catch (e: any) {
-                        alert(e.message || '購入に失敗しました');
-                      }
-                    }}
-                  >
-                    {mat.price} G
-                  </Button>
-                </div>
+                  
+                  <span className={`text-[10px] font-bold text-center leading-tight w-full truncate ${rStyle.text}`}>
+                    {mat.name}
+                  </span>
+                  
+                  <div className={`mt-1.5 w-full flex items-center justify-center gap-1 text-[10px] font-bold py-0.5 rounded shadow-xs ${canBuy ? 'bg-amber-100 text-amber-700 border border-amber-300' : 'bg-stone-200 text-stone-500 border border-stone-300'}`}>
+                    <span><Gi.GiCoins size={12}/></span>
+                    <span>{mat.price} G</span>
+                  </div>
+                </button>
               );
             })}
           </div>
@@ -121,15 +120,15 @@ export const ShopScreen: React.FC<{ state: GameState, engine: GameEngine, onBack
             </p>
             <div className="flex flex-wrap gap-2 text-xs text-stone-600 bg-stone-100 p-2.5 rounded-md border border-stone-200">
               <span>【交換レート】</span>
-              <span className="font-bold text-stone-700">★1素材: 3個 → 1個</span>
+              <span className="font-bold text-stone-700">★1: 3個 → 1個</span>
               <span>/</span>
-              <span className="font-bold text-sky-700">★2素材: 1個 → 1個</span>
+              <span className="font-bold text-sky-700">★2: 1個 → 1個</span>
               <span>/</span>
-              <span className="font-bold text-amber-700">★3素材: 1個 → 3個</span>
+              <span className="font-bold text-amber-700">★3: 1個 → 3個</span>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
             {MATERIALS.map(mat => {
               const rStyle = theme.rarity[mat.rarity];
               const ownedCount = state.materials[mat.id] || 0;
@@ -138,34 +137,31 @@ export const ShopScreen: React.FC<{ state: GameState, engine: GameEngine, onBack
               const canExchange = ownedCount >= requiredCount;
 
               return (
-                <div 
+                <button 
                   key={mat.id} 
-                  className={`p-4 rounded-lg border-2 ${rStyle.border} ${rStyle.bg} ${rStyle.ring} flex justify-between items-center transition-shadow shadow-xs hover:shadow-md`}
+                  disabled={!canExchange}
+                  onClick={() => handleExchange(mat.id)}
+                  className={`relative flex flex-col items-center justify-between p-2 rounded-lg border-2 ${rStyle.border} ${rStyle.bg} transition-all overflow-hidden ${canExchange ? 'hover:shadow-md hover:-translate-y-0.5 cursor-pointer ring-2 ring-transparent hover:ring-emerald-400' : 'opacity-60 cursor-not-allowed grayscale-[30%]'}`}
                 >
-                  <div>
-                    <p className={`font-bold flex items-center gap-2 ${rStyle.text}`}>
-                      <MaterialIcon materialId={mat.id} size={18} />
-                      {mat.name}
-                    </p>
-                    <div className="flex items-center gap-2 mt-1.5 text-xs">
-                      <span className="text-stone-600">
-                        所持: <span className={ownedCount >= requiredCount ? 'font-bold text-stone-800' : 'text-stone-400'}>{ownedCount}</span> 個
-                      </span>
-                      <span className="text-stone-400">|</span>
-                      <span className="text-stone-600">
-                        必要: <span className="font-bold text-red-600">{requiredCount}</span> 個 → 獲得: <span className="font-bold text-green-600">+{yieldCount}</span> 個
-                      </span>
+                  <div className="absolute top-1.5 left-1.5 text-[9px] leading-none drop-shadow-sm">{rStyle.stars}</div>
+                  
+                  <div className={`mt-3 mb-1 drop-shadow-md ${rStyle.text}`}>
+                    <MaterialIcon materialId={mat.id} size={36} />
+                  </div>
+                  
+                  <span className={`text-[10px] font-bold text-center leading-tight w-full truncate ${rStyle.text}`}>
+                    {mat.name}
+                  </span>
+                  
+                  <div className="mt-1 flex flex-col items-center w-full gap-0.5">
+                    <span className="text-[9px] font-bold text-stone-500 bg-white/50 px-1 rounded w-full text-center truncate">所持: {ownedCount}</span>
+                    <div className={`flex items-center justify-center gap-1 w-full text-[9px] font-bold py-0.5 rounded shadow-xs border ${canExchange ? 'bg-emerald-100 text-emerald-700 border-emerald-300' : 'bg-stone-200 text-stone-500 border-stone-300'}`}>
+                      <span>-{requiredCount}</span>
+                      <span><Gi.GiAnticlockwiseRotation size={10}/></span>
+                      <span>+{yieldCount}</span>
                     </div>
                   </div>
-                  <Button 
-                    size="sm" 
-                    variant={canExchange ? 'primary' : 'secondary'}
-                    disabled={!canExchange}
-                    onClick={() => handleExchange(mat.id)}
-                  >
-                    交換する
-                  </Button>
-                </div>
+                </button>
               );
             })}
           </div>
