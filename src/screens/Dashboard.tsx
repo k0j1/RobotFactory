@@ -316,7 +316,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
             {state.autoDispatches?.map(d => {
               const dRobot = state.robots.find(r => r.id === d.robotId);
               const dLoc = LOCATIONS.find(l => l.id === d.locationId);
-              const intervalMs = engine.getAutoDispatchIntervalMs(d.robotId);
+              const intervalMs = engine.getAutoDispatchIntervalMs(d.robotId, d.locationId);
               const nextTime = d.lastCollectedAt + intervalMs;
               const remain = Math.max(0, nextTime - Date.now());
               const pending = d.pendingDrops?.length || 0;
