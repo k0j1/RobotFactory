@@ -11,7 +11,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
 import { RobotRadarChart } from '../components/robot/RobotRadarChart';
 import { RepairAnimationModal } from '../components/effects/RepairAnimationModal';
-import { GarageAmbience } from '../components/effects/GarageAmbience';
 
 const formatTime = (ms: number) => {
   if (ms <= 0) return '00:00';
@@ -171,8 +170,6 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
     <div className="space-y-4">
       {/* 統合ダッシュボードカード (Unified Workshop Dashboard - Warm Brick & Wood Theme) */}
       <Card className={theme.workshop.mainCard + " p-3.5"}>
-        {/* 工房アンビエンス背景（木製梁・赤レンガ壁・石窯の薪火・アーチ棚スケッチ） */}
-        <GarageAmbience />
         <div className="relative z-10">
         {/* 上部ステータスバー (工房の木製・真鍮プレート銘板デザイン & アイコン中央配置) */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-3.5">

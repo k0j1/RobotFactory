@@ -11,7 +11,6 @@ import { theme } from '../styles/theme';
 import { TutorialPopup } from '../components/ui/TutorialPopup';
 import { motion, AnimatePresence } from 'motion/react';
 import { RobotRadarChart } from '../components/robot/RobotRadarChart';
-import robotsWorkshopBg from '../assets/images/robots_workshop_bg_1788411232885.jpg';
 
 export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNavigate?: (v: string) => void }> = ({ state, engine, onNavigate }) => {
   const [selectedRobotId, setSelectedRobotId] = useState<string | null>(null);
@@ -147,26 +146,12 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
       </div>
       <p className={theme.typography.body}>場所を指定して素材を集めます。時間経過で帰還します。</p>
 
-      {/* Robot Selection (Compact Light Scouter Style with Workshop Background) */}
+      {/* Robot Selection (Compact Light Scouter Style) */}
       <div 
         ref={topSelectionRef} 
-        className={`p-3.5 bg-[#fbf5ed] ${theme.radius.md} border-2 border-amber-300 overflow-hidden relative shadow-xs mb-6`}
+        className={`p-3.5 bg-amber-50/90 backdrop-blur-xs ${theme.radius.md} border-2 border-amber-300 overflow-hidden relative shadow-xs mb-6`}
       >
-        {/* 背景: ロボたちが並ぶ工房イラスト */}
-        <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden select-none">
-          <img
-            src={robotsWorkshopBg}
-            alt="Workshop with standby robots"
-            referrerPolicy="no-referrer"
-            className="w-full h-full object-cover object-[center_30%] opacity-40 mix-blend-multiply scale-[1.02]"
-          />
-          {/* 明度と可読性を保つグラデーションオーバーレイ */}
-          <div className="absolute inset-0 bg-gradient-to-b from-[#fffaf3]/85 via-[#fff7ec]/70 to-[#fcf3e6]/85" />
-          {/* 優しい工房の温かみトーン */}
-          <div className="absolute inset-0 bg-amber-900/5 mix-blend-overlay" />
-        </div>
-
-        <div className="flex justify-between items-center gap-2 mb-2 relative z-10">
+        <div className="flex justify-between items-center gap-2 mb-2">
           <div className="min-w-0">
             <h3 className="font-bold text-amber-900 flex items-center gap-1.5 text-xs sm:text-sm truncate">
               <span className="text-amber-600 shrink-0">▶</span> 同行ロボ選択

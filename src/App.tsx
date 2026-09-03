@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGameState } from './hooks/useGameState';
 import { Layout } from './components/ui/Layout';
 import { Dashboard } from './screens/Dashboard';
@@ -13,10 +13,21 @@ import { EncyclopediaScreen } from './screens/EncyclopediaScreen';
 import { LitepaperScreen } from './screens/LitepaperScreen';
 import { theme } from './styles/theme';
 import { INTERIORS } from './core/interiors';
+import { AssetCacheService } from './core/AssetCacheService';
+import robotsWorkshopBg from './assets/images/robots_workshop_bg_1788411232885.jpg';
 
 export default function App() {
   const { state, engine } = useGameState();
   const [view, setView] = useState('title');
+
+  // アプリ起動時に背景画像をプリロードしてインメモリキャッシュに常駐（遠征で使用している背景画像のみに統一）
+  useEffect(() => {
+    AssetCacheService.getInstance().preloadImages([
+      robotsWorkshopBg
+    ]).catch((err) => {
+      console.warn('[App] Background images preload notice:', err);
+    });
+  }, []);
 
   React.useEffect(() => {
     if (!engine) return;

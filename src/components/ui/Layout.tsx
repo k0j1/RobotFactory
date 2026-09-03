@@ -2,6 +2,7 @@ import React from 'react';
 import { theme } from '../../styles/theme';
 import { GameState } from '../../core/models';
 import * as Gi from 'react-icons/gi';
+import { TabBackground } from '../effects/TabBackground';
 
 export const Layout: React.FC<{ 
   children: React.ReactNode; 
@@ -59,7 +60,10 @@ export const Layout: React.FC<{
   ];
 
   return (
-    <div className={`min-h-screen ${interiorBg || theme.colors.background} ${theme.colors.text} flex flex-col font-['DotGothic16',_sans-serif] transition-colors duration-500`}>
+    <div className={`min-h-screen ${interiorBg || theme.colors.background} ${theme.colors.text} flex flex-col font-['DotGothic16',_sans-serif] transition-colors duration-500 relative`}>
+      {/* タブ内画面の共通背景レイヤー (工房ガレージ / 遠征待機ロボ工房) - キャッシュ常駐で高速切り替え */}
+      <TabBackground activeView={activeView} />
+
       <header className={`${theme.colors.secondary} ${theme.colors.textLight} ${theme.spacing.sm} sticky top-0 ${theme.zIndex.header} ${theme.shadow.sm}`}>
         <div className="max-w-4xl mx-auto flex justify-between items-center">
           <h1 className={theme.typography.h2}>ポンコツロボット工房</h1>
@@ -73,7 +77,7 @@ export const Layout: React.FC<{
         </div>
       </header>
 
-      <main className={`flex-1 max-w-4xl w-full mx-auto ${theme.spacing.sm} pb-24`}>
+      <main className={`flex-1 max-w-4xl w-full mx-auto ${theme.spacing.sm} pb-24 relative z-10`}>
         {children}
       </main>
 
