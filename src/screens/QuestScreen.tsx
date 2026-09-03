@@ -11,6 +11,7 @@ import { theme } from '../styles/theme';
 import { TutorialPopup } from '../components/ui/TutorialPopup';
 import { motion, AnimatePresence } from 'motion/react';
 import { RobotRadarChart } from '../components/robot/RobotRadarChart';
+import robotsWorkshopBg from '../assets/images/robots_workshop_bg_1788411232885.jpg';
 
 export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNavigate?: (v: string) => void }> = ({ state, engine, onNavigate }) => {
   const [selectedRobotId, setSelectedRobotId] = useState<string | null>(null);
@@ -146,13 +147,30 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
       </div>
       <p className={theme.typography.body}>場所を指定して素材を集めます。時間経過で帰還します。</p>
 
-      {/* Robot Selection (Compact Light Scouter Style) */}
-      <div ref={topSelectionRef} className={`p-3.5 bg-amber-50/90 ${theme.radius.md} border-2 border-amber-300 overflow-hidden relative shadow-xs mb-6`}>
+      {/* Robot Selection (Compact Light Scouter Style with Workshop Background) */}
+      <div 
+        ref={topSelectionRef} 
+        className={`p-3.5 bg-[#fbf5ed] ${theme.radius.md} border-2 border-amber-300 overflow-hidden relative shadow-xs mb-6`}
+      >
+        {/* 背景: ロボたちが並ぶ工房イラスト */}
+        <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden select-none">
+          <img
+            src={robotsWorkshopBg}
+            alt="Workshop with standby robots"
+            referrerPolicy="no-referrer"
+            className="w-full h-full object-cover object-[center_30%] opacity-40 mix-blend-multiply scale-[1.02]"
+          />
+          {/* 明度と可読性を保つグラデーションオーバーレイ */}
+          <div className="absolute inset-0 bg-gradient-to-b from-[#fffaf3]/85 via-[#fff7ec]/70 to-[#fcf3e6]/85" />
+          {/* 優しい工房の温かみトーン */}
+          <div className="absolute inset-0 bg-amber-900/5 mix-blend-overlay" />
+        </div>
+
         <div className="flex justify-between items-center gap-2 mb-2 relative z-10">
           <div className="min-w-0">
             <h3 className="font-bold text-amber-900 flex items-center gap-1.5 text-xs sm:text-sm truncate">
               <span className="text-amber-600 shrink-0">▶</span> 同行ロボ選択
-              <span className="text-[10px] bg-amber-200/80 text-amber-900 px-2 py-0.5 rounded-full font-bold border border-amber-300">
+              <span className="text-[10px] bg-amber-200/90 text-amber-900 px-2 py-0.5 rounded-full font-bold border border-amber-300/80 shadow-2xs">
                 ↔ 横スライドで切替
               </span>
             </h3>
@@ -164,10 +182,10 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
             <button
               type="button"
               onClick={() => setShowRadarChart(!showRadarChart)}
-              className={`text-xs px-2.5 py-1 rounded border transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0 font-bold ${
+              className={`text-xs px-2.5 py-1 rounded border transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0 font-bold shadow-2xs ${
                 showRadarChart 
                   ? 'bg-amber-600 border-amber-700 text-white shadow-xs' 
-                  : 'bg-white border-stone-300 text-stone-700 hover:bg-stone-100'
+                  : 'bg-white/90 backdrop-blur-xs border-stone-300 text-stone-700 hover:bg-white'
               }`}
             >
               <span><Gi.GiChart className="inline text-stone-500" /></span>
@@ -177,9 +195,12 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
         </div>
 
         {/* 横スライド案内バー */}
-        <div className="flex items-center justify-between text-[10px] text-stone-500 font-bold px-1 mb-1.5 bg-amber-100/60 py-0.5 rounded border border-amber-200/60">
+        <div className="flex items-center justify-between text-[10px] text-stone-600 font-bold px-1.5 mb-1.5 bg-amber-100/70 backdrop-blur-xs py-0.5 rounded border border-amber-300/60 relative z-10 shadow-2xs">
           <span>◀ スライド</span>
-          <span className="text-amber-800">全 {state.robots.length} 体</span>
+          <span className="text-amber-900 font-extrabold flex items-center gap-1">
+            <Gi.GiRobotAntennas size={13} className="text-amber-700" />
+            <span>待機ロボ 全 {state.robots.length} 体</span>
+          </span>
           <span>スライド ▶</span>
         </div>
         
@@ -187,10 +208,10 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
           {/* ロボットなし */}
           <button 
             onClick={() => setSelectedRobotId(null)}
-            className={`snap-start shrink-0 w-20 sm:w-24 h-26 sm:h-28 rounded-lg flex flex-col items-center justify-center transition-all relative border-2 cursor-pointer ${
+            className={`snap-start shrink-0 w-20 sm:w-24 h-26 sm:h-28 rounded-lg flex flex-col items-center justify-center transition-all relative border-2 cursor-pointer backdrop-blur-xs ${
               selectedRobotId === null 
-                ? 'bg-amber-100/90 border-amber-500 ring-2 ring-amber-300 shadow-sm scale-102' 
-                : 'bg-white border-stone-200 hover:border-amber-300 opacity-80 hover:opacity-100 shadow-2xs'
+                ? 'bg-amber-100/95 border-amber-500 ring-2 ring-amber-300 shadow-sm scale-102' 
+                : 'bg-white/85 border-amber-200/80 hover:border-amber-400 hover:bg-white opacity-85 hover:opacity-100 shadow-2xs'
             }`}
           >
             <span className="text-2xl mb-1 flex items-center justify-center">
@@ -210,12 +231,12 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
                 key={r.id}
                 onClick={() => !isAutoDispatched && setSelectedRobotId(r.id)}
                 disabled={isAutoDispatched}
-                className={`snap-start shrink-0 w-22 sm:w-26 h-26 sm:h-28 rounded-lg flex flex-col items-center justify-center transition-all relative border-2 cursor-pointer ${
+                className={`snap-start shrink-0 w-22 sm:w-26 h-26 sm:h-28 rounded-lg flex flex-col items-center justify-center transition-all relative border-2 cursor-pointer backdrop-blur-xs ${
                   isSelected 
-                    ? 'bg-amber-100/90 border-amber-500 ring-2 ring-amber-300 shadow-sm scale-102 z-10' 
+                    ? 'bg-amber-100/95 border-amber-500 ring-2 ring-amber-300 shadow-sm scale-102 z-10' 
                     : isAutoDispatched 
-                    ? 'bg-stone-100 border-stone-200 opacity-40 cursor-not-allowed grayscale' 
-                    : 'bg-white border-stone-200 hover:border-amber-300 hover:shadow-xs shadow-2xs'
+                    ? 'bg-stone-100/80 border-stone-200 opacity-40 cursor-not-allowed grayscale' 
+                    : 'bg-white/85 border-amber-200/80 hover:border-amber-400 hover:bg-white hover:shadow-xs shadow-2xs'
                 }`}
               >
                 {isAutoDispatched && (
