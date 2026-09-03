@@ -10,11 +10,14 @@ interface PianoGameProps extends Omit<MinigameProps, 'activeOpponent'> {
   songId: string;
 }
 
-// 3オクターブ分の白鍵周波数 (C3〜B5)
+// 5オクターブ分の白鍵周波数 (C2〜B6)
+const TOTAL_KEYS = 35;
 const WHITE_KEY_FREQS = [
+  65.41, 73.42, 82.41, 87.31, 98.00, 110.00, 123.47, // C2-B2
   130.81, 146.83, 164.81, 174.61, 196.00, 220.00, 246.94, // C3-B3
   261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, // C4-B4
-  523.25, 587.33, 659.25, 698.46, 783.99, 880.00, 987.77  // C5-B5
+  523.25, 587.33, 659.25, 698.46, 783.99, 880.00, 987.77,  // C5-B5
+  1046.50, 1174.66, 1318.51, 1396.91, 1567.98, 1760.00, 1975.53 // C6-B6
 ];
 
 export const PianoGame: React.FC<PianoGameProps> = ({ 
@@ -49,8 +52,11 @@ export const PianoGame: React.FC<PianoGameProps> = ({
 
   // 目標スコアの計算とAudioContextの初期化
   useEffect(() => {
-    // 楽曲ごとの最大可能スコア (全てのノーツをEXCELLENTで取った場合)
-    const maxPossibleScore = currentNotes.reduce((acc, note) => acc + (note.lanes.length * 300), 0);
+    // 楽曲ごとの最大可能スコア (全てのノーツをEXCELLENTで取った場合、長さも考慮)
+    const maxPossibleScore = currentNotes.reduce((acc, note) => {
+      const durMult = note.duration && note.duration > 200 ? Math.floor(note.duration / 100) : 1;
+      return acc + (note.lanes.length * 300 * durMult);
+    }, 0);
     // 難易度に応じたクリア必要割合
     const reqRatio = diffConfig.id === 'hard' ? 0.75 : diffConfig.id === 'normal' ? 0.55 : 0.40;
     setTargetScore(Math.floor(maxPossibleScore * reqRatio));
@@ -73,45 +79,80 @@ export const PianoGame: React.FC<PianoGameProps> = ({
     };
   }, [songId, difficulty, song]);
 
-  const playTone = (frequency: number) => {
+  const playTone = (frequency: number, durationMs: number = 300) => {
     if (!audioCtxRef.current) return;
     const ctx = audioCtxRef.current;
     if (ctx.state === 'suspended') ctx.resume();
     
     const osc1 = ctx.createOscillator();
     const osc2 = ctx.createOscillator();
+    const osc3 = ctx.createOscillator();
+    
     const gain1 = ctx.createGain();
     const gain2 = ctx.createGain();
+    const gain3 = ctx.createGain();
     const masterGain = ctx.createGain();
 
     osc1.type = 'triangle';
     osc1.frequency.setValueAtTime(frequency, ctx.currentTime);
     
-    // 倍音成分を追加してピアノらしい響きに
+    // 倍音
     osc2.type = 'sine';
     osc2.frequency.setValueAtTime(frequency * 2, ctx.currentTime);
     
-    // エンベロープ（アタックを鋭く、減衰を自然に）
+    // 少しデチューンしたサイン波で厚み出し
+    osc3.type = 'sine';
+    osc3.frequency.setValueAtTime(frequency * 1.002, ctx.currentTime);
+    
+    const sec = durationMs / 1000;
+    
+    // ピアノらしいアタックとディケイ
+    const attackTime = 0.015;
+    const decayTime = Math.max(0.1, sec * 0.4);
+    const releaseTime = 0.4;
+    
     gain1.gain.setValueAtTime(0, ctx.currentTime);
-    gain1.gain.linearRampToValueAtTime(0.8, ctx.currentTime + 0.02);
-    gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.5);
+    gain1.gain.linearRampToValueAtTime(0.8, ctx.currentTime + attackTime);
+    gain1.gain.exponentialRampToValueAtTime(0.1, ctx.currentTime + attackTime + decayTime);
+    gain1.gain.linearRampToValueAtTime(0.001, ctx.currentTime + sec + releaseTime);
     
     gain2.gain.setValueAtTime(0, ctx.currentTime);
-    gain2.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 0.01);
-    gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+    gain2.gain.linearRampToValueAtTime(0.4, ctx.currentTime + attackTime * 0.8);
+    gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + attackTime + decayTime * 0.8);
+    gain2.gain.linearRampToValueAtTime(0.001, ctx.currentTime + sec + releaseTime);
 
-    masterGain.gain.value = 0.7; // 音量バランス
+    gain3.gain.setValueAtTime(0, ctx.currentTime);
+    gain3.gain.linearRampToValueAtTime(0.3, ctx.currentTime + attackTime);
+    gain3.gain.exponentialRampToValueAtTime(0.05, ctx.currentTime + attackTime + decayTime);
+    gain3.gain.linearRampToValueAtTime(0.001, ctx.currentTime + sec + releaseTime);
+
+    // フィルタで高音の耳障りな部分を削る
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = frequency * 3.5 + 800; // 高音ほど開く
+    filter.Q.value = 0.5;
+
+    masterGain.gain.value = 0.5; // 音量バランス
 
     osc1.connect(gain1);
     osc2.connect(gain2);
-    gain1.connect(masterGain);
-    gain2.connect(masterGain);
+    osc3.connect(gain3);
+    
+    gain1.connect(filter);
+    gain2.connect(filter);
+    gain3.connect(filter);
+    
+    filter.connect(masterGain);
     masterGain.connect(ctx.destination);
 
     osc1.start();
     osc2.start();
-    osc1.stop(ctx.currentTime + 1.5);
-    osc2.stop(ctx.currentTime + 1.5);
+    osc3.start();
+    
+    const stopTime = ctx.currentTime + sec + releaseTime + 0.1;
+    osc1.stop(stopTime);
+    osc2.stop(stopTime);
+    osc3.stop(stopTime);
   };
 
   useEffect(() => {
@@ -132,11 +173,12 @@ export const PianoGame: React.FC<PianoGameProps> = ({
 
       let scoreGained = 0;
       let latestJudgeText = '';
-      const playedLanes: number[] = [];
+      const activeLanes: { lane: number, endTime: number }[] = [];
 
       // 判定ラインに到達したノーツの処理
       while (nextNoteIdx.current < currentNotes.length && currentNotes[nextNoteIdx.current].time <= currentElapsed) {
         const note = currentNotes[nextNoteIdx.current];
+        const noteDuration = note.duration || 300;
         
         // Int (予測/リズム感) と Dex (指の正確さ) による補正
         let accuracyRoll = Math.random() * 100;
@@ -156,13 +198,18 @@ export const PianoGame: React.FC<PianoGameProps> = ({
         else if (accuracyRoll >= 20) { noteScore = 10; judgeStr = 'NOT GOOD'; }
         else { noteScore = 0; judgeStr = 'BAD'; }
 
-        // 和音(複数同時押し)の場合は得点倍増
-        scoreGained += noteScore * note.lanes.length;
+        // 和音(複数同時押し)と長さ(ロングノーツ)によるスコア倍増
+        const durMult = noteDuration > 200 ? Math.floor(noteDuration / 100) : 1;
+        scoreGained += noteScore * note.lanes.length * durMult;
+        
         latestJudgeText = judgeStr;
-        playedLanes.push(...note.lanes);
+        
+        note.lanes.forEach(lane => {
+          activeLanes.push({ lane, endTime: currentElapsed + noteDuration });
+        });
 
         if (noteScore > 0) {
-          note.lanes.forEach(lane => playTone(WHITE_KEY_FREQS[lane]));
+          note.lanes.forEach(lane => playTone(WHITE_KEY_FREQS[lane], noteDuration));
         }
         
         nextNoteIdx.current++;
@@ -174,11 +221,10 @@ export const PianoGame: React.FC<PianoGameProps> = ({
       if (latestJudgeText) {
         setJudgement({ id: currentElapsed, text: latestJudgeText });
       }
-      if (playedLanes.length > 0) {
+      if (activeLanes.length > 0) {
         setKeysPressed(prev => {
-          const newKeys = playedLanes.map(l => ({ lane: l, endTime: currentElapsed + 200 }));
           // 古いものを削除しつつ追加
-          return [...prev.filter(k => k.endTime > currentElapsed), ...newKeys];
+          return [...prev.filter(k => k.endTime > currentElapsed), ...activeLanes];
         });
       }
 
@@ -259,10 +305,10 @@ export const PianoGame: React.FC<PianoGameProps> = ({
 
       {/* プレイエリア */}
       <div className="relative w-full h-56 bg-stone-950 rounded-xl overflow-hidden border-4 border-stone-800 flex justify-center shadow-lg">
-        {/* 背景ライン (21レーン) */}
+        {/* 背景ライン (5オクターブ・35レーン) */}
         <div className="absolute inset-0 flex justify-between opacity-10">
-          {Array.from({ length: 21 }).map((_, i) => (
-            <div key={i} className="h-full border-r border-stone-700" style={{ width: `${100/21}%` }} />
+          {Array.from({ length: TOTAL_KEYS }).map((_, i) => (
+            <div key={i} className="h-full border-r border-stone-700" style={{ width: `${100/TOTAL_KEYS}%` }} />
           ))}
         </div>
         
@@ -270,20 +316,24 @@ export const PianoGame: React.FC<PianoGameProps> = ({
         <div className="absolute inset-0 pt-2">
           {currentNotes.map((note, idx) => {
             const timeUntilHit = note.time - elapsed;
-            // 描画範囲外（既にヒット済み、またはまだ画面上に現れないノーツ）はスキップ
-            if (timeUntilHit < -100 || timeUntilHit > fallTime) return null;
+            const noteDuration = note.duration || 300;
+            // しっぽが通り過ぎるまで描画する (判定ラインは下から12%の位置とする)
+            if (timeUntilHit + noteDuration < -100 || timeUntilHit > fallTime) return null;
             
-            // 判定ラインを y=88(%) とした場合の相対位置
-            const yPos = 88 - (timeUntilHit / fallTime) * 88;
+            // 判定ラインを y=88(%) とした場合の相対位置。topだと計算しにくいので、bottomを基準にする。
+            // timeUntilHit = 0 のとき先頭（一番下）が 88% の位置（つまり下から12%）に来るようにする。
+            const bottomPos = 12 + (timeUntilHit / fallTime) * 88;
+            const hPercent = Math.max(2, (noteDuration / fallTime) * 88);
 
             return note.lanes.map(lane => (
               <div 
                 key={`${idx}-${lane}`} 
-                className="absolute h-3 bg-amber-400 rounded-full shadow-[0_0_8px_rgba(251,191,36,0.8)]"
+                className="absolute bg-amber-400 rounded-sm shadow-[0_0_8px_rgba(251,191,36,0.8)] opacity-90"
                 style={{
-                  top: `${yPos}%`,
-                  left: `calc(${lane * (100 / 21)}% + 1px)`,
-                  width: `calc(${100 / 21}% - 2px)`
+                  bottom: `${bottomPos}%`,
+                  height: `${hPercent}%`,
+                  left: `calc(${lane * (100 / TOTAL_KEYS)}% + 1px)`,
+                  width: `calc(${100 / TOTAL_KEYS}% - 2px)`
                 }}
               />
             ));
@@ -318,7 +368,7 @@ export const PianoGame: React.FC<PianoGameProps> = ({
               initial={{ left: '50%' }}
               animate={{ 
                 left: keysPressed.length > 0 
-                  ? `${((keysPressed.reduce((acc, k) => acc + k.lane, 0) / keysPressed.length) / 20) * 100}%` 
+                  ? `${((keysPressed.reduce((acc, k) => acc + k.lane, 0) / keysPressed.length) / (TOTAL_KEYS - 1)) * 100}%` 
                   : '50%',
                 y: keysPressed.length > 0 ? 8 : 0,
                 rotate: keysPressed.length > 0 ? [-5, 5, 0] : 0,
@@ -338,9 +388,9 @@ export const PianoGame: React.FC<PianoGameProps> = ({
           </div>
         )}
 
-        {/* 鍵盤エリア (3オクターブ・21白鍵) */}
+        {/* 鍵盤エリア (5オクターブ・35白鍵) */}
         <div className="absolute bottom-0 w-full h-14 bg-stone-800 flex justify-between items-end pb-1 border-t-2 border-stone-600 px-[2px] gap-[1px]">
-          {Array.from({ length: 21 }).map((_, i) => {
+          {Array.from({ length: TOTAL_KEYS }).map((_, i) => {
             const isPressed = keysPressed.some(k => k.lane === i);
             const noteInOctave = i % 7;
             const hasBlackKey = [0, 1, 3, 4, 5].includes(noteInOctave);
@@ -351,7 +401,7 @@ export const PianoGame: React.FC<PianoGameProps> = ({
                 className={`flex-1 h-12 rounded-b-sm transition-colors ${isPressed ? 'bg-amber-300 translate-y-1' : 'bg-stone-200'} border border-stone-400 relative`}
               >
                 {/* 黒鍵 (右側に配置、最後の鍵盤には配置しない) */}
-                {hasBlackKey && i !== 20 && (
+                {hasBlackKey && i !== (TOTAL_KEYS - 1) && (
                    <div className="absolute top-0 -right-[60%] w-[120%] h-[65%] bg-stone-900 rounded-b-sm z-10 shadow-sm border-x border-b border-stone-700" />
                 )}
                 {isPressed && (
