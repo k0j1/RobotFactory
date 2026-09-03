@@ -1,3 +1,4 @@
+import * as Gi from 'react-icons/gi';
 import React, { useMemo } from 'react';
 import { Robot } from '../../core/models';
 import { motion } from 'motion/react';
@@ -15,18 +16,18 @@ export interface StatKeyConfig {
   key: keyof RobotStatsData;
   label: string;
   shortLabel: string;
-  icon: string;
+  icon: React.ReactNode;
   color: string;
   description: string;
 }
 
 export const STAT_CONFIGS: StatKeyConfig[] = [
-  { key: 'hp', label: '耐久力', shortLabel: 'HP', icon: '❤️', color: '#ef4444', description: 'ロボットの生命力・タフネス' },
-  { key: 'power', label: '攻撃力', shortLabel: 'POW', icon: '⚔️', color: '#f97316', description: '遠征・自動探索での素材ドロップ枠を増加' },
-  { key: 'defense', label: '防御力', shortLabel: 'DEF', icon: '🛡️', color: '#3b82f6', description: 'バトルや探索中のダメージを軽減' },
-  { key: 'agility', label: '速度', shortLabel: 'AGI', icon: '⚡', color: '#eab308', description: '遠征および自動探索の所要時間を大幅短縮' },
-  { key: 'dexterity', label: '探索力', shortLabel: 'DEX', icon: '🎯', color: '#10b981', description: 'レア素材の発見率・手先の器用さ向上' },
-  { key: 'intelligence', label: '解析力', shortLabel: 'INT', icon: '🔮', color: '#8b5cf6', description: '属性効果の最大化や特殊発見率の上昇' },
+  { key: 'hp', label: '耐久力', shortLabel: 'HP', icon: <Gi.GiHeartPlus className="inline text-rose-500" />, color: '#ef4444', description: 'ロボットの生命力・タフネス' },
+  { key: 'power', label: '攻撃力', shortLabel: 'POW', icon: <Gi.GiBroadsword className="inline text-orange-500" />, color: '#f97316', description: '遠征・自動探索での素材ドロップ枠を増加' },
+  { key: 'defense', label: '防御力', shortLabel: 'DEF', icon: <Gi.GiShield className="inline text-blue-500" />, color: '#3b82f6', description: 'バトルや探索中のダメージを軽減' },
+  { key: 'agility', label: '速度', shortLabel: 'AGI', icon: <Gi.GiLightningTrio className="inline text-amber-500" />, color: '#eab308', description: '遠征および自動探索の所要時間を大幅短縮' },
+  { key: 'dexterity', label: '探索力', shortLabel: 'DEX', icon: <Gi.GiBullseye className="inline text-emerald-500" />, color: '#10b981', description: 'レア素材の発見率・手先の器用さ向上' },
+  { key: 'intelligence', label: '解析力', shortLabel: 'INT', icon: <Gi.GiCrystalBall className="inline text-purple-500" />, color: '#8b5cf6', description: '属性効果の最大化や特殊発見率の上昇' },
 ];
 
 interface RobotRadarChartProps {

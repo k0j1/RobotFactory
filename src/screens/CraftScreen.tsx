@@ -218,7 +218,9 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
       {/* ================= パーツ完成結果ダイアログ / カード ================= */}
       {tab === 'part' && lastCraftedPart && (
         <div className="text-center bg-amber-50 border-2 border-amber-300 shadow-md animate-fade-in">
-          <Badge className="bg-emerald-600 text-white mb-2 px-3 py-1 font-bold text-sm">✨ パーツ完成 ✨</Badge>
+          <Badge className="bg-emerald-600 text-white mb-2 px-3 py-1 font-bold text-sm flex items-center justify-center gap-1.5 w-fit mx-auto">
+            <Gi.GiSparkles className="inline text-amber-200" /> パーツ完成 <Gi.GiSparkles className="inline text-amber-200" />
+          </Badge>
           <h3 className={`${theme.typography.h3} text-amber-900 mb-2`}>パーツが完成しました！</h3>
           <div className="flex justify-center my-4">
             <PartVisual part={lastCraftedPart} size={100} />
@@ -245,7 +247,7 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
       {/* ================= ロボット完成結果ダイアログ / カード ================= */}
       {tab === 'robot' && lastCraftedRobot && (
         <div className="text-center bg-amber-50 border-2 border-amber-300 shadow-md animate-fade-in">
-          <Badge className="bg-emerald-600 text-white mb-2 px-3 py-1 font-bold text-sm">🎉 ロボット完成 🎉</Badge>
+          <Badge className="bg-emerald-600 text-white mb-2 px-3 py-1 font-bold text-sm"><Gi.GiPartyPopper className="inline mr-1" /> ロボット完成 <Gi.GiPartyPopper className="inline mr-1" /></Badge>
           <h3 className={`${theme.typography.h3} text-amber-900 mb-2`}>組み立てが完了しました！</h3>
           <div className="flex justify-center my-3">
             <RobotVisual robot={lastCraftedRobot} size={150} animateCrafting={true} />
@@ -272,8 +274,8 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
             <div className="flex justify-between items-center mb-2">
               <h4 className="font-bold text-xs text-amber-900 mb-1 flex items-center gap-1"><Gi.GiHammerNails className="text-amber-700" /> パーツ部位別ステータス &amp; リアルタイム状況</h4>
               {isPartCrafting && (
-                <span className="text-[11px] font-bold text-blue-700 animate-pulse bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
-                  ⏱️ {isPartReady ? '完成受取待ち' : `製造中: あと ${partRemainingSec} 秒`}
+                <span className="text-[11px] font-bold text-blue-700 animate-pulse bg-blue-50 px-2 py-0.5 rounded border border-blue-200 flex items-center gap-1">
+                  <Gi.GiStopwatch className="inline text-blue-600" /> {isPartReady ? '完成受取待ち' : `製造中: あと ${partRemainingSec} 秒`}
                 </span>
               )}
             </div>
@@ -299,7 +301,7 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                         </Badge>
                       ) : isThisPartCrafting ? (
                         <Badge className="bg-blue-600 text-white text-[9px] sm:text-[10px] font-mono px-1.5 py-0.5 flex items-center gap-1 shadow-xs leading-none shrink-0 whitespace-nowrap">
-                          <motion.span animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 2, ease: "linear" }} className="inline-block text-[9px]">⚙️</motion.span>
+                          <motion.span animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 2, ease: "linear" }} className="inline-block text-[9px]"><Gi.GiCog className="inline" /></motion.span>
                           <span>あと{partRemainingSec}秒</span>
                         </Badge>
                       ) : (
@@ -310,7 +312,9 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                     {/* 部位ごとのリアルタイムタイマー表示 */}
                     <div className="mt-1 text-[11px]">
                       {isThisPartReady ? (
-                        <span className="text-amber-700 font-bold">✨ 完成！</span>
+                        <span className="text-amber-700 font-bold flex items-center justify-center gap-1">
+                          <Gi.GiSparkles className="inline text-amber-500" /> 完成！
+                        </span>
                       ) : isThisPartCrafting ? (
                         <div className="space-y-1">
                           <span className="text-blue-700 font-bold font-mono text-[9px]">
@@ -361,8 +365,8 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
 
                 {/* リアルタイムタイマー表示 (秒数カウントダウン) */}
                 <div className="text-right">
-                  <div className="text-xs text-amber-700 font-bold font-mono">
-                    {isPartReady ? '✨ 完成！' : formatRemainingSecondsText(partRemainingMs)}
+                  <div className="text-xs text-amber-700 font-bold font-mono flex items-center justify-end gap-1">
+                    {isPartReady ? <><Gi.GiSparkles className="inline text-amber-500" /> 完成！</> : formatRemainingSecondsText(partRemainingMs)}
                   </div>
                   <span className="text-2xl font-mono font-bold text-amber-600">
                     {isPartReady ? '00:00' : formatSeconds(partRemainingMs)}
@@ -419,7 +423,7 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                     className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 text-xs shadow-md animate-pulse"
                     onClick={handleClaimPart}
                   >
-                    🎉 受け取る
+                    <Gi.GiPartyPopper className="inline mr-1" /> 受け取る
                   </Button>
                 )}
               </div>
@@ -431,7 +435,7 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                     className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 text-sm shadow-md animate-pulse"
                     onClick={handleClaimPart}
                   >
-                    🎉 完成したパーツを受け取る！
+                    <Gi.GiPartyPopper className="inline mr-1" /> 完成したパーツを受け取る！
                   </Button>
                 </div>
               )}
@@ -482,7 +486,7 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                           <span className="text-[8px] font-bold text-center block w-full truncate">{AttributeNames[mat.attribute]}</span>
                         </div>
                         <div className="flex items-center gap-1 mt-1 text-[9px] text-amber-800 font-mono bg-white/70 px-1 rounded border border-stone-200/50">
-                          <span>⏱️</span>
+                          <Gi.GiStopwatch className="inline text-amber-700" />
                           <span>{formatDurationLabel(singleDuration)}</span>
                         </div>
                       </button>
@@ -539,7 +543,7 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                   製造部位: <span className="text-amber-700">{partTypes.find(p => p.id === selectedPartType)?.label}</span>
                 </p>
                 <p className="text-xs text-stone-600 mt-0.5 flex items-center gap-1.5">
-                  ⏱️ 製造所要時間: <strong className="text-stone-900 bg-amber-100 px-2 py-0.5 rounded border border-amber-300 font-mono text-sm">{formatDurationLabel(estimatedPartDuration)}</strong>
+                  <Gi.GiStopwatch className="inline text-amber-700" /> 製造所要時間: <strong className="text-stone-900 bg-amber-100 px-2 py-0.5 rounded border border-amber-300 font-mono text-sm">{formatDurationLabel(estimatedPartDuration)}</strong>
                   {selectedMainMat && (
                     <span className="text-stone-500 text-[11px]">
                       ({'★'.repeat(MATERIALS.find(m => m.id === selectedMainMat)?.rarity || 1)}素材補正)
@@ -578,8 +582,8 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                   </p>
                 </div>
                 <div className="text-right">
-                  <div className="text-xs text-amber-700 font-bold font-mono">
-                    {isRobotReady ? '✨ 完成！' : formatRemainingSecondsText(robotRemainingMs)}
+                  <div className="text-xs text-amber-700 font-bold font-mono flex items-center justify-end gap-1">
+                    {isRobotReady ? <><Gi.GiSparkles className="inline text-amber-500" /> 完成！</> : formatRemainingSecondsText(robotRemainingMs)}
                   </div>
                   <span className="text-2xl font-mono font-bold text-amber-600">
                     {isRobotReady ? '00:00' : formatSeconds(robotRemainingMs)}
@@ -608,8 +612,8 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                 {/* 稼働中エフェクト（背景ギア） */}
                 {!isRobotReady && (
                   <div className="absolute inset-0 pointer-events-none flex justify-center items-center">
-                    <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 10, ease: "linear" }} className="absolute -left-6 text-7xl opacity-10 filter grayscale">⚙️</motion.div>
-                    <motion.div animate={{ rotate: -360 }} transition={{ repeat: Infinity, duration: 15, ease: "linear" }} className="absolute -right-6 text-8xl opacity-10 filter grayscale">⚙️</motion.div>
+                    <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 10, ease: "linear" }} className="absolute -left-6 text-7xl opacity-10 filter grayscale"><Gi.GiCog className="inline" /></motion.div>
+                    <motion.div animate={{ rotate: -360 }} transition={{ repeat: Infinity, duration: 15, ease: "linear" }} className="absolute -right-6 text-8xl opacity-10 filter grayscale"><Gi.GiCog className="inline" /></motion.div>
                   </div>
                 )}
                 
@@ -632,7 +636,7 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
 
                 {!isRobotReady ? (
                   <div className="mt-3 font-bold text-xs tracking-wider text-amber-900 animate-pulse font-mono bg-amber-100 px-3 py-1 rounded-full border border-amber-300 relative z-20">
-                    🔧 接合・動作テスト中... あと {robotRemainingSec} 秒
+                    <Gi.GiSpanner className="inline mr-1" /> 接合・動作テスト中... あと {robotRemainingSec} 秒
                   </div>
                 ) : null}
               </div>
@@ -644,7 +648,7 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                     className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 text-base shadow-md animate-pulse"
                     onClick={handleClaimRobot}
                   >
-                    🎉 完成したロボットを受け取る！
+                    <Gi.GiPartyPopper className="inline mr-1" /> 完成したロボットを受け取る！
                   </Button>
                 ) : (
                   <div className="w-full text-center py-2 text-xs text-stone-500 font-bold">
@@ -757,7 +761,7 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
               <div className="mt-8 flex flex-col sm:flex-row justify-between items-center bg-stone-100 border border-stone-200 p-3 rounded-xl gap-3">
                 <div>
                   <p className="text-xs text-stone-700 flex items-center gap-1.5 font-bold">
-                    ⏱️ 組立所要時間: <strong className="text-stone-900 text-sm bg-amber-100 px-2 py-0.5 rounded border border-amber-300 font-mono">{formatDurationLabel(estimatedRobotDuration)}</strong>
+                    <Gi.GiStopwatch className="inline text-amber-700" /> 組立所要時間: <strong className="text-stone-900 text-sm bg-amber-100 px-2 py-0.5 rounded border border-amber-300 font-mono">{formatDurationLabel(estimatedRobotDuration)}</strong>
                     {hasSelectedAllParts && (
                       <span className="text-stone-500 text-[11px]">
                         (パーツ性能補正適用)

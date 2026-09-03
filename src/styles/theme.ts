@@ -58,6 +58,17 @@ export const theme = {
       accent: "text-amber-600",
     }
   },
+  workshop: {
+    // 職人工房・石窯・木製梁・レンガ造りスタイル
+    mainCard: "bg-[#faf5ee]/95 border-2 border-[#c29b77] shadow-md relative overflow-hidden",
+    woodAccent: "border-[#8e5e3a] text-[#8e5e3a]",
+    brickAccent: "border-[#b55338] text-[#b55338]",
+    statCard: "bg-white/95 border-2 border-[#d6beaa] rounded-xl flex items-center p-2.5 shadow-2xs hover:border-[#b89578] transition-all",
+    statIconBox: "w-9 h-9 rounded-lg flex items-center justify-center shrink-0 border mr-2.5 shadow-2xs",
+    sectionDivider: "border-t-2 border-[#d9c4b1]",
+    sectionHeader: "font-bold text-[#5c3e28] text-sm tracking-wider flex items-center gap-2",
+    innerCard: "bg-[#fffdfa] rounded-xl border-2 border-[#dcc5b0] p-3 shadow-2xs",
+  },
   spacing: {
     xs: "p-2",
     sm: "p-4",

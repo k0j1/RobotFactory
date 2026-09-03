@@ -1,3 +1,4 @@
+import * as Gi from 'react-icons/gi';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Robot } from '../../core/models';
@@ -83,7 +84,7 @@ export const RepairAnimationModal: React.FC<RepairAnimationModalProps> = ({
                 transition={{ duration: 0.8, repeat: Infinity }}
                 className="flex items-center justify-center gap-2 text-amber-400 font-bold text-sm tracking-wide font-mono"
               >
-                <span>🔧</span>
+                <span><Gi.GiSpanner className="inline text-stone-500" /></span>
                 <span>ロボット緊急メンテナンス中...</span>
               </motion.div>
             ) : (
@@ -92,9 +93,9 @@ export const RepairAnimationModal: React.FC<RepairAnimationModalProps> = ({
                 animate={{ scale: 1, y: 0 }}
                 className="flex items-center justify-center gap-1.5 text-emerald-400 font-black text-base tracking-wide"
               >
-                <span>✨</span>
+                <Gi.GiSparkles className="text-amber-400" />
                 <span>修理完了！ HP完全回復！</span>
-                <span>✨</span>
+                <Gi.GiSparkles className="text-amber-400" />
               </motion.div>
             )}
             <h3 className="text-lg font-bold text-white mt-1 truncate">{robot.name}</h3>
@@ -114,7 +115,7 @@ export const RepairAnimationModal: React.FC<RepairAnimationModalProps> = ({
                   transition={{ duration: 0.35, repeat: Infinity }}
                   className="absolute -top-3 -left-2 text-2xl filter drop-shadow-md z-20"
                 >
-                  🔧
+                  <Gi.GiSpanner className="inline text-stone-500" />
                 </motion.div>
                 <motion.div
                   animate={{
@@ -125,7 +126,7 @@ export const RepairAnimationModal: React.FC<RepairAnimationModalProps> = ({
                   transition={{ duration: 0.4, repeat: Infinity, delay: 0.1 }}
                   className="absolute -top-2 -right-2 text-2xl filter drop-shadow-md z-20"
                 >
-                  🔨
+                  <Gi.GiHammerDrop className="inline text-stone-500" />
                 </motion.div>
                 <motion.div
                   animate={{
@@ -135,7 +136,7 @@ export const RepairAnimationModal: React.FC<RepairAnimationModalProps> = ({
                   transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }}
                   className="absolute bottom-0 right-2 text-xl text-amber-300 z-20 opacity-80"
                 >
-                  ⚙️
+                  <Gi.GiCog className="inline text-stone-500" />️
                 </motion.div>
                 {/* スパーク閃光 */}
                 <motion.div
@@ -146,7 +147,7 @@ export const RepairAnimationModal: React.FC<RepairAnimationModalProps> = ({
                   transition={{ duration: 0.25, repeat: Infinity, repeatDelay: 0.15 }}
                   className="absolute inset-0 flex items-center justify-center text-yellow-300 text-3xl font-mono pointer-events-none"
                 >
-                  ⚡
+                  <Gi.GiLightningTrio className="inline text-yellow-500" />
                 </motion.div>
               </>
             )}
@@ -160,7 +161,7 @@ export const RepairAnimationModal: React.FC<RepairAnimationModalProps> = ({
                   transition={{ duration: 1.2, repeat: Infinity }}
                   className="absolute -top-2 left-6 text-2xl z-20"
                 >
-                  💖
+                  <Gi.GiHeartPlus className="inline text-pink-500" />
                 </motion.div>
                 <motion.div
                   initial={{ y: 20, opacity: 0, scale: 0 }}
@@ -168,7 +169,7 @@ export const RepairAnimationModal: React.FC<RepairAnimationModalProps> = ({
                   transition={{ duration: 1.4, delay: 0.3, repeat: Infinity }}
                   className="absolute -top-4 right-6 text-2xl z-20"
                 >
-                  ✨
+                  <Gi.GiSparkles className="text-amber-300" />
                 </motion.div>
                 <motion.div
                   initial={{ y: 15, opacity: 0, scale: 0 }}
@@ -176,7 +177,7 @@ export const RepairAnimationModal: React.FC<RepairAnimationModalProps> = ({
                   transition={{ duration: 1.1, delay: 0.6, repeat: Infinity }}
                   className="absolute top-2 left-16 text-xl z-20"
                 >
-                  🌟
+                  <Gi.GiStarFormation className="inline text-yellow-400" />
                 </motion.div>
               </>
             )}
@@ -205,6 +206,7 @@ export const RepairAnimationModal: React.FC<RepairAnimationModalProps> = ({
                 robot={robot}
                 size={88}
                 emotion={phase === 'completed' ? 'happy' : 'troubled'}
+                hideBubble={true}
               />
             </motion.div>
           </div>
@@ -213,7 +215,8 @@ export const RepairAnimationModal: React.FC<RepairAnimationModalProps> = ({
           <div className="relative z-10 bg-stone-950/90 p-3 rounded-xl border border-stone-800 space-y-2 mb-4">
             <div className="flex justify-between items-center text-xs font-mono font-bold">
               <span className="text-stone-300 flex items-center gap-1">
-                <span>❤️ 耐久力 (HP)</span>
+                <Gi.GiHeartPlus className="text-rose-500" />
+                <span>耐久力 (HP)</span>
               </span>
               {phase === 'repairing' ? (
                 <span className="text-rose-400 animate-pulse">
@@ -249,8 +252,9 @@ export const RepairAnimationModal: React.FC<RepairAnimationModalProps> = ({
               {phase === 'repairing' ? (
                 <span>パーツの接合部を再調整・オイル注入中...</span>
               ) : (
-                <span className="text-emerald-400 font-bold">
-                  ✨ 全身の装甲と稼働フレームが完全修復されました！
+                <span className="text-emerald-400 font-bold flex items-center gap-1">
+                  <Gi.GiSparkles className="text-amber-400" />
+                  <span>全身の装甲と稼働フレームが完全修復されました！</span>
                 </span>
               )}
             </div>

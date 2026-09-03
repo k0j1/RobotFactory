@@ -113,7 +113,7 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
                   transition={{ repeat: Infinity, duration: 0.3 }}
                   className="absolute bottom-2 -left-8 text-2xl"
                 >
-                  💨
+                  <Gi.GiSprint className="inline text-stone-400" />
                 </motion.div>
               </div>
             )}
@@ -170,7 +170,7 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
                   : 'bg-white border-stone-300 text-stone-700 hover:bg-stone-100'
               }`}
             >
-              <span>📊</span>
+              <span><Gi.GiChart className="inline text-stone-500" /></span>
               <span>{showRadarChart ? 'レーダー閉' : 'レーダー'}</span>
             </button>
           )}
@@ -254,7 +254,7 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4 bg-white p-3 rounded-lg border border-stone-200 shadow-xs">
                 <div className="shrink-0 flex flex-col items-center">
                   <span className="text-xs font-bold text-amber-900 mb-1 flex items-center gap-1">
-                    <span>📡</span> {selectedRobot.name} の性能解析
+                    <span><Gi.GiRadarDish className="inline text-stone-500" /></span> {selectedRobot.name} の性能解析
                   </span>
                   <RobotRadarChart robot={selectedRobot} size={160} themeStyle="light" />
                 </div>
@@ -264,23 +264,23 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
                     <span className="text-sm font-bold text-stone-800">{selectedRobot.stats.hp}</span>
                   </div>
                   <div className="bg-stone-50 border border-stone-200 p-1.5 rounded">
-                    <span className="text-amber-600 font-bold block">⚔️ 攻撃 (POW)</span>
+                    <span className="text-amber-600 font-bold block"><Gi.GiBroadsword className="inline text-red-500" />️ 攻撃 (POW)</span>
                     <span className="text-sm font-bold text-stone-800">{selectedRobot.stats.power}</span>
                   </div>
                   <div className="bg-stone-50 border border-stone-200 p-1.5 rounded">
-                    <span className="text-blue-600 font-bold block">🛡️ 防御 (DEF)</span>
+                    <span className="text-blue-600 font-bold block"><Gi.GiShield className="inline text-blue-500" />️ 防御 (DEF)</span>
                     <span className="text-sm font-bold text-stone-800">{selectedRobot.stats.defense}</span>
                   </div>
                   <div className="bg-stone-50 border border-stone-200 p-1.5 rounded">
-                    <span className="text-yellow-600 font-bold block">⚡ 速度 (AGI)</span>
+                    <span className="text-yellow-600 font-bold block"><Gi.GiLightningTrio className="inline text-yellow-500" /> 速度 (AGI)</span>
                     <span className="text-sm font-bold text-stone-800">{selectedRobot.stats.agility}</span>
                   </div>
                   <div className="bg-stone-50 border border-stone-200 p-1.5 rounded">
-                    <span className="text-emerald-600 font-bold block">🎯 探索 (DEX)</span>
+                    <span className="text-emerald-600 font-bold block"><Gi.GiBullseye className="inline text-green-500" /> 探索 (DEX)</span>
                     <span className="text-sm font-bold text-stone-800">{selectedRobot.stats.dexterity}</span>
                   </div>
                   <div className="bg-stone-50 border border-stone-200 p-1.5 rounded">
-                    <span className="text-purple-600 font-bold block">🔮 解析 (INT)</span>
+                    <span className="text-purple-600 font-bold block"><Gi.GiCrystalBall className="inline text-purple-500" /> 解析 (INT)</span>
                     <span className="text-sm font-bold text-stone-800">{selectedRobot.stats.intelligence}</span>
                   </div>
                 </div>
@@ -331,7 +331,7 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
                   </p>
                   {selectedRobot && agiReductionSec > 0 && (
                     <span className="text-xs font-mono font-bold text-blue-300 bg-blue-900/60 px-2 py-0.5 rounded border border-blue-700/50 shadow-sm">
-                      ➔ {finalSec}秒⚡
+                      ➔ {finalSec}秒<Gi.GiLightningTrio className="inline text-yellow-500" />
                     </span>
                   )}
                 </div>
@@ -455,7 +455,7 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
                     </div>
                     {selectedRobot ? (
                       <div className="text-[10px] font-mono text-amber-800 flex items-center gap-1.5 mt-0.5 whitespace-nowrap">
-                        <span>⚡ -{selectedRobot.stats.agility}s</span>
+                        <span><Gi.GiLightningTrio className="inline text-yellow-500" /> -{selectedRobot.stats.agility}s</span>
                         <span>❤️ {selectedRobot.currentHp}/{selectedRobot.stats.hp}</span>
                       </div>
                     ) : (
@@ -490,7 +490,7 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
                       }`}
                       title="性能レーダーチャートを表示"
                     >
-                      <span>📊</span>
+                      <span><Gi.GiChart className="inline text-stone-500" /></span>
                       <span className="text-[10px]">{showHudRadar ? '閉' : ''}</span>
                     </button>
                   )}
@@ -521,19 +521,19 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
                           <span className="text-rose-600 font-bold block">❤️ HP {selectedRobot.stats.hp}</span>
                         </div>
                         <div className="bg-white p-1 rounded border border-stone-200 text-center">
-                          <span className="text-amber-600 font-bold block">⚔️ POW {selectedRobot.stats.power}</span>
+                          <span className="text-amber-600 font-bold block"><Gi.GiBroadsword className="inline text-red-500" />️ POW {selectedRobot.stats.power}</span>
                         </div>
                         <div className="bg-white p-1 rounded border border-stone-200 text-center">
-                          <span className="text-blue-600 font-bold block">🛡️ DEF {selectedRobot.stats.defense}</span>
+                          <span className="text-blue-600 font-bold block"><Gi.GiShield className="inline text-blue-500" />️ DEF {selectedRobot.stats.defense}</span>
                         </div>
                         <div className="bg-white p-1 rounded border border-stone-200 text-center">
-                          <span className="text-yellow-600 font-bold block">⚡ AGI {selectedRobot.stats.agility}</span>
+                          <span className="text-yellow-600 font-bold block"><Gi.GiLightningTrio className="inline text-yellow-500" /> AGI {selectedRobot.stats.agility}</span>
                         </div>
                         <div className="bg-white p-1 rounded border border-stone-200 text-center">
-                          <span className="text-emerald-600 font-bold block">🎯 DEX {selectedRobot.stats.dexterity}</span>
+                          <span className="text-emerald-600 font-bold block"><Gi.GiBullseye className="inline text-green-500" /> DEX {selectedRobot.stats.dexterity}</span>
                         </div>
                         <div className="bg-white p-1 rounded border border-stone-200 text-center">
-                          <span className="text-purple-600 font-bold block">🔮 INT {selectedRobot.stats.intelligence}</span>
+                          <span className="text-purple-600 font-bold block"><Gi.GiCrystalBall className="inline text-purple-500" /> INT {selectedRobot.stats.intelligence}</span>
                         </div>
                       </div>
                     </div>

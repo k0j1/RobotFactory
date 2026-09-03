@@ -1,3 +1,4 @@
+import * as Gi from 'react-icons/gi';
 import React, { useState, useEffect, useRef } from 'react';
 import { MinigameProps, DanmakuDifficulty, DANMAKU_DIFFICULTIES } from './Shared';
 import { RobotVisual } from '../robot/RobotVisual';
@@ -30,7 +31,7 @@ export const DanmakuSurvivalGame: React.FC<DanmakuProps> = ({
   const [hp, setHp] = useState(5);
   const [timeMs, setTimeMs] = useState(0);
   const [bullets, setBullets] = useState<DanmakuBullet[]>([]);
-  const [hitEffect, setHitEffect] = useState<string | null>(null);
+  const [hitEffect, setHitEffect] = useState<boolean>(false);
   const [hitFlash, setHitFlash] = useState(false);
   const [robotBlink, setRobotBlink] = useState(false);
   const [screenShake, setScreenShake] = useState<'hit' | 'graze' | null>(null);
@@ -260,13 +261,13 @@ export const DanmakuSurvivalGame: React.FC<DanmakuProps> = ({
       playerPosRef.current.y = Math.max(18, Math.min(92, py + actualDy));
 
       if (hitPlayer) {
-        setHitEffect('💥');
+        setHitEffect(true);
         setHitFlash(true);
         setRobotBlink(true);
         setKnockback(14);
         setScreenShake('hit');
         setTimeout(() => {
-            setHitEffect(null);
+            setHitEffect(false);
             setHitFlash(false);
             setKnockback(0);
         }, 160);
@@ -283,7 +284,7 @@ export const DanmakuSurvivalGame: React.FC<DanmakuProps> = ({
       }
 
       // ========================================================
-      // 🚀 CONTINUOUS GAPLESS BULLET GENERATION (隙間なき弾幕放射 & 安全ルート保証)
+      // <Gi.GiRocketFlight className="inline text-red-500" /> CONTINUOUS GAPLESS BULLET GENERATION (隙間なき弾幕放射 & 安全ルート保証)
       // ========================================================
       const t = timeMsRef.current;
       const curFrame = frameCountRef.current;
@@ -442,9 +443,9 @@ export const DanmakuSurvivalGame: React.FC<DanmakuProps> = ({
           自機の<span className="text-cyan-300 font-bold">装甲耐久度(HP: 5)</span>が0になると<span className="text-red-400">敗北</span>。
         </p>
         <div className="flex justify-center gap-3 mb-8 text-xs sm:text-sm flex-wrap">
-           <div className="bg-stone-800 p-2 rounded border border-stone-600">💨 敏捷: 移動速度↑</div>
-           <div className="bg-stone-800 p-2 rounded border border-stone-600">🎯 器用: 回避ルート精度↑</div>
-           <div className="bg-stone-800 p-2 rounded border border-stone-600">🧠 賢さ: 弾幕予測範囲↑</div>
+           <div className="bg-stone-800 p-2 rounded border border-stone-600 flex items-center gap-1"><Gi.GiSprint className="inline text-stone-400" /> 敏捷: 移動速度↑</div>
+           <div className="bg-stone-800 p-2 rounded border border-stone-600 flex items-center gap-1"><Gi.GiBullseye className="inline text-emerald-500" /> 器用: 回避ルート精度↑</div>
+           <div className="bg-stone-800 p-2 rounded border border-stone-600 flex items-center gap-1"><Gi.GiBrain className="inline text-purple-400" /> 賢さ: 弾幕予測範囲↑</div>
         </div>
         <button 
           onClick={() => setHasStarted(true)}
@@ -460,12 +461,12 @@ export const DanmakuSurvivalGame: React.FC<DanmakuProps> = ({
     <div className="space-y-4">
       <div className="flex justify-between items-center bg-stone-900 p-4 rounded-lg shadow-inner">
         <div className="flex gap-4 items-center">
-          <div className="bg-white p-1 rounded">
-             <RobotVisual robot={activeRobot} size={32} animateVictory={battleResult === 'win'} />
+          <div className="bg-white p-1 rounded-lg border border-stone-700">
+             <RobotVisual robot={activeRobot} size={32} animateVictory={battleResult === 'win'} hideBackground={true} hideBubble={true} />
           </div>
           <div className="text-white font-mono text-sm">
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs font-bold text-cyan-300">🛡️ 装甲HP</span>
+              <span className="text-xs font-bold text-cyan-300"><Gi.GiShield className="inline text-blue-500" />️ 装甲HP</span>
               <span className={`text-xs font-black px-1.5 py-0.2 rounded ${
                 hp <= 1 ? "bg-red-500/30 text-red-400 border border-red-500/50 animate-pulse" : 
                 hp <= 2 ? "bg-amber-500/30 text-amber-300 border border-amber-500/50" : 
@@ -553,7 +554,7 @@ export const DanmakuSurvivalGame: React.FC<DanmakuProps> = ({
             transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
             className="text-6xl drop-shadow-[0_0_20px_rgba(255,0,255,0.7)]"
           >
-            👾
+            <Gi.GiAlienStare className="inline text-purple-500" />
           </motion.div>
         </div>
 
@@ -583,6 +584,7 @@ export const DanmakuSurvivalGame: React.FC<DanmakuProps> = ({
               animateVictory={battleResult === 'win'}
               emotion={battleResult === 'lose' ? 'troubled' : battleResult === 'win' ? 'happy' : 'normal'} 
               hideBackground={true} 
+              hideBubble={true}
             />
             <AnimatePresence>
               {hitEffect && (
@@ -592,7 +594,7 @@ export const DanmakuSurvivalGame: React.FC<DanmakuProps> = ({
                   exit={{ opacity: 0 }}
                   className="absolute -top-4 -right-4 text-3xl font-bold z-50 drop-shadow-md pointer-events-none select-none"
                 >
-                  {hitEffect}
+                  <Gi.GiSpikyExplosion className="text-orange-500" />
                 </motion.div>
               )}
             </AnimatePresence>

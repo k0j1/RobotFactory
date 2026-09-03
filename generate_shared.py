@@ -1,43 +1,30 @@
-import { Robot } from '../../core/models';
+import re
 
-export interface Opponent {
+content = open("src/components/minigames/Shared.ts", "r").read()
+
+# Replace PianoSong interface
+content = re.sub(
+    r"export interface PianoSong \{.*?notes: PianoNoteData\[\];\n\}",
+    """export interface PianoSong {
   id: string;
-  name: string;
-  org: string;
-  int: number;
-  agi: number;
-  dex: number;
-  rewardKits: number;
-}
-
-export type DanmakuDifficulty = 'easy' | 'normal' | 'hard';
-
-export interface DanmakuDifficultyConfig {
-  id: DanmakuDifficulty;
-  name: string;
-  label: string;
-  subLabel: string;
+  title: string;
+  composer: string;
+  baseDifficulty: number; // 0-100 (higher means harder)
+  songSpeed: number; // 楽曲固有の再生速度 (例: 0.6=ゆっくり, 1.0=普通, 1.5=速い, 2.0=とても速い)
+  bgmUrl?: string; // 任意で背景に流すBGM
   desc: string;
-  bulletSpeedMult: number;
-  ringCount: number;
-  rewardKits: number;
-  badgeClass: string;
-}
+  notesEasy: PianoNoteData[];
+  notesNormal: PianoNoteData[];
+  notesHard: PianoNoteData[];
+}""",
+    content,
+    flags=re.DOTALL
+)
 
-export type PianoDifficulty = 'easy' | 'normal' | 'hard';
-
-export interface PianoDifficultyConfig {
-  id: PianoDifficulty;
-  name: string;
-  label: string;
-  subLabel: string;
-  desc: string;
-  multiplier: number;
-  rewardKits: number;
-  badgeClass: string;
-}
-
-export const PIANO_DIFFICULTIES: PianoDifficultyConfig[] = [
+# Replace PIANO_DIFFICULTIES
+content = re.sub(
+    r"export const PIANO_DIFFICULTIES: PianoDifficultyConfig\[\] = \[.*?\];",
+    """export const PIANO_DIFFICULTIES: PianoDifficultyConfig[] = [
   {
     id: 'easy',
     name: '簡単',
@@ -68,47 +55,13 @@ export const PIANO_DIFFICULTIES: PianoDifficultyConfig[] = [
     rewardKits: 2,
     badgeClass: 'bg-purple-100 text-purple-800 border-purple-300',
   },
-];
+];""",
+    content,
+    flags=re.DOTALL
+)
 
-export interface PianoNoteData {
-  time: number; // ミリ秒単位の再生タイミング (0からの相対時間)
-  lanes: number[]; // 同時に押す鍵盤のレーン番号 (0〜20)
-}
-
-export interface PianoSong {
-  id: string;
-  title: string;
-  composer: string;
-  baseDifficulty: number; // 0-100 (higher means harder)
-  songSpeed: number; // 楽曲固有の再生速度 (例: 0.6=ゆっくり, 1.0=普通, 1.5=速い, 2.0=とても速い)
-  bgmUrl?: string; // 任意で背景に流すBGM
-  desc: string;
-  notesEasy: PianoNoteData[];
-  notesNormal: PianoNoteData[];
-  notesHard: PianoNoteData[];
-}
-
-const t = (time: number, lanes: number[]) => ({ time, lanes });
-
-const generateLoop = (baseNotes: PianoNoteData[], targetDurationMs: number): PianoNoteData[] => {
-  const result: PianoNoteData[] = [];
-  const loopDuration = baseNotes[baseNotes.length - 1].time + 1000;
-  let currentTime = 1000; // 最初のディレイ
-  
-  while (currentTime < targetDurationMs) {
-    for (const note of baseNotes) {
-      if (currentTime + note.time > targetDurationMs) break;
-      result.push({
-        time: currentTime + note.time,
-        lanes: note.lanes
-      });
-    }
-    currentTime += loopDuration;
-  }
-  return result;
-};
-
-
+# Replace song definitions
+songs_content = """
 const elegyEasy = [
   t(0, [12]), t(1000, [9]), t(2000, [7]), t(3000, [9]),
   t(4000, [10]), t(5000, [12]), t(6000, [10]), t(7000, [8]),
@@ -204,57 +157,15 @@ export const PIANO_SONGS: PianoSong[] = [
     notesHard: generateLoop(kiriHard, 30000)
   }
 ];
+"""
 
+content = re.sub(
+    r"const elegyBase.*?];\n\nexport const PIANO_SONGS: PianoSong\[\] = \[.*?\];",
+    songs_content,
+    content,
+    flags=re.DOTALL
+)
 
-export const DANMAKU_DIFFICULTIES: DanmakuDifficultyConfig[] = [
-  {
-    id: 'easy',
-    name: '初級',
-    label: '初級 (EASY)',
-    subLabel: '弾速0.75x・入門向け',
-    desc: '弾幕の速度が控えめで、初心者ロボットでも隙間を抜けやすい入門モード。',
-    bulletSpeedMult: 0.75,
-    ringCount: 6,
-    rewardKits: 1,
-    badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-300',
-  },
-  {
-    id: 'normal',
-    name: '中級',
-    label: '中級 (NORMAL)',
-    subLabel: '標準弾幕・バランス',
-    desc: '標準的な高密度弾幕サバイバル。適切なAgiとDexが求められる。',
-    bulletSpeedMult: 1.0,
-    ringCount: 8,
-    rewardKits: 1,
-    badgeClass: 'bg-blue-100 text-blue-800 border-blue-300',
-  },
-  {
-    id: 'hard',
-    name: '上級',
-    label: '上級 (HARD)',
-    subLabel: '弾速1.25x・極限弾幕',
-    desc: '超高速かつ高密度に降り注ぐ極限の弾幕。鍛え抜かれたAgiとDexが必要。',
-    bulletSpeedMult: 1.25,
-    ringCount: 10,
-    rewardKits: 2,
-    badgeClass: 'bg-purple-100 text-purple-800 border-purple-300',
-  },
-];
+with open("src/components/minigames/Shared.ts", "w") as f:
+    f.write(content)
 
-export const OPPONENTS: Opponent[] = [
-  { id: 'op1', name: 'ポンコツ試作機', org: '町の発明家', int: 1, agi: 1, dex: 1, rewardKits: 1 },
-  { id: 'op2', name: '汎用作業ボット', org: 'アポロ工業', int: 10, agi: 10, dex: 10, rewardKits: 2 },
-  { id: 'op3', name: '戦術演算ユニット', org: 'ゼニス・コーポレーション', int: 30, agi: 30, dex: 30, rewardKits: 3 },
-  { id: 'op4', name: 'オメガ・マスター', org: '世界AI協会', int: 60, agi: 60, dex: 60, rewardKits: 5 },
-];
-
-export interface MinigameProps {
-  activeRobot: Robot;
-  activeOpponent: Opponent;
-  onFinish: (result: 'win' | 'lose' | 'draw') => void;
-  speed: number;
-  isPaused: boolean;
-  isFinished: boolean;
-  battleResult?: 'win' | 'lose' | 'draw' | null;
-}

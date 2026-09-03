@@ -1,3 +1,4 @@
+import * as Gi from 'react-icons/gi';
 import React, { useState, useEffect } from 'react';
 import { GameState, RequestRank, AttributeNames, Robot } from '../core/models';
 import { GameEngine } from '../core/GameEngine';
@@ -132,18 +133,18 @@ export const RequestScreen: React.FC<{ state: GameState; engine: GameEngine }> =
 
       {/* Schedule & Rules Explanation Box */}
       <Card className="bg-stone-50 border border-stone-300 p-4">
-        <h3 className={`${theme.typography.h4} text-stone-800 mb-2`}>📋 クライアント別の更新ルールと好感度</h3>
+        <h3 className={`${theme.typography.h4} text-stone-800 mb-2`}><Gi.GiChecklist className="inline text-stone-500" /> クライアント別の更新ルールと好感度</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-3 text-xs">
           <div className="p-2 bg-amber-50 border border-amber-200 rounded">
-            <span className="font-bold text-amber-900">👑 王様 (24時間更新)</span>
+            <span className="font-bold text-amber-900"><Gi.GiCrown className="inline text-yellow-500" /> 王様 (24時間更新)</span>
             <p className="text-amber-800 mt-1">毎日 朝 9:00 更新</p>
           </div>
           <div className="p-2 bg-purple-50 border border-purple-200 rounded">
-            <span className="font-bold text-purple-900">🍷 貴族 (12時間更新)</span>
+            <span className="font-bold text-purple-900"><Gi.GiWineGlass className="inline text-red-500" /> 貴族 (12時間更新)</span>
             <p className="text-purple-800 mt-1">毎日 9:00 / 21:00 更新</p>
           </div>
           <div className="p-2 bg-stone-100 border border-stone-200 rounded">
-            <span className="font-bold text-stone-900">🔧 おじさん (6時間更新)</span>
+            <span className="font-bold text-stone-900"><Gi.GiSpanner className="inline text-stone-500" /> おじさん (6時間更新)</span>
             <p className="text-stone-700 mt-1">毎日 3:00 / 9:00 / 15:00 / 21:00 更新</p>
           </div>
         </div>

@@ -1,3 +1,4 @@
+import * as Gi from 'react-icons/gi';
 import React, { useState, useEffect } from 'react';
 import { MinigameProps } from './Shared';
 import { RobotVisual } from '../robot/RobotVisual';
@@ -91,14 +92,16 @@ export const TicTacToeGame: React.FC<MinigameProps> = ({ activeRobot, activeOppo
           </div>
           <div className="font-bold flex items-center justify-center gap-1">
             {activeRobot.name}
-            {battleResult === 'win' && <span className="text-amber-500 text-xs">👑</span>}
+            {battleResult === 'win' && <span className="text-amber-500 text-xs"><Gi.GiCrown className="inline text-yellow-500" /></span>}
           </div>
           <div className="text-xs text-stone-600">Int: {activeRobot.stats.intelligence}</div>
           <div className="mt-2 text-xl font-bold text-blue-500">⭕</div>
         </div>
         <div className="px-4 font-black text-3xl text-stone-300">VS</div>
         <div className={`text-center p-3 rounded-lg flex-1 ${turn === 2 ? 'bg-stone-200 shadow-inner' : ''}`}>
-          <div className="flex justify-center mb-2 h-12 items-center text-4xl">🤖</div>
+          <div className="flex justify-center mb-2 h-12 items-center text-4xl">
+            <Gi.GiRobotAntennas className="text-stone-700" />
+          </div>
           <div className="font-bold">{activeOpponent.name}</div>
           <div className="text-xs text-stone-600">AI: {activeOpponent.int}</div>
           <div className="mt-2 text-xl font-bold text-red-500">❌</div>

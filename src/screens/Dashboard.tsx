@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
 import { RobotRadarChart } from '../components/robot/RobotRadarChart';
 import { RepairAnimationModal } from '../components/effects/RepairAnimationModal';
+import { GarageAmbience } from '../components/effects/GarageAmbience';
 
 const formatTime = (ms: number) => {
   if (ms <= 0) return '00:00';
@@ -87,7 +88,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
     const result = engine.completeQuest();
     if (result) {
       setLootResult({
-        title: '🎉 遠征成功！',
+        title: '遠征成功！',
         subtitle: '素材を獲得しました！',
         drops: result.drops,
         type: 'quest'
@@ -101,7 +102,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
       const res = engine.claimAutoDispatch(dispatchId);
       if (res && res.drops.length > 0) {
         setLootResult({
-          title: '🤖 素材回収！',
+          title: '素材回収！',
           subtitle: `${res.robotName} が ${res.locationName} で見つけた素材を獲得しました！`,
           drops: res.drops,
           type: 'auto_dispatch'
@@ -118,7 +119,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
       const res = engine.claimAllAutoDispatches();
       if (res && res.drops.length > 0) {
         setLootResult({
-          title: '🤖 一括回収完了！',
+          title: '一括回収完了！',
           subtitle: '探索素材を一括回収しました！',
           drops: res.drops,
           type: 'auto_dispatch'
@@ -135,7 +136,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
       const res = engine.cancelAutoDispatch(dispatchId);
       if (res && res.drops.length > 0) {
         setLootResult({
-          title: '🤖 帰還・素材回収！',
+          title: '帰還・素材回収！',
           subtitle: `${res.robotName} が帰還し、探索素材を獲得しました！`,
           drops: res.drops,
           type: 'auto_dispatch'
@@ -168,96 +169,115 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
 
   return (
     <div className="space-y-4">
-      {/* 統合ダッシュボードカード (Unified Workshop Dashboard - Bright Theme) */}
-      <Card className="bg-stone-100/90 border-2 border-stone-300 shadow-md p-3 relative overflow-hidden">
-        {/* Factory Background subtle pattern */}
-        <div className="absolute inset-0 pointer-events-none opacity-[0.03] z-0 bg-[linear-gradient(45deg,transparent_25%,rgba(0,0,0,1)_25%,rgba(0,0,0,1)_50%,transparent_50%,transparent_75%,rgba(0,0,0,1)_75%,rgba(0,0,0,1)_100%)] bg-[length:20px_20px]"></div>
-        <div className="absolute top-0 right-0 p-2 opacity-10 pointer-events-none z-0"><Gi.GiSpanner size={80} className="text-stone-400" /></div>
+      {/* 統合ダッシュボードカード (Unified Workshop Dashboard - Warm Brick & Wood Theme) */}
+      <Card className={theme.workshop.mainCard + " p-3.5"}>
+        {/* 工房アンビエンス背景（木製梁・赤レンガ壁・石窯の薪火・アーチ棚スケッチ） */}
+        <GarageAmbience />
         <div className="relative z-10">
-        {/* 上部ステータスバー (コンパクトな明るい計器盤デザイン・枠線をくっきり視認性向上) */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
-          <div className="bg-white border-2 border-stone-300 rounded-lg flex items-center p-2 shadow-xs">
-            <div className="w-7 h-7 bg-amber-100 rounded-md flex items-center justify-center shrink-0 border border-amber-300 mr-2">
-              <span className="text-xs">💰</span>
+        {/* 上部ステータスバー (工房の木製・真鍮プレート銘板デザイン & アイコン中央配置) */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-3.5">
+          {/* GOLD */}
+          <div className={theme.workshop.statCard}>
+            <div className={`${theme.workshop.statIconBox} bg-amber-100/90 border-amber-300/80 text-amber-700`}>
+              <Gi.GiCoins size={20} />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-[9px] font-bold text-amber-900/80 uppercase tracking-widest leading-none mb-0.5">GOLD</div>
-              <div className="text-sm font-black text-amber-600 font-mono truncate leading-none">{state.gold}</div>
+              <div className="text-[10px] font-bold text-amber-900/80 tracking-wider leading-none mb-1">所持金</div>
+              <div className="text-sm font-black text-amber-700 font-mono truncate leading-none">
+                {state.gold} <span className="text-[10px] font-bold font-sans text-amber-600/90">G</span>
+              </div>
             </div>
           </div>
 
-          <div className="bg-white border-2 border-stone-300 rounded-lg flex items-center p-2 shadow-xs">
-            <div className="w-7 h-7 bg-blue-100 rounded-md flex items-center justify-center shrink-0 border border-blue-300 mr-2">
-              <span className="text-xs">🤖</span>
+          {/* ROBOTS */}
+          <div className={theme.workshop.statCard}>
+            <div className={`${theme.workshop.statIconBox} bg-sky-100/90 border-sky-300/80 text-sky-700`}>
+              <Gi.GiRobotAntennas size={20} />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-[9px] font-bold text-blue-900/80 uppercase tracking-widest leading-none mb-0.5">ROBOTS</div>
-              <div className="text-sm font-black text-blue-600 font-mono truncate leading-none">
+              <div className="text-[10px] font-bold text-sky-950/80 tracking-wider leading-none mb-1">機体保管</div>
+              <div className="text-sm font-black text-sky-800 font-mono truncate leading-none">
                 {state.robots?.length} <span className="text-[10px] text-stone-500 font-normal">/ {state.storageSize}</span>
               </div>
             </div>
           </div>
 
-          <div className="bg-white border-2 border-stone-300 rounded-lg flex items-center p-2 shadow-xs">
-            <div className="w-7 h-7 bg-emerald-100 rounded-md flex items-center justify-center shrink-0 border border-emerald-300 mr-2">
-              <span className="text-xs">🏆</span>
+          {/* DELIVERIES */}
+          <div className={theme.workshop.statCard}>
+            <div className={`${theme.workshop.statIconBox} bg-emerald-100/90 border-emerald-300/80 text-emerald-700`}>
+              <Gi.GiTrophy size={20} />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-[9px] font-bold text-emerald-900/80 tracking-widest leading-none mb-0.5">納品数</div>
-              <div className="text-sm font-black text-emerald-600 font-mono truncate leading-none">{state.deliveredRobotsCount}</div>
+              <div className="text-[10px] font-bold text-emerald-950/80 tracking-wider leading-none mb-1">納品実績</div>
+              <div className="text-sm font-black text-emerald-800 font-mono truncate leading-none">
+                {state.deliveredRobotsCount} <span className="text-[10px] text-stone-500 font-normal">件</span>
+              </div>
             </div>
           </div>
 
-          <div className="bg-white border-2 border-stone-300 rounded-lg flex items-center p-2 shadow-xs">
-            <div className="w-7 h-7 bg-purple-100 rounded-md flex items-center justify-center shrink-0 border border-purple-300 mr-2">
-              <span className="text-xs"><Gi.GiSpanner className="inline mr-1 text-purple-700" /></span>
+          {/* REPAIRS */}
+          <div className={theme.workshop.statCard}>
+            <div className={`${theme.workshop.statIconBox} bg-purple-100/90 border-purple-300/80 text-purple-700`}>
+              <Gi.GiSpanner size={20} />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-[9px] font-bold text-purple-900/80 uppercase tracking-widest leading-none mb-0.5">REPAIRS</div>
-              <div className="text-sm font-black text-purple-600 font-mono truncate leading-none">{state.repairKits ?? 0}</div>
+              <div className="text-[10px] font-bold text-purple-950/80 tracking-wider leading-none mb-1">修理キット</div>
+              <div className="text-sm font-black text-purple-800 font-mono truncate leading-none">
+                {state.repairKits ?? 0} <span className="text-[10px] text-stone-500 font-normal">個</span>
+              </div>
             </div>
           </div>
         </div>
 
         {/* まとめて回収バー (遠征の上に配置) */}
         {totalAutoPendingDrops > 0 && (
-          <div className="border-t border-stone-300 pt-3 pb-1 flex items-center justify-between bg-amber-50/90 border-2 border-amber-400 p-2.5 rounded-xl mb-3 shadow-xs">
+          <div className="border-t-2 border-[#d9c4b1] pt-3 pb-1 flex items-center justify-between bg-amber-50/95 border-2 border-amber-400/90 p-2.5 rounded-xl mb-3 shadow-2xs">
             <div className="flex items-center gap-2">
-              <span className="text-sm">📦</span>
+              <div className="w-7 h-7 rounded-md bg-amber-200/80 border border-amber-400 flex items-center justify-center text-amber-800 shrink-0">
+                <Gi.GiCardboardBox size={18} />
+              </div>
               <span className="text-xs font-bold text-amber-950">自動探索で獲得した素材があります</span>
             </div>
-            <Button size="sm" variant="success" onClick={handleClaimAllAutoDispatches} className="animate-bounce text-xs px-3 py-1 font-bold shadow-xs bg-emerald-600 hover:bg-emerald-500 text-white">
-              📦 まとめて回収 ({totalAutoPendingDrops})
+            <Button size="sm" variant="success" onClick={handleClaimAllAutoDispatches} className="animate-bounce text-xs px-3 py-1 font-bold shadow-xs bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-1.5">
+              <Gi.GiCardboardBox size={16} />
+              <span>まとめて回収 ({totalAutoPendingDrops})</span>
             </Button>
           </div>
         )}
 
         {/* 通常遠征ヘッダー */}
-        <div className="border-t border-stone-300 pt-3 mb-2 flex items-center justify-between flex-wrap gap-2">
+        <div className={`${theme.workshop.sectionDivider} pt-3 mb-2.5 flex items-center justify-between flex-wrap gap-2`}>
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 font-bold text-stone-800 text-sm tracking-wider">
-              <Gi.GiWalkingScout className="text-amber-600" size={18} />
-              通常遠征
+            <div className={theme.workshop.sectionHeader}>
+              <div className="w-6 h-6 rounded-md bg-[#eaddcf] border border-[#b89578] flex items-center justify-center text-[#734320]">
+                <Gi.GiWalkingScout size={16} />
+              </div>
+              <span>通常遠征</span>
             </div>
           </div>
         </div>
 
         <div className="mb-4">
           {state.activeQuest ? (
-            <div className={`p-3 rounded-xl border-2 transition-all shadow-xs ${questDone ? 'bg-emerald-50/80 border-emerald-400 ring-2 ring-emerald-200' : 'bg-white border-amber-300'}`}>
+            <div className={`p-3 rounded-xl border-2 transition-all shadow-2xs ${questDone ? 'bg-emerald-50/90 border-emerald-400 ring-2 ring-emerald-200' : 'bg-[#fffdfa] border-[#dcc5b0]'}`}>
               <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="p-1 bg-amber-100 rounded-lg border border-amber-300 shrink-0">
+                  <div className="p-1 bg-[#f7eee3] rounded-lg border border-[#dcc5b0] shrink-0">
                     {questRobot ? (
                       <RobotVisual robot={questRobot} size={36} />
                     ) : (
-                      <span className="text-xl">🎒</span>
+                      <div className="w-9 h-9 flex items-center justify-center text-amber-800">
+                        <Gi.GiKnapsack size={22} />
+                      </div>
                     )}
                   </div>
                   <div className="min-w-0">
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="text-[10px] bg-amber-200 text-amber-900 font-bold px-1.5 py-0.2 rounded shrink-0 border border-amber-300">通常遠征</span>
-                      <span className="font-bold text-xs sm:text-sm text-stone-800 truncate">📍 {activeQuestLoc?.name}</span>
+                      <span className="font-bold text-xs sm:text-sm text-stone-800 truncate flex items-center gap-1">
+                        <Gi.GiPin size={13} className="text-red-500 shrink-0" />
+                        <span>{activeQuestLoc?.name}</span>
+                      </span>
                       {questDone && (
                         <span className="text-[10px] bg-amber-500 text-white font-bold px-1.5 py-0.2 rounded-full animate-bounce shrink-0">
                           完了！
@@ -271,14 +291,16 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                 </div>
                 <div className="shrink-0 flex items-center gap-2 ml-auto sm:ml-0">
                   {questDone ? (
-                    <Button size="sm" variant="success" onClick={handleCompleteQuest} className="animate-bounce shadow-xs font-bold text-xs px-3 py-1.5">
-                      🎁 素材を受取る
+                    <Button size="sm" variant="success" onClick={handleCompleteQuest} className="animate-bounce shadow-xs font-bold text-xs px-3 py-1.5 flex items-center gap-1.5">
+                      <Gi.GiPresent size={16} className="text-pink-300" />
+                      <span>素材を受取る</span>
                     </Button>
                   ) : (
                     <div className="text-right">
                       <span className="text-[10px] text-stone-500 block font-mono">残り時間</span>
-                      <span className="text-xs sm:text-sm font-bold font-mono text-amber-800 bg-amber-100 px-2 py-0.5 rounded border border-amber-300">
-                        ⏳ {formatTime(timeRemaining)}
+                      <span className="text-xs sm:text-sm font-bold font-mono text-amber-800 bg-amber-100 px-2 py-0.5 rounded border border-amber-300 flex items-center justify-end gap-1">
+                        <Gi.GiHourglass className="text-amber-700 text-xs" />
+                        <span>{formatTime(timeRemaining)}</span>
                       </span>
                     </div>
                   )}
@@ -286,24 +308,32 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
               </div>
             </div>
           ) : (
-            <div className="p-3 bg-white rounded-xl border-2 border-stone-300 shadow-xs flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <span className="text-lg"><Gi.GiWalkingScout className="text-amber-700" /></span>
-                <span className="text-xs text-stone-700 font-bold">通常遠征: 未出撃</span>
+            <div className="p-3 bg-[#fffdfa] rounded-xl border-2 border-[#dcc5b0] shadow-2xs flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-[#f0e4d7] border border-[#c4a485] flex items-center justify-center text-[#734320] shrink-0">
+                  <Gi.GiWalkingScout size={18} />
+                </div>
+                <div>
+                  <span className="text-xs text-[#5c3e28] font-bold block">通常遠征: 未出撃</span>
+                  <span className="text-[11px] text-stone-500">素材集めへ出撃させましょう</span>
+                </div>
               </div>
-              <Button size="sm" onClick={() => onNavigate('quest')} className="text-xs px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white font-bold shadow-xs border border-amber-600">
-                遠征へ向かう →
+              <Button size="sm" onClick={() => onNavigate('quest')} className="text-xs px-3 py-1.5 bg-[#8e5e3a] hover:bg-[#784d2e] text-white font-bold shadow-xs border border-[#784d2e] flex items-center gap-1">
+                <span>遠征へ向かう</span>
+                <span>→</span>
               </Button>
             </div>
           )}
         </div>
 
         {/* 自動探索ヘッダー */}
-        <div className="border-t border-stone-300 pt-3 mb-2 flex items-center justify-between flex-wrap gap-2">
+        <div className={`${theme.workshop.sectionDivider} pt-3 mb-2.5 flex items-center justify-between flex-wrap gap-2`}>
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 font-bold text-stone-800 text-sm tracking-wider">
-              <Gi.GiFactory className="text-amber-600" size={18} />
-              自動探索
+            <div className={theme.workshop.sectionHeader}>
+              <div className="w-6 h-6 rounded-md bg-[#eaddcf] border border-[#b89578] flex items-center justify-center text-[#734320]">
+                <Gi.GiFactory size={16} />
+              </div>
+              <span>自動探索</span>
             </div>
             {(state.autoDispatches && state.autoDispatches.length > 0) && (
               <span className="flex h-2 w-2 relative">
@@ -313,17 +343,18 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
             )}
           </div>
           <div className="flex items-center gap-1.5">
-            <Button size="sm" onClick={() => setIsDispatchModalOpen(true)} className="text-xs px-2.5 py-1 bg-amber-600 hover:bg-amber-500 text-white border border-amber-600 font-bold shadow-xs">
-              <Gi.GiWalkingScout className="inline mr-1" /> 派遣する
+            <Button size="sm" onClick={() => setIsDispatchModalOpen(true)} className="text-xs px-2.5 py-1 bg-[#8e5e3a] hover:bg-[#784d2e] text-white border border-[#784d2e] font-bold shadow-xs flex items-center gap-1.5">
+              <Gi.GiWalkingScout size={14} />
+              <span>派遣する</span>
             </Button>
           </div>
         </div>
 
         <div className="space-y-3">
           {(!state.autoDispatches || state.autoDispatches.length === 0) && (
-            <div className="p-4 bg-white rounded-xl border-2 border-dashed border-stone-300 text-center flex flex-col items-center justify-center gap-2 shadow-xs">
-              <Gi.GiSleepy className="text-3xl text-stone-400" />
-              <p className="text-xs text-stone-600 font-bold">現在、自動探索中のロボットはいません</p>
+            <div className="p-4 bg-[#fffdfa] rounded-xl border-2 border-dashed border-[#d2b89f] text-center flex flex-col items-center justify-center gap-2 shadow-2xs">
+              <Gi.GiSleepy className="text-3xl text-[#b89578]" />
+              <p className="text-xs text-[#6e4e37] font-bold">現在、自動探索中のロボットはいません</p>
             </div>
           )}
           {/* 自動探索ロボット一覧 (Auto Dispatches) */}
@@ -339,10 +370,10 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
               const weather = dLoc ? engine.getLocationWeather(dLoc.id, Date.now()) : null;
 
               return (
-                <div key={d.id} className={`p-3 rounded-xl border-2 shadow-xs transition-all ${isResting ? 'bg-red-50/80 border-red-300 ring-1 ring-red-200' : pending > 0 ? 'bg-emerald-50/80 border-emerald-400 ring-1 ring-emerald-200' : 'bg-white border-stone-300'}`}>
+                <div key={d.id} className={`p-3 rounded-xl border-2 shadow-2xs transition-all ${isResting ? 'bg-red-50/90 border-red-300 ring-1 ring-red-200' : pending > 0 ? 'bg-emerald-50/90 border-emerald-400 ring-1 ring-emerald-200' : 'bg-[#fffdfa] border-[#dcc5b0]'}`}>
                   {/* ロボット探索アニメーション（コンパクト） */}
                   {dRobot && (
-                    <div className="w-full bg-stone-900 rounded-lg overflow-hidden border-2 border-stone-300 relative mb-2">
+                    <div className="w-full bg-stone-900 rounded-lg overflow-hidden border-2 border-[#b89578] relative mb-2 shadow-2xs">
                       <RobotVisual 
                         robot={dRobot} 
                         size={40} 
@@ -358,7 +389,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
 
 
                       {/* 表情テスト切替 */}
-                      <div className="absolute top-1.5 right-1.5 flex items-center gap-1 bg-stone-900/80 p-0.5 rounded border border-stone-700/60 z-20">
+                      <div className="absolute top-1.5 right-1.5 flex items-center gap-1 bg-stone-900/85 p-0.5 rounded border border-stone-700/60 z-20">
                         <button 
                           onClick={() => setPreviewEmotions(prev => ({ ...prev, [d.id]: 'auto' }))}
                           className={`text-[9px] px-1 py-0.2 rounded font-bold transition-colors ${selectedEmotion === 'auto' ? 'bg-amber-500 text-white' : 'text-stone-300 hover:bg-stone-800'}`}
@@ -367,15 +398,17 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                         </button>
                         <button 
                           onClick={() => setPreviewEmotions(prev => ({ ...prev, [d.id]: 'happy' }))}
-                          className={`text-[9px] px-1 py-0.2 rounded font-bold transition-colors ${selectedEmotion === 'happy' ? 'bg-amber-500 text-white' : 'text-stone-300 hover:bg-stone-800'}`}
+                          className={`text-[9px] px-1 py-0.2 rounded font-bold transition-colors flex items-center gap-0.5 ${selectedEmotion === 'happy' ? 'bg-amber-500 text-white' : 'text-stone-300 hover:bg-stone-800'}`}
                         >
-                          ✨発見
+                          <Gi.GiSparkles className="text-amber-300 text-[10px]" />
+                          <span>発見</span>
                         </button>
                         <button 
                           onClick={() => setPreviewEmotions(prev => ({ ...prev, [d.id]: 'troubled' }))}
-                          className={`text-[9px] px-1 py-0.2 rounded font-bold transition-colors ${selectedEmotion === 'troubled' ? 'bg-blue-600 text-white' : 'text-stone-300 hover:bg-stone-800'}`}
+                          className={`text-[9px] px-1 py-0.2 rounded font-bold transition-colors flex items-center gap-0.5 ${selectedEmotion === 'troubled' ? 'bg-blue-600 text-white' : 'text-stone-300 hover:bg-stone-800'}`}
                         >
-                          💦困り
+                          <Gi.GiWaterDrop className="text-blue-400 text-[10px]" />
+                          <span>困り</span>
                         </button>
                       </div>
                     </div>
@@ -384,9 +417,12 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                   <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-[10px] bg-purple-200 text-purple-900 font-bold px-1.5 py-0.2 rounded">自動探索</span>
+                        <span className="text-[10px] bg-purple-100 text-purple-900 border border-purple-300 font-bold px-1.5 py-0.2 rounded">自動探索</span>
                         <span className="font-bold text-xs sm:text-sm text-stone-800">{dRobot?.name || 'ロボット'}</span>
-                        <span className="text-[11px] text-stone-500">📍 {dLoc?.name}</span>
+                        <span className="text-[11px] text-stone-500 inline-flex items-center gap-0.5">
+                          <Gi.GiPin size={12} className="text-red-500" />
+                          <span>{dLoc?.name}</span>
+                        </span>
                         {weather && (
                           <span className="flex items-center gap-1 text-[10px] bg-sky-100 text-sky-800 border border-sky-200 px-1 rounded cursor-help" title={weather.description}>
                             {weather.name}
@@ -395,8 +431,9 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                             </span>
                           </span>
                         )}
-                        <span className="text-[10px] text-red-600 font-mono bg-red-50 border border-red-200 px-1 rounded">
-                          ❤️ {dRobot?.currentHp ?? 12}/{dRobot?.maxHp ?? 12}
+                        <span className="text-[10px] text-red-600 font-mono bg-red-50 border border-red-200 px-1 rounded inline-flex items-center gap-0.5">
+                          <Gi.GiHeartPlus size={11} className="text-rose-500" />
+                          <span>{dRobot?.currentHp ?? 12}/{dRobot?.maxHp ?? 12}</span>
                         </span>
                         {isResting && (
                           <span className="text-[10px] bg-rose-600 text-white font-bold px-1.5 py-0.2 rounded animate-pulse">
@@ -406,13 +443,20 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                       </div>
                       <div className="flex items-center gap-2 mt-1 text-[10px] text-stone-500 font-mono">
                         {isResting ? (
-                          <span className="text-rose-600 font-bold">⚠️ HP切れのため探索中断中（帰還させて修理してください）</span>
+                          <span className="text-rose-600 font-bold flex items-center gap-1">
+                            <Gi.GiHazardSign size={13} className="text-amber-500" />
+                            <span>HP切れのため探索中断中（帰還させて修理してください）</span>
+                          </span>
                         ) : (
                           <>
-                            <span>⏳ 次回: {formatTime(remain)}</span>
+                            <span className="inline-flex items-center gap-1">
+                              <Gi.GiHourglass size={12} className="text-stone-500" />
+                              <span>次回: {formatTime(remain)}</span>
+                            </span>
                             {dRobot && dRobot.stats.agility > 0 && (
-                              <span className="text-blue-600 bg-blue-50 px-1 rounded border border-blue-200">
-                                ⚡ -{dRobot.stats.agility}s
+                              <span className="text-blue-600 bg-blue-50 px-1 rounded border border-blue-200 inline-flex items-center gap-0.5">
+                                <Gi.GiLightningTrio size={11} className="text-yellow-500" />
+                                <span>-{dRobot.stats.agility}s</span>
                               </span>
                             )}
                           </>
@@ -426,9 +470,10 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                           size="sm" 
                           variant="success" 
                           onClick={() => handleClaimAutoDispatch(d.id)}
-                          className="text-xs px-2.5 py-1 font-bold shadow-xs animate-pulse"
+                          className="text-xs px-2.5 py-1 font-bold shadow-xs animate-pulse flex items-center gap-1.5"
                         >
-                          <Gi.GiCardboardBox className="inline mr-1" /> 回収 ({pending})
+                          <Gi.GiCardboardBox size={15} />
+                          <span>回収 ({pending})</span>
                         </Button>
                       ) : isResting ? (
                         dRobot && state.repairKits && state.repairKits > 0 ? (
@@ -436,10 +481,10 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                             size="sm" 
                             variant="success" 
                             onClick={() => handleRepairRobot(dRobot)}
-                            className="text-xs px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-xs flex items-center gap-1 animate-bounce"
+                            className="text-xs px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-xs flex items-center gap-1.5 animate-bounce"
                             title="修理キットを使ってHPを全快にし探索を再開します"
                           >
-                            <span><Gi.GiSpanner className="inline mr-1" /></span>
+                            <Gi.GiSpanner size={14} />
                             <span>修理して再開</span>
                           </Button>
                         ) : (
@@ -447,9 +492,10 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                             size="sm" 
                             variant="danger" 
                             disabled={true}
-                            className="text-xs px-2 py-1 opacity-90 bg-rose-100 text-rose-700 border border-rose-300 font-bold"
+                            className="text-xs px-2 py-1 opacity-90 bg-rose-100 text-rose-700 border border-rose-300 font-bold flex items-center gap-1"
                           >
-                            💔 HP切れ
+                            <Gi.GiBrokenHeart size={14} className="text-red-500" />
+                            <span>HP切れ</span>
                           </Button>
                         )
                       ) : (
@@ -457,9 +503,10 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                           size="sm" 
                           variant="secondary" 
                           disabled={true}
-                          className="text-xs px-2 py-1 opacity-80 bg-stone-100 text-stone-600 border border-stone-300 font-bold"
+                          className="text-xs px-2 py-1 opacity-80 bg-stone-100 text-stone-600 border border-stone-300 font-bold flex items-center gap-1"
                         >
-                          <Gi.GiTreasureMap className="inline mr-1" /> 探索中
+                          <Gi.GiTreasureMap size={14} />
+                          <span>探索中</span>
                         </Button>
                       )}
                       <Button size="sm" variant="danger" onClick={() => handleCancelAutoDispatch(d.id)} className="text-xs px-2 py-1">
@@ -476,9 +523,11 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
 
       {/* Tutorial Banner */}
       {state.tutorialStep < 5 && (
-        <Card className="bg-blue-50 border-2 border-blue-300 text-blue-900 p-3">
+        <Card className="bg-[#eff6ff] border-2 border-blue-300 text-blue-900 p-3 shadow-2xs">
           <h3 className="font-black text-xs sm:text-sm text-blue-900 flex items-center gap-1.5">
-            <span>💡</span>
+            <div className="w-5 h-5 rounded bg-blue-100 flex items-center justify-center text-amber-500 shrink-0">
+              <Gi.GiLightBulb size={15} />
+            </div>
             <span>チュートリアル進行中</span>
           </h3>
           <p className="mt-1 text-xs font-bold text-blue-800">
@@ -493,10 +542,14 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
 
       {/* Crafting in Progress Banner (if any) */}
       {(state.activePartCraft || state.activeRobotAssembly) && (
-        <Card className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 shadow-xs p-3">
+        <Card className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 shadow-2xs p-3">
           <div className="flex justify-between items-center flex-wrap gap-2">
             <div className="flex items-center gap-2.5">
-              <span className="text-2xl animate-spin" style={{ animationDuration: '4s' }}>⚙️</span>
+              <div className="w-8 h-8 rounded-lg bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-700 shrink-0">
+                <span className="animate-spin inline-flex" style={{ animationDuration: '4s' }}>
+                  <Gi.GiCog size={20} />
+                </span>
+              </div>
               <div>
                 <div className="flex items-center gap-1.5">
                   <h4 className="font-bold text-amber-900 text-xs sm:text-sm">
@@ -510,8 +563,9 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                     (state.activePartCraft && state.activePartCraft.endTime <= Date.now()) ||
                     (state.activeRobotAssembly && state.activeRobotAssembly.endTime <= Date.now())
                   ) && (
-                    <Badge className="bg-amber-500 text-white text-[10px] whitespace-nowrap animate-bounce leading-none">
-                      🎉 完成！
+                    <Badge className="bg-amber-500 text-white text-[10px] whitespace-nowrap animate-bounce leading-none flex items-center gap-1">
+                      <Gi.GiPartyPopper size={12} />
+                      <span>完成！</span>
                     </Badge>
                   )}
                 </div>
@@ -538,13 +592,15 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
 
       {/* Current Request Banner */}
       {state.currentRequest && (
-        <Card className="border-2 border-blue-200 bg-blue-50/50 p-3">
+        <Card className="border-2 border-blue-200 bg-blue-50/50 p-3 shadow-2xs">
           <div className="flex justify-between items-center mb-1">
-            <h3 className="font-black text-xs sm:text-sm text-stone-800 flex items-center gap-1">
-              <span>📋</span>
+            <h3 className="font-black text-xs sm:text-sm text-stone-800 flex items-center gap-1.5">
+              <div className="w-5 h-5 rounded bg-blue-100 flex items-center justify-center text-blue-700 shrink-0">
+                <Gi.GiChecklist size={14} />
+              </div>
               <span>受諾中の依頼: {state.currentRequest.clientName}</span>
             </h3>
-            <span className="text-xs font-mono font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded">
+            <span className="text-xs font-mono font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded border border-amber-300">
               +{state.currentRequest.rewardG} G
             </span>
           </div>
@@ -558,27 +614,27 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
       {/* Shop & Material Trade Feature Card (商店・素材売買・交換所) */}
       <div 
         onClick={() => onNavigate('shop')}
-        className="bg-gradient-to-r from-amber-50 via-orange-50/90 to-amber-100/80 border-2 border-amber-400 hover:border-amber-500 rounded-xl px-3.5 py-2.5 shadow-xs hover:shadow-md transition-all cursor-pointer group flex items-center justify-between gap-3"
+        className="bg-gradient-to-r from-[#fcf7ee] via-[#f7eee2] to-[#f2e4d2] border-2 border-[#c29b77] hover:border-[#9c6a46] rounded-xl px-3.5 py-2.5 shadow-2xs hover:shadow-md transition-all cursor-pointer group flex items-center justify-between gap-3"
       >
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 text-white flex items-center justify-center text-lg shadow-xs border border-amber-300 shrink-0 group-hover:scale-105 transition-transform">
-            🏪
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#aa6e45] to-[#784824] text-white flex items-center justify-center text-lg shadow-2xs border border-[#c4936d] shrink-0 group-hover:scale-105 transition-transform">
+            <Gi.GiShop size={20} />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <h3 className="font-black text-xs sm:text-sm text-amber-950 truncate">
+              <h3 className="font-black text-xs sm:text-sm text-[#482b17] truncate">
                 素材商店・交換所
               </h3>
-              <span className="text-[10px] bg-amber-200 text-amber-900 font-bold px-1.5 py-0.2 rounded border border-amber-300 hidden sm:inline whitespace-nowrap">
+              <span className="text-[10px] bg-[#ead9c8] text-[#6b3e1f] font-bold px-1.5 py-0.2 rounded border border-[#c9ab8d] hidden sm:inline whitespace-nowrap">
                 素材売買・修理キット
               </span>
             </div>
-            <p className="text-[11px] text-stone-600 truncate mt-0.5">
+            <p className="text-[11px] text-[#70523e] truncate mt-0.5">
               素材の購入/売却 ｜ 修理キット交換 ｜ 内装変更
             </p>
           </div>
         </div>
-        <span className="text-stone-400 group-hover:text-amber-600 group-hover:translate-x-0.5 transition-all text-sm shrink-0 font-bold">
+        <span className="text-[#a6866b] group-hover:text-[#784824] group-hover:translate-x-0.5 transition-all text-sm shrink-0 font-bold">
           ›
         </span>
       </div>
@@ -587,27 +643,31 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
       <div className="grid grid-cols-2 gap-2.5">
         <button
           onClick={() => onNavigate('encyclopedia')}
-          className="flex items-center gap-2 p-2.5 bg-white hover:bg-stone-100 border-2 border-stone-300 rounded-xl text-stone-700 transition shadow-xs group text-left cursor-pointer"
+          className="flex items-center gap-2.5 p-2.5 bg-[#fffdfa] hover:bg-[#f5ede3] border-2 border-[#dcc5b0] hover:border-[#b89578] rounded-xl text-[#5c3e28] transition shadow-2xs group text-left cursor-pointer"
         >
-          <span className="text-xl p-1.5 bg-stone-100 rounded-lg border border-stone-300 shadow-2xs group-hover:scale-110 transition-transform">📖</span>
+          <span className="w-8 h-8 rounded-lg bg-[#f0e4d7] border border-[#c4a485] flex items-center justify-center text-[#734320] shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+            <Gi.GiBookCover size={18} />
+          </span>
           <div className="min-w-0">
-            <div className="text-xs sm:text-sm font-bold text-stone-900">
+            <div className="text-xs sm:text-sm font-bold text-[#482b17]">
               図鑑・実績
             </div>
-            <div className="text-[10px] text-stone-500 truncate">納品履歴 / パーツ詳細</div>
+            <div className="text-[10px] text-[#856550] truncate">納品履歴 / パーツ詳細</div>
           </div>
         </button>
 
         <button
           onClick={() => onNavigate('litepaper')}
-          className="flex items-center gap-2 p-2.5 bg-white hover:bg-stone-100 border-2 border-stone-300 rounded-xl text-stone-700 transition shadow-xs group text-left cursor-pointer"
+          className="flex items-center gap-2.5 p-2.5 bg-[#fffdfa] hover:bg-[#f5ede3] border-2 border-[#dcc5b0] hover:border-[#b89578] rounded-xl text-[#5c3e28] transition shadow-2xs group text-left cursor-pointer"
         >
-          <span className="text-xl p-1.5 bg-stone-100 rounded-lg border border-stone-300 shadow-2xs group-hover:scale-110 transition-transform">📜</span>
+          <span className="w-8 h-8 rounded-lg bg-[#f0e4d7] border border-[#c4a485] flex items-center justify-center text-[#734320] shrink-0 shadow-2xs group-hover:scale-110 transition-transform">
+            <Gi.GiScrollUnfurled size={18} />
+          </span>
           <div className="min-w-0">
-            <div className="text-xs sm:text-sm font-bold text-stone-900">
-              仕様書
+            <div className="text-xs sm:text-sm font-bold text-[#482b17]">
+              工房仕様書
             </div>
-            <div className="text-[10px] text-stone-500 truncate">工房ルール / ガイド</div>
+            <div className="text-[10px] text-[#856550] truncate">工房ルール / ガイド</div>
           </div>
         </button>
       </div>
@@ -662,7 +722,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                       パワー: <span className="font-bold text-orange-600">{selectedModalRobot.stats.power}</span> / 速度: <span className="font-bold text-amber-600">{selectedModalRobot.stats.agility}</span>
                     </p>
                     <p className="text-[10px] text-amber-700 font-mono mt-0.5">
-                      ⚡ 敏捷補正: -{selectedModalRobot.stats.agility}秒短縮 (周期: {Math.round(engine.getAutoDispatchIntervalMs(selectedModalRobot.id) / 60000 * 10) / 10}分)
+                      <Gi.GiLightningTrio className="inline mr-1 text-yellow-400" /> 敏捷補正: -{selectedModalRobot.stats.agility}秒短縮 (周期: {Math.round(engine.getAutoDispatchIntervalMs(selectedModalRobot.id) / 60000 * 10) / 10}分)
                     </p>
                   </div>
                   <div className="bg-white p-1 rounded border border-stone-200 shrink-0">
@@ -736,10 +796,11 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                   initial={{ y: -20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.2 }}
-                  className={`${theme.typography.h2} mb-2 text-emerald-600 drop-shadow-md text-2xl sm:text-3xl`}
+                  className={`${theme.typography.h2} mb-2 text-emerald-600 drop-shadow-md text-2xl sm:text-3xl flex items-center justify-center gap-2`}
                   style={{ textShadow: '0 0 10px rgba(16, 185, 129, 0.5)' }}
                 >
-                  {lootResult.title}
+                  <Gi.GiPartyPopper className="text-amber-500" />
+                  <span>{lootResult.title}</span>
                 </motion.h2>
                 
                 {lootResult.subtitle && (

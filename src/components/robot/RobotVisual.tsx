@@ -1,3 +1,4 @@
+import * as Gi from 'react-icons/gi';
 import React from 'react';
 import { Robot, AttributeColors } from '../../core/models';
 import { SVG_HEADS, SVG_BODIES, SVG_ARMS, SVG_LEGS } from './RobotSVGs';
@@ -23,6 +24,7 @@ interface RobotVisualProps {
   weatherType?: WeatherType;
   agility?: number; // ロボットの素早さ（歩行・アニメーション速度に反映）
   hideBackground?: boolean;
+  hideBubble?: boolean;
 }
 
 export const PartVisual: React.FC<{ part: any, size?: number }> = ({ part, size = 64 }) => {
@@ -79,7 +81,8 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
   locationId,
   weatherType,
   agility,
-  hideBackground = false
+  hideBackground = false,
+  hideBubble = false
 }) => {
   const parts = robot?.parts || {};
   const { head, body, arms, legs } = parts;
@@ -310,35 +313,54 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
             animate={{ scale: [0.6, 1.3, 0.8, 1.4, 0.6], opacity: [0.4, 1, 0.5, 1, 0.4], y: [-2, -8, -2] }}
             transition={{ duration: 1.2, repeat: Infinity }}
           >
-            ✨
+            <Gi.GiSparkles className="inline text-amber-400" />
           </motion.div>
           <motion.div 
             className="absolute top-2 right-3 text-yellow-400 text-xs sm:text-sm z-10 pointer-events-none select-none font-bold"
             animate={{ scale: [1.3, 0.7, 1.4, 0.6, 1.3], opacity: [1, 0.4, 1, 0.5, 1], y: [-6, 0, -6] }}
             transition={{ duration: 1.4, repeat: Infinity }}
           >
-            ⭐
+            <Gi.GiStarFormation className="inline text-yellow-400" />
           </motion.div>
-          <motion.div 
-            className="absolute top-1 left-1/2 -translate-x-1/2 bg-amber-500/90 text-white text-[10px] px-2 py-0.5 rounded-full font-bold shadow-sm z-20 pointer-events-none whitespace-nowrap border border-amber-300 flex items-center gap-1"
-            animate={{ y: [-1, -4, -1], scale: [0.95, 1.05, 0.95] }}
-            transition={{ duration: 1.0, repeat: Infinity }}
-          >
-            <span>{animateVictory ? '🏆 勝利！' : hasPendingDrops ? '🎁 素材発見！' : '✨ やったー！'}</span>
-          </motion.div>
+          {!hideBubble && (
+            <motion.div 
+              className="absolute top-1 left-1/2 -translate-x-1/2 bg-amber-500/90 text-white text-[10px] px-2 py-0.5 rounded-full font-bold shadow-sm z-20 pointer-events-none whitespace-nowrap border border-amber-300 flex items-center gap-1"
+              animate={{ y: [-1, -4, -1], scale: [0.95, 1.05, 0.95] }}
+              transition={{ duration: 1.0, repeat: Infinity }}
+            >
+              <span className="flex items-center gap-1">
+                {animateVictory ? (
+                  <>
+                    <Gi.GiTrophyCup className="text-amber-200 inline" />
+                    <span>勝利！</span>
+                  </>
+                ) : hasPendingDrops ? (
+                  <>
+                    <Gi.GiPresent className="text-amber-200 inline" />
+                    <span>素材発見！</span>
+                  </>
+                ) : (
+                  <>
+                    <Gi.GiSparkles className="text-amber-200 inline" />
+                    <span>やったー！</span>
+                  </>
+                )}
+              </span>
+            </motion.div>
+          )}
           <motion.div 
             className="absolute bottom-2 right-3 text-amber-500 text-[10px] sm:text-xs z-10 pointer-events-none select-none font-bold"
             animate={{ scale: [0.8, 1.3, 0.7, 1.2, 0.8], opacity: [0.5, 1, 0.4, 1, 0.5] }}
             transition={{ duration: 1.1, repeat: Infinity }}
           >
-            ♪
+            <Gi.GiMusicalNotes className="inline text-amber-500" />
           </motion.div>
           <motion.div 
             className="absolute bottom-2 left-3 text-yellow-400 text-[10px] sm:text-xs z-10 pointer-events-none select-none font-bold"
             animate={{ scale: [1.3, 0.8, 1.2, 0.7, 1.3], opacity: [1, 0.5, 1, 0.4, 1] }}
             transition={{ duration: 1.3, repeat: Infinity }}
           >
-            🎉
+            <Gi.GiPartyPopper className="inline text-amber-500" />
           </motion.div>
         </>
       )}
@@ -351,28 +373,33 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
             animate={{ y: [-2, 4, -2], opacity: [0.5, 1, 0.5], scale: [0.8, 1.2, 0.8] }}
             transition={{ duration: 0.9, repeat: Infinity }}
           >
-            💦
+            <Gi.GiWaterDrop className="inline text-blue-400" />
           </motion.div>
           <motion.div 
             className="absolute top-3 left-4 text-cyan-300 text-xs sm:text-sm z-10 pointer-events-none select-none font-bold"
             animate={{ y: [-3, 2, -3], opacity: [0.4, 0.9, 0.4], rotate: [-10, 10, -10] }}
             transition={{ duration: 1.1, repeat: Infinity }}
           >
-            💧
+            <Gi.GiWaterDrop className="inline text-cyan-300" />
           </motion.div>
-          <motion.div 
-            className="absolute top-1 left-1/2 -translate-x-1/2 bg-blue-900/90 text-blue-200 text-[10px] px-2 py-0.5 rounded-full font-bold shadow-sm z-20 pointer-events-none whitespace-nowrap border border-blue-400 flex items-center gap-1"
-            animate={{ y: [0, 2, 0] }}
-            transition={{ duration: 1.2, repeat: Infinity }}
-          >
-            <span>🌀 見つからない…</span>
-          </motion.div>
+          {!hideBubble && (animateExploration || locationId) && (
+            <motion.div 
+              className="absolute top-1 left-1/2 -translate-x-1/2 bg-blue-900/90 text-blue-200 text-[10px] px-2 py-0.5 rounded-full font-bold shadow-sm z-20 pointer-events-none whitespace-nowrap border border-blue-400 flex items-center gap-1"
+              animate={{ y: [0, 2, 0] }}
+              transition={{ duration: 1.2, repeat: Infinity }}
+            >
+              <span className="flex items-center gap-1">
+                <Gi.GiSwirlRing className="inline text-blue-300" />
+                <span>見つからない…</span>
+              </span>
+            </motion.div>
+          )}
           <motion.div 
             className="absolute bottom-2 right-5 text-indigo-300 text-xs z-10 pointer-events-none select-none font-bold"
             animate={{ scale: [0.8, 1.2, 0.8], opacity: [0.4, 0.8, 0.4] }}
             transition={{ duration: 1.4, repeat: Infinity }}
           >
-            ❓
+            <Gi.GiHelp className="inline text-indigo-300" />
           </motion.div>
         </>
       )}

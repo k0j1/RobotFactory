@@ -1,3 +1,4 @@
+import * as Gi from 'react-icons/gi';
 import React, { useState, useEffect } from 'react';
 import { MinigameProps } from './Shared';
 import { RobotVisual } from '../robot/RobotVisual';
@@ -132,33 +133,54 @@ export const OthelloGame: React.FC<MinigameProps> = ({ activeRobot, activeOppone
   const scores = getScore(board);
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
-        <div className={`text-center p-3 rounded-lg flex-1 ${turn === 1 ? 'bg-stone-200 shadow-inner' : ''} ${battleResult === 'win' ? 'ring-2 ring-amber-400 bg-amber-50' : ''}`}>
-          <div className="flex justify-center mb-2">
-            <RobotVisual robot={activeRobot} size={48} animateVictory={battleResult === 'win'} />
+      <div className="flex justify-between items-center mb-5 gap-2">
+        <div className={`text-center p-3 rounded-xl border-2 transition-all flex-1 ${
+          turn === 1 
+            ? 'bg-amber-50/90 border-amber-500 ring-2 ring-amber-300 shadow-xs' 
+            : 'bg-stone-50 border-stone-300'
+        } ${battleResult === 'win' ? 'border-amber-400 bg-amber-100/60' : ''}`}>
+          <div className="flex justify-center mb-1.5">
+            <RobotVisual robot={activeRobot} size={48} animateVictory={battleResult === 'win'} hideBackground={true} hideBubble={true} />
           </div>
-          <div className="font-bold flex items-center justify-center gap-1">
-            {activeRobot.name}
-            {battleResult === 'win' && <span className="text-amber-500 text-xs">👑</span>}
+          <div className="font-bold text-xs sm:text-sm text-stone-900 flex items-center justify-center gap-1 truncate">
+            <span>{activeRobot.name}</span>
+            {battleResult === 'win' && <span className="text-amber-500 text-xs"><Gi.GiCrown className="inline text-yellow-500" /></span>}
           </div>
-          <div className="text-xs text-stone-600">Int: {activeRobot.stats.intelligence}</div>
-          <div className="mt-2 text-xl font-bold bg-stone-900 text-white rounded w-12 mx-auto">{scores[1]}</div>
+          <div className="text-[10px] text-stone-500 font-mono">Int: {activeRobot.stats.intelligence}</div>
+          <div className="mt-1.5 text-lg font-mono font-bold bg-stone-900 text-white rounded-lg px-2.5 py-0.5 w-fit mx-auto shadow-xs">
+            {scores[1]}
+          </div>
         </div>
-        <div className="px-4 font-black text-3xl text-stone-300">VS</div>
-        <div className={`text-center p-3 rounded-lg flex-1 ${turn === 2 ? 'bg-stone-200 shadow-inner' : ''}`}>
-          <div className="flex justify-center mb-2 h-12 items-center text-4xl">🤖</div>
-          <div className="font-bold">{activeOpponent.name}</div>
-          <div className="text-xs text-stone-600">AI: {activeOpponent.int}</div>
-          <div className="mt-2 text-xl font-bold bg-white text-stone-900 border border-stone-300 rounded w-12 mx-auto">{scores[2]}</div>
+
+        <div className="px-2 sm:px-4 font-black text-xl sm:text-2xl text-stone-400 tracking-wider font-mono">
+          VS
+        </div>
+
+        <div className={`text-center p-3 rounded-xl border-2 transition-all flex-1 ${
+          turn === 2 
+            ? 'bg-amber-50/90 border-amber-500 ring-2 ring-amber-300 shadow-xs' 
+            : 'bg-stone-50 border-stone-300'
+        }`}>
+          <div className="flex justify-center mb-1.5 h-12 items-center text-3xl">
+            <Gi.GiRobotAntennas className="text-stone-700" />
+          </div>
+          <div className="font-bold text-xs sm:text-sm text-stone-900 truncate">
+            {activeOpponent.name}
+          </div>
+          <div className="text-[10px] text-stone-500 font-mono">AI: {activeOpponent.int}</div>
+          <div className="mt-1.5 text-lg font-mono font-bold bg-white text-stone-900 border border-stone-400 rounded-lg px-2.5 py-0.5 w-fit mx-auto shadow-xs">
+            {scores[2]}
+          </div>
         </div>
       </div>
-      <div className="mx-auto w-fit p-2 bg-emerald-700 rounded-lg shadow-inner">
-        <div className="grid grid-cols-8 gap-0.5 bg-emerald-900 border-2 border-emerald-900">
+
+      <div className="mx-auto w-fit p-3 bg-stone-800 rounded-2xl shadow-md border-4 border-stone-700">
+        <div className="grid grid-cols-8 gap-0.5 bg-emerald-950 p-1 rounded-lg border-2 border-emerald-900">
           {board.map((row, r) => row.map((cell, c) => (
-            <div key={`${r}-${c}`} className="w-8 h-8 sm:w-10 sm:h-10 bg-emerald-600 flex items-center justify-center relative">
-              {cell === 1 && <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-stone-900 shadow-md"></div>}
-              {cell === 2 && <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-white shadow-md"></div>}
-              {lastMove?.r === r && lastMove?.c === c && <div className="absolute w-2 h-2 bg-red-500 rounded-full"></div>}
+            <div key={`${r}-${c}`} className="w-8 h-8 sm:w-10 sm:h-10 bg-emerald-700 flex items-center justify-center relative rounded-xs shadow-inner">
+              {cell === 1 && <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-stone-950 border border-stone-700 shadow-md"></div>}
+              {cell === 2 && <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-stone-100 border border-stone-300 shadow-md"></div>}
+              {lastMove?.r === r && lastMove?.c === c && <div className="absolute w-2 h-2 bg-amber-400 rounded-full ring-2 ring-amber-200"></div>}
             </div>
           )))}
         </div>

@@ -155,7 +155,7 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
           <div className="flex justify-between items-center mb-2 px-1 flex-wrap gap-2">
             <span className="font-bold text-stone-600">所有ロボット</span>
             <span className="font-bold text-green-700 bg-green-100 px-3 py-1 rounded border border-green-300 shadow-sm text-xs sm:text-sm whitespace-nowrap leading-none inline-flex items-center">
-              🔧 修理キット: {state.repairKits || 0} 個
+              <Gi.GiSpanner className="inline text-stone-500" /> 修理キット: {state.repairKits || 0} 個
             </span>
           </div>
 
@@ -164,7 +164,7 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
               <Card className="bg-stone-50 border-2 border-rose-300 mb-4 p-4 shadow-sm relative overflow-hidden">
                 <div className="flex justify-between items-center mb-2 relative z-10">
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-stone-700">⚙️ ロボット解体中...</span>
+                    <span className="font-bold text-stone-700"><Gi.GiCog className="inline text-stone-500" />️ ロボット解体中...</span>
                     <span className="text-sm font-bold text-rose-600">{activeDisassembly.robotClone.name}</span>
                   </div>
                   {isDisassemblyDone ? (
@@ -333,7 +333,7 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                                 }`}
                                 title="修理キットを使ってHPを全快にします"
                               >
-                                <span>🔧</span>
+                                <span><Gi.GiSpanner className="inline text-stone-500" /></span>
                                 <span>修理キット使用</span>
                               </button>
                             ) : (
@@ -384,7 +384,7 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                                 : 'bg-stone-100 hover:bg-stone-200 text-stone-700 border-stone-300'
                             }`}
                           >
-                            <span>📊</span>
+                            <span><Gi.GiChart className="inline text-stone-500" /></span>
                             <span>{isRadarExpanded ? 'レーダー閉じる' : 'レーダー'}</span>
                           </button>
 
@@ -415,7 +415,7 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                         >
                           <RobotVisual robot={r} size={84} />
                           <div className="absolute bottom-1 right-1 bg-stone-900/80 text-[9px] text-white px-1.5 py-0.5 rounded-full font-bold flex items-center gap-0.5 shadow-xs group-hover:bg-amber-600 transition-colors">
-                            <span>🔍</span>
+                            <span><Gi.GiMagnifyingGlass className="inline text-stone-500" /></span>
                             <span className="hidden sm:inline">パーツ</span>
                           </div>
                         </button>
@@ -498,7 +498,7 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                       <div className="mt-3 pt-3 border-t border-stone-200 bg-stone-50 text-stone-800 p-3 rounded-lg border border-stone-200 animate-in fade-in zoom-in-95 duration-150 shadow-inner">
                         <div className="flex justify-between items-center mb-2">
                           <span className="text-xs font-bold text-amber-900 flex items-center gap-1">
-                            <span>📊</span> {r.name} のステータス特性
+                            <span><Gi.GiChart className="inline text-stone-500" /></span> {r.name} のステータス特性
                           </span>
                           <button
                             onClick={() => setExpandedRadarRobotId(null)}
@@ -515,23 +515,23 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                               <span className="text-stone-500 text-[9px]">耐久力</span>
                             </div>
                             <div className="bg-white p-1.5 rounded border border-stone-200">
-                              <span className="text-orange-600 font-bold block">⚔️ POW: {r.stats.power}</span>
+                              <span className="text-orange-600 font-bold block"><Gi.GiBroadsword className="inline text-red-500" />️ POW: {r.stats.power}</span>
                               <span className="text-stone-500 text-[9px]">攻撃力(ドロップ枠)</span>
                             </div>
                             <div className="bg-white p-1.5 rounded border border-stone-200">
-                              <span className="text-blue-600 font-bold block">🛡️ DEF: {r.stats.defense}</span>
+                              <span className="text-blue-600 font-bold block"><Gi.GiShield className="inline text-blue-500" />️ DEF: {r.stats.defense}</span>
                               <span className="text-stone-500 text-[9px]">防御力</span>
                             </div>
                             <div className="bg-white p-1.5 rounded border border-stone-200">
-                              <span className="text-yellow-600 font-bold block">⚡ AGI: {r.stats.agility}</span>
+                              <span className="text-yellow-600 font-bold block"><Gi.GiLightningTrio className="inline text-yellow-500" /> AGI: {r.stats.agility}</span>
                               <span className="text-stone-500 text-[9px]">速度(時間短縮)</span>
                             </div>
                             <div className="bg-white p-1.5 rounded border border-stone-200">
-                              <span className="text-emerald-600 font-bold block">🎯 DEX: {r.stats.dexterity}</span>
+                              <span className="text-emerald-600 font-bold block"><Gi.GiBullseye className="inline text-green-500" /> DEX: {r.stats.dexterity}</span>
                               <span className="text-stone-500 text-[9px]">探索力(レア発見)</span>
                             </div>
                             <div className="bg-white p-1.5 rounded border border-stone-200">
-                              <span className="text-purple-600 font-bold block">🔮 INT: {r.stats.intelligence}</span>
+                              <span className="text-purple-600 font-bold block"><Gi.GiCrystalBall className="inline text-purple-500" /> INT: {r.stats.intelligence}</span>
                               <span className="text-stone-500 text-[9px]">解析力(幸運値)</span>
                             </div>
                           </div>
@@ -578,7 +578,7 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
               <Card className="bg-stone-50 border-2 border-amber-300 mb-4 p-4 shadow-sm relative overflow-hidden">
                 <div className="flex justify-between items-center mb-2 relative z-10">
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-stone-700">♻️ パーツ還元中...</span>
+                    <span className="font-bold text-stone-700"><Gi.GiRecycle className="inline text-emerald-500" />️ パーツ還元中...</span>
                     <span className="text-sm font-bold text-amber-700">{activeRecycle.partClone.name}</span>
                   </div>
                   {isRecycleDone ? (

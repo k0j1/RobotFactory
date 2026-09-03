@@ -1,3 +1,4 @@
+import * as Gi from 'react-icons/gi';
 import React, { useState } from 'react';
 import { Card, Button } from './core';
 import { theme } from '../../styles/theme';
@@ -39,7 +40,7 @@ export const TutorialPopup: React.FC<Props> = ({ tutorialId, state, engine, titl
             </div>
             <div className="pr-6">
               <h4 className={`${theme.typography.h4} text-blue-800 mb-2 flex items-center gap-2`}>
-                <span className="text-xl">💡</span> {title}
+                <span className="text-xl"><Gi.GiLightBulb className="inline text-yellow-500" /></span> {title}
               </h4>
               <p className="text-sm text-blue-900 leading-relaxed whitespace-pre-wrap">{description}</p>
             </div>

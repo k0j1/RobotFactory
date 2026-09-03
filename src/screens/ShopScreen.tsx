@@ -58,7 +58,7 @@ export const ShopScreen: React.FC<{ state: GameState, engine: GameEngine, onBack
         <div className={`p-4 ${theme.colors.surface} ${theme.radius.md} ${theme.shadow.sm} flex justify-between items-center`}>
           <span className="font-bold text-stone-700">所持修理キット</span>
           <span className={`${theme.typography.h2} text-green-600 flex items-center gap-1`}>
-            <span>🔧</span>
+            <span><Gi.GiSpanner className="inline text-stone-500" /></span>
             <span>{state.repairKits || 0} 個</span>
           </span>
         </div>
