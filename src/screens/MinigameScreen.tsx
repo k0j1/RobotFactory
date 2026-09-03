@@ -3,7 +3,8 @@ import { GameState } from '../core/models';
 import { GameEngine } from '../core/GameEngine';
 import { theme } from '../styles/theme';
 import { Card, Button, Badge } from '../components/ui/core';
-import { OPPONENTS, DanmakuDifficulty, DANMAKU_DIFFICULTIES, PianoDifficulty, PianoSong, PIANO_DIFFICULTIES, PIANO_SONGS } from '../components/minigames/Shared';
+import { OPPONENTS, DanmakuDifficulty, DANMAKU_DIFFICULTIES, PianoSong, PIANO_SONGS } from '../components/minigames/Shared';
+import { getPianoBestScores, PianoBestScore } from '../core/pianoScoreManager';
 import { OthelloGame } from '../components/minigames/OthelloGame';
 import { ChessGame } from '../components/minigames/ChessGame';
 import { DanmakuSurvivalGame } from '../components/minigames/DanmakuSurvivalGame';
@@ -51,8 +52,8 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
   const [selectedRobotId, setSelectedRobotId] = useState<string | null>(null);
   const [selectedOpponentId, setSelectedOpponentId] = useState<string | null>(null);
   const [danmakuDifficulty, setDanmakuDifficulty] = useState<DanmakuDifficulty>('normal');
-  const [pianoSongId, setPianoSongId] = useState<string>('song1');
-  const [pianoDifficulty, setPianoDifficulty] = useState<PianoDifficulty>('normal');
+  const [pianoSongId, setPianoSongId] = useState<string>(PIANO_SONGS[0]?.id || 'fur_elise');
+  const [pianoBestScores, setPianoBestScores] = useState<Record<string, PianoBestScore>>(() => getPianoBestScores());
   const [isBattleActive, setIsBattleActive] = useState(false);
   const [battleResult, setBattleResult] = useState<'win' | 'lose' | 'draw' | null>(null);
   const [speed, setSpeed] = useState(1);
@@ -63,8 +64,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
   const activeOpponent = OPPONENTS.find(o => o.id === selectedOpponentId);
   const activeDanmakuDiff = DANMAKU_DIFFICULTIES.find(d => d.id === danmakuDifficulty) || DANMAKU_DIFFICULTIES[1];
   const activePianoSong = PIANO_SONGS.find(s => s.id === pianoSongId) || PIANO_SONGS[0];
-  const activePianoDiff = PIANO_DIFFICULTIES.find(d => d.id === pianoDifficulty) || PIANO_DIFFICULTIES[1];
-
+  
   const getEstimatedWinRate = (difficultyId: string, robot: any) => {
     if (!robot) return '--';
     const agi = robot.stats.agility || 10;
@@ -82,33 +82,21 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
     return Math.max(1, Math.min(99, Math.floor(rate)));
   };
 
-  const getEstimatedPianoWinRate = (songId: string, diffId: string, robot: any) => {
+  const getEstimatedPianoWinRate = (songId: string, robot: any) => {
     if (!robot) return '--';
     const int = robot.stats.intelligence || 10;
     const dex = robot.stats.dexterity || 10;
     
-    const statBonus = (dex * 1.5) + (int * 1.0);
+    // Int（楽譜理解・リズム把握）と Dex（運指・鍵盤打鍵精度）による演奏総合力
+    const statBonus = (dex * 1.5) + (int * 1.5);
     const song = PIANO_SONGS.find(s => s.id === songId) || PIANO_SONGS[0];
-    const diffPenalty = diffId === 'hard' ? 40 : diffId === 'normal' ? 20 : 0;
+    const diffPenalty = song.level * 4;
     
-    const avgRoll = 50 + statBonus - diffPenalty;
-    let avgNoteScore = 0;
-    if (avgRoll >= 110) avgNoteScore = 280;
-    else if (avgRoll >= 80) avgNoteScore = 150;
-    else if (avgRoll >= 50) avgNoteScore = 50;
-    else avgNoteScore = 10;
+    // クリア条件「演奏精度80.0%以上」を達成できる推定確率
+    const expectedRoll = 50 + statBonus - diffPenalty;
+    const rate = Math.round((expectedRoll - 55) * 1.6);
     
-    const notesCount = diffId === 'hard' ? 65 : diffId === 'normal' ? 36 : 18;
-    const expectedScore = avgNoteScore * notesCount;
-    
-    let baseTarget = 3000;
-    if (diffId === 'hard') baseTarget = 12000;
-    else if (diffId === 'normal') baseTarget = 6500;
-    const targetScore = baseTarget + (song.baseDifficulty * 50);
-    
-    let rate = (expectedScore / targetScore) * 100;
-    
-    return Math.max(5, Math.min(95, Math.floor(rate)));
+    return Math.max(5, Math.min(99, rate));
   };
 
   const selectedGameDef = GAMES.find(g => g.id === selectedGame);
@@ -119,6 +107,10 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
       (engine as any).recordBattleResult(activeRobot.id, result);
     }
     setBattleResult(result);
+    // ピアノ演奏のベストスコアを再読み込みして最新化
+    if (selectedGame === 'piano') {
+      setPianoBestScores(getPianoBestScores());
+    }
     if (result === 'win') {
       if (requiresOpponent && activeOpponent) {
         (engine as any).addRepairKits(activeOpponent.rewardKits);
@@ -126,7 +118,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
         // Difficulty-based reward for danmaku survival (repair kits only)
         (engine as any).addRepairKits(activeDanmakuDiff.rewardKits);
       } else if (selectedGame === 'piano') {
-        (engine as any).addRepairKits(activePianoDiff.rewardKits);
+        (engine as any).addRepairKits(Math.max(1, Math.ceil(activePianoSong.level / 2)));
       } else if (!requiresOpponent) {
         // Flat reward for solo games (repair kits only)
         (engine as any).addRepairKits(1);
@@ -147,6 +139,17 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
   const confirmBattleStart = () => {
     if (!activeRobot) return;
     if (requiresOpponent && !activeOpponent) return;
+
+    // Initialize global AudioContext during user gesture to prevent suspension in browsers
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (AudioContextClass) {
+      if (!(window as any).globalAudioCtx) {
+        (window as any).globalAudioCtx = new AudioContextClass();
+      } else if ((window as any).globalAudioCtx.state === 'suspended') {
+        (window as any).globalAudioCtx.resume();
+      }
+    }
+
     (engine as any).consumeRobotHp(activeRobot.id, 1);
     setIsConfirmModalOpen(false);
     setIsBattleActive(true);
@@ -166,7 +169,22 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
       case 'othello': return <OthelloGame activeRobot={activeRobot} activeOpponent={opponent} onFinish={handleFinish} speed={speed} isPaused={isPaused} isFinished={battleResult !== null} battleResult={battleResult} />;
       case 'chess': return <ChessGame activeRobot={activeRobot} activeOpponent={opponent} onFinish={handleFinish} speed={speed} isPaused={isPaused} isFinished={battleResult !== null} battleResult={battleResult} />;
       case 'danmaku': return <DanmakuSurvivalGame activeRobot={activeRobot} activeOpponent={opponent} onFinish={handleFinish} speed={speed} isPaused={isPaused} isFinished={battleResult !== null} battleResult={battleResult} difficulty={danmakuDifficulty} />;
-      case 'piano': return <PianoGame activeRobot={activeRobot} onFinish={handleFinish} speed={speed} isPaused={isPaused} isFinished={battleResult !== null} battleResult={battleResult} difficulty={pianoDifficulty} songId={pianoSongId} />;
+      case 'piano': return (
+        <PianoGame 
+          activeRobot={activeRobot} 
+          onFinish={handleFinish} 
+          speed={speed} 
+          isPaused={isPaused} 
+          isFinished={battleResult !== null} 
+          battleResult={battleResult} 
+          songId={pianoSongId}
+          onExit={() => {
+            setIsBattleActive(false);
+            setBattleResult(null);
+            setPianoBestScores(getPianoBestScores());
+          }}
+        />
+      );
       default: return null;
     }
   };
@@ -307,13 +325,13 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                             </div>
 
                             <div className="flex gap-2 text-[10px] text-stone-600 font-mono">
-                              <span className={selectedCategory === 'puzzle' ? 'font-black text-blue-700 bg-blue-50 px-1 rounded' : ''}>
+                              <span className={selectedCategory === 'puzzle' || selectedGame === 'piano' ? 'font-black text-blue-700 bg-blue-50 px-1 rounded' : ''}>
                                 Int:{r.stats.intelligence}
                               </span>
                               <span className={selectedGame === 'danmaku' ? 'font-black text-amber-700 bg-amber-50 px-1 rounded' : ''}>
                                 Agi:{r.stats.agility}
                               </span>
-                              <span className={selectedCategory === 'shooting' ? 'font-black text-emerald-700 bg-emerald-50 px-1 rounded' : ''}>
+                              <span className={selectedCategory === 'shooting' || selectedGame === 'piano' ? 'font-black text-emerald-700 bg-emerald-50 px-1 rounded' : ''}>
                                 Dex:{r.stats.dexterity}
                               </span>
                             </div>
@@ -395,76 +413,64 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
               <div className="flex flex-col gap-4">
                 {/* 曲選択 */}
                 <Card className="bg-stone-50 border-2 border-stone-300 p-4 shadow-sm flex flex-col">
-                  <div className="flex items-center justify-between mb-3 border-b border-stone-200 pb-2">
+                  <div className="flex items-center justify-between mb-2 border-b border-stone-200 pb-2 flex-wrap gap-1">
                     <div className="flex items-center gap-2">
                       <Gi.GiMusicalNotes className="text-stone-700 text-lg" />
                       <h3 className={`${theme.typography.h3} text-stone-800`}>演奏曲を選ぶ</h3>
                     </div>
+                    <span className="text-[11px] text-amber-800 font-bold bg-amber-100/90 px-2 py-0.5 rounded border border-amber-300">
+                      クリア条件: 演奏精度 80.0% 以上
+                    </span>
                   </div>
-                  <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                  <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1">
                     {PIANO_SONGS.map(song => {
                       const isSelected = pianoSongId === song.id;
+                      const best = pianoBestScores[song.id];
+
                       return (
                         <button
                           key={song.id}
                           onClick={() => setPianoSongId(song.id)}
-                          className={`w-full text-left p-2.5 rounded-xl border-2 transition-all ${
+                          className={`w-full text-left p-3 rounded-xl border-2 transition-all cursor-pointer ${
                             isSelected 
                               ? 'border-amber-500 bg-amber-50/90 shadow-xs ring-2 ring-amber-300' 
                               : 'border-stone-300 bg-white hover:border-stone-400 hover:bg-stone-50'
                           }`}
                         >
                           <div className="flex justify-between items-center mb-0.5">
-                            <span className="font-bold text-sm text-stone-900 truncate">{song.title}</span>
-                            <span className="text-[10px] bg-stone-100 px-1.5 py-0.5 rounded border border-stone-200 text-stone-600 font-mono">
-                              難易度: {song.baseDifficulty}
+                            <div className="flex items-center gap-1.5 truncate">
+                              <span className="font-bold text-sm text-stone-900 truncate">{song.title}</span>
+                              {best?.cleared && (
+                                <span className="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold font-mono px-1.5 py-0.2 rounded shrink-0">
+                                  CLEAR済
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-[10px] bg-stone-100 px-1.5 py-0.5 rounded border border-stone-200 text-stone-600 font-mono shrink-0">
+                              Lv.{song.level}
                             </span>
                           </div>
                           <div className="text-[10px] text-stone-500">{song.composer}</div>
                           <div className="text-[11px] text-stone-600 mt-1">{song.desc}</div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </Card>
 
-                {/* 難易度選択 */}
-                <Card className="bg-stone-50 border-2 border-stone-300 p-4 shadow-sm flex flex-col">
-                  <div className="flex items-center justify-between mb-3 border-b border-stone-200 pb-2">
-                    <div className="flex items-center gap-2">
-                      <Gi.GiMetronome className="text-stone-700 text-lg" />
-                      <h3 className={`${theme.typography.h3} text-stone-800`}>テンポ・難易度</h3>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    {PIANO_DIFFICULTIES.map(diff => {
-                      const isSelected = pianoDifficulty === diff.id;
-                      return (
-                        <button
-                          key={diff.id}
-                          onClick={() => setPianoDifficulty(diff.id)}
-                          className={`w-full text-left p-2.5 rounded-xl border-2 transition-all ${
-                            isSelected 
-                              ? 'border-amber-500 bg-amber-50/90 shadow-xs ring-2 ring-amber-300' 
-                              : 'border-stone-300 bg-white hover:border-stone-400 hover:bg-stone-50'
-                          }`}
-                        >
-                          <div className="flex justify-between items-center mb-1">
-                            <div className="flex items-center gap-2">
-                              <span className="font-bold text-sm text-stone-900">{diff.label}</span>
-                              <span className={`text-[10px] px-1.5 py-0.5 rounded border font-bold ${diff.badgeClass}`}>
-                                {diff.subLabel}
+                          {/* ベストスコア & 予想クリア率 */}
+                          <div className="mt-2 pt-2 border-t border-stone-200 grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px]">
+                            <div className="bg-stone-100/90 p-1.5 rounded-lg border border-stone-200 flex items-center justify-between">
+                              <span className="text-stone-500 font-bold">自己ベスト:</span>
+                              {best ? (
+                                <span className="font-mono font-bold text-stone-800">
+                                  {best.bestScore.toLocaleString()} pts / {best.bestAccuracy}% ({best.bestRank})
+                                </span>
+                              ) : (
+                                <span className="text-stone-400 font-sans">未挑戦</span>
+                              )}
+                            </div>
+                            <div className="bg-stone-100/90 p-1.5 rounded-lg border border-stone-200 flex items-center justify-between">
+                              <span className="text-stone-500 font-bold">予想クリア率(精度80%~):</span>
+                              <span className="font-bold font-mono text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded border border-amber-300">
+                                約{getEstimatedPianoWinRate(song.id, activeRobot)}%
                               </span>
                             </div>
-                            <div className="text-right font-mono text-xs text-amber-800 font-bold bg-amber-100/80 px-2 py-0.5 rounded border border-amber-300">
-                              <Gi.GiSpanner className="inline text-stone-500" /> キット×{diff.rewardKits}
-                            </div>
-                          </div>
-                          <div className="text-[11px] font-bold mt-2 pt-1 border-t border-stone-200 flex justify-between items-center">
-                            <span className="text-stone-600">予想成功率:</span>
-                            <span className={activeRobot ? (getEstimatedPianoWinRate(pianoSongId, diff.id, activeRobot) !== '--' && (getEstimatedPianoWinRate(pianoSongId, diff.id, activeRobot) as number) >= 50 ? 'text-emerald-700 font-bold' : 'text-rose-600 font-bold') : 'text-stone-400'}>
-                              {activeRobot ? `約 ${getEstimatedPianoWinRate(pianoSongId, diff.id, activeRobot)}%` : '--%'}
-                            </span>
                           </div>
                         </button>
                       );
@@ -533,7 +539,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
               disabled={!selectedRobotId || (requiresOpponent && !selectedOpponentId)}
               className="w-full sm:w-2/3 md:w-1/2 py-3.5 text-base font-bold shadow-md mx-auto"
             >
-              {selectedGame === 'danmaku' ? `演習開始！ (${activeDanmakuDiff.label})` : selectedGame === 'piano' ? `演奏開始！ (${activePianoDiff.label})` : 'バトル演習開始！'}
+              {selectedGame === 'danmaku' ? `演習開始！ (${activeDanmakuDiff.label})` : selectedGame === 'piano' ? `演奏開始！ (${activePianoSong.title})` : 'バトル演習開始！'}
             </Button>
           </div>
         </div>
@@ -569,9 +575,9 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
             {!battleResult ? (
               <p className="text-base font-bold text-stone-700 animate-pulse flex items-center justify-center gap-2">
                 <Gi.GiSpanner className="animate-spin text-amber-600" />
-                <span>{selectedGame === 'danmaku' ? '演習シミュレーション進行中...' : '演習バトル進行中...'}</span>
+                <span>{selectedGame === 'danmaku' ? '演習シミュレーション進行中...' : selectedGame === 'piano' ? 'ピアノ演奏演習進行中...' : '演習バトル進行中...'}</span>
               </p>
-            ) : (
+            ) : selectedGame === 'piano' ? null : (
               <div className="space-y-4 flex flex-col items-center">
                 {battleResult === 'win' && activeRobot && (
                   <motion.div 
@@ -653,14 +659,6 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                     <p className="text-amber-900 font-bold text-base sm:text-lg flex items-center justify-center gap-2">
                       <span className="text-xl"><Gi.GiSpanner className="inline text-stone-500" /></span>
                       <span>クリア報酬 ({activeDanmakuDiff.label}): 修理キット +{activeDanmakuDiff.rewardKits}個</span>
-                    </p>
-                  </div>
-                )}
-                {battleResult === 'win' && !requiresOpponent && selectedGame === 'piano' && (
-                  <div className="bg-amber-50 border-2 border-amber-300 px-6 py-2.5 rounded-xl shadow-xs text-center">
-                    <p className="text-amber-900 font-bold text-base sm:text-lg flex items-center justify-center gap-2">
-                      <span className="text-xl"><Gi.GiSpanner className="inline text-stone-500" /></span>
-                      <span>クリア報酬 ({activePianoDiff.label}): 修理キット +{activePianoDiff.rewardKits}個</span>
                     </p>
                   </div>
                 )}
