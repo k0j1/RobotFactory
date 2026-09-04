@@ -7,6 +7,9 @@ export interface Opponent {
   int: number;
   agi: number;
   dex: number;
+  hp: number;
+  power: number;
+  defense: number;
   rewardKits: number;
 }
 
@@ -132,10 +135,10 @@ export const DANMAKU_DIFFICULTIES: DanmakuDifficultyConfig[] = [
 ];
 
 export const OPPONENTS: Opponent[] = [
-  { id: 'op1', name: 'ポンコツ試作機', org: '町の発明家', int: 1, agi: 1, dex: 1, rewardKits: 1 },
-  { id: 'op2', name: '汎用作業ボット', org: 'アポロ工業', int: 10, agi: 10, dex: 10, rewardKits: 2 },
-  { id: 'op3', name: '戦術演算ユニット', org: 'ゼニス・コーポレーション', int: 30, agi: 30, dex: 30, rewardKits: 3 },
-  { id: 'op4', name: 'オメガ・マスター', org: '世界AI協会', int: 60, agi: 60, dex: 60, rewardKits: 5 },
+  { id: 'op1', name: 'ポンコツ試作機', org: '町の発明家', int: 4, agi: 8, dex: 6, hp: 10, power: 10, defense: 4, rewardKits: 1 },
+  { id: 'op2', name: '汎用作業ボット', org: 'アポロ工業', int: 12, agi: 16, dex: 14, hp: 25, power: 22, defense: 12, rewardKits: 2 },
+  { id: 'op3', name: '戦術演算ユニット', org: 'ゼニス・コーポレーション', int: 32, agi: 32, dex: 28, hp: 50, power: 45, defense: 28, rewardKits: 3 },
+  { id: 'op4', name: 'オメガ・マスター', org: '世界AI協会', int: 65, agi: 55, dex: 50, hp: 85, power: 75, defense: 48, rewardKits: 5 },
 ];
 
 export interface MinigameProps {

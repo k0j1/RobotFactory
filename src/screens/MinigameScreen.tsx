@@ -9,6 +9,7 @@ import { OthelloGame } from '../components/minigames/OthelloGame';
 import { ChessGame } from '../components/minigames/ChessGame';
 import { DanmakuSurvivalGame } from '../components/minigames/DanmakuSurvivalGame';
 import { PianoGame } from '../components/minigames/PianoGame';
+import { CombatGame } from '../components/minigames/CombatGame';
 import { RobotVisual } from '../components/robot/RobotVisual';
 import { motion } from 'motion/react';
 import * as Gi from 'react-icons/gi';
@@ -29,12 +30,21 @@ interface GameDef {
 }
 
 const CATEGORIES: CategoryDef[] = [
+  { id: 'battle', name: '戦闘・対戦', icon: <Gi.GiCrossedSwords className="inline text-red-600" /> },
   { id: 'puzzle', name: 'パズル・頭脳戦', icon: <Gi.GiChessPawn className="inline text-stone-600" /> },
   { id: 'shooting', name: '射撃・機動演習', icon: <Gi.GiLightningTrio className="inline text-amber-500" /> },
   { id: 'music', name: '音楽・演奏会', icon: <Gi.GiMusicalNotes className="inline text-blue-500" /> }
 ];
 
 const GAMES: GameDef[] = [
+  { 
+    id: 'combat', 
+    category: 'battle', 
+    name: 'バトル演習', 
+    desc: '時間経過で攻撃・閃きと戦術を競う本格リアルタイムバトル（全能力値重視）', 
+    icon: <Gi.GiCrossedSwords className="inline text-red-600" />, 
+    requiresOpponent: true 
+  },
   { id: 'othello', category: 'puzzle', name: 'オセロ演習', desc: '挟んで裏返す定番ボードゲーム（Int重視）', icon: <Gi.GiCheckeredFlag className="inline text-stone-700" />, requiresOpponent: true },
   { id: 'chess', category: 'puzzle', name: 'チェス演習', desc: 'キャスリング無しの頭脳勝負（Int重視）', icon: <Gi.GiChessKing className="inline text-stone-800" />, requiresOpponent: true },
   { id: 'danmaku', category: 'shooting', name: '弾幕よけ試験', desc: '10秒間、弾幕から生き残る（Agi/Dex重視）', icon: <Gi.GiBullseye className="inline text-emerald-600" />, requiresOpponent: false },
@@ -47,8 +57,8 @@ interface MinigameScreenProps {
 }
 
 export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine }) => {
-  const [selectedCategory, setSelectedCategory] = useState('puzzle');
-  const [selectedGame, setSelectedGame] = useState('othello');
+  const [selectedCategory, setSelectedCategory] = useState('battle');
+  const [selectedGame, setSelectedGame] = useState('combat');
   const [selectedRobotId, setSelectedRobotId] = useState<string | null>(null);
   const [selectedOpponentId, setSelectedOpponentId] = useState<string | null>(null);
   const [danmakuDifficulty, setDanmakuDifficulty] = useState<DanmakuDifficulty>('normal');
@@ -166,6 +176,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
     const opponent = activeOpponent || OPPONENTS[0];
 
     switch (selectedGame) {
+      case 'combat': return <CombatGame activeRobot={activeRobot} activeOpponent={opponent} onFinish={handleFinish} speed={speed} isPaused={isPaused} isFinished={battleResult !== null} battleResult={battleResult} />;
       case 'othello': return <OthelloGame activeRobot={activeRobot} activeOpponent={opponent} onFinish={handleFinish} speed={speed} isPaused={isPaused} isFinished={battleResult !== null} battleResult={battleResult} />;
       case 'chess': return <ChessGame activeRobot={activeRobot} activeOpponent={opponent} onFinish={handleFinish} speed={speed} isPaused={isPaused} isFinished={battleResult !== null} battleResult={battleResult} />;
       case 'danmaku': return <DanmakuSurvivalGame activeRobot={activeRobot} activeOpponent={opponent} onFinish={handleFinish} speed={speed} isPaused={isPaused} isFinished={battleResult !== null} battleResult={battleResult} difficulty={danmakuDifficulty} />;
@@ -324,17 +335,32 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                               </span>
                             </div>
 
-                            <div className="flex gap-2 text-[10px] text-stone-600 font-mono">
-                              <span className={selectedCategory === 'puzzle' || selectedGame === 'piano' ? 'font-black text-blue-700 bg-blue-50 px-1 rounded' : ''}>
-                                Int:{r.stats.intelligence}
-                              </span>
-                              <span className={selectedGame === 'danmaku' ? 'font-black text-amber-700 bg-amber-50 px-1 rounded' : ''}>
-                                Agi:{r.stats.agility}
-                              </span>
-                              <span className={selectedCategory === 'shooting' || selectedGame === 'piano' ? 'font-black text-emerald-700 bg-emerald-50 px-1 rounded' : ''}>
-                                Dex:{r.stats.dexterity}
-                              </span>
-                            </div>
+                            {selectedGame === 'combat' ? (
+                              <div className="space-y-1">
+                                <div className="flex gap-2 text-[10px] text-stone-600 font-mono">
+                                  <span className="font-bold text-red-700 bg-red-50 px-1 rounded border border-red-200">Pow:{r.stats.power}</span>
+                                  <span className="font-bold text-blue-700 bg-blue-50 px-1 rounded border border-blue-200">Def:{r.stats.defense}</span>
+                                  <span className="font-bold text-amber-700 bg-amber-50 px-1 rounded border border-amber-200">Agi:{r.stats.agility}</span>
+                                </div>
+                                <div className="flex gap-2 text-[10px] text-stone-600 font-mono">
+                                  <span className="font-bold text-emerald-700 bg-emerald-50 px-1 rounded border border-emerald-200">Dex:{r.stats.dexterity}</span>
+                                  <span className="font-bold text-purple-700 bg-purple-50 px-1 rounded border border-purple-200">Int:{r.stats.intelligence}</span>
+                                  <span className="font-bold text-stone-700 bg-stone-100 px-1 rounded border border-stone-200">耐久:{(r.stats.hp || 10) * 1000}</span>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex gap-2 text-[10px] text-stone-600 font-mono">
+                                <span className={selectedCategory === 'puzzle' || selectedGame === 'piano' ? 'font-black text-blue-700 bg-blue-50 px-1 rounded' : ''}>
+                                  Int:{r.stats.intelligence}
+                                </span>
+                                <span className={selectedGame === 'danmaku' ? 'font-black text-amber-700 bg-amber-50 px-1 rounded' : ''}>
+                                  Agi:{r.stats.agility}
+                                </span>
+                                <span className={selectedCategory === 'shooting' || selectedGame === 'piano' ? 'font-black text-emerald-700 bg-emerald-50 px-1 rounded' : ''}>
+                                  Dex:{r.stats.dexterity}
+                                </span>
+                              </div>
+                            )}
                             
                             {isDispatched && (
                               <span className="text-[10px] text-rose-600 font-bold flex items-center gap-1 mt-0.5">
@@ -507,15 +533,30 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                         >
                           <div>
                             <div className="font-bold text-stone-900 text-sm">{o.name}</div>
-                            <div className="flex gap-2 text-[10px] text-stone-600 font-mono mt-0.5">
-                              <span className={selectedCategory === 'puzzle' ? 'font-black text-blue-700 bg-blue-50 px-1 rounded' : ''}>
-                                Int:{o.int}
-                              </span>
-                              <span>Agi:{o.agi}</span>
-                              <span className={selectedCategory === 'shooting' ? 'font-black text-emerald-700 bg-emerald-50 px-1 rounded' : ''}>
-                                Dex:{o.dex}
-                              </span>
-                            </div>
+                            {selectedGame === 'combat' ? (
+                              <div className="space-y-0.5 mt-0.5">
+                                <div className="flex gap-2 text-[10px] text-stone-600 font-mono">
+                                  <span className="font-bold text-red-700 bg-red-50 px-1 rounded">Pow:{o.power}</span>
+                                  <span className="font-bold text-blue-700 bg-blue-50 px-1 rounded">Def:{o.defense}</span>
+                                  <span className="font-bold text-amber-700 bg-amber-50 px-1 rounded">Agi:{o.agi}</span>
+                                </div>
+                                <div className="flex gap-2 text-[10px] text-stone-600 font-mono">
+                                  <span className="font-bold text-emerald-700 bg-emerald-50 px-1 rounded">Dex:{o.dex}</span>
+                                  <span className="font-bold text-purple-700 bg-purple-50 px-1 rounded">Int:{o.int}</span>
+                                  <span className="font-bold text-stone-700 bg-stone-100 px-1 rounded">耐久:{(o.hp || 10) * 1000}</span>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex gap-2 text-[10px] text-stone-600 font-mono mt-0.5">
+                                <span className={selectedCategory === 'puzzle' ? 'font-black text-blue-700 bg-blue-50 px-1 rounded' : ''}>
+                                  Int:{o.int}
+                                </span>
+                                <span>Agi:{o.agi}</span>
+                                <span className={selectedCategory === 'shooting' ? 'font-black text-emerald-700 bg-emerald-50 px-1 rounded' : ''}>
+                                  Dex:{o.dex}
+                                </span>
+                              </div>
+                            )}
                             <div className="text-[10px] text-stone-400 mt-0.5">{o.org}</div>
                           </div>
                           <div className="text-right">
@@ -531,6 +572,73 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
               </Card>
             )}
           </div>
+
+          {/* バトル演習時の能力値ルールガイド */}
+          {selectedGame === 'combat' && (
+            <Card className="bg-stone-50 border-2 border-amber-300/80 p-3.5 sm:p-4 rounded-2xl shadow-xs">
+              <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-stone-200">
+                <Gi.GiCrossedSwords className="text-red-600 text-lg" />
+                <h4 className="font-bold text-xs sm:text-sm text-stone-800">
+                  バトル演習の機体能力値仕様
+                </h4>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 text-[11px] text-stone-700">
+                <div className="bg-white p-2 rounded-xl border border-stone-200 shadow-2xs">
+                  <div className="font-bold text-red-700 flex items-center gap-1 mb-0.5">
+                    <Gi.GiHeartShield className="text-sm text-rose-500" /> Vitality（耐久力）
+                  </div>
+                  <div className="text-stone-600 leading-snug">
+                    機体の基本耐久力。<span className="font-bold font-mono text-stone-900">値 × 1000</span> が戦闘中の実耐久値（HP）となります。
+                  </div>
+                </div>
+
+                <div className="bg-white p-2 rounded-xl border border-stone-200 shadow-2xs">
+                  <div className="font-bold text-amber-700 flex items-center gap-1 mb-0.5">
+                    <Gi.GiBroadsword className="text-sm text-amber-600" /> Power（攻撃力）
+                  </div>
+                  <div className="text-stone-600 leading-snug">
+                    <span className="font-bold font-mono text-stone-900">自分Pow × 80~120 − 相手Def × 50</span> が1回の基礎ダメージとなります。
+                  </div>
+                </div>
+
+                <div className="bg-white p-2 rounded-xl border border-stone-200 shadow-2xs">
+                  <div className="font-bold text-blue-700 flex items-center gap-1 mb-0.5">
+                    <Gi.GiShield className="text-sm text-blue-600" /> Defense（防御力）
+                  </div>
+                  <div className="text-stone-600 leading-snug">
+                    相手から受ける攻撃を軽減。高いほど相手の通常攻撃・技ダメージを大幅に相殺します。
+                  </div>
+                </div>
+
+                <div className="bg-white p-2 rounded-xl border border-stone-200 shadow-2xs">
+                  <div className="font-bold text-amber-700 flex items-center gap-1 mb-0.5">
+                    <Gi.GiSpeedometer className="text-sm text-amber-500" /> Agility（敏捷性）
+                  </div>
+                  <div className="text-stone-600 leading-snug">
+                    0.1秒ごとに行動値が蓄積。<span className="font-bold font-mono text-stone-900">1000を超えると攻撃</span>し、行動値はゼロにリセットされます。
+                  </div>
+                </div>
+
+                <div className="bg-white p-2 rounded-xl border border-stone-200 shadow-2xs">
+                  <div className="font-bold text-emerald-700 flex items-center gap-1 mb-0.5">
+                    <Gi.GiSprint className="text-sm text-emerald-600" /> Dexterity（回避力）
+                  </div>
+                  <div className="text-stone-600 leading-snug">
+                    <span className="font-bold font-mono text-stone-900">相手とのDex差</span> がある分だけ相手の攻撃を回避（DODGE）する確率が上昇します。
+                  </div>
+                </div>
+
+                <div className="bg-white p-2 rounded-xl border border-stone-200 shadow-2xs">
+                  <div className="font-bold text-purple-700 flex items-center gap-1 mb-0.5">
+                    <Gi.GiInspiration className="text-sm text-purple-600" /> Intelligence（閃き・戦術）
+                  </div>
+                  <div className="text-stone-600 leading-snug">
+                    知性と他能力値を基に<span className="font-bold text-purple-900">技を閃く（習得）</span>！一度閃けば戦略に組み込み多彩な効果の技を繰り出します。
+                  </div>
+                </div>
+              </div>
+            </Card>
+          )}
 
           {/* 出撃ボタン */}
           <div className="text-center pt-2">

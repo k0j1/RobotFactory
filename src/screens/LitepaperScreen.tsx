@@ -12,7 +12,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
       </div>
 
       <Card className="bg-stone-50 border-2 border-stone-200">
-        <h3 className={`${theme.typography.h3} mb-4 text-stone-700`}>ポンコツロボット工房 v1.0.170 仕様まとめ</h3>
+        <h3 className={`${theme.typography.h3} mb-4 text-stone-700`}>ポンコツロボット工房 v1.0.171 仕様まとめ</h3>
         
         <div className="space-y-6 text-sm text-stone-800">
           <section>
@@ -80,7 +80,19 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
             <h4 className="font-bold text-lg text-amber-700 border-b border-stone-300 mb-2">5. ミニゲーム（ロボット・バトル / 工房演習アリーナ）</h4>
             <ul className="list-disc list-inside space-y-1 ml-2">
               <li><strong>工房演習アリーナ（ガレージ風UI統一）:</strong> バトル画面全体を他の画面（工房、製造、倉庫、遠征）と同様の温かみのあるガレージ・工房風デザイン（ストーン・アンバー調のカード、演習ボード、各種計器風フレーム）に完全刷新。種目選択や出撃ロボット一覧、対戦相手カルテなどをより直感的に操作できるように整理しました。</li>
-              <li>自作のロボットを出撃させ、パズル・射撃・音楽の各カテゴリでミニゲームに挑戦できます。</li>
+              <li>自作のロボットを出撃させ、<strong>戦闘（バトル演習）</strong>、パズル、射撃、音楽の各カテゴリで演習に挑戦できます。</li>
+              <li><strong>戦闘カテゴリ（バトル演習）:</strong> 時間経過とともに攻撃を繰り返す本格的なリアルタイム自動戦闘演習です。ロボットの全ステータスが緻密に戦闘へ連動し、機体の性能差や知性による技の閃きが勝敗を左右します。
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li><strong>Vitality（耐久力）:</strong> ロボットの最大耐久力。<strong>値 × 1000</strong> を戦闘中の実耐久値（HP）とし、相手のHPを0に削り切れば勝利となります。</li>
+                  <li><strong>Power（攻撃力）:</strong> ロボットの基礎攻撃力。1回の通常攻撃ダメージは <strong>自分Pow × 80〜120 − 相手Def × 50</strong> で計算されます（最低保証ダメージ10）。</li>
+                  <li><strong>Defense（防御力）:</strong> ロボットの頑丈さ。相手から受ける通常攻撃や技ダメージを減算相殺し、耐久値の消耗を抑えます。</li>
+                  <li><strong>Agility（敏捷性）:</strong> 0.1秒ごとに行動値（AP）が機体のAgility分蓄積され、<strong>1000を超えると攻撃行動</strong>を起こして行動値がゼロにリセットされます。Agiが高い機体ほど手数が多くなります。</li>
+                  <li><strong>Dexterity（回避力）:</strong> 相手の攻撃を避ける確率。<strong>相手とのDex差</strong>がある分だけ回避率（Dodge）が上昇し（基礎5%＋Dex差×1.5%）、相手の攻撃を完全無効化します。</li>
+                  <li><strong>Intelligence（攻撃パターン・技の閃き）:</strong> ロボットの思考・戦術パターン。この値と他能力値を総合的に考慮して、戦闘中に<strong>可能な攻撃技を自律的に「閃く（習得）」</strong>します。一度閃いた技は戦術ルーチンに組み込まれ、以後の行動時に戦略的に選択・発動されます。技には「重撃スマッシュ（高倍率ダメージ）」「ガトリングバースト（複数回乱舞攻撃）」「精密スナイプ（必中・高クリティカル）」「ナノバリア展開（被ダメージ大幅軽減シールド）」「自己リペア（耐久値回復）」「EMPショック（相手行動値・敏捷妨害）」「戦術最適化（攻撃力・知性バフ）」「オーバードライブ（敏捷・攻撃力超加速）」「プラズマカノン（防御力貫通攻撃）」など多彩な戦術効果が付与されています。</li>
+                  <li><strong>遠征ステージ背景 &amp; 対峙アニメーションバトル:</strong> 遠征のステージ（裏山のスクラップ場、迷いの森、灼熱の火山、風の谷、光の塔、最果てのクレーター、古代文明の中枢）を舞台背景に、自分のロボットと相手のロボットが向かい合ってリアルタイムに交戦。行動値（AP）が1000に到達した攻撃タイミングで、機体が相手に向かって勢いよくステップイン・ダッシュ突進し、スラッシュやビーム、技固有のエフェクトが炸裂。被弾側はノックバック・シェイク・被弾フラッシュが発生し、回避時は上空への軽快なバックステップ跳躍（DODGE）、新技習得時は頭上での「ピコーン！」閃きカットインが発生します。アリーナ上部からは遠征ステージを自由に切り替えて戦うことも可能です。</li>
+                  <li><strong>リアルタイム戦闘ログ &amp; アニメーション:</strong> 行動ゲージ、耐久力バー、リアルタイムの攻撃・被弾・回避・閃きエフェクト、および行動ログが刻々と展開され、一時停止や倍速（1x/2x/3x）での観戦が可能です。</li>
+                </ul>
+              </li>
               <li><strong>音楽（ピアノ演奏）:</strong> 演奏曲をベートーヴェンの世界的名曲<strong>「エリーゼのために」</strong>（バガテル WoO 59、pianoclassics.net ID 47準拠、全662ノーツ）に一新。一曲すべてを弾き切る本格的なピアノ演奏演習です。ロボットの<strong>「賢さ (Int)」</strong>（楽曲・譜面理解・リズム把握）と<strong>「器用さ (Dex)」</strong>（運指・正確な鍵盤打鍵）の値が高いほど正確なタイミングで鍵盤が叩かれ、より高い評価（EXCELLENTなど）を獲得しやすくなります。
                 <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
                   <li><strong>クリア条件（演奏精度80.0%以上）:</strong> 演奏終了時の<strong>演奏精度（Accuracy）が80.0%以上</strong>に達することで「演習クリア（MISSION CLEAR）」となり、工房の貴重な「修理キット」を獲得できます。80.0%未満の場合は「演習失敗（CLEAR FAILED）」となります。</li>
