@@ -24,6 +24,7 @@ const INITIAL_STATE: GameState = {
   seenTutorials: [],
   clientAffection: { King: 1, Noble: 1, OldMan: 1 },
   completedRequestDeadlines: {},
+  craftedRobots: [],
 };
 
 const STORAGE_KEY = 'ponkotsu_robot_save';
@@ -119,6 +120,42 @@ export class GameEngine {
         if (!parsed.parts) {
           parsed.parts = [];
         }
+
+        // Initialize and migrate craftedRobots gallery
+        if (!parsed.craftedRobots) {
+          parsed.craftedRobots = [];
+        }
+        const existingGallery: Robot[] = parsed.craftedRobots;
+        const seenIds = new Set(existingGallery.map((r: Robot) => r.id));
+
+        if (parsed.robots && Array.isArray(parsed.robots)) {
+          parsed.robots.forEach((r: Robot) => {
+            if (r && r.parts && !seenIds.has(r.id)) {
+              existingGallery.push(r);
+              seenIds.add(r.id);
+            }
+          });
+        }
+        if (parsed.deliveredLogs && Array.isArray(parsed.deliveredLogs)) {
+          parsed.deliveredLogs.forEach((l: any) => {
+            if (l && l.parts && !seenIds.has(l.id)) {
+              const headR = l.parts.head?.rarity || 1;
+              const bodyR = l.parts.body?.rarity || 1;
+              const armsR = l.parts.arms?.rarity || 1;
+              const legsR = l.parts.legs?.rarity || 1;
+              existingGallery.push({
+                id: l.id,
+                name: l.name,
+                parts: l.parts,
+                stats: l.stats,
+                createdAt: l.deliveredAt || Date.now(),
+                value: (headR + bodyR + armsR + legsR) * 20
+              });
+              seenIds.add(l.id);
+            }
+          });
+        }
+        parsed.craftedRobots = existingGallery;
 
         return { ...INITIAL_STATE, ...parsed };
       } catch (e) {
@@ -686,6 +723,7 @@ export class GameEngine {
 
     const assembledRobot = this.state.activeRobotAssembly.resultRobot;
     this.state.robots.push(assembledRobot);
+    this.recordCraftedRobot(assembledRobot);
     this.state.activeRobotAssembly = null;
 
     if (this.state.tutorialStep === 2) this.advanceTutorial();
@@ -792,9 +830,22 @@ export class GameEngine {
     };
 
     this.state.robots.push(newRobot);
+    this.recordCraftedRobot(newRobot);
     if (this.state.tutorialStep === 2) this.advanceTutorial();
     this.saveState();
     return newRobot;
+  }
+
+  private recordCraftedRobot(robot: Robot) {
+    if (!this.state.craftedRobots) {
+      this.state.craftedRobots = [];
+    }
+    const idx = this.state.craftedRobots.findIndex(r => r.id === robot.id);
+    if (idx >= 0) {
+      this.state.craftedRobots[idx] = robot;
+    } else {
+      this.state.craftedRobots.push(robot);
+    }
   }
 
   public getUpdateTimes(rank: RequestRank, nowMs: number): { current: number; next: number } {

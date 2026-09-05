@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
-import { GameState, AttributeColors, AttributeNames } from '../core/models';
+import { GameState, AttributeColors, AttributeNames, Robot } from '../core/models';
 
 import { Card, Button, Badge } from '../components/ui/core';
 import { theme } from '../styles/theme';
 import { RobotVisual, PartVisual } from '../components/robot/RobotVisual';
+import { RobotGalleryCard } from '../components/robot/RobotGalleryCard';
 import { SVG_HEADS, SVG_BODIES, SVG_ARMS, SVG_LEGS } from '../components/robot/RobotSVGs';
 import { MATERIALS, getMaterialCraftableVisuals } from '../core/data';
 import * as Gi from 'react-icons/gi';
@@ -118,15 +119,94 @@ const ALL_PARTS_CATALOG: CatalogPartItem[] = [
 ];
 
 export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void }> = ({ state, onBack }) => {
-  const [tab, setTab] = useState<'gallery'|'parts'|'history'>('gallery');
+  const [tab, setTab] = useState<'robots'|'gallery'|'parts'|'history'>('robots');
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterAttribute, setFilterAttribute] = useState<string>('Water');
+  const [filterAttribute, setFilterAttribute] = useState<string>('All');
   const [filterRarity, setFilterRarity] = useState<number | 'All'>('All');
   const [sortOrder, setSortOrder] = useState<'newest'|'oldest'|'price_desc'|'price_asc'>('newest');
   const [filterPartType, setFilterPartType] = useState<string>('All');
 
+  // ロボットギャラリー：クラフトされたユニークロボット一覧
+  const uniqueCraftedRobots = useMemo(() => {
+    const allList: Robot[] = [];
+    const seenIds = new Set<string>();
 
-  
+    const addIfValid = (r: Robot) => {
+      if (!r || !r.parts || !r.parts.head || !r.parts.body || !r.parts.arms || !r.parts.legs) return;
+      if (!seenIds.has(r.id)) {
+        seenIds.add(r.id);
+        allList.push(r);
+      }
+    };
+
+    if (state.craftedRobots && Array.isArray(state.craftedRobots)) {
+      state.craftedRobots.forEach(addIfValid);
+    }
+    if (state.robots && Array.isArray(state.robots)) {
+      state.robots.forEach(addIfValid);
+    }
+    if (state.deliveredLogs && Array.isArray(state.deliveredLogs)) {
+      state.deliveredLogs.forEach(l => {
+        if (l && l.parts) {
+          addIfValid({
+            id: l.id,
+            name: l.name,
+            parts: l.parts,
+            stats: l.stats,
+            createdAt: l.deliveredAt || Date.now(),
+            value: (l.parts.head?.rarity || 1) + (l.parts.body?.rarity || 1) + (l.parts.arms?.rarity || 1) + (l.parts.legs?.rarity || 1) * 20
+          });
+        }
+      });
+    }
+
+    let list = allList.slice();
+
+    // 検索（ロボット名 または パーツ名）
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(r => {
+        const matchName = r.name.toLowerCase().includes(q);
+        const matchParts = Object.values(r.parts).some(p => p && p.name && p.name.toLowerCase().includes(q));
+        return matchName || matchParts;
+      });
+    }
+
+    // 属性フィルタ
+    if (filterAttribute !== 'All') {
+      list = list.filter(r => {
+        const parts = [r.parts.head, r.parts.body, r.parts.arms, r.parts.legs];
+        return parts.some(p => p && p.attribute === filterAttribute);
+      });
+    }
+
+    // レアリティフィルタ
+    if (filterRarity !== 'All') {
+      list = list.filter(r => {
+        const maxR = Math.max(
+          r.parts.head?.rarity || 1,
+          r.parts.body?.rarity || 1,
+          r.parts.arms?.rarity || 1,
+          r.parts.legs?.rarity || 1
+        );
+        return maxR === filterRarity;
+      });
+    }
+
+    // ソート
+    list.sort((a, b) => {
+      if (sortOrder === 'newest') return (b.createdAt || 0) - (a.createdAt || 0);
+      if (sortOrder === 'oldest') return (a.createdAt || 0) - (b.createdAt || 0);
+      const totalScoreA = (a.stats.hp + a.stats.power + a.stats.defense + a.stats.agility + a.stats.dexterity + (a.stats.intelligence || 1));
+      const totalScoreB = (b.stats.hp + b.stats.power + b.stats.defense + b.stats.agility + b.stats.dexterity + (b.stats.intelligence || 1));
+      if (sortOrder === 'price_desc') return totalScoreB - totalScoreA;
+      if (sortOrder === 'price_asc') return totalScoreA - totalScoreB;
+      return 0;
+    });
+
+    return list;
+  }, [state.craftedRobots, state.robots, state.deliveredLogs, searchQuery, filterAttribute, filterRarity, sortOrder]);
+
   const filteredHistory = useMemo(() => {
     let list = state.deliveredLogs.slice();
     
@@ -192,26 +272,41 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
         <Button size="sm" variant="secondary" onClick={onBack}>戻る</Button>
       </div>
 
-      <div className="flex gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         <Button 
+          id="tab-btn-robots"
+          variant={tab === 'robots' ? 'primary' : 'secondary'} 
+          className="flex items-center justify-center gap-1.5 py-2" 
+          onClick={() => setTab('robots')}
+        >
+          <Gi.GiRobotAntennas size={16} />
+          ロボット図鑑
+        </Button>
+        <Button 
+          id="tab-btn-gallery"
           variant={tab === 'gallery' ? 'primary' : 'secondary'} 
-          className="flex-1" 
+          className="flex items-center justify-center gap-1.5 py-2" 
           onClick={() => setTab('gallery')}
         >
+          <Gi.GiCog size={16} />
           パーツ図鑑
         </Button>
         <Button 
+          id="tab-btn-parts"
           variant={tab === 'parts' ? 'primary' : 'secondary'} 
-          className="flex-1" 
+          className="flex items-center justify-center gap-1.5 py-2" 
           onClick={() => setTab('parts')}
         >
+          <Gi.GiAnvilImpact size={16} />
           素材別出現一覧
         </Button>
         <Button 
+          id="tab-btn-history"
           variant={tab === 'history' ? 'primary' : 'secondary'} 
-          className="flex-1" 
+          className="flex items-center justify-center gap-1.5 py-2" 
           onClick={() => setTab('history')}
         >
+          <Gi.GiCardPickup size={16} />
           納品履歴
         </Button>
       </div>
@@ -221,12 +316,16 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
         <div className="flex gap-2">
           <input 
             type="text" 
-            placeholder={tab === 'history' ? "ロボット名で検索..." : tab === 'gallery' ? "パーツ名で検索..." : "素材名で検索..."}
+            placeholder={
+              tab === 'robots' ? "ロボット名・パーツ名で検索..." :
+              tab === 'history' ? "ロボット名で検索..." : 
+              tab === 'gallery' ? "パーツ名で検索..." : "素材名で検索..."
+            }
             className="flex-1 p-2 border border-stone-300 rounded text-sm"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
           />
-          {tab === 'history' && (
+          {(tab === 'history' || tab === 'robots') && (
             <select 
               className="p-2 border border-stone-300 rounded bg-white text-sm"
               value={sortOrder}
@@ -234,15 +333,15 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
             >
               <option value="newest">新しい順</option>
               <option value="oldest">古い順</option>
-              <option value="price_desc">価格が高い順</option>
-              <option value="price_asc">価格が安い順</option>
+              <option value="price_desc">総合性能が高い順</option>
+              <option value="price_asc">総合性能が低い順</option>
             </select>
           )}
         </div>
         
         <div className="flex flex-wrap gap-2 items-center">
-          <span className="text-sm font-bold text-stone-600">表示カラー:</span>
-          {tab === 'history' && (
+          <span className="text-sm font-bold text-stone-600">属性:</span>
+          {(tab === 'history' || tab === 'robots' || tab === 'parts' || tab === 'gallery') && (
             <Button size="sm" variant={filterAttribute === 'All' ? 'primary' : 'secondary'} onClick={() => setFilterAttribute('All')}>すべて</Button>
           )}
           {Object.keys(AttributeNames).map(attr => (
@@ -269,7 +368,7 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
           </div>
         )}
 
-        {tab === 'gallery' && (
+        {(tab === 'gallery' || tab === 'robots') && (
           <div className="flex flex-wrap gap-2 items-center">
             <span className="text-sm font-bold text-stone-600">レア度:</span>
             <Button size="sm" variant={filterRarity === 'All' ? 'primary' : 'secondary'} onClick={() => setFilterRarity('All')}>すべて</Button>
@@ -279,6 +378,57 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
           </div>
         )}
       </Card>
+
+      {tab === 'robots' && (
+        <div className="space-y-4">
+          <div className="bg-amber-50/90 border border-amber-300 p-3 rounded-xl text-sm text-stone-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 shadow-2xs">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 bg-amber-100 rounded-lg text-amber-700">
+                <Gi.GiRobotAntennas size={24} />
+              </div>
+              <div>
+                <span className="font-bold text-stone-800 text-sm block">ロボットギャラリー (Robot Gallery)</span>
+                <span className="text-xs text-stone-600">
+                  これまでに製造したユニークロボットの図鑑です。「構成パーツ詳細」から各部位のステータス（Component Stats）を確認できます。
+                </span>
+              </div>
+            </div>
+            <div className="bg-white px-3 py-1.5 rounded-lg border border-amber-300 shadow-2xs text-xs font-bold text-amber-900 whitespace-nowrap self-end sm:self-auto">
+              登録機体数: <span className="text-sm font-black text-amber-600">{uniqueCraftedRobots.length}</span> 機
+            </div>
+          </div>
+
+          {uniqueCraftedRobots.length === 0 ? (
+            <Card className="text-center py-12 space-y-3 bg-stone-50 border-2 border-dashed border-stone-300">
+              <div className="flex justify-center text-stone-400">
+                <Gi.GiRobotAntennas size={48} />
+              </div>
+              <h3 className={`${theme.typography.h3} text-stone-700`}>
+                クラフトされたロボットがまだありません
+              </h3>
+              <p className="text-xs text-stone-500 max-w-md mx-auto">
+                「工房」で素材からパーツを製造し、4つの部位（ヘッド・ボディ・アーム・レッグ）を組み立ててロボットを完成させると、ここにステータス詳細付きで登録されます！
+              </p>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {uniqueCraftedRobots.map(robot => {
+                const isOwned = state.robots.some(r => r.id === robot.id);
+                const isDelivered = state.deliveredLogs.some(l => l.id === robot.id);
+                const statusLabel = isOwned ? 'owned' : isDelivered ? 'delivered' : 'archived';
+
+                return (
+                  <RobotGalleryCard
+                    key={robot.id}
+                    robot={robot}
+                    statusLabel={statusLabel}
+                  />
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {tab === 'gallery' && (
         <div className="space-y-4">

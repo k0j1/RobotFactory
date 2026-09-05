@@ -174,4 +174,5 @@ export interface GameState {
   clientAffection?: { King: number; Noble: number; OldMan: number };
   completedRequestDeadlines?: { King?: number; Noble?: number; OldMan?: number };
   repairKits?: number;
+  craftedRobots?: Robot[];
 }
