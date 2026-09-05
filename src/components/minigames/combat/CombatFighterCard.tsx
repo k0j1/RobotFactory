@@ -143,23 +143,23 @@ export const CombatFighterCard: React.FC<CombatFighterCardProps> = ({
         {/* 能力値チップ（Pow, Def, Agi, Dex, Int） */}
         <div className="grid grid-cols-5 gap-1 mt-2.5 pt-2 border-t border-stone-200 text-center font-mono">
           <div className="bg-white/80 p-1 rounded border border-stone-200" title="Power: 攻撃力">
-            <div className="text-[9px] text-stone-500 font-sans">Pow</div>
+            <div className="text-[12px] text-red-600 flex justify-center"><Gi.GiBroadsword /></div>
             <div className="text-[11px] font-bold text-red-700">{fighter.power}</div>
           </div>
           <div className="bg-white/80 p-1 rounded border border-stone-200" title="Defense: 防御力">
-            <div className="text-[9px] text-stone-500 font-sans">Def</div>
+            <div className="text-[12px] text-blue-600 flex justify-center"><Gi.GiShield /></div>
             <div className="text-[11px] font-bold text-blue-700">{fighter.defense}</div>
           </div>
           <div className="bg-white/80 p-1 rounded border border-stone-200" title="Agility: 行動蓄積速度">
-            <div className="text-[9px] text-stone-500 font-sans">Agi</div>
+            <div className="text-[12px] text-amber-600 flex justify-center"><Gi.GiSprint /></div>
             <div className="text-[11px] font-bold text-amber-700">{fighter.agility}</div>
           </div>
           <div className="bg-white/80 p-1 rounded border border-stone-200" title="Dexterity: 回避力">
-            <div className="text-[9px] text-stone-500 font-sans">Dex</div>
+            <div className="text-[12px] text-emerald-600 flex justify-center"><Gi.GiCrosshair /></div>
             <div className="text-[11px] font-bold text-emerald-700">{fighter.dexterity}</div>
           </div>
           <div className="bg-white/80 p-1 rounded border border-stone-200" title="Intelligence: 繰り出す技・戦術">
-            <div className="text-[9px] text-stone-500 font-sans">Int</div>
+            <div className="text-[12px] text-purple-600 flex justify-center"><Gi.GiBrain /></div>
             <div className="text-[11px] font-bold text-purple-700">{fighter.intelligence}</div>
           </div>
         </div>
@@ -184,7 +184,7 @@ export const CombatFighterCard: React.FC<CombatFighterCardProps> = ({
               </span>
             ) : (
               <span className="text-[9px] text-stone-400">
-                タップで説明表示
+                タップで詳細
               </span>
             )}
           </div>
@@ -262,8 +262,8 @@ export const CombatFighterCard: React.FC<CombatFighterCardProps> = ({
                       {s.desc}
                     </div>
                     <div className="flex items-center justify-between text-[10px] text-stone-400 pt-0.5 border-t border-stone-800">
-                      <span>必要知性: Int {s.reqInt}以上</span>
-                      <span>再使用CD: {s.cooldownSeconds}秒 {cd > 0 ? `(待機: ${Math.ceil(cd)}s)` : '（即時発動可）'}</span>
+                      <span className="flex items-center gap-1"><Gi.GiBrain /> {s.reqInt}+</span>
+                      <span className="flex items-center gap-1"><Gi.GiHourglass /> {s.cooldownSeconds}s {cd > 0 ? `(${Math.ceil(cd)}s)` : 'OK'}</span>
                     </div>
                   </motion.div>
                 );

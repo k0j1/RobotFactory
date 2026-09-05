@@ -1,7 +1,8 @@
 const fs = require('fs');
 let content = fs.readFileSync('src/components/robot/RobotSVGs.tsx', 'utf-8');
 
-const replaceViewBox = (componentName, oldVB, newVB) => {
+const replaceViewBox = (componentName, newVB) => {
+    // Regex to match the export line with viewBox
     const regex = new RegExp(`(export const ${componentName} = \\(\\{ color, viewBox = ")[^"]+(")(, className \\}: SVGProps\\) => \\{)`);
     if (regex.test(content)) {
         content = content.replace(regex, `$1${newVB}$2$3`);
@@ -11,8 +12,14 @@ const replaceViewBox = (componentName, oldVB, newVB) => {
     }
 };
 
-['HeadStar2SVG', 'HeadStar2_2SVG', 'HeadStar2_3SVG', 'HeadStar2_4SVG'].forEach(c => {
-    replaceViewBox(c, '-64 -3 192 192', '-64 -15 192 192');
-});
+// Fix Bodies
+replaceViewBox('BodyStar2SVG', '-100 -155 500 500');
+replaceViewBox('BodyStar2_2SVG', '-100 -155 500 500');
+
+// Fix Legs
+replaceViewBox('LegsStar2SVG', '-150 -295 600 600');
+replaceViewBox('LegsStar2_2SVG', '-150 -295 600 600');
+replaceViewBox('LegsStar2_3SVG', '-150 -295 600 600');
+replaceViewBox('LegsStar2_4SVG', '-150 -295 600 600');
 
 fs.writeFileSync('src/components/robot/RobotSVGs.tsx', content);

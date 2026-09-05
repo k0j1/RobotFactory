@@ -34,7 +34,7 @@ export const CombatLogView: React.FC<CombatLogViewProps> = ({ logs }) => {
     <div className="bg-stone-900/95 text-stone-100 p-3 rounded-xl border-2 border-stone-700 shadow-inner flex flex-col h-52">
       <div className="flex items-center justify-between pb-1.5 mb-1.5 border-b border-stone-700 text-xs text-stone-300">
         <span className="font-bold flex items-center gap-1">
-          <Gi.GiScrollUnfurled className="text-amber-400 text-sm" /> 戦闘解析ログ
+          <Gi.GiScrollUnfurled className="text-amber-400 text-sm" /> ログ
         </span>
         <span className="text-[10px] text-stone-400 font-mono">
           最新 {logs.length} 件

@@ -161,15 +161,15 @@ export const CombatGame: React.FC<MinigameProps> = ({
               <div className="bg-stone-900 text-white p-3 rounded-xl text-center space-y-1">
                 <div className="flex items-center justify-center gap-2 text-yellow-300 font-black text-sm tracking-wider animate-bounce">
                   <Gi.GiInspiration className="text-xl" />
-                  <span>繰り出した技！</span>
+                  <span>NEW SKILL!</span>
                   <Gi.GiInspiration className="text-xl" />
                 </div>
                 <div className="text-xs text-amber-200 font-bold">{learnedBanner.fighterName}</div>
                 <div className="text-lg font-black text-white tracking-widest text-shadow-sm">
                   【{learnedBanner.name}】
                 </div>
-                <div className="text-[11px] text-stone-300 leading-tight">
-                  {learnedBanner.desc}
+                <div className="text-[10px] text-stone-300 leading-tight">
+                  {learnedBanner.shortDesc || learnedBanner.desc}
                 </div>
               </div>
             </div>
@@ -201,7 +201,7 @@ export const CombatGame: React.FC<MinigameProps> = ({
       <div className="flex items-center justify-between px-1">
         <span className="text-xs font-bold text-stone-700 flex items-center gap-1">
           <Gi.GiBrain className="text-amber-600" />
-          <span>ファイター詳細スペック・繰り出した技</span>
+          <span>ステータス詳細</span>
         </span>
         <div className="flex items-center gap-2">
           <button
@@ -213,13 +213,13 @@ export const CombatGame: React.FC<MinigameProps> = ({
             title="繰り出した技および全技の詳細効果を一覧で確認"
           >
             <Gi.GiInspiration className="text-amber-700 text-xs" />
-            <span>技の解説・図鑑</span>
+            <span>図鑑</span>
           </button>
           <button
             onClick={() => setShowDetailCards(prev => !prev)}
             className="text-[11px] text-stone-600 hover:text-stone-900 font-bold underline cursor-pointer"
           >
-            {showDetailCards ? '詳細をたたむ ▲' : '詳細をひらく ▼'}
+            {showDetailCards ? '閉じる ▲' : '開く ▼'}
           </button>
         </div>
       </div>

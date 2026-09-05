@@ -493,7 +493,7 @@ export const LegsJetSVG = ({ color, viewBox="0 0 100 100", className }: SVGProps
 
 
 
-export const HeadStar2SVG = ({ color, viewBox = "0 0 64 64", className }: SVGProps) => {
+export const HeadStar2SVG = ({ color, viewBox = "-64 -24 192 192", className }: SVGProps) => {
   const pal = getAttributePalette(color);
   return (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox={viewBox} className={className} shapeRendering="crispEdges" width="100%" height="100%">
@@ -554,7 +554,7 @@ export const HeadStar2SVG = ({ color, viewBox = "0 0 64 64", className }: SVGPro
     </svg>
   );
 };
-export const ArmsStar2SVG = ({ color, viewBox = "0 0 64 64", className }: SVGProps) => {
+export const ArmsStar2SVG = ({ color, viewBox = "-18 -34 100 100", className }: SVGProps) => {
   const pal = getAttributePalette(color);
   return (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox={viewBox} className={className} shapeRendering="crispEdges" width="100%" height="100%">
@@ -610,7 +610,7 @@ export const ArmsStar2SVG = ({ color, viewBox = "0 0 64 64", className }: SVGPro
     </svg>
   );
 };
-export const BodyStar2SVG = ({ color, viewBox = "0 0 300 300", className }: SVGProps) => {
+export const BodyStar2SVG = ({ color, viewBox = "-100 -155 500 500", className }: SVGProps) => {
   const pal = getAttributePalette(color);
   const uid = React.useId().replace(/:/g, '');
 
@@ -703,7 +703,7 @@ export const BodyStar2SVG = ({ color, viewBox = "0 0 300 300", className }: SVGP
   );
 };
 
-export const BodyStar2_2SVG = ({ color, viewBox = "0 0 300 300", className }: SVGProps) => {
+export const BodyStar2_2SVG = ({ color, viewBox = "-100 -155 500 500", className }: SVGProps) => {
   const pal = getAttributePalette(color);
   const uid = React.useId().replace(/:/g, '');
 
@@ -811,7 +811,7 @@ export const BodyStar2_2SVG = ({ color, viewBox = "0 0 300 300", className }: SV
   );
 };
 
-export const HeadStar3SVG = ({ color, viewBox = "0 0 256 256", className }: SVGProps) => {
+export const HeadStar3SVG = ({ color, viewBox = "-122 -30 500 500", className }: SVGProps) => {
   const pal = getAttributePalette(color);
   const uid = React.useId().replace(/:/g, '');
 
@@ -908,7 +908,7 @@ export const HeadStar3SVG = ({ color, viewBox = "0 0 256 256", className }: SVGP
   );
 };
 
-export const HeadStar3_2SVG = ({ color, viewBox = "0 0 256 256", className }: SVGProps) => {
+export const HeadStar3_2SVG = ({ color, viewBox = "-122 -30 500 500", className }: SVGProps) => {
   const pal = getAttributePalette(color);
   const uid = React.useId().replace(/:/g, '');
 
@@ -1002,7 +1002,7 @@ export const HeadStar3_2SVG = ({ color, viewBox = "0 0 256 256", className }: SV
   );
 };
 
-export const HeadStar3_3SVG = ({ color, viewBox = "0 0 256 256", className }: SVGProps) => {
+export const HeadStar3_3SVG = ({ color, viewBox = "-122 -30 500 500", className }: SVGProps) => {
   const pal = getAttributePalette(color);
   const uid = React.useId().replace(/:/g, '');
 
@@ -1099,7 +1099,7 @@ export const HeadStar3_3SVG = ({ color, viewBox = "0 0 256 256", className }: SV
   );
 };
 
-export const LegsStar2SVG = ({ color, viewBox = "0 0 300 300", className }: SVGProps) => {
+export const LegsStar2SVG = ({ color, viewBox = "-150 -295 600 600", className }: SVGProps) => {
   const pal = getAttributePalette(color);
   const uid = React.useId().replace(/:/g, '');
 
@@ -1190,7 +1190,7 @@ export const LegsStar2SVG = ({ color, viewBox = "0 0 300 300", className }: SVGP
 };
 
 
-export const LegsStar2_2SVG = ({ color, viewBox = "0 0 300 300", className }: SVGProps) => {
+export const LegsStar2_2SVG = ({ color, viewBox = "-150 -295 600 600", className }: SVGProps) => {
   const pal = getAttributePalette(color);
   const uid = React.useId().replace(/:/g, '');
 
@@ -1281,7 +1281,7 @@ export const LegsStar2_2SVG = ({ color, viewBox = "0 0 300 300", className }: SV
 };
 
 
-export const LegsStar2_3SVG = ({ color, viewBox = "0 0 300 300", className }: SVGProps) => {
+export const LegsStar2_3SVG = ({ color, viewBox = "-150 -295 600 600", className }: SVGProps) => {
   const pal = getAttributePalette(color);
   const uid = React.useId().replace(/:/g, '');
 
@@ -1340,7 +1340,7 @@ export const LegsStar2_3SVG = ({ color, viewBox = "0 0 300 300", className }: SV
 };
 
 
-export const LegsStar2_4SVG = ({ color, viewBox = "0 0 300 300", className }: SVGProps) => {
+export const LegsStar2_4SVG = ({ color, viewBox = "-150 -295 600 600", className }: SVGProps) => {
   const pal = getAttributePalette(color);
   const uid = React.useId().replace(/:/g, '');
 
@@ -1412,7 +1412,7 @@ export const LegsStar2_4SVG = ({ color, viewBox = "0 0 300 300", className }: SV
 };
 
 
-export const HeadStar2_2SVG = ({ color, viewBox = "0 0 64 64", className }: SVGProps) => {
+export const HeadStar2_2SVG = ({ color, viewBox = "-64 -24 192 192", className }: SVGProps) => {
   const pal = getAttributePalette(color);
   return (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox={viewBox} className={className} shapeRendering="crispEdges" width="100%" height="100%">
@@ -1460,7 +1460,7 @@ export const HeadStar2_2SVG = ({ color, viewBox = "0 0 64 64", className }: SVGP
   );
 };
 
-export const HeadStar2_3SVG = ({ color, viewBox = "0 0 64 64", className }: SVGProps) => {
+export const HeadStar2_3SVG = ({ color, viewBox = "-64 -24 192 192", className }: SVGProps) => {
   const pal = getAttributePalette(color);
   return (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox={viewBox} className={className} shapeRendering="crispEdges" width="100%" height="100%">
@@ -1514,7 +1514,7 @@ export const HeadStar2_3SVG = ({ color, viewBox = "0 0 64 64", className }: SVGP
 };
 
 
-export const HeadStar2_4SVG = ({ color, viewBox = "0 0 64 64", className }: SVGProps) => {
+export const HeadStar2_4SVG = ({ color, viewBox = "-64 -24 192 192", className }: SVGProps) => {
   const pal = getAttributePalette(color);
   return (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox={viewBox} className={className} shapeRendering="crispEdges" width="100%" height="100%">
@@ -1564,7 +1564,7 @@ export const SVG_BODIES: Record<number, React.FC<SVGProps>[]> = {
   2: [BodyStar2SVG, BodyStar2_2SVG],
   3: []
 };
-export const ArmsStar2_2SVG = ({ color, viewBox = "0 0 300 300", className }: SVGProps) => {
+export const ArmsStar2_2SVG = ({ color, viewBox = "-75 -134 457 457", className }: SVGProps) => {
   const pal = getAttributePalette(color);
   const uid = React.useId().replace(/:/g, '');
 
@@ -1628,7 +1628,7 @@ export const ArmsStar2_2SVG = ({ color, viewBox = "0 0 300 300", className }: SV
 };
 
 
-export const ArmsStar2_3SVG = ({ color, viewBox = "0 0 300 300", className }: SVGProps) => {
+export const ArmsStar2_3SVG = ({ color, viewBox = "-137 -159 575 575", className }: SVGProps) => {
   const pal = getAttributePalette(color);
   const uid = React.useId().replace(/:/g, '');
 
@@ -1682,7 +1682,7 @@ export const ArmsStar2_3SVG = ({ color, viewBox = "0 0 300 300", className }: SV
 };
 
 
-export const ArmsStar2_4SVG = ({ color, viewBox = "0 0 300 300", className }: SVGProps) => {
+export const ArmsStar2_4SVG = ({ color, viewBox = "-187 -208 675 675", className }: SVGProps) => {
   const pal = getAttributePalette(color);
   const uid = React.useId().replace(/:/g, '');
 

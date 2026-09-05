@@ -29,6 +29,7 @@ export interface DanmakuDifficultyConfig {
 
 
 import { FUR_ELISE_RAW_NOTES } from './furEliseData';
+import { TURKISH_MARCH_RAW_NOTES } from './turkishMarchData';
 
 export interface PianoNoteData {
   time: number;
@@ -86,6 +87,17 @@ export const FUR_ELISE_NOTES: PianoNoteData[] = FUR_ELISE_RAW_NOTES.map(n => {
   };
 });
 
+export const TURKISH_MARCH_NOTES: PianoNoteData[] = TURKISH_MARCH_RAW_NOTES.map(n => {
+  const keyInfos = n.midi.map(m => midiToKeyInfo(m));
+  return {
+    time: n.time,
+    midi: n.midi,
+    lanes: keyInfos.map(k => k.lanePos),
+    pitches: keyInfos.map(k => k.name),
+    duration: n.duration
+  };
+});
+
 export const PIANO_SONGS: PianoSong[] = [
   { 
     id: 'fur_elise', 
@@ -95,6 +107,15 @@ export const PIANO_SONGS: PianoSong[] = [
     songSpeed: 1.0,
     desc: 'バガテル「エリーゼのために」WoO 59 (イ短調 3/8拍子)。pianoclassics.net (ID 47) 準拠。主部と全エピソードを網羅した全曲完全収録版。', 
     notes: FUR_ELISE_NOTES
+  },
+  { 
+    id: 'turkish_march', 
+    title: 'トルコ行進曲', 
+    composer: 'モーツァルト', 
+    level: 8, 
+    songSpeed: 1.25,
+    desc: 'ピアノソナタ第11番 イ長調 K. 331 第3楽章「トルコ行進曲」。非常に高速な運指と和音の正確性が求められる超難関演習。', 
+    notes: TURKISH_MARCH_NOTES
   }
 ];
 
