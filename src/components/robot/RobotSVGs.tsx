@@ -492,79 +492,124 @@ export const LegsJetSVG = ({ color, viewBox="0 0 100 100", className }: SVGProps
 
 
 
-export const HeadStar2SVG = ({ color, viewBox = "0 -2 32 36", className }: SVGProps) => {
+
+export const HeadStar2SVG = ({ color, viewBox = "0 0 64 64", className }: SVGProps) => {
   const pal = getAttributePalette(color);
   return (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox={viewBox} className={className} shapeRendering="crispEdges" width="100%" height="100%">
-      <path fill={pal.out} d="M 11,2 h 10 v 1 h 3 v 1 h 2 v 2 h 1 v 1 h -1 v 3 h 2 v 1 h 1 v 5 h -1 v 1 h -1 v 2 h -1 v 2 h -1 v 1 h -1 v 1 h -1 v 1 h -1 v 1 h -1 v 1 h -8 v -1 h -1 v -1 h -1 v -1 h -1 v -1 h -1 v -2 h -1 v -2 h -1 v -1 h -1 v -5 h 1 v -1 h 2 v -3 h -1 v -1 h 1 v -2 h 2 v -1 h 3 Z" />
-      <path fill={pal.dark} d="M 12,3 h 8 v 1 h 3 v 1 h 2 v 2 h 1 v 1 h -2 v 3 h 1 v 6 h -1 v 2 h -1 v 2 h -1 v 1 h -1 v 1 h -1 v 1 h -1 v 1 h -6 v -1 h -1 v -1 h -1 v -1 h -1 v -1 h -1 v -2 h -1 v -2 h -1 v -6 h 1 v -3 h -2 v -1 h 1 v -2 h 2 v -1 h 3 Z" />
-      <path fill={pal.base} d="M 12,4 h 8 v 1 h 3 v 1 h 2 v 2 h -1 v 1 h -18 v -1 h -1 v -2 h 2 v -1 h 3 Z" />
-      <rect x="14" y="3" width="4" height="1" fill={pal.light} />
-      <rect x="9" y="6" width="2" height="1" fill={pal.white} />
-      <path fill={pal.light} d="M 3,6 h 1 v 2 h -1 Z M 28,6 h 1 v 2 h -1 Z" />
-      <path fill={pal.light} d="M 4,14 h 4 v 6 h -4 Z M 24,14 h 4 v 6 h -4 Z" />
-      <rect x="6" y="16" width="1" height="2" fill={pal.white} />
-      <rect x="25" y="16" width="1" height="2" fill={pal.white} />
-      <rect x="7" y="9" width="2" height="1" fill={pal.gray} />
-      <rect x="23" y="9" width="2" height="1" fill={pal.gray} />
-      <rect x="7" y="21" width="2" height="1" fill={pal.gray} />
-      <rect x="23" y="21" width="2" height="1" fill={pal.gray} />
-      <path fill={pal.dark} d="M 8,12 h 16 v 8 h -16 Z" />
-      <rect x="9" y="15" width="4" height="3" fill={pal.base} />
-      <rect x="10" y="16" width="2" height="1" fill={pal.white} />
-      <rect x="19" y="15" width="4" height="3" fill={pal.base} />
-      <rect x="20" y="16" width="2" height="1" fill={pal.white} />
-      <rect x="15" y="14" width="2" height="4" fill={pal.base} />
-      <rect x="15" y="15" width="2" height="2" fill={pal.white} />
-      <path fill={pal.base} d="M 10,22 h 12 v 1 h -1 v 1 h -1 v 1 h -8 v -1 h -1 v -1 h -1 Z" />
-      <rect x="13" y="23" width="6" height="1" fill={pal.light} />
+      {/* outer helmet */}
+      <path d="M12 17L17 9L24 5H40L47 9L52 17L57 23V43L51 49L45 53H19L13 49L7 43V23Z" fill={pal.out}/>
+      <path d="M15 17L19 11L25 8H39L45 11L49 17L54 23V41L49 46L43 50H21L15 46L10 41V23Z" fill={pal.dark}/>
+
+      {/* blue armor crown */}
+      <path d="M18 17L21 12L26 10H38L43 12L46 17L50 22V30H14V22Z" fill={pal.base}/>
+      <path d="M22 13L26 11H38L42 13L45 18H19Z" fill={pal.light}/>
+      <rect x="27" y="8" width="10" height="4" fill={pal.dark0}/>
+      <rect x="29" y="8" width="6" height="2" fill={pal.glow60}/>
+
+      {/* side antenna / fins */}
+      <path d="M10 19L4 14L5 25L11 29Z" fill={pal.out}/>
+      <path d="M54 19L60 14L59 25L53 29Z" fill={pal.out}/>
+      <rect x="6" y="16" width="3" height="6" fill={pal.light}/>
+      <rect x="55" y="16" width="3" height="6" fill={pal.light}/>
+
+      {/* face visor */}
+      <path d="M13 27L18 22H46L51 27V42L46 47H18L13 42Z" fill={pal.out}/>
+      <path d="M16 28L20 25H44L48 28V39L44 43H20L16 39Z" fill={pal.dark0}/>
+
+      {/* glowing eyes / visor */}
+      <path d="M19 30H29V38L26 41H19L17 38V32Z" fill={pal.dark100}/>
+      <path d="M35 30H45L47 32V38L45 41H38L35 38Z" fill={pal.dark100}/>
+      <rect x="20" y="32" width="7" height="5" fill={pal.glow100}/>
+      <rect x="37" y="32" width="7" height="5" fill={pal.glow100}/>
+      <rect x="22" y="33" width="4" height="2" fill="#D5F6FF"/>
+      <rect x="38" y="33" width="4" height="2" fill="#D5F6FF"/>
+
+      {/* central nose / sensor */}
+      <path d="M29 28H35V41L32 44L29 41Z" fill={pal.dark}/>
+      <rect x="30" y="31" width="4" height="6" fill={pal.glow60}/>
+      <rect x="31" y="32" width="2" height="3" fill="#E3FAFF"/>
+
+      {/* lower jaw armor */}
+      <path d="M17 43H47L43 51L38 55H26L21 51Z" fill={pal.out}/>
+      <path d="M21 45H43L40 50L36 52H28L24 50Z" fill={pal.base}/>
+      <rect x="27" y="47" width="10" height="3" fill={pal.dark100}/>
+      <rect x="29" y="47" width="6" height="2" fill={pal.glow60}/>
+
+      {/* cheek armor */}
+      <path d="M10 31L16 28V42L11 44L8 40V34Z" fill={pal.light}/>
+      <path d="M54 31L48 28V42L53 44L56 40V34Z" fill={pal.light}/>
+      <rect x="10" y="34" width="3" height="4" fill={pal.solidAccent}/>
+      <rect x="51" y="34" width="3" height="4" fill={pal.solidAccent}/>
+
+      {/* bolts */}
+      <rect x="14" y="18" width="3" height="3" fill={pal.gray}/>
+      <rect x="47" y="18" width="3" height="3" fill={pal.gray}/>
+      <rect x="14" y="42" width="3" height="3" fill={pal.gray}/>
+      <rect x="47" y="42" width="3" height="3" fill={pal.gray}/>
+
+      {/* highlights */}
+      <rect x="19" y="13" width="3" height="2" fill={pal.glow60}/>
+      <rect x="42" y="13" width="2" height="2" fill={pal.dark0}/>
     </svg>
   );
 };
-
-export const ArmsStar2SVG = ({ color, viewBox = "0 0 32 32", className }: SVGProps) => {
+export const ArmsStar2SVG = ({ color, viewBox = "0 0 64 64", className }: SVGProps) => {
   const pal = getAttributePalette(color);
   return (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox={viewBox} className={className} shapeRendering="crispEdges" width="100%" height="100%">
-      {/* 左腕 (Left Arm) */}
-      {/* 外枠 */}
-      <path fill={pal.out} d="M 4,4 h 6 v 1 h 2 v 6 h -1 v 2 h 1 v 10 h 1 v 1 h -2 v 3 h -1 v 1 h -6 v -1 h -1 v -3 h -2 v -1 h 1 v -10 h 1 v -2 h -1 v -6 h 2 Z" />
-      {/* ダークグレー骨格・ベース */}
-      <path fill={pal.dark} d="M 5,5 h 4 v 5 h -1 v 2 h 1 v 10 h -1 v 3 h -2 v -3 h -1 v -10 h 1 v -2 h -1 Z" />
-      {/* 肩アーマー (属性メインカラー) */}
-      <path fill={pal.base} d="M 5,5 h 4 v 5 h -4 Z" />
-      <rect x="5" y="6" width="1" height="1" fill={pal.white} />
-      {/* 関節 (関節・肘部分) */}
-      <rect x="6" y="11" width="2" height="1" fill={pal.light} />
-      {/* 前腕アーマー (属性メインカラー) */}
-      <path fill={pal.base} d="M 5,14 h 4 v 8 h -2 v -2 h -1 v -5 h -1 Z" />
-      <rect x="4" y="15" width="1" height="1" fill={pal.gray} />
-      {/* マニピュレータ/手 (ダーク & 属性ライトカラー) */}
-      <path fill={pal.dark} d="M 4,23 h 6 v 3 h -6 Z" />
-      <rect x="5" y="24" width="4" height="1" fill={pal.light} />
-      <rect x="5" y="27" width="4" height="1" fill={pal.light} />
+      {/* LEFT ARM */}
+      <path d="M5 8H19L23 12V25L19 29V43L23 48V57L19 61H7L3 57V48L7 43V29L3 25V12Z" fill={pal.out}/>
+      <path d="M8 11H17L20 14V24L16 28V44L20 49V55L17 58H9L6 55V49L10 44V28L6 24V14Z" fill={pal.dark}/>
+      {/* upper armor */}
+      <path d="M8 13H17L18 15V23L15 27H10L7 23V15Z" fill={pal.base}/>
+      <path d="M10 14H16V22L14 24H11L9 22V16Z" fill={pal.light}/>
+      <rect x="11" y="15" width="2" height="6" fill={pal.solidAccent}/>
+      {/* elbow */}
+      <path d="M8 25L11 28H15L18 25V31L15 34H11L8 31Z" fill={pal.out}/>
+      <rect x="10" y="28" width="6" height="3" fill={pal.glow60}/>
+      {/* forearm */}
+      <path d="M9 34H17L19 43L22 48V53H6V48L9 43Z" fill={pal.base}/>
+      <path d="M11 35H15V43L18 48V50H10V47L12 42Z" fill={pal.light}/>
+      <rect x="12" y="36" width="2" height="7" fill={pal.solidAccent}/>
+      {/* wrist */}
+      <rect x="7" y="50" width="14" height="5" fill={pal.dark}/>
+      <rect x="10" y="51" width="8" height="2" fill={pal.glow100}/>
+      {/* hand */}
+      <path d="M8 55H20L22 58L19 61H9L6 58Z" fill={pal.out}/>
+      <path d="M10 56H18L20 58L18 59H10L8 58Z" fill={pal.dark}/>
+      <rect x="11" y="56" width="6" height="2" fill={pal.light}/>
 
-      {/* 右腕 (Right Arm) */}
-      {/* 外枠 */}
-      <path fill={pal.out} d="M 20,4 h 6 v 1 h 2 v 6 h -1 v 2 h 1 v 10 h 1 v 1 h -2 v 3 h -1 v 1 h -6 v -1 h -1 v -3 h -2 v -1 h 1 v -10 h 1 v -2 h -1 v -6 h 2 Z" />
-      {/* ダークグレー骨格・ベース */}
-      <path fill={pal.dark} d="M 21,5 h 4 v 5 h -1 v 2 h 1 v 10 h -1 v 3 h -2 v -3 h -1 v -10 h 1 v -2 h -1 Z" />
-      {/* 肩アーマー (属性メインカラー) */}
-      <path fill={pal.base} d="M 21,5 h 4 v 5 h -4 Z" />
-      <rect x="24" y="6" width="1" height="1" fill={pal.white} />
-      {/* 関節 (関節・肘部分) */}
-      <rect x="22" y="11" width="2" height="1" fill={pal.light} />
-      {/* 前腕アーマー (属性メインカラー) */}
-      <path fill={pal.base} d="M 21,14 h 4 v 5 h -1 v 2 h -2 v -8 Z" />
-      <rect x="25" y="15" width="1" height="1" fill={pal.gray} />
-      {/* マニピュレータ/手 (ダーク & 属性ライトカラー) */}
-      <path fill={pal.dark} d="M 20,23 h 6 v 3 h -6 Z" />
-      <rect x="21" y="24" width="4" height="1" fill={pal.light} />
-      <rect x="21" y="27" width="4" height="1" fill={pal.light} />
+      {/* RIGHT ARM */}
+      <path d="M45 8H59L61 12V25L57 29V43L61 48V57L57 61H45L41 57V48L45 43V29L41 25V12Z" fill={pal.out}/>
+      <path d="M47 11H56L58 14V24L54 28V44L58 49V55L55 58H47L44 55V49L48 44V28L44 24V14Z" fill={pal.dark}/>
+      {/* upper armor */}
+      <path d="M47 13H56L57 15V23L54 27H49L46 23V15Z" fill={pal.base}/>
+      <path d="M48 14H54V22L52 24H49L47 22V16Z" fill={pal.light}/>
+      <rect x="51" y="15" width="2" height="6" fill={pal.solidAccent}/>
+      {/* elbow */}
+      <path d="M46 25L49 28H53L56 25V31L53 34H49L46 31Z" fill={pal.out}/>
+      <rect x="48" y="28" width="6" height="3" fill={pal.glow60}/>
+      {/* forearm */}
+      <path d="M47 34H55L58 43L61 48V53H45V48L48 43Z" fill={pal.base}/>
+      <path d="M49 35H53V43L56 48V50H48V47L50 42Z" fill={pal.light}/>
+      <rect x="50" y="36" width="2" height="7" fill={pal.solidAccent}/>
+      {/* wrist */}
+      <rect x="43" y="50" width="14" height="5" fill={pal.dark}/>
+      <rect x="46" y="51" width="8" height="2" fill={pal.glow100}/>
+      {/* hand */}
+      <path d="M44 55H56L59 58L56 61H46L42 58Z" fill={pal.out}/>
+      <path d="M46 56H54L56 58L54 59H46L44 58Z" fill={pal.dark}/>
+      <rect x="47" y="56" width="6" height="2" fill={pal.light}/>
+
+      {/* bolts and energy lights */}
+      <rect x="7" y="16" width="3" height="3" fill="#AFC0D2"/>
+      <rect x="54" y="16" width="3" height="3" fill="#AFC0D2"/>
+      <rect x="8" y="37" width="3" height="3" fill="#AFC0D2"/>
+      <rect x="53" y="37" width="3" height="3" fill="#AFC0D2"/>
     </svg>
   );
 };
-
 export const BodyStar2SVG = ({ color, viewBox = "0 0 300 300", className }: SVGProps) => {
   const pal = getAttributePalette(color);
   const uid = React.useId().replace(/:/g, '');

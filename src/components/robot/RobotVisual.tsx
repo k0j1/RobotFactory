@@ -426,12 +426,12 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
         )}
         {ArmsComp && (
           <motion.div className="absolute inset-0 w-full h-full z-[3]" {...(animateCrafting ? animProps(0.6, -30) : armsMotion)}>
-            <ArmsComp color={armsColor} viewBox={armsR === 2 ? ((robot.arms?.visualIndex || 0) > 0 ? "-100 -150 500 500" : "-8 -10 48 48") : "0 0 100 100"} className="w-full h-full" />
+            <ArmsComp color={armsColor} viewBox={armsR === 2 ? ((robot.arms?.visualIndex || 0) > 0 ? "-100 -150 500 500" : "0 0 64 64") : "0 0 100 100"} className="w-full h-full" />
           </motion.div>
         )}
         {HeadComp && (
           <motion.div className="absolute inset-0 w-full h-full z-[4]" {...(animateCrafting ? animProps(0.9, -80) : headMotion)}>
-            <HeadComp color={headColor} viewBox={headR === 3 ? "-122 -30 500 500" : headR === 2 ? "-24 -4 80 80" : "0 0 100 100"} className="w-full h-full" />
+            <HeadComp color={headColor} viewBox={headR === 3 ? "-122 -30 500 500" : headR === 2 ? "0 0 64 64" : "0 0 100 100"} className="w-full h-full" />
           </motion.div>
         )}
       </motion.div>
