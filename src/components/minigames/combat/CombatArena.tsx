@@ -7,6 +7,7 @@ import { LOCATIONS } from '../../../core/data';
 import { Opponent } from '../Shared';
 import { CombatFighter, CombatPopup, CombatActionEvent, SkillDef } from './combatTypes';
 import { getOpponentRobotModel, OPPONENT_DEFAULT_STAGES } from './opponentRobotData';
+import { ALL_COMBAT_SKILLS } from './combatSkills';
 
 interface CombatArenaProps {
   player: CombatFighter;
@@ -19,6 +20,9 @@ interface CombatArenaProps {
   isPaused: boolean;
   isFinished: boolean;
   winner: 'player' | 'opponent' | 'draw' | null;
+  onTogglePause?: () => void;
+  onSetSpeed?: (speed: number) => void;
+  onOpenSkillModal?: (skill?: SkillDef) => void;
 }
 
 export const CombatArena: React.FC<CombatArenaProps> = ({
@@ -32,6 +36,9 @@ export const CombatArena: React.FC<CombatArenaProps> = ({
   isPaused,
   isFinished,
   winner,
+  onTogglePause,
+  onSetSpeed,
+  onOpenSkillModal,
 }) => {
   // 対戦相手に応じたデフォルト遠征ステージ、またはユーザー選択ステージ
   const defaultStage = OPPONENT_DEFAULT_STAGES[activeOpponent.id]?.locId || 'loc1';
@@ -179,19 +186,20 @@ export const CombatArena: React.FC<CombatArenaProps> = ({
         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/60 pointer-events-none" />
       </div>
 
-      {/* アリーナ上部HUD: ステージ情報 & 各種ヘルス・行動値ゲージ */}
+      {/* アリーナ上部HUD: ステージ切替 & 一時停止・速度倍速操作 & 各種ヘルス・行動値ゲージ */}
       <div className="relative z-20 p-3 sm:p-4 space-y-2.5">
-        {/* 上段: ステージ情報バッジ & ステージ切替ドロップダウン */}
-        <div className="flex items-center justify-between">
+        {/* 上段: ステージ切替ドロップダウン & 一時停止・速度コントロールボタン */}
+        <div className="flex items-center justify-between gap-2">
+          {/* 左側: ステージ選択（「遠征戦場」テキストは削除しステージ名のみ表示） */}
           <div className="relative">
             <button
               onClick={() => setShowStageMenu(prev => !prev)}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/60 hover:bg-black/80 border border-stone-600 text-stone-200 text-xs font-bold transition-colors backdrop-blur-xs"
-              title="遠征ステージを変更"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/60 hover:bg-black/80 border border-stone-600 text-stone-200 text-xs font-bold transition-colors backdrop-blur-xs cursor-pointer"
+              title="ステージ背景を変更"
             >
               <Gi.GiTreasureMap className="text-amber-400 text-sm" />
-              <span>遠征戦場: {currentLocation.name}</span>
-              <Gi.GiPerspectiveDiceSixFacesRandom className="text-stone-400 text-xs ml-1" />
+              <span>{currentLocation.name}</span>
+              <Gi.GiPerspectiveDiceSixFacesRandom className="text-stone-400 text-xs ml-0.5" />
             </button>
 
             {/* ステージ選択ドロップダウンメニュー */}
@@ -204,7 +212,7 @@ export const CombatArena: React.FC<CombatArenaProps> = ({
                   className="absolute top-full left-0 mt-1.5 w-52 bg-stone-900/95 border border-stone-700 rounded-xl p-1.5 shadow-2xl z-50 backdrop-blur-md"
                 >
                   <div className="text-[10px] text-stone-400 font-bold px-2 py-1 border-b border-stone-800 mb-1">
-                    遠征ステージを選択
+                    ステージを選択
                   </div>
                   {LOCATIONS.map(loc => (
                     <button
@@ -230,11 +238,68 @@ export const CombatArena: React.FC<CombatArenaProps> = ({
             </AnimatePresence>
           </div>
 
-          <div className="flex items-center gap-2 text-[11px] text-stone-300 font-mono bg-black/50 px-2 py-0.5 rounded-md border border-stone-700/50 backdrop-blur-xs">
-            <Gi.GiCrossedSwords className="text-red-500" />
-            <span>バトル演習</span>
-            <span className="text-stone-500">|</span>
-            <span>{speed}x</span>
+          {/* 右側: 技説明ボタン & 一時停止/再開 & 速度倍速ボタン */}
+          <div className="flex items-center gap-1 sm:gap-1.5">
+            {/* 繰り出した技の解説・図鑑ボタン */}
+            {onOpenSkillModal && (
+              <button
+                onClick={() => onOpenSkillModal()}
+                className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold transition-all bg-black/60 hover:bg-black/80 text-amber-300 border border-amber-500/50 shadow-xs cursor-pointer backdrop-blur-xs"
+                title="繰り出した技の説明・図鑑を開く"
+              >
+                <Gi.GiInspiration className="text-amber-400 text-xs" />
+                <span className="hidden sm:inline">技説明</span>
+                <span className="sm:hidden">技</span>
+                <span className="text-[10px] bg-amber-400/20 px-1 py-0.2 rounded text-amber-200 font-mono">
+                  {player.learnedSkills.length + opponent.learnedSkills.length}
+                </span>
+              </button>
+            )}
+
+            {/* 一時停止 / 再開ボタン */}
+            {onTogglePause && !isFinished && (
+              <button
+                onClick={onTogglePause}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer backdrop-blur-xs ${
+                  isPaused 
+                    ? 'bg-amber-500 text-stone-950 hover:bg-amber-400 ring-2 ring-amber-300' 
+                    : 'bg-black/60 hover:bg-black/80 text-stone-200 border border-stone-600'
+                }`}
+                title={isPaused ? "演習を再開" : "演習を一時停止"}
+              >
+                {isPaused ? (
+                  <>
+                    <Gi.GiPlayButton className="text-stone-950 text-xs" />
+                    <span>再開</span>
+                  </>
+                ) : (
+                  <>
+                    <Gi.GiPauseButton className="text-amber-400 text-xs" />
+                    <span>一時停止</span>
+                  </>
+                )}
+              </button>
+            )}
+
+            {/* 速度倍速ボタン (1x, 2x, 3x) */}
+            {onSetSpeed && (
+              <div className="flex items-center gap-0.5 bg-black/60 p-0.5 rounded-lg border border-stone-600 backdrop-blur-xs font-mono">
+                {[1, 2, 3].map(s => (
+                  <button
+                    key={s}
+                    onClick={() => onSetSpeed(s)}
+                    className={`px-2 py-0.5 rounded text-xs font-bold transition-all cursor-pointer ${
+                      speed === s 
+                        ? 'bg-amber-400 text-stone-950 ring-1 ring-amber-300 font-black shadow-xs' 
+                        : 'text-stone-400 hover:text-stone-200 hover:bg-stone-800'
+                    }`}
+                    title={`速度 ${s}倍速`}
+                  >
+                    {s}x
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -321,38 +386,51 @@ export const CombatArena: React.FC<CombatArenaProps> = ({
         </div>
       </div>
 
-      {/* 技名コールカットインオーバーレイ */}
+      {/* 技名コールカットインオーバーレイ（タップで説明表示） */}
       <AnimatePresence>
         {skillBanner && (
           <motion.div
             initial={{ opacity: 0, scale: 0.7, y: -20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 10 }}
-            className={`absolute top-24 left-1/2 -translate-x-1/2 z-40 px-4 py-1.5 rounded-full border-2 shadow-2xl font-black text-sm tracking-wider flex items-center gap-2 backdrop-blur-md ${
+            onClick={() => {
+              if (onOpenSkillModal) {
+                const found = ALL_COMBAT_SKILLS.find(s => s.name === skillBanner.skillName);
+                onOpenSkillModal(found);
+              }
+            }}
+            className={`absolute top-24 left-1/2 -translate-x-1/2 z-40 px-4 py-1.5 rounded-full border-2 shadow-2xl font-black text-sm tracking-wider flex items-center gap-2 backdrop-blur-md cursor-pointer transition-transform hover:scale-105 active:scale-95 ${
               skillBanner.isPlayer
                 ? 'bg-amber-500/90 text-stone-950 border-amber-300 ring-4 ring-amber-500/30'
                 : 'bg-red-600/90 text-white border-red-300 ring-4 ring-red-600/30'
             }`}
+            title="タップして技の詳細説明を見る"
           >
             <Gi.GiLightningBow className="text-lg animate-bounce" />
-            <span>【{skillBanner.skillName}】</span>
+            <span>繰り出した技: 【{skillBanner.skillName}】</span>
             <Gi.GiLightningBow className="text-lg animate-bounce" />
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* 閃き（ピコーン！）頭上演出 */}
+      {/* 繰り出した技（ピコーン！）頭上演出（タップで説明表示） */}
       <AnimatePresence>
         {lastLearnedSkill && (
           <motion.div
             initial={{ opacity: 0, y: 10, scale: 0.5 }}
             animate={{ opacity: 1, y: -30, scale: 1.2 }}
             exit={{ opacity: 0, scale: 0.8 }}
-            className="absolute top-28 left-1/2 -translate-x-1/2 z-50 pointer-events-none text-center"
+            onClick={() => {
+              if (onOpenSkillModal) {
+                onOpenSkillModal(lastLearnedSkill.skill);
+              }
+            }}
+            className="absolute top-28 left-1/2 -translate-x-1/2 z-50 text-center cursor-pointer"
+            title="タップして技の詳細説明を見る"
           >
-            <div className="bg-yellow-400 text-stone-950 font-black px-3 py-1 rounded-xl shadow-2xl border-2 border-white flex items-center gap-1 text-xs">
+            <div className="bg-yellow-400 text-stone-950 font-black px-3 py-1 rounded-xl shadow-2xl border-2 border-white flex items-center gap-1 text-xs hover:scale-105 active:scale-95 transition-transform">
               <Gi.GiInspiration className="text-xl text-amber-900 animate-spin" />
-              <span>閃き！【{lastLearnedSkill.skill.name}】</span>
+              <span>繰り出した技！【{lastLearnedSkill.skill.name}】</span>
             </div>
           </motion.div>
         )}

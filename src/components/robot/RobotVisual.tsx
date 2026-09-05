@@ -42,7 +42,7 @@ export const PartVisual: React.FC<{ part: any, size?: number }> = ({ part, size 
   const viewBox = r === 3
     ? (part.type === 'head' ? '0 0 256 256' : '0 0 256 256')
     : r === 2
-    ? (part.type === 'head' ? '0 -2 32 36' : part.type === 'arms' ? '0 2 32 28' : '0 0 32 32')
+    ? (part.type === 'head' ? '0 -2 32 36' : part.type === 'arms' ? (part.visualIndex % 2 === 1 ? '0 0 300 300' : '0 2 32 28') : part.type === 'body' ? '0 0 300 300' : part.type === 'legs' ? '0 0 300 300' : '0 0 32 32')
     : (part.type === 'head' ? '20 0 60 45' :
        part.type === 'body' ? '25 32 50 48' :
        part.type === 'arms' ? '5 38 90 42' :
@@ -408,17 +408,25 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
       <motion.div style={{ width: size, height: size }} className="relative z-0" {...bodyMotion}>
         {LegsComp && (
           <motion.div className="absolute inset-0 w-full h-full z-[1]" {...(animateCrafting ? animProps(0, 50) : legsMotion)}>
-            <LegsComp color={legsColor} className="w-full h-full" />
+            <LegsComp 
+              color={legsColor} 
+              viewBox={
+                legsR === 2 
+                  ? "-170 -336 640 640" 
+                  : "0 0 100 100"
+              } 
+              className="w-full h-full" 
+            />
           </motion.div>
         )}
         {BodyComp && (
           <motion.div className="absolute inset-0 w-full h-full z-[2]" {...(animateCrafting ? animProps(0.3, -50) : {})}>
-            <BodyComp color={bodyColor} className="w-full h-full" />
+            <BodyComp color={bodyColor} viewBox={bodyR === 2 ? "-100 -150 500 500" : "0 0 100 100"} className="w-full h-full" />
           </motion.div>
         )}
         {ArmsComp && (
           <motion.div className="absolute inset-0 w-full h-full z-[3]" {...(animateCrafting ? animProps(0.6, -30) : armsMotion)}>
-            <ArmsComp color={armsColor} viewBox={armsR === 2 ? "-8 -10 48 48" : "0 0 100 100"} className="w-full h-full" />
+            <ArmsComp color={armsColor} viewBox={armsR === 2 ? ((robot.arms?.visualIndex || 0) > 0 ? "-100 -150 500 500" : "-8 -10 48 48") : "0 0 100 100"} className="w-full h-full" />
           </motion.div>
         )}
         {HeadComp && (

@@ -180,7 +180,7 @@ export class CombatEngine {
     let chosenSkill: SkillDef | null = null;
 
     if (newlyLearned) {
-      // 💡 技を閃いた！
+      // ⚡ 技を繰り出した！
       attacker.learnedSkills.push(newlyLearned);
       attacker.skillsLearnedCount++;
       chosenSkill = newlyLearned;
@@ -190,18 +190,18 @@ export class CombatEngine {
         skill: newlyLearned
       };
 
-      // 閃きポップアップ & ログ
-      this.addPopup(attacker.id, `💡 閃き！【${newlyLearned.name}】`, 'learn');
+      // 繰り出した技ポップアップ & ログ
+      this.addPopup(attacker.id, `⚡ 繰り出した技！【${newlyLearned.name}】`, 'learn');
       this.addLog({
         type: 'learn_skill',
         actorId: attacker.id,
         actorName: attacker.name,
         isPlayer: attacker.isPlayer,
         skillName: newlyLearned.name,
-        message: `💡 ${attacker.name}は知性演算により新技【${newlyLearned.name}】を閃いた！（${newlyLearned.shortDesc}）`
+        message: `⚡ ${attacker.name}は知性演算により新技【${newlyLearned.name}】を繰り出した！（${newlyLearned.shortDesc}）`
       });
     } else {
-      // 2. すでに閃いて習得済みの技があれば、戦略に組み込みながら選択
+      // 2. すでに繰り出し習得済みの技があれば、戦略に組み込みながら選択
       chosenSkill = chooseStrategicSkill(attacker, defender);
     }
 
@@ -298,7 +298,7 @@ export class CombatEngine {
       actorName: attacker.name,
       isPlayer: attacker.isPlayer,
       skillName: skill.name,
-      message: `⚡ ${attacker.name}の戦術技【${skill.name}】が発動！`
+      message: `⚡ ${attacker.name}が技【${skill.name}】を繰り出した！`
     });
 
     // 回避された場合

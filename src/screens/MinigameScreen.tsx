@@ -176,7 +176,19 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
     const opponent = activeOpponent || OPPONENTS[0];
 
     switch (selectedGame) {
-      case 'combat': return <CombatGame activeRobot={activeRobot} activeOpponent={opponent} onFinish={handleFinish} speed={speed} isPaused={isPaused} isFinished={battleResult !== null} battleResult={battleResult} />;
+      case 'combat': return (
+        <CombatGame 
+          activeRobot={activeRobot} 
+          activeOpponent={opponent} 
+          onFinish={handleFinish} 
+          speed={speed} 
+          isPaused={isPaused} 
+          isFinished={battleResult !== null} 
+          battleResult={battleResult} 
+          onTogglePause={() => setIsPaused(!isPaused)}
+          onSetSpeed={(s) => setSpeed(s)}
+        />
+      );
       case 'othello': return <OthelloGame activeRobot={activeRobot} activeOpponent={opponent} onFinish={handleFinish} speed={speed} isPaused={isPaused} isFinished={battleResult !== null} battleResult={battleResult} />;
       case 'chess': return <ChessGame activeRobot={activeRobot} activeOpponent={opponent} onFinish={handleFinish} speed={speed} isPaused={isPaused} isFinished={battleResult !== null} battleResult={battleResult} />;
       case 'danmaku': return <DanmakuSurvivalGame activeRobot={activeRobot} activeOpponent={opponent} onFinish={handleFinish} speed={speed} isPaused={isPaused} isFinished={battleResult !== null} battleResult={battleResult} difficulty={danmakuDifficulty} />;
@@ -630,10 +642,10 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
 
                 <div className="bg-white p-2 rounded-xl border border-stone-200 shadow-2xs">
                   <div className="font-bold text-purple-700 flex items-center gap-1 mb-0.5">
-                    <Gi.GiInspiration className="text-sm text-purple-600" /> Intelligence（閃き・戦術）
+                    <Gi.GiInspiration className="text-sm text-purple-600" /> Intelligence（繰り出す技・戦術）
                   </div>
                   <div className="text-stone-600 leading-snug">
-                    知性と他能力値を基に<span className="font-bold text-purple-900">技を閃く（習得）</span>！一度閃けば戦略に組み込み多彩な効果の技を繰り出します。
+                    知性と他能力値を基に<span className="font-bold text-purple-900">多彩な技を繰り出す</span>！状況に応じて多彩な効果の戦術技を発動します。
                   </div>
                 </div>
               </div>
@@ -658,7 +670,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
             {renderGame()}
           </div>
           
-          {isBattleActive && !battleResult && selectedGame !== 'danmaku' && (
+          {isBattleActive && !battleResult && selectedGame !== 'danmaku' && selectedGame !== 'combat' && (
             <div className="flex justify-center items-center gap-2 mt-4 mb-4 bg-stone-200/70 p-2 rounded-xl border border-stone-300 max-w-sm mx-auto shadow-inner">
               <Button onClick={() => setIsPaused(!isPaused)} size="sm" className="w-28 text-xs font-bold flex items-center justify-center gap-1">
                 {isPaused ? (

@@ -149,4 +149,6 @@ export interface MinigameProps {
   isPaused: boolean;
   isFinished: boolean;
   battleResult?: 'win' | 'lose' | 'draw' | null;
+  onTogglePause?: () => void;
+  onSetSpeed?: (speed: number) => void;
 }

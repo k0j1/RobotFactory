@@ -1,5 +1,5 @@
-import React from 'react';
-import { CombatFighter, CombatPopup } from './combatTypes';
+import React, { useState } from 'react';
+import { CombatFighter, CombatPopup, SkillDef } from './combatTypes';
 import { RobotVisual } from '../../robot/RobotVisual';
 import { theme } from '../../../styles/theme';
 import * as Gi from 'react-icons/gi';
@@ -10,14 +10,20 @@ interface CombatFighterCardProps {
   popups: CombatPopup[];
   isAttacking: boolean;
   isHit: boolean;
+  onSelectSkill?: (skill: SkillDef) => void;
+  onOpenSkillModal?: () => void;
 }
 
 export const CombatFighterCard: React.FC<CombatFighterCardProps> = ({
   fighter,
   popups,
   isAttacking,
-  isHit
+  isHit,
+  onSelectSkill,
+  onOpenSkillModal,
 }) => {
+  const [selectedSkillId, setSelectedSkillId] = useState<string | null>(null);
+
   const hpPercent = Math.max(0, Math.min(100, (fighter.currentDurability / fighter.maxDurability) * 100));
   const apPercent = Math.max(0, Math.min(100, (fighter.actionPoints / 1000) * 100));
 
@@ -152,39 +158,118 @@ export const CombatFighterCard: React.FC<CombatFighterCardProps> = ({
             <div className="text-[9px] text-stone-500 font-sans">Dex</div>
             <div className="text-[11px] font-bold text-emerald-700">{fighter.dexterity}</div>
           </div>
-          <div className="bg-white/80 p-1 rounded border border-stone-200" title="Intelligence: 閃き・戦術">
+          <div className="bg-white/80 p-1 rounded border border-stone-200" title="Intelligence: 繰り出す技・戦術">
             <div className="text-[9px] text-stone-500 font-sans">Int</div>
             <div className="text-[11px] font-bold text-purple-700">{fighter.intelligence}</div>
           </div>
         </div>
 
-        {/* 習得済み技・閃いた技スロット */}
+        {/* 繰り出した技スロット */}
         <div className="mt-2 pt-1.5 border-t border-stone-200/80">
           <div className="flex items-center justify-between text-[10px] text-stone-500 mb-1">
-            <span className="font-bold flex items-center gap-1">
-              <Gi.GiInspiration className="text-amber-500" /> 習得した技 ({fighter.learnedSkills.length}):
+            <span className="font-bold flex items-center gap-1 text-stone-700">
+              <Gi.GiInspiration className="text-amber-500" /> 繰り出した技 ({fighter.learnedSkills.length}):
             </span>
-            {fighter.learnedSkills.length === 0 && (
-              <span className="italic text-stone-400">行動時に知性で閃く</span>
+            {fighter.learnedSkills.length === 0 ? (
+              <span className="text-[10px] text-stone-400">
+                行動時に知性で発動
+                {onOpenSkillModal && (
+                  <button
+                    onClick={onOpenSkillModal}
+                    className="ml-1 text-amber-700 underline font-bold hover:text-amber-900 cursor-pointer"
+                  >
+                    技一覧
+                  </button>
+                )}
+              </span>
+            ) : (
+              <span className="text-[9px] text-stone-400">
+                タップで説明表示
+              </span>
             )}
           </div>
+          
           <div className="flex flex-wrap gap-1 min-h-[22px]">
             {fighter.learnedSkills.map(s => {
               const cd = fighter.cooldowns[s.id] || 0;
+              const isSelected = selectedSkillId === s.id;
               return (
-                <span 
+                <button
+                  type="button"
                   key={s.id} 
-                  title={`${s.name}: ${s.desc}`}
-                  className={`text-[9px] font-bold px-1.5 py-0.5 rounded border transition-all flex items-center gap-0.5 ${
+                  onClick={() => {
+                    setSelectedSkillId(prev => prev === s.id ? null : s.id);
+                    if (onSelectSkill) {
+                      onSelectSkill(s);
+                    }
+                  }}
+                  className={`text-[9px] font-bold px-1.5 py-0.5 rounded border transition-all flex items-center gap-0.5 cursor-pointer shadow-2xs ${
+                    isSelected 
+                      ? 'ring-2 ring-amber-400 font-black scale-105' 
+                      : 'hover:brightness-95 active:scale-95'
+                  } ${
                     cd > 0 ? 'bg-stone-200 text-stone-500 border-stone-300' : s.badgeColor
                   }`}
+                  title={`${s.name}: ${s.desc}`}
                 >
                   <span>{s.name}</span>
-                  {cd > 0 && <span className="font-mono text-[8px]">({Math.ceil(cd)}s)</span>}
-                </span>
+                  {cd > 0 ? (
+                    <span className="font-mono text-[8px] opacity-80">({Math.ceil(cd)}s)</span>
+                  ) : (
+                    <span className="text-[8px] text-amber-600 font-mono">⚡</span>
+                  )}
+                </button>
               );
             })}
           </div>
+
+          {/* 選択された技のインライン説明ボックス */}
+          <AnimatePresence>
+            {selectedSkillId && fighter.learnedSkills.some(s => s.id === selectedSkillId) && (
+              (() => {
+                const s = fighter.learnedSkills.find(item => item.id === selectedSkillId)!;
+                const cd = fighter.cooldowns[s.id] || 0;
+                return (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="mt-1.5 bg-stone-900 text-stone-100 p-2 rounded-lg text-xs space-y-1 shadow-md border border-stone-700"
+                  >
+                    <div className="flex items-center justify-between border-b border-stone-700 pb-1">
+                      <div className="flex items-center gap-1.5 font-bold">
+                        <span className="text-amber-400">【{s.name}】</span>
+                        <span className="text-[10px] text-stone-300 font-normal">({s.shortDesc})</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {onOpenSkillModal && (
+                          <button
+                            onClick={onOpenSkillModal}
+                            className="text-[10px] text-amber-300 hover:underline cursor-pointer"
+                          >
+                            全体図鑑 ↗
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setSelectedSkillId(null)}
+                          className="text-stone-400 hover:text-white text-xs px-1 cursor-pointer"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                    <div className="text-[11px] text-stone-300 leading-snug">
+                      {s.desc}
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] text-stone-400 pt-0.5 border-t border-stone-800">
+                      <span>必要知性: Int {s.reqInt}以上</span>
+                      <span>再使用CD: {s.cooldownSeconds}秒 {cd > 0 ? `(待機: ${Math.ceil(cd)}s)` : '（即時発動可）'}</span>
+                    </div>
+                  </motion.div>
+                );
+              })()
+            )}
+          </AnimatePresence>
         </div>
 
         {/* アクティブバフ表示 */}
