@@ -431,7 +431,7 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
         )}
         {HeadComp && (
           <motion.div className="absolute inset-0 w-full h-full z-[4]" {...(animateCrafting ? animProps(0.9, -80) : headMotion)}>
-            <HeadComp color={headColor} viewBox={headR === 3 ? "-122 -30 500 500" : headR === 2 ? "0 0 64 64" : "0 0 100 100"} className="w-full h-full" />
+            <HeadComp color={headColor} viewBox={headR === 3 ? "-122 -30 500 500" : headR === 2 ? "-48 -10 160 160" : "0 0 100 100"} className="w-full h-full" />
           </motion.div>
         )}
       </motion.div>
