@@ -610,7 +610,7 @@ export const ArmsStar2SVG = ({ color, viewBox = "-18 -34 100 100", className }: 
     </svg>
   );
 };
-export const BodyStar2SVG = ({ color, viewBox = "-100 -155 500 500", className }: SVGProps) => {
+export const BodyStar2SVG = ({ color, viewBox = "0 0 100 100", className }: SVGProps) => {
   const pal = getAttributePalette(color);
   const uid = React.useId().replace(/:/g, '');
 
@@ -669,41 +669,43 @@ export const BodyStar2SVG = ({ color, viewBox = "-100 -155 500 500", className }
         </linearGradient>
       </defs>
 
-      {/* 外枠線＆全体のベース構造 (太いダークブルー枠) */}
-      <g stroke={outerStroke} strokeWidth="12" strokeLinecap="round" strokeLinejoin="round">
-        {/* 1. 外装メインボディ */}
-        <path d="M 80,35 H 220 A 30,30 0 0 1 250,65 V 235 A 30,30 0 0 1 220,265 H 80 A 30,30 0 0 1 50,235 V 65 A 30,30 0 0 1 80,35 Z" fill={`url(#${bodyGradId})`} />
+      {/* 外枠線＆全体のベース構造 (ロボット合成時にアーム・レッグと完璧に調和するスマートスケール) */}
+      <g transform="translate(50, 54.5) scale(0.17, 0.138) translate(-150, -150)">
+        <g stroke={outerStroke} strokeWidth="12" strokeLinecap="round" strokeLinejoin="round">
+          {/* 1. 外装メインボディ */}
+          <path d="M 80,35 H 220 A 30,30 0 0 1 250,65 V 235 A 30,30 0 0 1 220,265 H 80 A 30,30 0 0 1 50,235 V 65 A 30,30 0 0 1 80,35 Z" fill={`url(#${bodyGradId})`} />
 
-        {/* 2. 上部インナーパネル (画面奥の凹み) */}
-        <path d="M 82,58 H 218 A 12,12 0 0 1 230,70 V 122 A 12,12 0 0 1 218,134 H 82 A 12,12 0 0 1 70,122 V 70 A 12,12 0 0 1 82,58 Z" fill={`url(#${panelGradId})`} />
+          {/* 2. 上部インナーパネル (画面奥の凹み) */}
+          <path d="M 82,58 H 218 A 12,12 0 0 1 230,70 V 122 A 12,12 0 0 1 218,134 H 82 A 12,12 0 0 1 70,122 V 70 A 12,12 0 0 1 82,58 Z" fill={`url(#${panelGradId})`} />
 
-        {/* 3. 下部インナーパネル */}
-        <path d="M 82,168 H 218 A 12,12 0 0 1 230,180 V 238 A 12,12 0 0 1 218,250 H 82 A 12,12 0 0 1 70,238 V 180 A 12,12 0 0 1 82,168 Z" fill={`url(#${panelGradId})`} />
+          {/* 3. 下部インナーパネル */}
+          <path d="M 82,168 H 218 A 12,12 0 0 1 230,180 V 238 A 12,12 0 0 1 218,250 H 82 A 12,12 0 0 1 70,238 V 180 A 12,12 0 0 1 82,168 Z" fill={`url(#${panelGradId})`} />
 
-        {/* 4. 中央モニター枠 (黒縁) */}
-        <rect x="92" y="90" width="116" height="72" rx="20" ry="20" fill={darkFrame} stroke={outerStroke} strokeWidth="10" />
+          {/* 4. 中央モニター枠 (黒縁) */}
+          <rect x="92" y="90" width="116" height="72" rx="20" ry="20" fill={darkFrame} stroke={outerStroke} strokeWidth="10" />
 
-        {/* 5. 中央モニター発光画面 (青液晶) */}
-        <rect x="108" y="104" width="84" height="44" rx="10" ry="10" fill={`url(#${screenGradId})`} stroke={screenStroke} strokeWidth="4" />
+          {/* 5. 中央モニター発光画面 (青液晶) */}
+          <rect x="108" y="104" width="84" height="44" rx="10" ry="10" fill={`url(#${screenGradId})`} stroke={screenStroke} strokeWidth="4" />
 
-        {/* 6. 液晶画面中央の光点 (ハイライト) */}
-        <circle cx="150" cy="123" r="8" fill={screenHighlight} stroke="none" />
+          {/* 6. 液晶画面中央の光点 (ハイライト) */}
+          <circle cx="150" cy="123" r="8" fill={screenHighlight} stroke="none" />
 
-        {/* 7. 左右のボルト / 接続ジョイント (丸パーツ) */}
-        <circle cx="72" cy="150" r="9" fill={jointColor} stroke={outerStroke} strokeWidth="6" />
-        <circle cx="228" cy="150" r="9" fill={jointColor} stroke={outerStroke} strokeWidth="6" />
+          {/* 7. 左右のボルト / 接続ジョイント (丸パーツ) */}
+          <circle cx="72" cy="150" r="9" fill={jointColor} stroke={outerStroke} strokeWidth="6" />
+          <circle cx="228" cy="150" r="9" fill={jointColor} stroke={outerStroke} strokeWidth="6" />
 
-        {/* 8. 下部コア（円形レンズ枠） */}
-        <circle cx="150" cy="204" r="28" fill={darkFrame} stroke={outerStroke} strokeWidth="10" />
+          {/* 8. 下部コア（円形レンズ枠） */}
+          <circle cx="150" cy="204" r="28" fill={darkFrame} stroke={outerStroke} strokeWidth="10" />
 
-        {/* 9. コア発光レンズ */}
-        <circle cx="150" cy="204" r="16" fill={`url(#${coreGradId})`} stroke="none" />
+          {/* 9. コア発光レンズ */}
+          <circle cx="150" cy="204" r="16" fill={`url(#${coreGradId})`} stroke="none" />
+        </g>
       </g>
     </svg>
   );
 };
 
-export const BodyStar2_2SVG = ({ color, viewBox = "-100 -155 500 500", className }: SVGProps) => {
+export const BodyStar2_2SVG = ({ color, viewBox = "0 0 100 100", className }: SVGProps) => {
   const pal = getAttributePalette(color);
   const uid = React.useId().replace(/:/g, '');
 
@@ -768,44 +770,46 @@ export const BodyStar2_2SVG = ({ color, viewBox = "-100 -155 500 500", className
         </linearGradient>
       </defs>
 
-      {/* 全体太ストローク・グループ */}
-      <g stroke={outerStroke} strokeWidth="12" strokeLinecap="round" strokeLinejoin="round">
-        {/* 1. 外装ボディベース（上部フチ付き） */}
-        <path d="M 85,32 H 215 A 25,25 0 0 1 240,57 V 238 A 25,25 0 0 1 215,263 H 85 A 25,25 0 0 1 60,238 V 57 A 25,25 0 0 1 85,32 Z" fill={`url(#${bodyGradId})`} />
+      {/* 全体太ストローク・グループ (ロボット合成時にアーム・レッグと完璧に調和するスマートスケール) */}
+      <g transform="translate(50, 54.5) scale(0.185, 0.138) translate(-150, -147.5)">
+        <g stroke={outerStroke} strokeWidth="12" strokeLinecap="round" strokeLinejoin="round">
+          {/* 1. 外装ボディベース（上部フチ付き） */}
+          <path d="M 85,32 H 215 A 25,25 0 0 1 240,57 V 238 A 25,25 0 0 1 215,263 H 85 A 25,25 0 0 1 60,238 V 57 A 25,25 0 0 1 85,32 Z" fill={`url(#${bodyGradId})`} />
 
-        {/* 上部ヘルメットフチ線 (二重アーチ構造) */}
-        <path d="M 80,50 H 220" fill="none" stroke={outerStroke} strokeWidth="10" />
+          {/* 上部ヘルメットフチ線 (二重アーチ構造) */}
+          <path d="M 80,50 H 220" fill="none" stroke={outerStroke} strokeWidth="10" />
 
-        {/* 2. 上部インナーパネル */}
-        <path d="M 80,62 H 220 A 12,12 0 0 1 232,74 V 116 A 12,12 0 0 1 220,128 H 80 A 12,12 0 0 1 68,116 V 74 A 12,12 0 0 1 80,62 Z" fill={`url(#${panelGradId})`} />
+          {/* 2. 上部インナーパネル */}
+          <path d="M 80,62 H 220 A 12,12 0 0 1 232,74 V 116 A 12,12 0 0 1 220,128 H 80 A 12,12 0 0 1 68,116 V 74 A 12,12 0 0 1 80,62 Z" fill={`url(#${panelGradId})`} />
 
-        {/* 3. 下部インナーパネル */}
-        <path d="M 80,160 H 220 A 12,12 0 0 1 232,172 V 232 A 12,12 0 0 1 220,244 H 80 A 12,12 0 0 1 68,232 V 172 A 12,12 0 0 1 80,160 Z" fill={`url(#${panelGradId})`} />
+          {/* 3. 下部インナーパネル */}
+          <path d="M 80,160 H 220 A 12,12 0 0 1 232,172 V 232 A 12,12 0 0 1 220,244 H 80 A 12,12 0 0 1 68,232 V 172 A 12,12 0 0 1 80,160 Z" fill={`url(#${panelGradId})`} />
 
-        {/* 4. メインモニター外枠 (黒フレーム) */}
-        <rect x="88" y="80" width="124" height="68" rx="24" ry="24" fill={darkFrame} stroke={outerStroke} strokeWidth="10" />
+          {/* 4. メインモニター外枠 (黒フレーム) */}
+          <rect x="88" y="80" width="124" height="68" rx="24" ry="24" fill={darkFrame} stroke={outerStroke} strokeWidth="10" />
 
-        {/* 5. メイン画面 (シアンV字型バイザー) */}
-        <rect x="108" y="96" width="84" height="36" rx="14" ry="14" fill={`url(#${screenGradId})`} stroke="none" />
+          {/* 5. メイン画面 (シアンV字型バイザー) */}
+          <rect x="108" y="96" width="84" height="36" rx="14" ry="14" fill={`url(#${screenGradId})`} stroke="none" />
 
-        {/* バイザー内反射・光沢ハイライト */}
-        <path d="M 118,103 H 146 A 4,4 0 0 1 150,107 V 107 A 4,4 0 0 1 146,111 H 118 A 4,4 0 0 1 114,107 V 107 A 4,4 0 0 1 118,103 Z" fill="#ffffff" stroke="none" opacity="0.8" />
+          {/* バイザー内反射・光沢ハイライト */}
+          <path d="M 118,103 H 146 A 4,4 0 0 1 150,107 V 107 A 4,4 0 0 1 146,111 H 118 A 4,4 0 0 1 114,107 V 107 A 4,4 0 0 1 118,103 Z" fill="#ffffff" stroke="none" opacity="0.8" />
 
-        {/* 6. 中央小さな接続スリット・ライト */}
-        <rect x="126" y="145" width="48" height="16" rx="6" ry="6" fill="#ffffff" stroke={outerStroke} strokeWidth="6" />
-        <circle cx="150" cy="153" r="4" fill={`url(#${glowGradId})`} stroke="none" />
+          {/* 6. 中央小さな接続スリット・ライト */}
+          <rect x="126" y="145" width="48" height="16" rx="6" ry="6" fill="#ffffff" stroke={outerStroke} strokeWidth="6" />
+          <circle cx="150" cy="153" r="4" fill={`url(#${glowGradId})`} stroke="none" />
 
-        {/* 7. 左右の丸型発光ボタン/リベット */}
-        <circle cx="72" cy="148" r="8" fill={`url(#${glowGradId})`} stroke={outerStroke} strokeWidth="6" />
-        <circle cx="228" cy="148" r="8" fill={`url(#${glowGradId})`} stroke={outerStroke} strokeWidth="6" />
+          {/* 7. 左右の丸型発光ボタン/リベット */}
+          <circle cx="72" cy="148" r="8" fill={`url(#${glowGradId})`} stroke={outerStroke} strokeWidth="6" />
+          <circle cx="228" cy="148" r="8" fill={`url(#${glowGradId})`} stroke={outerStroke} strokeWidth="6" />
 
-        {/* 8. 下部コア（丸型枠） */}
-        <rect x="118" y="176" width="64" height="42" rx="21" ry="21" fill={darkFrame} stroke={outerStroke} strokeWidth="10" />
+          {/* 8. 下部コア（丸型枠） */}
+          <rect x="118" y="176" width="64" height="42" rx="21" ry="21" fill={darkFrame} stroke={outerStroke} strokeWidth="10" />
 
-        {/* 9. 下部コア発光レンズ */}
-        <circle cx="150" cy="197" r="12" fill={`url(#${coreGradId})`} stroke="none" />
-        {/* レンズ内ハイライト */}
-        <circle cx="147" cy="194" r="3" fill="#ffffff" stroke="none" />
+          {/* 9. 下部コア発光レンズ */}
+          <circle cx="150" cy="197" r="12" fill={`url(#${coreGradId})`} stroke="none" />
+          {/* レンズ内ハイライト */}
+          <circle cx="147" cy="194" r="3" fill="#ffffff" stroke="none" />
+        </g>
       </g>
     </svg>
   );
