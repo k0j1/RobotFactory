@@ -4,6 +4,7 @@ import { GameEngine } from '../core/GameEngine';
 import { MATERIALS } from '../core/data';
 import { Card, Button, Badge } from '../components/ui/core';
 import { RobotVisual, PartVisual } from '../components/robot/RobotVisual';
+import { RobotZoomPreview } from '../components/robot/RobotZoomPreview';
 import { AttributeEffects } from '../components/effects/AttributeEffects';
 import { AttributeNames, AttributeColors } from '../core/models';
 import { theme } from '../styles/theme';
@@ -246,11 +247,12 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
 
       {/* ================= ロボット完成結果ダイアログ / カード ================= */}
       {tab === 'robot' && lastCraftedRobot && (
-        <div className="text-center bg-amber-50 border-2 border-amber-300 shadow-md animate-fade-in">
+        <Card className="text-center bg-amber-50 border-2 border-amber-300 shadow-md animate-fade-in p-5 sm:p-6">
           <Badge className="bg-emerald-600 text-white mb-2 px-3 py-1 font-bold text-sm"><Gi.GiPartyPopper className="inline mr-1" /> ロボット完成 <Gi.GiPartyPopper className="inline mr-1" /></Badge>
-          <h3 className={`${theme.typography.h3} text-amber-900 mb-2`}>組み立てが完了しました！</h3>
-          <div className="flex justify-center my-3">
-            <RobotVisual robot={lastCraftedRobot} size={150} animateCrafting={true} />
+          <h3 className={`${theme.typography.h3} text-amber-900 mb-1`}>組み立てが完了しました！</h3>
+          <p className="text-xs text-stone-600 mb-3">ズームスライダーで拡大・縮小して各パーツの仕上がりを確認できます</p>
+          <div className="my-2">
+            <RobotZoomPreview robot={lastCraftedRobot} baseSize={150} animateCrafting={true} viewportHeightClass="h-60 sm:h-64" />
           </div>
           <h4 className={`${theme.typography.h2} mt-2`}>{lastCraftedRobot.name}</h4>
           <p className="text-xs text-stone-500 mt-0.5">評価額: {lastCraftedRobot.value} G</p>
@@ -263,7 +265,7 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
             <div><span className="text-stone-500">Int:</span> <strong className="text-stone-800">{lastCraftedRobot.stats.intelligence}</strong></div>
           </div>
           <Button className="mt-5" size="lg" onClick={() => setLastCraftedRobot(null)}>続けて組み立てる</Button>
-        </div>
+        </Card>
       )}
 
       {/* ================= パーツ製造タブの内容 ================= */}
@@ -617,28 +619,39 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                   </div>
                 )}
                 
-                <motion.div
-                  animate={{ scale: isRobotReady ? [1, 1.05, 1] : [0.98, 1.02, 0.98] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                  className="filter drop-shadow-md relative"
-                >
-                  <RobotVisual robot={activeRobot.resultRobot} size={130} />
-                  
-                  {/* スキャンライン / 構築ラインエフェクト */}
-                  {!isRobotReady && (
-                    <motion.div
-                      animate={{ top: ['-10%', '110%', '-10%'] }}
-                      transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                      className="absolute left-[-20%] right-[-20%] h-1 bg-amber-500/80 shadow-[0_0_8px_2px_rgba(245,158,11,0.5)] z-10 rounded-full"
+                {isRobotReady ? (
+                  <div className="w-full px-2">
+                    <div className="text-center text-xs font-bold text-emerald-700 mb-2 flex items-center justify-center gap-1">
+                      <Gi.GiSparkles className="text-emerald-500" /> 接合・動作テスト完了！スライダーで各部を点検できます
+                    </div>
+                    <RobotZoomPreview 
+                      robot={activeRobot.resultRobot} 
+                      baseSize={130} 
+                      viewportHeightClass="h-52 sm:h-56"
                     />
-                  )}
-                </motion.div>
-
-                {!isRobotReady ? (
-                  <div className="mt-3 font-bold text-xs tracking-wider text-amber-900 animate-pulse font-mono bg-amber-100 px-3 py-1 rounded-full border border-amber-300 relative z-20">
-                    <Gi.GiSpanner className="inline mr-1" /> 接合・動作テスト中... あと {robotRemainingSec} 秒
                   </div>
-                ) : null}
+                ) : (
+                  <>
+                    <motion.div
+                      animate={{ scale: [0.98, 1.02, 0.98] }}
+                      transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                      className="filter drop-shadow-md relative"
+                    >
+                      <RobotVisual robot={activeRobot.resultRobot} size={130} />
+                      
+                      {/* スキャンライン / 構築ラインエフェクト */}
+                      <motion.div
+                        animate={{ top: ['-10%', '110%', '-10%'] }}
+                        transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                        className="absolute left-[-20%] right-[-20%] h-1 bg-amber-500/80 shadow-[0_0_8px_2px_rgba(245,158,11,0.5)] z-10 rounded-full"
+                      />
+                    </motion.div>
+
+                    <div className="mt-3 font-bold text-xs tracking-wider text-amber-900 animate-pulse font-mono bg-amber-100 px-3 py-1 rounded-full border border-amber-300 relative z-20">
+                      <Gi.GiSpanner className="inline mr-1" /> 接合・動作テスト中... あと {robotRemainingSec} 秒
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* アクションボタン */}
@@ -663,31 +676,32 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
               <p className={theme.typography.body}>各部位のパーツを組み合わせてロボットを組み立てます。</p>
               
               {/* プレビューカード */}
-              <div className="flex flex-col items-center justify-center p-4 bg-white border-2 border-stone-300 border-dashed rounded-xl relative overflow-hidden shadow-xs">
-                <h3 className="font-bold text-stone-500 mb-2 z-10 text-xs">プレビュー</h3>
+              <div className="flex flex-col items-center justify-center p-3 sm:p-4 bg-white border-2 border-stone-300 border-dashed rounded-xl relative overflow-hidden shadow-xs">
+                <div className="flex justify-between items-center w-full mb-2 z-10 px-1">
+                  <h3 className="font-bold text-stone-600 text-xs flex items-center gap-1">
+                    <Gi.GiCrosshair className="text-amber-600 inline" /> アセンブリプレビュー
+                  </h3>
+                  <span className="text-[11px] text-stone-500">スライダーで細部確認</span>
+                </div>
                 
-                <AttributeEffects 
+                <RobotZoomPreview
+                  robot={{
+                    parts: {
+                      head: heads.find(p => p.id === selectedHead),
+                      body: bodies.find(p => p.id === selectedBody),
+                      arms: arms.find(p => p.id === selectedArms),
+                      legs: legs.find(p => p.id === selectedLegs)
+                    }
+                  }}
+                  baseSize={125}
+                  viewportHeightClass="h-48 sm:h-52"
                   attributes={Array.from(new Set([
                     heads.find(p => p.id === selectedHead)?.attribute,
                     bodies.find(p => p.id === selectedBody)?.attribute,
                     arms.find(p => p.id === selectedArms)?.attribute,
                     legs.find(p => p.id === selectedLegs)?.attribute
-                  ].filter(Boolean) as any))} 
+                  ].filter(Boolean) as any))}
                 />
-
-                <div className="z-10 relative">
-                  <RobotVisual 
-                    robot={{
-                      parts: {
-                        head: heads.find(p => p.id === selectedHead),
-                        body: bodies.find(p => p.id === selectedBody),
-                        arms: arms.find(p => p.id === selectedArms),
-                        legs: legs.find(p => p.id === selectedLegs)
-                      }
-                    }} 
-                    size={120} 
-                  />
-                </div>
               </div>
 
               {/* パーツ選択ドロップダウン */}

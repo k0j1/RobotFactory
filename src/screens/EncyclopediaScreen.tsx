@@ -15,7 +15,7 @@ const SinglePart: React.FC<{ Comp: React.FC<{color: string, viewBox?: string, cl
   const viewBox = r === 3
     ? (type === 'head' ? '0 0 256 256' : '0 0 256 256')
     : r === 2
-    ? (type === 'head' ? '-10 -5 80 80' : type === 'arms' ? (visualIndex > 0 ? '0 0 300 300' : '0 0 64 64') : type === 'body' ? '22 28 56 52' : type === 'legs' ? '0 0 300 300' : '0 0 32 32')
+    ? (type === 'head' ? '-10 -5 80 80' : type === 'arms' ? (visualIndex > 0 ? '0 0 300 300' : '6 -4 52 52') : type === 'body' ? '22 28 56 52' : type === 'legs' ? '0 0 300 300' : '0 0 32 32')
     : (type === 'head' ? '20 0 60 45' :
        type === 'body' ? '25 32 50 48' :
        type === 'arms' ? '5 38 90 42' :
