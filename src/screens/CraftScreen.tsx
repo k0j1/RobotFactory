@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { GameState, Material, PartType, RobotPart, Robot } from '../core/models';
 import { GameEngine } from '../core/GameEngine';
-import { MATERIALS } from '../core/data';
+import { MATERIALS, STORAGE_UPGRADE_COST, MAX_STORAGE_LEVELS } from '../core/data';
 import { Card, Button, Badge } from '../components/ui/core';
 import { RobotVisual, PartVisual } from '../components/robot/RobotVisual';
 import { RobotZoomPreview } from '../components/robot/RobotZoomPreview';
@@ -104,6 +104,18 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
   const isRobotReady = isRobotAssembling && robotRemainingMs <= 0;
   const robotProgress = activeRobot ? Math.min(100, Math.max(0, ((Date.now() - activeRobot.startTime) / activeRobot.durationMs) * 100)) : 0;
 
+  // 倉庫上限・空き枠判定ロジック
+  const currentRobotsCount = state.robots?.length || 0;
+  const storageLimit = state.storageSize || 5;
+  const isStorageFull = currentRobotsCount >= storageLimit;
+  const currentSizeIndex = MAX_STORAGE_LEVELS.indexOf(storageLimit);
+  const nextStorageSize = currentSizeIndex !== -1 ? MAX_STORAGE_LEVELS[currentSizeIndex + 1] : undefined;
+  const nextUpgradeCost = currentSizeIndex !== -1 ? STORAGE_UPGRADE_COST[currentSizeIndex + 1] : undefined;
+
+  // 開始可能フラグ
+  const canStartPartCraft = !!selectedMainMat && !!selectedSubMat && !activePart;
+  const canStartRobotAssemble = hasSelectedAllParts && !activeRobot;
+
   const handleStartCraftPart = () => {
     if (!selectedMainMat) {
       alert("メイン素材を選んでください");
@@ -139,6 +151,10 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
   const handleStartAssemble = () => {
     if (!selectedHead || !selectedBody || !selectedArms || !selectedLegs) {
       alert("すべてのパーツを選んでください");
+      return;
+    }
+    if (isStorageFull) {
+      alert(`倉庫の保管上限（${currentRobotsCount}/${storageLimit}体）に達しているため、新しいロボットを組み立てられません。倉庫を拡張するか、ロボットを解体・納品してください。`);
       return;
     }
     try {
@@ -241,7 +257,7 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
             <div><span className="text-stone-500">Dex:</span> <strong className="text-stone-800">{lastCraftedPart.stats.dexterity}</strong></div>
             <div><span className="text-stone-500">Int:</span> <strong className="text-stone-800">{lastCraftedPart.stats.intelligence}</strong></div>
           </div>
-          <Button className="mt-5" size="lg" onClick={() => setLastCraftedPart(null)}>続けて製造する</Button>
+          <Button className="mt-5" size="lg" onClick={() => setLastCraftedPart(null)}>閉じる</Button>
         </div>
       )}
 
@@ -250,9 +266,9 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
         <Card className="text-center bg-amber-50 border-2 border-amber-300 shadow-md animate-fade-in p-5 sm:p-6">
           <Badge className="bg-emerald-600 text-white mb-2 px-3 py-1 font-bold text-sm"><Gi.GiPartyPopper className="inline mr-1" /> ロボット完成 <Gi.GiPartyPopper className="inline mr-1" /></Badge>
           <h3 className={`${theme.typography.h3} text-amber-900 mb-1`}>組み立てが完了しました！</h3>
-          <p className="text-xs text-stone-600 mb-3">ズームスライダーで拡大・縮小して各パーツの仕上がりを確認できます</p>
+          <p className="text-xs text-stone-600 mb-2">ズームスライダーで拡大・縮小して各パーツの仕上がりを確認できます</p>
           <div className="my-2">
-            <RobotZoomPreview robot={lastCraftedRobot} baseSize={150} animateCrafting={true} viewportHeightClass="h-60 sm:h-64" />
+            <RobotZoomPreview robot={lastCraftedRobot} baseSize={125} animateCrafting={true} viewportHeightClass="h-40 sm:h-44" />
           </div>
           <h4 className={`${theme.typography.h2} mt-2`}>{lastCraftedRobot.name}</h4>
           <p className="text-xs text-stone-500 mt-0.5">評価額: {lastCraftedRobot.value} G</p>
@@ -264,7 +280,7 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
             <div><span className="text-stone-500">Dex:</span> <strong className="text-stone-800">{lastCraftedRobot.stats.dexterity}</strong></div>
             <div><span className="text-stone-500">Int:</span> <strong className="text-stone-800">{lastCraftedRobot.stats.intelligence}</strong></div>
           </div>
-          <Button className="mt-5" size="lg" onClick={() => setLastCraftedRobot(null)}>続けて組み立てる</Button>
+          <Button className="mt-5" size="lg" onClick={() => setLastCraftedRobot(null)}>閉じる</Button>
         </Card>
       )}
 
@@ -626,8 +642,8 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                     </div>
                     <RobotZoomPreview 
                       robot={activeRobot.resultRobot} 
-                      baseSize={130} 
-                      viewportHeightClass="h-52 sm:h-56"
+                      baseSize={115} 
+                      viewportHeightClass="h-36 sm:h-40"
                     />
                   </div>
                 ) : (
@@ -673,11 +689,68 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
           ) : (
             /* 組立フォーム */
             <div className="space-y-4">
-              <p className={theme.typography.body}>各部位のパーツを組み合わせてロボットを組み立てます。</p>
+              {/* 倉庫ロボット保管数ステータス & 満杯警告 */}
+              <div className={`p-2.5 rounded-xl border-2 transition-colors ${
+                isStorageFull 
+                  ? 'bg-red-50 border-red-400 shadow-xs' 
+                  : 'bg-stone-100 border-stone-300'
+              }`}>
+                <div className="flex justify-between items-center">
+                  <span className="font-bold text-xs text-stone-800 flex items-center gap-1.5">
+                    <Gi.GiCardboardBox className={`text-base ${isStorageFull ? 'text-red-600' : 'text-amber-700'}`} />
+                    倉庫ロボット保管枠:
+                  </span>
+                  <span className={`font-mono font-bold text-xs px-2.5 py-0.5 rounded border ${
+                    isStorageFull 
+                      ? 'bg-red-600 text-white border-red-700 animate-pulse' 
+                      : 'bg-white text-stone-800 border-stone-300'
+                  }`}>
+                    {currentRobotsCount} / {storageLimit} 体 {isStorageFull && '（上限到達・満杯）'}
+                  </span>
+                </div>
+
+                {/* 満杯時の詳細案内 & クイック拡張ボタン */}
+                {isStorageFull && (
+                  <div className="mt-2.5 pt-2.5 border-t border-red-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-red-900">
+                    <div className="text-[11px] leading-snug">
+                      <p className="font-bold flex items-center gap-1 text-red-800">
+                        <Gi.GiHazardSign className="text-red-600 inline shrink-0" />
+                        倉庫がいっぱいです。ロボットを組み立てるには倉庫の拡張が必要です。
+                      </p>
+                      <p className="text-stone-600 mt-0.5">
+                        倉庫画面で既存ロボットを解体・納品するか、下記のボタンで倉庫枠を拡張してください。
+                      </p>
+                    </div>
+                    {nextStorageSize && (
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        onClick={() => {
+                          if (state.gold >= (nextUpgradeCost || 0)) {
+                            try {
+                              engine.upgradeStorage(nextUpgradeCost || 0, nextStorageSize);
+                            } catch (err: any) {
+                              alert(err.message);
+                            }
+                          } else {
+                            alert(`倉庫拡張には ${nextUpgradeCost} G 必要です（現在所持金: ${state.gold} G）`);
+                          }
+                        }}
+                        disabled={state.gold < (nextUpgradeCost || 0)}
+                        className="shrink-0 text-xs py-1.5 px-3 bg-amber-600 hover:bg-amber-500 text-white font-bold whitespace-nowrap shadow-xs"
+                      >
+                        <Gi.GiUpgrade className="inline mr-1" /> 倉庫拡張 (+5体: {nextUpgradeCost}G)
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <p className="text-xs text-stone-600">各部位のパーツを組み合わせて新しいロボットを組み立てます。</p>
               
               {/* プレビューカード */}
               <div className="flex flex-col items-center justify-center p-3 sm:p-4 bg-white border-2 border-stone-300 border-dashed rounded-xl relative overflow-hidden shadow-xs">
-                <div className="flex justify-between items-center w-full mb-2 z-10 px-1">
+                <div className="flex justify-between items-center w-full mb-1.5 z-10 px-1">
                   <h3 className="font-bold text-stone-600 text-xs flex items-center gap-1">
                     <Gi.GiCrosshair className="text-amber-600 inline" /> アセンブリプレビュー
                   </h3>
@@ -693,8 +766,8 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                       legs: legs.find(p => p.id === selectedLegs)
                     }
                   }}
-                  baseSize={125}
-                  viewportHeightClass="h-48 sm:h-52"
+                  baseSize={105}
+                  viewportHeightClass="h-32 sm:h-36"
                   attributes={Array.from(new Set([
                     heads.find(p => p.id === selectedHead)?.attribute,
                     bodies.find(p => p.id === selectedBody)?.attribute,
@@ -786,16 +859,105 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                     基本1分（高性能・高レアパーツを組み込むほど入念な組み立てになります）
                   </p>
                 </div>
-                <Button 
-                  size="lg" 
-                  disabled={!hasSelectedAllParts} 
-                  onClick={handleStartAssemble}
-                >
-                  組立開始
-                </Button>
+                <div className="flex flex-col items-end gap-1">
+                  {isStorageFull && (
+                    <span className="text-[11px] font-bold text-red-600 flex items-center gap-1">
+                      <Gi.GiHazardSign className="text-red-500 inline" /> 倉庫満杯（{currentRobotsCount}/{storageLimit}体）のため組立不可
+                    </span>
+                  )}
+                  <Button 
+                    size="lg" 
+                    disabled={!hasSelectedAllParts || isStorageFull} 
+                    onClick={handleStartAssemble}
+                    className={isStorageFull ? 'opacity-60 cursor-not-allowed bg-stone-500' : ''}
+                  >
+                    {isStorageFull ? '倉庫がいっぱいです' : '組立開始'}
+                  </Button>
+                </div>
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* 画面下部メニュー上の固定開始ボタン（下までスクロール不要で即開始可能） */}
+      {/* 1. パーツ製造タブ用 */}
+      {tab === 'part' && canStartPartCraft && (
+        <div className="fixed bottom-[56px] sm:bottom-[60px] left-0 right-0 z-30 px-3 py-2 bg-stone-900/95 backdrop-blur-md border-t-2 border-amber-500 shadow-2xl animate-fade-in">
+          <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="font-bold text-xs text-amber-400 bg-stone-800 px-2 py-1 rounded border border-amber-500/50 shrink-0">
+                {partTypes.find(p => p.id === selectedPartType)?.label}製造
+              </span>
+              <div className="text-xs text-stone-200 truncate">
+                <span className="text-emerald-400 font-bold mr-1.5">素材選択完了</span>
+                所要時間: <strong className="text-amber-300 font-mono">{formatDurationLabel(estimatedPartDuration)}</strong>
+              </div>
+            </div>
+            <Button
+              size="md"
+              variant="primary"
+              onClick={handleStartCraftPart}
+              className="px-6 py-2 text-sm font-bold bg-amber-600 hover:bg-amber-500 text-white shadow-lg shrink-0 flex items-center gap-1.5"
+            >
+              <Gi.GiAnvil className="text-base" /> パーツ製造開始
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* 2. ロボット組立タブ用 */}
+      {tab === 'robot' && canStartRobotAssemble && (
+        <div className="fixed bottom-[56px] sm:bottom-[60px] left-0 right-0 z-30 px-3 py-2 bg-stone-900/95 backdrop-blur-md border-t-2 border-amber-500 shadow-2xl animate-fade-in">
+          <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 min-w-0">
+              {isStorageFull ? (
+                <div className="flex items-center gap-1.5 text-xs text-red-300 font-bold truncate">
+                  <Gi.GiHazardSign className="text-red-400 text-sm shrink-0" />
+                  <span>倉庫が上限（{currentRobotsCount}/{storageLimit}体）です！</span>
+                </div>
+              ) : (
+                <div className="text-xs text-stone-200 truncate">
+                  <span className="text-emerald-400 font-bold mr-1.5">4部位選択完了</span>
+                  時間: <strong className="text-amber-300 font-mono">{formatDurationLabel(estimatedRobotDuration)}</strong>
+                </div>
+              )}
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              {isStorageFull && nextStorageSize && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => {
+                    if (state.gold >= (nextUpgradeCost || 0)) {
+                      try {
+                        engine.upgradeStorage(nextUpgradeCost || 0, nextStorageSize);
+                      } catch (err: any) {
+                        alert(err.message);
+                      }
+                    } else {
+                      alert(`倉庫拡張には ${nextUpgradeCost} G 必要です`);
+                    }
+                  }}
+                  disabled={state.gold < (nextUpgradeCost || 0)}
+                  className="text-xs py-1.5 px-2.5 bg-amber-500 hover:bg-amber-400 text-stone-900 font-bold"
+                >
+                  <Gi.GiUpgrade className="inline mr-1" /> 倉庫拡張 (+5体: {nextUpgradeCost}G)
+                </Button>
+              )}
+              <Button
+                size="md"
+                variant="primary"
+                disabled={isStorageFull}
+                onClick={handleStartAssemble}
+                className={`px-6 py-2 text-sm font-bold text-white shadow-lg flex items-center gap-1.5 ${
+                  isStorageFull ? 'bg-stone-600 opacity-60 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-500'
+                }`}
+              >
+                <Gi.GiSpanner className="text-base" /> {isStorageFull ? '倉庫満杯' : '組立開始'}
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>

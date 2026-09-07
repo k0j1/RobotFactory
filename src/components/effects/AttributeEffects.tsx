@@ -46,15 +46,27 @@ export const AttributeEffects: React.FC<{ attributes: Attribute[] }> = ({ attrib
         ))
       )}
       {attributes.includes('Light') && (
-        [...Array(3)].map((_, i) => (
-          <motion.div key={`light-${i}`}
-            className="absolute top-1/2 left-1/2 w-full h-full bg-yellow-300 mix-blend-overlay"
-            style={{ originX: 0.5, originY: 0.5, x: '-50%', y: '-50%' }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: [0, 0.4, 0, 0.8, 0] }}
-            transition={{ duration: 0.5 + Math.random(), repeat: Infinity, ease: 'linear', delay: Math.random() * 3 }}
+        <>
+          {/* 眩しさを抑えた穏やかな電気・光の微粒子スパーク */}
+          {[...Array(4)].map((_, i) => (
+            <motion.div key={`light-spark-${i}`}
+              className="absolute w-1.5 h-1.5 rounded-full bg-yellow-300/60 shadow-[0_0_4px_1px_rgba(250,204,21,0.4)]"
+              style={{
+                top: `${25 + ((i * 18) % 60)}%`,
+                left: `${20 + ((i * 22) % 65)}%`
+              }}
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: [0, 0.45, 0], scale: [0.6, 1.1, 0.7] }}
+              transition={{ duration: 1.8 + (i * 0.4), repeat: Infinity, ease: 'easeInOut', delay: i * 0.5 }}
+            />
+          ))}
+          {/* ごく微かな静電気の瞬きライン */}
+          <motion.div
+            className="absolute top-1/2 left-1/4 right-1/4 h-[1px] bg-yellow-400/25 pointer-events-none"
+            animate={{ opacity: [0, 0.3, 0] }}
+            transition={{ duration: 2.5, repeat: Infinity, ease: 'linear', delay: 1 }}
           />
-        ))
+        </>
       )}
       {attributes.includes('Dark') && (
         <motion.div

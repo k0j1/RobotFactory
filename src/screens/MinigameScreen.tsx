@@ -662,6 +662,34 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
               {selectedGame === 'danmaku' ? `演習開始！ (${activeDanmakuDiff.label})` : selectedGame === 'piano' ? `演奏開始！ (${activePianoSong.title})` : 'バトル演習開始！'}
             </Button>
           </div>
+
+          {/* 画面下部メニュー上の固定出撃ボタン（下までスクロール不要で即開始可能） */}
+          {!selectedRobotId || (requiresOpponent && !selectedOpponentId) ? null : (
+            <div className="fixed bottom-[56px] sm:bottom-[60px] left-0 right-0 z-30 px-3 py-2 bg-stone-900/95 backdrop-blur-md border-t-2 border-amber-500 shadow-2xl animate-fade-in">
+              <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="font-bold text-xs text-amber-400 bg-stone-800 px-2 py-1 rounded border border-amber-500/50 shrink-0">
+                    {selectedGameDef?.name || 'バトル'}
+                  </span>
+                  <div className="text-xs text-stone-200 truncate">
+                    <span className="text-stone-400">機体:</span> <strong className="text-amber-300 font-bold">{activeRobot?.name}</strong>
+                    {requiresOpponent && activeOpponent && (
+                      <span className="ml-2 text-stone-300 hidden sm:inline">vs <strong className="text-red-400">{activeOpponent.name}</strong></span>
+                    )}
+                  </div>
+                </div>
+                <Button
+                  onClick={handleStartBattle}
+                  size="md"
+                  variant="primary"
+                  className="px-6 py-2 text-sm font-bold bg-amber-600 hover:bg-amber-500 text-white shadow-lg shrink-0 flex items-center gap-1.5"
+                >
+                  <Gi.GiCrossedSwords className="text-base" />
+                  {selectedGame === 'danmaku' ? `演習開始 (${activeDanmakuDiff.label})` : selectedGame === 'piano' ? `演奏開始` : 'バトル開始！'}
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         /* バトル実行中・結果表示カード（工房テストモニター風） */

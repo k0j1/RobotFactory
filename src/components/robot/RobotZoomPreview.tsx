@@ -22,19 +22,18 @@ export interface RobotZoomPreviewProps {
 
 /**
  * ロボット合成・完成画面用のズームスライダー付きプレビューコンポーネント
- * 完成したロボットや合成中のパーツ構成を、スライダー操作でスムーズに拡大・縮小して細部まで点検可能
+ * コンパクトな高さ設計と横1行のスリムな操作バーで画面スペースを圧迫せずに細部を点検可能
  */
 export const RobotZoomPreview: React.FC<RobotZoomPreviewProps> = ({
   robot,
-  baseSize = 140,
+  baseSize = 110,
   minZoom = 0.6,
   maxZoom = 2.2,
   defaultZoom = 1.0,
   animateCrafting = false,
   className = '',
-  viewportHeightClass = 'h-56 sm:h-64',
+  viewportHeightClass = 'h-36 sm:h-40',
   showControls = true,
-  showPresets = true,
   attributes,
   label = 'ズーム'
 }) => {
@@ -77,26 +76,26 @@ export const RobotZoomPreview: React.FC<RobotZoomPreviewProps> = ({
       >
         {/* 工房グリッド背景 */}
         <div 
-          className="absolute inset-0 pointer-events-none opacity-40"
+          className="absolute inset-0 pointer-events-none opacity-35"
           style={{
-            backgroundImage: `linear-gradient(#d6d3d1 1.5px, transparent 1.5px), linear-gradient(90deg, #d6d3d1 1.5px, transparent 1.5px)`,
-            backgroundSize: '20px 20px',
+            backgroundImage: `linear-gradient(#d6d3d1 1px, transparent 1px), linear-gradient(90deg, #d6d3d1 1px, transparent 1px)`,
+            backgroundSize: '16px 16px',
             backgroundPosition: 'center center'
           }}
         />
 
-        {/* 照準・センタークロスライン（微細なインダストリアルデザイン装飾） */}
-        <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-25">
-          <div className="w-full h-[1px] bg-amber-500" />
-          <div className="h-full w-[1px] bg-amber-500 absolute" />
-          <div className="w-24 h-24 rounded-full border border-dashed border-amber-500 absolute" />
+        {/* 照準・センタークロスライン */}
+        <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-20">
+          <div className="w-full h-[1px] bg-amber-600" />
+          <div className="h-full w-[1px] bg-amber-600 absolute" />
+          <div className="w-20 h-20 rounded-full border border-dashed border-amber-600 absolute" />
         </div>
 
         {/* 四隅のメカニカルコーナーブラケット */}
-        <div className="absolute top-2 left-2 w-3 h-3 border-t-2 border-l-2 border-stone-400 pointer-events-none" />
-        <div className="absolute top-2 right-2 w-3 h-3 border-t-2 border-r-2 border-stone-400 pointer-events-none" />
-        <div className="absolute bottom-2 left-2 w-3 h-3 border-b-2 border-l-2 border-stone-400 pointer-events-none" />
-        <div className="absolute bottom-2 right-2 w-3 h-3 border-b-2 border-r-2 border-stone-400 pointer-events-none" />
+        <div className="absolute top-1.5 left-1.5 w-2.5 h-2.5 border-t-2 border-l-2 border-stone-400 pointer-events-none" />
+        <div className="absolute top-1.5 right-1.5 w-2.5 h-2.5 border-t-2 border-r-2 border-stone-400 pointer-events-none" />
+        <div className="absolute bottom-1.5 left-1.5 w-2.5 h-2.5 border-b-2 border-l-2 border-stone-400 pointer-events-none" />
+        <div className="absolute bottom-1.5 right-1.5 w-2.5 h-2.5 border-b-2 border-r-2 border-stone-400 pointer-events-none" />
 
         {/* 属性エフェクト（指定がある場合） */}
         {attributes && attributes.length > 0 && (
@@ -120,96 +119,85 @@ export const RobotZoomPreview: React.FC<RobotZoomPreviewProps> = ({
         </div>
 
         {/* 現在倍率オーバーレイタグ */}
-        <div className="absolute top-2.5 right-2.5 z-20 pointer-events-none">
-          <span className="font-mono font-bold text-[11px] bg-stone-900/80 text-amber-400 px-2 py-0.5 rounded border border-amber-500/50 shadow-xs flex items-center gap-1 backdrop-blur-xs">
-            <Gi.GiMagnifyingGlass className="text-amber-400 text-xs" />
+        <div className="absolute top-1.5 right-1.5 z-20 pointer-events-none">
+          <span className="font-mono font-bold text-[10px] bg-stone-900/80 text-amber-400 px-1.5 py-0.5 rounded border border-amber-500/50 shadow-xs flex items-center gap-1 backdrop-blur-xs">
+            <Gi.GiMagnifyingGlass className="text-amber-400 text-[10px]" />
             {percentZoom}%
           </span>
         </div>
       </div>
 
-      {/* ズームスライダーコントロール領域 */}
+      {/* コンパクトなズームコントロールバー（横1行で高さ圧迫なし） */}
       {showControls && (
-        <div className="w-full max-w-sm mt-3 bg-stone-50 border border-stone-200 rounded-xl p-2.5 shadow-xs">
-          {/* コントロールヘッダー */}
-          <div className="flex items-center justify-between text-xs text-stone-600 mb-1.5 px-1 font-bold">
-            <span className="flex items-center gap-1 text-stone-700">
-              <Gi.GiMagnifyingGlass className="text-amber-600 text-sm inline" />
-              {label}
-            </span>
-            <button
-              type="button"
-              onClick={handleResetZoom}
-              className="text-[11px] text-amber-700 hover:text-amber-800 font-bold underline cursor-pointer flex items-center gap-0.5"
-              title="標準倍率(100%)に戻す"
-            >
-              100%にリセット
-            </button>
+        <div className="w-full max-w-sm mt-1.5 bg-stone-50 border border-stone-200 rounded-lg py-1 px-2 shadow-2xs flex items-center gap-1.5 text-xs">
+          <span className="flex items-center gap-0.5 text-stone-600 font-bold text-[11px] shrink-0">
+            <Gi.GiMagnifyingGlass className="text-amber-700 text-xs inline" />
+            {label}
+          </span>
+
+          {/* 縮小ボタン */}
+          <button
+            type="button"
+            onClick={handleZoomOut}
+            disabled={zoom <= minZoom}
+            aria-label="縮小"
+            className="w-6 h-6 rounded bg-stone-200 hover:bg-stone-300 active:bg-stone-400 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center font-bold text-stone-700 shadow-2xs shrink-0 transition-colors"
+          >
+            <Gi.GiContract className="text-stone-700 text-[11px]" />
+          </button>
+
+          {/* スライダー */}
+          <div className="flex-1 relative flex items-center min-w-[60px]">
+            <input
+              type="range"
+              min={Math.round(minZoom * 100)}
+              max={Math.round(maxZoom * 100)}
+              step={5}
+              value={percentZoom}
+              onChange={handleSliderChange}
+              aria-label="ロボット表示ズームスライダー"
+              className="w-full h-1.5 bg-stone-200 rounded-lg appearance-none cursor-pointer accent-amber-600 focus:outline-hidden focus:ring-1 focus:ring-amber-400"
+            />
           </div>
 
-          {/* スライダー本体 & マイナス/プラスボタン */}
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handleZoomOut}
-              disabled={zoom <= minZoom}
-              aria-label="縮小"
-              className="w-8 h-8 rounded-lg bg-stone-200 hover:bg-stone-300 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center font-bold text-stone-800 text-base shadow-xs shrink-0 transition-colors"
-            >
-              <Gi.GiContract className="text-stone-700 text-sm" />
-            </button>
+          {/* 拡大ボタン */}
+          <button
+            type="button"
+            onClick={handleZoomIn}
+            disabled={zoom >= maxZoom}
+            aria-label="拡大"
+            className="w-6 h-6 rounded bg-stone-200 hover:bg-stone-300 active:bg-stone-400 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center font-bold text-stone-700 shadow-2xs shrink-0 transition-colors"
+          >
+            <Gi.GiExpand className="text-stone-700 text-[11px]" />
+          </button>
 
-            <div className="flex-1 relative flex items-center">
-              <input
-                type="range"
-                min={Math.round(minZoom * 100)}
-                max={Math.round(maxZoom * 100)}
-                step={5}
-                value={percentZoom}
-                onChange={handleSliderChange}
-                aria-label="ロボット表示ズームスライダー"
-                className="w-full h-2 bg-stone-200 rounded-lg appearance-none cursor-pointer accent-amber-600 focus:outline-hidden focus:ring-2 focus:ring-amber-400"
-              />
-            </div>
+          {/* 100%リセットボタン */}
+          <button
+            type="button"
+            onClick={handleResetZoom}
+            className={`px-1.5 py-0.5 rounded text-[10px] font-bold border shrink-0 transition-colors ${
+              Math.abs(zoom - 1.0) < 0.05
+                ? 'bg-amber-100 text-amber-900 border-amber-300 font-mono'
+                : 'bg-white text-stone-600 border-stone-300 hover:bg-amber-50 hover:text-amber-700'
+            }`}
+            title="標準倍率(100%)に戻す"
+          >
+            100%
+          </button>
 
-            <button
-              type="button"
-              onClick={handleZoomIn}
-              disabled={zoom >= maxZoom}
-              aria-label="拡大"
-              className="w-8 h-8 rounded-lg bg-stone-200 hover:bg-stone-300 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center font-bold text-stone-800 text-base shadow-xs shrink-0 transition-colors"
-            >
-              <Gi.GiExpand className="text-stone-700 text-sm" />
-            </button>
-          </div>
-
-          {/* クイック倍率プリセットボタン */}
-          {showPresets && (
-            <div className="grid grid-cols-4 gap-1.5 mt-2 pt-2 border-t border-stone-200 text-[11px]">
-              {[
-                { label: '70% 全体', val: 0.7 },
-                { label: '100% 標準', val: 1.0 },
-                { label: '140% 詳細', val: 1.4 },
-                { label: '200% 最大', val: 2.0 },
-              ].map(preset => {
-                const isSelected = Math.abs(zoom - preset.val) < 0.04;
-                return (
-                  <button
-                    key={preset.label}
-                    type="button"
-                    onClick={() => updateZoom(preset.val)}
-                    className={`py-1 px-1 rounded-md text-center font-bold transition-all border ${
-                      isSelected
-                        ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
-                        : 'bg-white text-stone-700 border-stone-300 hover:bg-amber-50 hover:border-amber-300'
-                    }`}
-                  >
-                    {preset.label}
-                  </button>
-                );
-              })}
-            </div>
-          )}
+          {/* 140%詳細拡大プリセット */}
+          <button
+            type="button"
+            onClick={() => updateZoom(1.4)}
+            className={`px-1.5 py-0.5 rounded text-[10px] font-bold border shrink-0 transition-colors ${
+              Math.abs(zoom - 1.4) < 0.05
+                ? 'bg-amber-600 text-white border-amber-600 font-mono'
+                : 'bg-white text-stone-600 border-stone-300 hover:bg-amber-50 hover:text-amber-700'
+            }`}
+            title="140%詳細倍率"
+          >
+            1.4x
+          </button>
         </div>
       )}
     </div>
