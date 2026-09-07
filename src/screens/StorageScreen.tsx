@@ -271,6 +271,7 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                 const isRadarExpanded = expandedRadarRobotId === r.id;
 
                 const isRecentlyRepaired = recentlyRepairedRobotId === r.id;
+                const isRegenActive = !!(r.defenseRegen && r.defenseRegen.expiresAt > now);
                 const hpPercent = Math.max(0, Math.min(100, ((r.currentHp ?? 12) / (r.maxHp ?? 12)) * 100));
                 const isHpLow = (r.currentHp ?? 12) <= 1;
 
@@ -314,6 +315,15 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                               HP切れ
                             </span>
                           )}
+                          {r.defenseRegen && r.defenseRegen.expiresAt > now && (
+                            <span 
+                              className="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-bold border border-emerald-300 flex items-center gap-1 shadow-xs"
+                              title="防衛戦勝利ボーナス: 12時間の間、1時間毎にHPが1ずつ自然回復します"
+                            >
+                              <Gi.GiHealing className="text-emerald-600 animate-pulse text-xs" />
+                              <span>リジェネ中 ({Math.max(1, Math.ceil((r.defenseRegen.expiresAt - now) / (60 * 60 * 1000)))}h)</span>
+                            </span>
+                          )}
                         </div>
 
                         <div className="mt-2 space-y-1.5">
@@ -353,6 +363,8 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                                   ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]'
                                   : isHpLow
                                   ? 'bg-rose-500'
+                                  : isRegenActive
+                                  ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]'
                                   : 'bg-green-500'
                               }`} 
                               style={{ width: `${hpPercent}%` }} 

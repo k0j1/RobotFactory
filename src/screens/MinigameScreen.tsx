@@ -1,15 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { GameState } from '../core/models';
 import { GameEngine } from '../core/GameEngine';
 import { theme } from '../styles/theme';
 import { Card, Button, Badge } from '../components/ui/core';
-import { OPPONENTS, DanmakuDifficulty, DANMAKU_DIFFICULTIES, PianoSong, PIANO_SONGS } from '../components/minigames/Shared';
+import { OPPONENTS, DanmakuDifficulty, DANMAKU_DIFFICULTIES, PianoSong, PIANO_SONGS, DefenseStage, DEFENSE_STAGES, getDefenseDailyResetInfo, DefenseResetInfo } from '../components/minigames/Shared';
 import { getPianoBestScores, PianoBestScore } from '../core/pianoScoreManager';
 import { OthelloGame } from '../components/minigames/OthelloGame';
 import { ChessGame } from '../components/minigames/ChessGame';
 import { DanmakuSurvivalGame } from '../components/minigames/DanmakuSurvivalGame';
 import { PianoGame } from '../components/minigames/PianoGame';
 import { CombatGame } from '../components/minigames/CombatGame';
+import { DefenseGame } from '../components/minigames/DefenseGame';
 import { RobotVisual } from '../components/robot/RobotVisual';
 import { motion } from 'motion/react';
 import * as Gi from 'react-icons/gi';
@@ -45,6 +46,14 @@ const GAMES: GameDef[] = [
     icon: <Gi.GiCrossedSwords className="inline text-red-600" />, 
     requiresOpponent: true 
   },
+  { 
+    id: 'defense', 
+    category: 'battle', 
+    name: '拠点防衛戦', 
+    desc: '手持ちの機体を配備して大量の敵から拠点を守る防衛ゲーム（Pow/Agi/Int重視）', 
+    icon: <Gi.GiCastleRuins className="inline text-blue-600" />, 
+    requiresOpponent: false 
+  },
   { id: 'othello', category: 'puzzle', name: 'オセロ演習', desc: '挟んで裏返す定番ボードゲーム（Int重視）', icon: <Gi.GiCheckeredFlag className="inline text-stone-700" />, requiresOpponent: true },
   { id: 'chess', category: 'puzzle', name: 'チェス演習', desc: 'キャスリング無しの頭脳勝負（Int重視）', icon: <Gi.GiChessKing className="inline text-stone-800" />, requiresOpponent: true },
   { id: 'danmaku', category: 'shooting', name: '弾幕よけ試験', desc: '10秒間、弾幕から生き残る（Agi/Dex重視）', icon: <Gi.GiBullseye className="inline text-emerald-600" />, requiresOpponent: false },
@@ -60,6 +69,8 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
   const [selectedCategory, setSelectedCategory] = useState('battle');
   const [selectedGame, setSelectedGame] = useState('combat');
   const [selectedRobotId, setSelectedRobotId] = useState<string | null>(null);
+  const [selectedDefenseRobotIds, setSelectedDefenseRobotIds] = useState<string[]>([]);
+  const [defenseStageId, setDefenseStageId] = useState<string>('stage1');
   const [selectedOpponentId, setSelectedOpponentId] = useState<string | null>(null);
   const [danmakuDifficulty, setDanmakuDifficulty] = useState<DanmakuDifficulty>('normal');
   const [pianoSongId, setPianoSongId] = useState<string>(PIANO_SONGS[0]?.id || 'fur_elise');
@@ -69,11 +80,28 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
   const [speed, setSpeed] = useState(1);
   const [isPaused, setIsPaused] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [currentTimestamp, setCurrentTimestamp] = useState(() => Date.now());
+
+  // 10秒ごとに現在時刻を更新（朝9:00のリセット切り替わりを即検知）
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTimestamp(Date.now());
+    }, 10000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // 拠点防衛戦の朝9:00デイリーリセット情報
+  const defenseResetInfo: DefenseResetInfo = useMemo(() => {
+    return getDefenseDailyResetInfo(state.lastDefenseVictoryTime, currentTimestamp);
+  }, [state.lastDefenseVictoryTime, currentTimestamp]);
+
+  const isDefenseLocked = selectedGame === 'defense' && defenseResetInfo.isCompletedToday;
 
   const activeRobot = state.robots.find(r => r.id === selectedRobotId);
   const activeOpponent = OPPONENTS.find(o => o.id === selectedOpponentId);
   const activeDanmakuDiff = DANMAKU_DIFFICULTIES.find(d => d.id === danmakuDifficulty) || DANMAKU_DIFFICULTIES[1];
   const activePianoSong = PIANO_SONGS.find(s => s.id === pianoSongId) || PIANO_SONGS[0];
+  const activeDefenseStage = DEFENSE_STAGES.find(s => s.id === defenseStageId) || DEFENSE_STAGES[0];
   
   const getEstimatedWinRate = (difficultyId: string, robot: any) => {
     if (!robot) return '--';
@@ -113,7 +141,12 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
   const requiresOpponent = selectedGameDef?.requiresOpponent ?? true;
 
   const handleFinish = (result: 'win' | 'lose' | 'draw') => {
-    if (activeRobot) {
+    if (selectedGame === 'defense') {
+      const selectedDefenseRobots = selectedDefenseRobotIds.map(id => state.robots.find(r => r.id === id)!).filter(Boolean);
+      for (const robot of selectedDefenseRobots) {
+        (engine as any).recordBattleResult(robot.id, result);
+      }
+    } else if (activeRobot) {
       (engine as any).recordBattleResult(activeRobot.id, result);
     }
     setBattleResult(result);
@@ -129,6 +162,15 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
         (engine as any).addRepairKits(activeDanmakuDiff.rewardKits);
       } else if (selectedGame === 'piano') {
         (engine as any).addRepairKits(Math.max(1, Math.ceil(activePianoSong.level / 2)));
+      } else if (selectedGame === 'defense') {
+        (engine as any).addRepairKits(activeDefenseStage.rewardKits);
+        const selectedDefenseRobots = selectedDefenseRobotIds.map(id => state.robots.find(r => r.id === id)!).filter(Boolean);
+        const regenHours = activeDefenseStage.rewardRegenHours || 12;
+        for (const robot of selectedDefenseRobots) {
+          (engine as any).applyDefenseRegen(robot.id, regenHours);
+        }
+        // 当日の防衛戦成功を記録（朝9:00まで再挑戦不可）
+        (engine as any).recordDefenseVictory();
       } else if (!requiresOpponent) {
         // Flat reward for solo games (repair kits only)
         (engine as any).addRepairKits(1);
@@ -137,6 +179,23 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
   };
 
   const handleStartBattle = () => {
+    if (selectedGame === 'defense') {
+      if (defenseResetInfo.isCompletedToday) {
+        alert("本日の拠点防衛戦はすでに成功しています。朝9:00のリセットをお待ちください。");
+        return;
+      }
+      if (selectedDefenseRobotIds.length === 0) return;
+      const selectedDefenseRobots = selectedDefenseRobotIds.map(id => state.robots.find(r => r.id === id)!).filter(Boolean);
+      for (const robot of selectedDefenseRobots) {
+        if ((robot.currentHp ?? 12) < 1) {
+          alert(`機体 ${robot.name} のHPが足りません。参加するにはHPが1必要です。`);
+          return;
+        }
+      }
+      setIsConfirmModalOpen(true);
+      return;
+    }
+
     if (!activeRobot) return;
     if (requiresOpponent && !activeOpponent) return;
     if ((activeRobot.currentHp ?? 12) < 1) {
@@ -147,9 +206,6 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
   };
 
   const confirmBattleStart = () => {
-    if (!activeRobot) return;
-    if (requiresOpponent && !activeOpponent) return;
-
     // Initialize global AudioContext during user gesture to prevent suspension in browsers
     const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
     if (AudioContextClass) {
@@ -160,7 +216,17 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
       }
     }
 
-    (engine as any).consumeRobotHp(activeRobot.id, 1);
+    if (selectedGame === 'defense') {
+      const selectedDefenseRobots = selectedDefenseRobotIds.map(id => state.robots.find(r => r.id === id)!).filter(Boolean);
+      for (const robot of selectedDefenseRobots) {
+        (engine as any).consumeRobotHp(robot.id, 1);
+      }
+    } else {
+      if (!activeRobot) return;
+      if (requiresOpponent && !activeOpponent) return;
+      (engine as any).consumeRobotHp(activeRobot.id, 1);
+    }
+
     setIsConfirmModalOpen(false);
     setIsBattleActive(true);
     setBattleResult(null);
@@ -169,6 +235,25 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
   };
 
   const renderGame = () => {
+    if (selectedGame === 'defense') {
+      const selectedDefenseRobots = selectedDefenseRobotIds.map(id => state.robots.find(r => r.id === id)!).filter(Boolean);
+      return (
+        <DefenseGame 
+          robots={selectedDefenseRobots}
+          stage={activeDefenseStage}
+          onFinish={handleFinish}
+          speed={speed}
+          isPaused={isPaused}
+          isFinished={battleResult !== null}
+          battleResult={battleResult}
+          onExit={() => {
+            setIsBattleActive(false);
+            setBattleResult(null);
+          }}
+        />
+      );
+    }
+    
     if (!activeRobot) return null;
     if (requiresOpponent && !activeOpponent) return null;
     
@@ -281,11 +366,18 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                         <span className="text-xl">{g.icon}</span>
                         <span className="font-bold text-stone-900 text-sm">{g.name}</span>
                       </div>
-                      {isSelected && (
-                        <Badge className="bg-amber-600 text-white text-[10px] px-1.5 py-0.5 font-bold">
-                          選択中
-                        </Badge>
-                      )}
+                      <div className="flex items-center gap-1.5">
+                        {g.id === 'defense' && defenseResetInfo.isCompletedToday && (
+                          <span className="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5 shadow-2xs">
+                            <Gi.GiCheckMark className="text-[9px] text-emerald-600" /> 本日完了
+                          </span>
+                        )}
+                        {isSelected && (
+                          <Badge className="bg-amber-600 text-white text-[10px] px-1.5 py-0.5 font-bold">
+                            選択中
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                     <div className="text-[11px] text-stone-500 mt-1 pl-7 leading-tight">{g.desc}</div>
                   </button>
@@ -294,14 +386,106 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
             </div>
           </Card>
 
+          {/* 拠点防衛戦：本日クリア済みアナウンスバナー */}
+          {selectedGame === 'defense' && defenseResetInfo.isCompletedToday && (
+            <Card className="bg-gradient-to-r from-emerald-50 via-teal-50 to-stone-50 border-2 border-emerald-400 p-3.5 sm:p-4 rounded-2xl shadow-xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-100 border border-emerald-300 flex items-center justify-center shrink-0 text-emerald-700 text-xl shadow-2xs">
+                    <Gi.GiShield className="text-emerald-700" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-sm text-emerald-950 flex items-center gap-2">
+                      <span>本日の拠点防衛は成功しました！</span>
+                      <span className="text-[10px] bg-emerald-200/90 text-emerald-900 font-mono font-bold px-1.5 py-0.5 rounded border border-emerald-300">
+                        1日1回限定
+                      </span>
+                    </div>
+                    <div className="text-xs text-stone-600 mt-1 leading-snug">
+                      毎朝 <strong>09:00</strong> に防衛任務がリセットされ、再び出撃可能になります。明日朝の防衛戦に備えて機体の整備を行いましょう！
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center border-t sm:border-t-0 border-emerald-200/80 pt-2 sm:pt-0 shrink-0">
+                  <span className="text-[11px] text-emerald-800 font-bold flex items-center gap-1">
+                    <Gi.GiSandsOfTime className="text-emerald-600 text-xs" /> 次回朝9:00リセットまで
+                  </span>
+                  <span className="font-mono font-bold text-sm text-emerald-950 bg-white/90 px-2.5 py-1 rounded-lg border border-emerald-300 shadow-2xs mt-0.5">
+                    約 {defenseResetInfo.remainingHours}時間{defenseResetInfo.remainingMinutes}分
+                  </span>
+                </div>
+              </div>
+            </Card>
+          )}
+
           {/* 自機選択 & 対戦相手/難易度選択の2カラム */}
-          <div className={`grid grid-cols-1 ${requiresOpponent || selectedGame === 'danmaku' || selectedGame === 'piano' ? 'md:grid-cols-2' : ''} gap-4`}>
-            {/* 自機選択 */}
+          <div className={`grid grid-cols-1 ${requiresOpponent || selectedGame === 'danmaku' || selectedGame === 'piano' || selectedGame === 'defense' ? 'md:grid-cols-2' : ''} gap-4`}>
+            {/* 拠点防衛戦の場合: STEP 1 としてステージ選択を先に配置 */}
+            {selectedGame === 'defense' && (
+              <Card className="bg-stone-50 border-2 border-stone-300 p-4 shadow-sm flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-3 border-b border-stone-200 pb-2">
+                    <div className="flex items-center gap-2">
+                      <Gi.GiCastleRuins className="text-amber-700 text-lg" />
+                      <h3 className={`${theme.typography.h3} text-stone-800`}>STEP 1: 防衛ステージ選択</h3>
+                    </div>
+                    <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300 font-bold px-1.5 py-0.5 rounded">
+                      全5難易度
+                    </span>
+                  </div>
+                  <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                    {DEFENSE_STAGES.map(stage => {
+                      const isSelected = defenseStageId === stage.id;
+                      return (
+                        <button
+                          key={stage.id}
+                          onClick={() => {
+                            setDefenseStageId(stage.id);
+                            setSelectedDefenseRobotIds([]); // Reset selection when stage changes
+                          }}
+                          className={`w-full text-left p-3 rounded-xl border-2 transition-all cursor-pointer ${
+                            isSelected 
+                              ? 'border-amber-500 bg-amber-50/90 shadow-xs ring-2 ring-amber-300' 
+                              : 'border-stone-300 bg-white hover:border-stone-400 hover:bg-stone-50'
+                          }`}
+                        >
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="font-bold text-sm text-stone-900">{stage.name}</span>
+                            <span className="text-[10px] bg-red-100 text-red-800 border border-red-300 px-1.5 py-0.5 rounded font-bold">
+                              敵 {stage.totalEnemies}体
+                            </span>
+                          </div>
+                          <div className="text-[11px] text-stone-600 mb-2 leading-tight">
+                            {stage.desc}
+                          </div>
+                          <div className="flex gap-1.5 flex-wrap">
+                            <span className="text-[10px] bg-stone-200 text-stone-700 px-1.5 py-0.5 rounded border border-stone-300 font-bold">
+                              最大配備: {stage.maxRobots}体
+                            </span>
+                            <span className="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-300 px-1.5 py-0.5 rounded flex items-center gap-0.5 font-bold">
+                              <Gi.GiSpanner className="inline" /> 報酬: x{stage.rewardKits}
+                            </span>
+                            <span className="text-[10px] bg-teal-100 text-teal-800 border border-teal-300 px-1.5 py-0.5 rounded flex items-center gap-0.5 font-bold">
+                              <Gi.GiHealing className="inline text-teal-600" /> {stage.rewardRegenHours || 12}hリジェネ
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </Card>
+            )}
+
+            {/* 自機選択（防衛戦の場合は STEP 2: 防衛ロボット配備） */}
             <Card className="bg-stone-50 border-2 border-stone-300 p-4 shadow-sm flex flex-col">
               <div className="flex items-center justify-between mb-3 border-b border-stone-200 pb-2">
                 <div className="flex items-center gap-2">
                   <Gi.GiBattleMech className="text-stone-700 text-lg" />
-                  <h3 className={`${theme.typography.h3} text-stone-800`}>出撃ロボット（自機）</h3>
+                  <h3 className={`${theme.typography.h3} text-stone-800`}>
+                    {selectedGame === 'defense' ? `STEP 2: 防衛ロボット配備 (${selectedDefenseRobotIds.length}/${activeDefenseStage.maxRobots})` : '出撃ロボット（自機）'}
+                  </h3>
                 </div>
                 <span className="text-xs text-stone-500 font-mono">
                   {state.robots.length} 体保有
@@ -319,18 +503,31 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                     const hp = r.currentHp ?? 12;
                     const maxHp = r.maxHp ?? 12;
                     const isHpLow = hp < 1;
-                    const isSelected = selectedRobotId === r.id;
+                    const isSelected = selectedGame === 'defense' ? selectedDefenseRobotIds.includes(r.id) : selectedRobotId === r.id;
+                    
+                    const handleSelect = () => {
+                      if (isDispatched || isHpLow) return;
+                      if (selectedGame === 'defense') {
+                        if (isSelected) {
+                          setSelectedDefenseRobotIds(prev => prev.filter(id => id !== r.id));
+                        } else if (selectedDefenseRobotIds.length < activeDefenseStage.maxRobots) {
+                          setSelectedDefenseRobotIds(prev => [...prev, r.id]);
+                        }
+                      } else {
+                        setSelectedRobotId(r.id);
+                      }
+                    };
 
                     return (
                       <button
                         key={r.id}
-                        onClick={() => !isDispatched && !isHpLow && setSelectedRobotId(r.id)}
-                        disabled={isDispatched || isHpLow}
+                        onClick={handleSelect}
+                        disabled={isDispatched || isHpLow || (selectedGame === 'defense' && !isSelected && selectedDefenseRobotIds.length >= activeDefenseStage.maxRobots)}
                         className={`w-full text-left p-2.5 rounded-xl border-2 transition-all ${
                           isSelected 
                             ? 'border-amber-500 bg-amber-50/90 ring-2 ring-amber-300 shadow-xs' 
                             : 'border-stone-300 bg-white'
-                        } ${isDispatched || isHpLow ? 'opacity-50 cursor-not-allowed bg-stone-100' : 'hover:border-stone-400 hover:bg-stone-50'}`}
+                        } ${isDispatched || isHpLow || (selectedGame === 'defense' && !isSelected && selectedDefenseRobotIds.length >= activeDefenseStage.maxRobots) ? 'opacity-50 cursor-not-allowed bg-stone-100' : 'hover:border-stone-400 hover:bg-stone-50'}`}
                       >
                         <div className="flex items-center gap-2.5">
                           <div className="shrink-0 bg-stone-100 p-1 rounded-lg border border-stone-300">
@@ -347,7 +544,18 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                               </span>
                             </div>
 
-                            {selectedGame === 'combat' ? (
+                            {selectedGame === 'defense' ? (
+                              <div className="space-y-1">
+                                <div className="flex gap-2 text-[10px] text-stone-600 font-mono">
+                                  <span className="font-bold text-red-700 bg-red-50 px-1 rounded border border-red-200">Pow:{r.stats.power} (攻撃力)</span>
+                                  <span className="font-bold text-amber-700 bg-amber-50 px-1 rounded border border-amber-200">Agi:{r.stats.agility} (行動値)</span>
+                                </div>
+                                <div className="flex gap-2 text-[10px] text-stone-600 font-mono">
+                                  <span className="font-bold text-purple-700 bg-purple-50 px-1 rounded border border-purple-200">Int:{r.stats.intelligence} (技)</span>
+                                  <span className="font-bold text-emerald-700 bg-emerald-50 px-1 rounded border border-emerald-200">Dex:{r.stats.dexterity}</span>
+                                </div>
+                              </div>
+                            ) : selectedGame === 'combat' ? (
                               <div className="space-y-1">
                                 <div className="flex gap-2 text-[10px] text-stone-600 font-mono">
                                   <span className="font-bold text-red-700 bg-red-50 px-1 rounded border border-red-200">Pow:{r.stats.power}</span>
@@ -382,6 +590,12 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                             {!isDispatched && isHpLow && (
                               <span className="text-[10px] text-rose-600 font-bold flex items-center gap-1 mt-0.5">
                                 <Gi.GiHazardSign className="inline text-amber-500" /> 耐久力(HP)不足（要修理）
+                              </span>
+                            )}
+                            {r.defenseRegen && r.defenseRegen.expiresAt > Date.now() && (
+                              <span className="text-[10px] text-emerald-800 font-bold flex items-center gap-1 mt-1 bg-emerald-50 border border-emerald-300 px-1.5 py-0.5 rounded w-fit">
+                                <Gi.GiHealing className="inline text-emerald-600 animate-pulse" />
+                                <span>防衛リジェネ中 (残り{Math.max(1, Math.ceil((r.defenseRegen.expiresAt - Date.now()) / (60 * 60 * 1000)))}h / 1h毎HP+1)</span>
                               </span>
                             )}
                           </div>
@@ -585,6 +799,46 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
             )}
           </div>
 
+          {/* 拠点防衛戦時の能力値ルールガイド */}
+          {selectedGame === 'defense' && (
+            <Card className="bg-stone-50 border-2 border-amber-300/80 p-3.5 sm:p-4 rounded-2xl shadow-xs">
+              <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-stone-200">
+                <Gi.GiCastleRuins className="text-amber-700 text-lg" />
+                <h4 className="font-bold text-xs sm:text-sm text-stone-800">
+                  拠点防衛戦の機体能力値＆敵耐久仕様
+                </h4>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-[11px] text-stone-700">
+                <div className="bg-white p-2.5 rounded-xl border border-stone-200 shadow-2xs">
+                  <div className="font-bold text-red-700 flex items-center gap-1 mb-0.5">
+                    <Gi.GiBroadsword className="text-sm text-red-600" /> Power（攻撃力）
+                  </div>
+                  <div className="text-stone-600 leading-snug">
+                    1回の攻撃で与えるダメージ量。<span className="font-bold font-mono text-stone-900">Powerが高い機体ほど工房の至近</span>に自動優先配置されます！
+                  </div>
+                </div>
+
+                <div className="bg-white p-2.5 rounded-xl border border-stone-200 shadow-2xs">
+                  <div className="font-bold text-amber-700 flex items-center gap-1 mb-0.5">
+                    <Gi.GiSpeedometer className="text-sm text-amber-500" /> Agility（行動値）
+                  </div>
+                  <div className="text-stone-600 leading-snug">
+                    機体の行動速度。<span className="font-bold font-mono text-stone-900">Agilityが高いほど次の攻撃までのインターバルが短縮</span>され怒涛の迎撃が可能になります。
+                  </div>
+                </div>
+
+                <div className="bg-white p-2.5 rounded-xl border border-stone-200 shadow-2xs">
+                  <div className="font-bold text-purple-700 flex items-center gap-1 mb-0.5">
+                    <Gi.GiInspiration className="text-sm text-purple-600" /> Intelligence（攻撃技）
+                  </div>
+                  <div className="text-stone-600 leading-snug">
+                    IntとDexの組み合わせで<span className="font-bold text-purple-900">技が変化</span>（極滅ノヴァ、粒子砲、乱舞弾、爆装弾など広域スプラッシュを発動）。
+                  </div>
+                </div>
+              </div>
+            </Card>
+          )}
+
           {/* バトル演習時の能力値ルールガイド */}
           {selectedGame === 'combat' && (
             <Card className="bg-stone-50 border-2 border-amber-300/80 p-3.5 sm:p-4 rounded-2xl shadow-xs">
@@ -656,15 +910,37 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
           <div className="text-center pt-2">
             <Button
               onClick={handleStartBattle}
-              disabled={!selectedRobotId || (requiresOpponent && !selectedOpponentId)}
-              className="w-full sm:w-2/3 md:w-1/2 py-3.5 text-base font-bold shadow-md mx-auto"
+              disabled={
+                isDefenseLocked
+                  ? true
+                  : selectedGame === 'defense'
+                  ? selectedDefenseRobotIds.length === 0
+                  : !selectedRobotId || (requiresOpponent && !selectedOpponentId)
+              }
+              className={`w-full sm:w-2/3 md:w-1/2 py-3.5 text-base font-bold shadow-md mx-auto transition-all ${
+                isDefenseLocked 
+                  ? 'bg-stone-200 hover:bg-stone-200 text-stone-600 border-2 border-stone-300 cursor-not-allowed shadow-none' 
+                  : ''
+              }`}
             >
-              {selectedGame === 'danmaku' ? `演習開始！ (${activeDanmakuDiff.label})` : selectedGame === 'piano' ? `演奏開始！ (${activePianoSong.title})` : 'バトル演習開始！'}
+              {isDefenseLocked ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Gi.GiPadlock className="text-stone-500 text-lg" /> 本日防衛完了 (朝9:00リセット / 残り約{defenseResetInfo.remainingHours}時間{defenseResetInfo.remainingMinutes}分)
+                </span>
+              ) : selectedGame === 'danmaku' ? (
+                `演習開始！ (${activeDanmakuDiff.label})`
+              ) : selectedGame === 'piano' ? (
+                `演奏開始！ (${activePianoSong.title})`
+              ) : selectedGame === 'defense' ? (
+                `拠点防衛開始！ (${activeDefenseStage.name})`
+              ) : (
+                'バトル演習開始！'
+              )}
             </Button>
           </div>
 
           {/* 画面下部メニュー上の固定出撃ボタン（下までスクロール不要で即開始可能） */}
-          {!selectedRobotId || (requiresOpponent && !selectedOpponentId) ? null : (
+          {(selectedGame === 'defense' ? selectedDefenseRobotIds.length === 0 : (!selectedRobotId || (requiresOpponent && !selectedOpponentId))) ? null : (
             <div className="fixed bottom-[56px] sm:bottom-[60px] left-0 right-0 z-30 px-3 py-2 bg-stone-900/95 backdrop-blur-md border-t-2 border-amber-500 shadow-2xl animate-fade-in">
               <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 min-w-0">
@@ -672,7 +948,17 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                     {selectedGameDef?.name || 'バトル'}
                   </span>
                   <div className="text-xs text-stone-200 truncate">
-                    <span className="text-stone-400">機体:</span> <strong className="text-amber-300 font-bold">{activeRobot?.name}</strong>
+                    {selectedGame === 'defense' ? (
+                      isDefenseLocked ? (
+                        <span className="text-emerald-400 font-bold flex items-center gap-1">
+                          <Gi.GiCheckMark className="text-xs" /> 本日防衛完了（朝9:00リセット）
+                        </span>
+                      ) : (
+                        <><span className="text-stone-400">配備:</span> <strong className="text-amber-300 font-bold">{selectedDefenseRobotIds.length}体</strong></>
+                      )
+                    ) : (
+                      <><span className="text-stone-400">機体:</span> <strong className="text-amber-300 font-bold">{activeRobot?.name}</strong></>
+                    )}
                     {requiresOpponent && activeOpponent && (
                       <span className="ml-2 text-stone-300 hidden sm:inline">vs <strong className="text-red-400">{activeOpponent.name}</strong></span>
                     )}
@@ -681,11 +967,25 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                 <Button
                   onClick={handleStartBattle}
                   size="md"
-                  variant="primary"
-                  className="px-6 py-2 text-sm font-bold bg-amber-600 hover:bg-amber-500 text-white shadow-lg shrink-0 flex items-center gap-1.5"
+                  variant={isDefenseLocked ? "secondary" : "primary"}
+                  disabled={isDefenseLocked}
+                  className={`px-6 py-2 text-sm font-bold shadow-lg shrink-0 flex items-center gap-1.5 ${
+                    isDefenseLocked 
+                      ? 'bg-stone-700 text-stone-400 cursor-not-allowed border border-stone-600' 
+                      : 'bg-amber-600 hover:bg-amber-500 text-white'
+                  }`}
                 >
-                  <Gi.GiCrossedSwords className="text-base" />
-                  {selectedGame === 'danmaku' ? `演習開始 (${activeDanmakuDiff.label})` : selectedGame === 'piano' ? `演奏開始` : 'バトル開始！'}
+                  {isDefenseLocked ? (
+                    <>
+                      <Gi.GiPadlock className="text-base" />
+                      本日完了
+                    </>
+                  ) : (
+                    <>
+                      <Gi.GiCrossedSwords className="text-base" />
+                      {selectedGame === 'danmaku' ? `演習開始 (${activeDanmakuDiff.label})` : selectedGame === 'piano' ? `演奏開始` : selectedGame === 'defense' ? `防衛開始` : 'バトル開始！'}
+                    </>
+                  )}
                 </Button>
               </div>
             </div>
@@ -693,8 +993,8 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
         </div>
       ) : (
         /* バトル実行中・結果表示カード（工房テストモニター風） */
-        <Card className="bg-stone-100 border-2 border-stone-300 p-4 sm:p-6 shadow-md rounded-2xl relative overflow-hidden">
-          <div className="mb-4">
+        <Card className={`${selectedGame === 'defense' ? 'p-1.5 sm:p-3 bg-stone-900/90 border-stone-700' : 'bg-stone-100 border-2 border-stone-300 p-4 sm:p-6'} shadow-md rounded-2xl relative overflow-hidden`}>
+          <div className={selectedGame === 'defense' ? 'mb-2 w-full' : 'mb-4'}>
             {renderGame()}
           </div>
           
@@ -810,6 +1110,18 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                     </p>
                   </div>
                 )}
+                {battleResult === 'win' && selectedGame === 'defense' && (
+                  <div className="bg-amber-50 border-2 border-amber-300 px-6 py-3 rounded-xl shadow-xs text-center mt-4 space-y-1.5">
+                    <p className="text-amber-900 font-bold text-base sm:text-lg flex items-center justify-center gap-2">
+                      <span className="text-xl"><Gi.GiSpanner className="inline text-stone-500" /></span>
+                      <span>防衛成功報酬 ({activeDefenseStage.name}): 修理キット +{activeDefenseStage.rewardKits}個</span>
+                    </p>
+                    <div className="flex items-center justify-center gap-2 text-xs sm:text-sm font-bold text-emerald-800 bg-emerald-100/80 border border-emerald-300 py-1.5 px-3 rounded-lg">
+                      <Gi.GiHealing className="inline text-emerald-600 animate-pulse text-base" />
+                      <span>防衛リジェネ効果付与！ 出撃機体全員が12時間の間、1時間毎にHP1回復</span>
+                    </div>
+                  </div>
+                )}
                 {battleResult === 'win' && !requiresOpponent && selectedGame !== 'danmaku' && selectedGame !== 'piano' && (
                   <div className="bg-amber-50 border-2 border-amber-300 px-6 py-2.5 rounded-xl shadow-xs">
                     <p className="text-amber-900 font-bold text-base sm:text-lg flex items-center justify-center gap-2">
@@ -845,17 +1157,35 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
             </div>
             <div className="p-5 text-center space-y-3.5">
               <p className="text-stone-300 text-sm">
-                演習バトルに出撃すると、機体の<br/>
+                演習バトルに出撃すると、{selectedGame === 'defense' ? '各配備機体の' : '機体の'}<br/>
                 <span className="text-amber-400 text-base font-black">HPを1消費</span> します。
               </p>
               
               <div className="flex flex-col items-center bg-stone-950/80 rounded-xl p-3 border border-stone-800">
                 <p className="text-xs text-stone-400 mb-1 font-bold">出撃後の耐久力 (HP)</p>
-                <div className="flex items-center gap-3 font-mono font-bold text-lg">
-                  <span className="text-stone-300">{activeRobot?.currentHp ?? 12}</span>
-                  <span className="text-amber-400">→</span>
-                  <span className="text-rose-400 font-black">{(activeRobot?.currentHp ?? 12) - 1}</span>
-                </div>
+                {selectedGame === 'defense' ? (
+                  <div className="space-y-1">
+                    {selectedDefenseRobotIds.map(id => {
+                      const r = state.robots.find(robot => robot.id === id);
+                      return r ? (
+                        <div key={id} className="flex justify-between items-center gap-4 text-sm w-full">
+                          <span className="text-stone-300 text-xs truncate max-w-[100px]">{r.name}</span>
+                          <div className="flex items-center gap-2 font-mono font-bold">
+                            <span className="text-stone-300">{r.currentHp ?? 12}</span>
+                            <span className="text-amber-400">→</span>
+                            <span className="text-rose-400 font-black">{(r.currentHp ?? 12) - 1}</span>
+                          </div>
+                        </div>
+                      ) : null;
+                    })}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3 font-mono font-bold text-lg">
+                    <span className="text-stone-300">{activeRobot?.currentHp ?? 12}</span>
+                    <span className="text-amber-400">→</span>
+                    <span className="text-rose-400 font-black">{(activeRobot?.currentHp ?? 12) - 1}</span>
+                  </div>
+                )}
               </div>
               
               <p className="text-xs text-stone-400">

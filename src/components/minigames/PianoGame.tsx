@@ -19,6 +19,7 @@ const TOTAL_WHITE_KEYS = 40;
 // Web Audio API による高品位グランドピアノシンセサイザー（フォールバック＆即時再生用）
 const playSynthesizedPiano = (
   ctx: AudioContext,
+  destNode: AudioNode,
   midi: number,
   durationMs: number = 300,
   volume: number = 1.0
@@ -26,35 +27,46 @@ const playSynthesizedPiano = (
   try {
     const freq = 440 * Math.pow(2, (midi - 69) / 12);
     const now = ctx.currentTime;
-    const durSec = Math.max(0.18, durationMs / 1000);
+    const durSec = Math.max(0.2, durationMs / 1000);
 
-    // 全体ゲイン
+    // 全体ゲイン (アコースティックピアノのリアルなダイナミクスと迫力ある音圧)
     const noteGain = ctx.createGain();
     noteGain.gain.setValueAtTime(0, now);
-    // 鋭いハンマー打弦アタック (4ms)
-    noteGain.gain.linearRampToValueAtTime(0.38 * volume, now + 0.004);
-    // 初期ディケイ (80ms)
-    noteGain.gain.exponentialRampToValueAtTime(0.22 * volume, now + 0.08);
-    // 自然な弦の減衰
-    noteGain.gain.exponentialRampToValueAtTime(0.0001, now + durSec + 0.45);
+    // 鋭くしっかりとしたハンマー打弦アタック (4ms) - 従来の0.38から0.95へ大幅強化
+    const effectiveVol = Math.max(0.1, volume);
+    const peakGain = Math.min(1.0, 0.95 * effectiveVol);
+    noteGain.gain.linearRampToValueAtTime(peakGain, now + 0.004);
+    // 豊かな響板振動の初期ディケイ (80ms) - 従来の0.22から0.68へ大幅強化
+    noteGain.gain.exponentialRampToValueAtTime(Math.max(0.01, 0.68 * effectiveVol), now + 0.08);
+    // 自然な弦の減衰 (サステインの持続)
+    noteGain.gain.exponentialRampToValueAtTime(0.0001, now + durSec + 0.55);
 
     // アコースティックピアノのボディ感を再現するローパスフィルター
     const filter = ctx.createBiquadFilter();
     filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(Math.min(9000, freq * 4.2), now);
-    filter.frequency.exponentialRampToValueAtTime(Math.min(4500, freq * 2.1), now + durSec);
+    filter.frequency.setValueAtTime(Math.min(12000, freq * 4.8), now);
+    filter.frequency.exponentialRampToValueAtTime(Math.min(5000, freq * 2.2), now + durSec);
 
-    // 基本波（暖かみのある三角波＋微小サイン波）
+    // 基本波（暖かみのある三角波）
     const osc1 = ctx.createOscillator();
     osc1.type = 'triangle';
     osc1.frequency.setValueAtTime(freq, now);
+
+    // 基音の肉厚感を増強するサイン波
+    const oscFund = ctx.createOscillator();
+    oscFund.type = 'sine';
+    oscFund.frequency.setValueAtTime(freq, now);
+    const oscFundGain = ctx.createGain();
+    oscFundGain.gain.setValueAtTime(0.45, now);
+    oscFund.connect(oscFundGain);
+    oscFundGain.connect(filter);
 
     // 第2倍音（オクターブ上の倍音）
     const osc2 = ctx.createOscillator();
     osc2.type = 'sine';
     osc2.frequency.setValueAtTime(freq * 2, now);
     const osc2Gain = ctx.createGain();
-    osc2Gain.gain.setValueAtTime(0.28, now);
+    osc2Gain.gain.setValueAtTime(0.32, now);
     osc2.connect(osc2Gain);
     osc2Gain.connect(filter);
 
@@ -63,20 +75,22 @@ const playSynthesizedPiano = (
     osc3.type = 'sine';
     osc3.frequency.setValueAtTime(freq * 3, now);
     const osc3Gain = ctx.createGain();
-    osc3Gain.gain.setValueAtTime(0.12, now);
+    osc3Gain.gain.setValueAtTime(0.18, now);
     osc3.connect(osc3Gain);
     osc3Gain.connect(filter);
 
     osc1.connect(filter);
     filter.connect(noteGain);
-    noteGain.connect(ctx.destination);
+    noteGain.connect(destNode);
 
     osc1.start(now);
+    oscFund.start(now);
     osc2.start(now);
     osc3.start(now);
 
-    const stopTime = now + durSec + 0.5;
+    const stopTime = now + durSec + 0.6;
     osc1.stop(stopTime);
+    oscFund.stop(stopTime);
     osc2.stop(stopTime);
     osc3.stop(stopTime);
   } catch (e) {
@@ -140,6 +154,31 @@ export const PianoGame: React.FC<PianoGameProps> = ({
   const isFinishedHandledRef = useRef(false);
 
   const audioCtxRef = useRef<AudioContext | null>(null);
+  const masterGainRef = useRef<GainNode | null>(null);
+  const compressorRef = useRef<DynamicsCompressorNode | null>(null);
+
+  // ピアノ音量ステート (初期値: 1.0 = 100%、0%〜150%で調整可能、永続化)
+  const [pianoVolume, setPianoVolume] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('ponkotsu_piano_volume');
+      return saved !== null ? Math.max(0, Math.min(1.5, Number(saved))) : 1.0;
+    } catch {
+      return 1.0;
+    }
+  });
+
+  const handleVolumeChange = (newVol: number) => {
+    const clamped = Math.max(0, Math.min(1.5, newVol));
+    setPianoVolume(clamped);
+    try {
+      localStorage.setItem('ponkotsu_piano_volume', String(clamped));
+    } catch {}
+    if (audioCtxRef.current && masterGainRef.current) {
+      const now = audioCtxRef.current.currentTime;
+      // 基準ゲイン 1.6倍 にスケーリングして十分な音圧を供給
+      masterGainRef.current.gain.setTargetAtTime(clamped * 1.6, now, 0.05);
+    }
+  };
 
   const song = PIANO_SONGS.find(s => s.id === songId) || PIANO_SONGS[0];
   const currentNotes: PianoNoteData[] = song.notes;
@@ -180,12 +219,45 @@ export const PianoGame: React.FC<PianoGameProps> = ({
         ctx.resume().catch(() => {});
       }
       audioCtxRef.current = ctx;
+
+      // マスターコンプレッサーの構築 (クリッピング防止 & アコースティックピアノ特有の芳醇なサステイン増幅)
+      if (!compressorRef.current) {
+        try {
+          const comp = ctx.createDynamicsCompressor();
+          comp.threshold.setValueAtTime(-14, ctx.currentTime);
+          comp.knee.setValueAtTime(8, ctx.currentTime);
+          comp.ratio.setValueAtTime(3.5, ctx.currentTime);
+          comp.attack.setValueAtTime(0.003, ctx.currentTime);
+          comp.release.setValueAtTime(0.2, ctx.currentTime);
+          comp.connect(ctx.destination);
+          compressorRef.current = comp;
+        } catch (e) {
+          console.warn('Compressor setup error:', e);
+        }
+      }
+
+      // マスターゲインの構築 (実音量に合わせた高音圧設定)
+      if (!masterGainRef.current) {
+        try {
+          const mg = ctx.createGain();
+          const targetNode = compressorRef.current || ctx.destination;
+          mg.gain.setValueAtTime(pianoVolume * 1.6, ctx.currentTime);
+          mg.connect(targetNode);
+          masterGainRef.current = mg;
+        } catch (e) {
+          console.warn('Master gain setup error:', e);
+        }
+      }
       
       // サウンドフォントの非同期読み込み (ロード完了後は最高峰のピアノ音色へ移行)
-      Soundfont.instrument(ctx, 'acoustic_grand_piano', { soundfont: 'MusyngKite' }).then(inst => {
+      const soundDest = masterGainRef.current || ctx.destination;
+      Soundfont.instrument(ctx, 'acoustic_grand_piano', { 
+        soundfont: 'MusyngKite',
+        destination: soundDest 
+      }).then((inst: any) => {
         setInstrument(inst);
         setIsInstrumentLoaded(true);
-      }).catch(err => {
+      }).catch((err: any) => {
         console.warn('Soundfont loading fallback to synth:', err);
         setIsInstrumentLoaded(true); // シンセサイザーで即座に進行可能
       });
@@ -200,11 +272,16 @@ export const PianoGame: React.FC<PianoGameProps> = ({
     const ctx = audioCtxRef.current;
     if (ctx.state === 'suspended') ctx.resume().catch(() => {});
     
+    // マスターゲイン接続ノード (masterGain -> compressor -> destination)
+    const destNode = masterGainRef.current || ctx.destination;
+
     if (instrument) {
       try {
+        // Soundfont-player のサンプル音量は標準で小さめ(-12dB前後)のため、
+        // ゲインを 2.4倍 して実音量相当の豊かな音圧にする
         instrument.play(pitchName || midi, ctx.currentTime, {
           duration: durationMs / 1000,
-          gain: Math.max(0.2, Math.min(1.2, velocity))
+          gain: Math.max(0.4, Math.min(3.2, velocity * 2.4 * pianoVolume))
         });
         return;
       } catch (e) {
@@ -212,7 +289,7 @@ export const PianoGame: React.FC<PianoGameProps> = ({
       }
     }
 
-    playSynthesizedPiano(ctx, midi, durationMs, velocity);
+    playSynthesizedPiano(ctx, destNode, midi, durationMs, velocity);
   };
 
   // メインゲームループ (タイマー駆動)
@@ -262,15 +339,15 @@ export const PianoGame: React.FC<PianoGameProps> = ({
         } else if (accuracyRoll >= 80) { 
           noteScore = 150; 
           judgeStr = 'GOOD'; 
-          vol = 0.82;
+          vol = 0.95;
         } else if (accuracyRoll >= 50) { 
           noteScore = 50; 
           judgeStr = 'SOSO'; 
-          vol = 0.65;
+          vol = 0.88;
         } else if (accuracyRoll >= 20) { 
           noteScore = 10; 
           judgeStr = 'NOT GOOD'; 
-          vol = 0.35;
+          vol = 0.75;
         } else { 
           noteScore = 0; 
           judgeStr = 'BAD'; 
@@ -418,17 +495,22 @@ export const PianoGame: React.FC<PianoGameProps> = ({
 
   // 40白鍵の生成 (A1〜E7)
   const whiteKeyDefs = React.useMemo(() => {
-    const keys: { index: number; hasBlackKey: boolean; name: string }[] = [];
-    for (let i = 0; i < TOTAL_WHITE_KEYS; i++) {
-      let hasBlack = false;
-      if (i === 0) hasBlack = true; // A1 -> A#1
-      else if (i === 1) hasBlack = false; // B1 -> C2
-      else {
-        const offset = (i - 2) % 7; // C:0, D:1, E:2, F:3, G:4, A:5, B:6
-        hasBlack = [0, 1, 3, 4, 5].includes(offset);
-      }
-      if (i === TOTAL_WHITE_KEYS - 1) hasBlack = false; // 最後のE7には黒鍵なし
-      keys.push({ index: i, hasBlackKey: hasBlack, name: `K${i}` });
+    const notesBase = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
+    const midiBase = [0, 2, 4, 5, 7, 9, 11]; // Cから始まる半音オフセット
+    const keys: { index: number; hasBlackKey: boolean; name: string; midi: number }[] = [];
+    
+    // A1, B1
+    keys.push({ index: 0, hasBlackKey: true, name: 'A1', midi: 33 });
+    keys.push({ index: 1, hasBlackKey: false, name: 'B1', midi: 35 });
+
+    let currentOctave = 2;
+    for (let i = 2; i < TOTAL_WHITE_KEYS; i++) {
+      const offset = (i - 2) % 7;
+      if (offset === 0 && i > 2) currentOctave++;
+      const hasBlack = [0, 1, 3, 4, 5].includes(offset) && i !== TOTAL_WHITE_KEYS - 1;
+      const noteLetter = notesBase[offset];
+      const midi = (currentOctave + 1) * 12 + midiBase[offset];
+      keys.push({ index: i, hasBlackKey: hasBlack, name: `${noteLetter}${currentOctave}`, midi });
     }
     return keys;
   }, []);
@@ -454,7 +536,7 @@ export const PianoGame: React.FC<PianoGameProps> = ({
                 <span className="text-xs font-mono font-bold tracking-widest text-amber-400 bg-amber-950/80 px-2 py-0.5 rounded border border-amber-600/40">
                   PERFORMANCE RESULT
                 </span>
-                <span className="text-xs text-stone-400 font-mono">WoO 59 全曲演奏演習</span>
+                <span className="text-xs text-stone-400 font-mono">{song.id === 'fur_elise' ? 'WoO 59 全曲演奏演習' : 'K. 331 全曲演奏演習'}</span>
               </div>
               <h2 className="text-xl sm:text-2xl font-black text-stone-100 flex items-center gap-2">
                 <Gi.GiGrandPiano className="text-amber-400 text-2xl" />
@@ -640,7 +722,7 @@ export const PianoGame: React.FC<PianoGameProps> = ({
               className="p-3 bg-gradient-to-r from-amber-500/30 via-yellow-500/40 to-amber-500/30 rounded-xl border-2 border-amber-400 text-amber-200 text-xs sm:text-sm font-black flex items-center justify-center gap-2 shadow-lg"
             >
               <Gi.GiSparkles className="text-amber-300 text-lg" />
-              <span>★ ベートーヴェン原典・完全再現達成（全音EXCELLENT打鍵） ★</span>
+              <span>★ {song.composer}原典・完全再現達成（全音EXCELLENT打鍵） ★</span>
               <Gi.GiSparkles className="text-amber-300 text-lg" />
             </motion.div>
           )}
@@ -666,18 +748,18 @@ export const PianoGame: React.FC<PianoGameProps> = ({
   return (
     <div className="space-y-4">
       {/* ヘッダーステータス */}
-      <div className="flex justify-between items-center bg-stone-900 p-4 rounded-xl shadow-inner border border-stone-800">
-        <div className="flex gap-4 items-center">
-          <div className="bg-stone-800 p-1.5 rounded-xl border border-stone-700 shadow-sm">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-stone-900 p-3.5 sm:p-4 rounded-xl shadow-inner border border-stone-800">
+        <div className="flex gap-3 sm:gap-4 items-center">
+          <div className="bg-stone-800 p-1.5 rounded-xl border border-stone-700 shadow-sm shrink-0">
             <RobotVisual robot={activeRobot} size={36} animateVictory={battleResult === 'win'} hideBackground={true} hideBubble={true} />
           </div>
           <div className="text-white font-mono text-sm">
-            <div className="flex items-center gap-2 mb-1">
-              <Gi.GiGrandPiano className="text-amber-400 text-lg" />
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
+              <Gi.GiGrandPiano className="text-amber-400 text-lg shrink-0" />
               <span className="font-bold text-stone-100">{song.title}</span>
               <span className="text-xs text-stone-400 font-sans">（{song.composer}）</span>
             </div>
-            <div className="text-[11px] text-stone-400 flex gap-2 font-mono">
+            <div className="text-[11px] text-stone-400 flex gap-2 font-mono flex-wrap">
               <span className="bg-stone-800 px-2 py-0.5 rounded border border-stone-700">Int: {activeRobot.stats.intelligence}</span>
               <span className="bg-stone-800 px-2 py-0.5 rounded border border-stone-700">Dex: {activeRobot.stats.dexterity}</span>
               {combo > 1 && (
@@ -689,13 +771,44 @@ export const PianoGame: React.FC<PianoGameProps> = ({
           </div>
         </div>
 
-        <div className="text-right">
-          <div className="text-xs font-bold px-2.5 py-0.5 rounded-full border inline-block mb-1 bg-amber-500/20 text-amber-300 border-amber-500/40 font-mono">
-            クリア基準: 精度 80.0% 以上
+        <div className="flex items-center justify-between w-full sm:w-auto sm:justify-end gap-3 flex-wrap">
+          {/* 音量調整コントロール (ボリュームスライダー & ミュート切替) */}
+          <div className="flex items-center gap-2 bg-stone-950/80 px-2.5 py-1 rounded-lg border border-stone-800">
+            <button
+              type="button"
+              onClick={() => handleVolumeChange(pianoVolume > 0 ? 0 : 1.0)}
+              className="text-stone-300 hover:text-amber-400 transition-colors cursor-pointer flex items-center justify-center p-0.5"
+              title={pianoVolume === 0 ? "ミュート解除 (100%へ)" : "ミュート"}
+            >
+              {pianoVolume === 0 ? (
+                <Gi.GiSpeakerOff className="text-base text-rose-400" />
+              ) : (
+                <Gi.GiSpeaker className="text-base text-amber-400" />
+              )}
+            </button>
+            <input
+              type="range"
+              min="0"
+              max="1.5"
+              step="0.05"
+              value={pianoVolume}
+              onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
+              className="w-16 sm:w-20 accent-amber-500 cursor-pointer h-1.5 bg-stone-800 rounded-lg appearance-none"
+              title={`音量: ${Math.round(pianoVolume * 100)}%`}
+            />
+            <span className="text-[11px] font-mono text-stone-300 w-8 text-right select-none">
+              {Math.round(pianoVolume * 100)}%
+            </span>
           </div>
-          <div className="text-white font-mono text-sm">
-            SCORE <span className="text-amber-400 text-lg font-black">{score.toLocaleString()}</span>
-            <span className="text-stone-400 text-xs ml-2">精度 <strong className={accuracyPercent >= 80 ? 'text-emerald-400' : 'text-stone-300'}>{accuracyPercent}%</strong></span>
+
+          <div className="text-right">
+            <div className="text-xs font-bold px-2.5 py-0.5 rounded-full border inline-block mb-1 bg-amber-500/20 text-amber-300 border-amber-500/40 font-mono">
+              基準: 精度 80%
+            </div>
+            <div className="text-white font-mono text-sm">
+              SCORE <span className="text-amber-400 text-lg font-black">{score.toLocaleString()}</span>
+              <span className="text-stone-400 text-xs ml-2">精度 <strong className={accuracyPercent >= 80 ? 'text-emerald-400' : 'text-stone-300'}>{accuracyPercent}%</strong></span>
+            </div>
           </div>
         </div>
       </div>
@@ -800,7 +913,7 @@ export const PianoGame: React.FC<PianoGameProps> = ({
         )}
 
         {/* 鍵盤エリア (40白鍵 ＋ 該当位置のリアル黒鍵) */}
-        <div className="absolute bottom-0 w-full h-16 bg-stone-900 flex items-end pb-1 border-t-2 border-stone-700 px-0.5">
+        <div className="absolute bottom-0 w-full h-16 bg-stone-900 flex items-end pb-1 border-t-2 border-stone-700 px-0.5 select-none">
           {whiteKeyDefs.map((def, i) => {
             const isWhitePressed = keysPressed.some(k => !k.isBlack && Math.round(k.lane) === i);
             const isBlackPressed = keysPressed.some(k => k.isBlack && Math.abs(k.lane - (i + 0.5)) < 0.25);
@@ -808,10 +921,15 @@ export const PianoGame: React.FC<PianoGameProps> = ({
             return (
               <div 
                 key={def.index} 
-                className={`relative flex-1 h-14 rounded-b-xs border-r border-stone-400 transition-colors duration-75 ${
+                onClick={(e) => {
+                  e.stopPropagation();
+                  playTone(def.midi, def.name, 350, 1.0);
+                  setKeysPressed(prev => [...prev, { lane: i, isBlack: false, endTime: elapsedRef.current + 300 }]);
+                }}
+                className={`relative flex-1 h-14 rounded-b-xs border-r border-stone-400 transition-colors duration-75 cursor-pointer ${
                   isWhitePressed 
                     ? 'bg-amber-300 translate-y-0.5 shadow-inner' 
-                    : 'bg-stone-100 hover:bg-stone-200'
+                    : 'bg-stone-100 hover:bg-stone-200 active:bg-amber-200'
                 }`}
               >
                 {/* 鍵盤先端の光彩エフェクト */}
@@ -822,10 +940,15 @@ export const PianoGame: React.FC<PianoGameProps> = ({
                 {/* 黒鍵 */}
                 {def.hasBlackKey && (
                   <div 
-                    className={`absolute top-0 -right-[40%] w-[80%] h-[62%] rounded-b-xs z-10 transition-colors duration-75 border-x border-b ${
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      playTone(def.midi + 1, `${def.name}#`, 350, 1.0);
+                      setKeysPressed(prev => [...prev, { lane: i + 0.5, isBlack: true, endTime: elapsedRef.current + 300 }]);
+                    }}
+                    className={`absolute top-0 -right-[40%] w-[80%] h-[62%] rounded-b-xs z-10 transition-colors duration-75 border-x border-b cursor-pointer ${
                       isBlackPressed 
                         ? 'bg-amber-400 border-amber-300 shadow-[0_0_6px_rgba(251,191,36,0.9)]' 
-                        : 'bg-stone-900 border-stone-800 shadow-md'
+                        : 'bg-stone-900 border-stone-800 shadow-md hover:bg-stone-800 active:bg-amber-400'
                     }`}
                   >
                     {isBlackPressed && (

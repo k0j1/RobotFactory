@@ -1,1107 +1,912 @@
-export interface RawPianoNote { time: number; midi: number[]; duration: number; }
+// Mozart: Piano Sonata No. 11 in A Major, K. 331 - 3rd Movement "Rondo alla Turca" (Turkish March)
+// Complete score parsed directly from pianoclassics.net (ID 55) / Mutopia Project (ID 108)
+// Tempo: Allegretto 2/4, 1 beat (quarter note) = 500ms (BPM 120)
+
+export interface RawPianoNote {
+  time: number;
+  midi: number[];
+  duration: number;
+}
+
 export const TURKISH_MARCH_RAW_NOTES: RawPianoNote[] = [
-  {
-    "time": 0,
-    "midi": [
-      71
-    ],
-    "duration": 125
-  },
-  {
-    "time": 125,
-    "midi": [
-      69
-    ],
-    "duration": 125
-  },
-  {
-    "time": 250,
-    "midi": [
-      68,
-      57
-    ],
-    "duration": 250
-  },
-  {
-    "time": 500,
-    "midi": [
-      69
-    ],
-    "duration": 250
-  },
-  {
-    "time": 750,
-    "midi": [
-      72,
-      60
-    ],
-    "duration": 500
-  },
-  {
-    "time": 1250,
-    "midi": [
-      74
-    ],
-    "duration": 125
-  },
-  {
-    "time": 1375,
-    "midi": [
-      72
-    ],
-    "duration": 125
-  },
-  {
-    "time": 1500,
-    "midi": [
-      71,
-      59
-    ],
-    "duration": 250
-  },
-  {
-    "time": 1750,
-    "midi": [
-      72
-    ],
-    "duration": 250
-  },
-  {
-    "time": 2000,
-    "midi": [
-      76,
-      64
-    ],
-    "duration": 500
-  },
-  {
-    "time": 2500,
-    "midi": [
-      81
-    ],
-    "duration": 125
-  },
-  {
-    "time": 2625,
-    "midi": [
-      79
-    ],
-    "duration": 125
-  },
-  {
-    "time": 2750,
-    "midi": [
-      77,
-      69
-    ],
-    "duration": 250
-  },
-  {
-    "time": 3000,
-    "midi": [
-      76
-    ],
-    "duration": 250
-  },
-  {
-    "time": 3250,
-    "midi": [
-      74,
-      62
-    ],
-    "duration": 250
-  },
-  {
-    "time": 3500,
-    "midi": [
-      72
-    ],
-    "duration": 250
-  },
-  {
-    "time": 3750,
-    "midi": [
-      71,
-      59
-    ],
-    "duration": 250
-  },
-  {
-    "time": 4000,
-    "midi": [
-      69
-    ],
-    "duration": 250
-  },
-  {
-    "time": 4250,
-    "midi": [
-      69,
-      57
-    ],
-    "duration": 500
-  },
-  {
-    "time": 4750,
-    "midi": [
-      71
-    ],
-    "duration": 125
-  },
-  {
-    "time": 4875,
-    "midi": [
-      69
-    ],
-    "duration": 125
-  },
-  {
-    "time": 5000,
-    "midi": [
-      68,
-      57
-    ],
-    "duration": 250
-  },
-  {
-    "time": 5250,
-    "midi": [
-      69
-    ],
-    "duration": 250
-  },
-  {
-    "time": 5500,
-    "midi": [
-      72,
-      60
-    ],
-    "duration": 500
-  },
-  {
-    "time": 6000,
-    "midi": [
-      74
-    ],
-    "duration": 125
-  },
-  {
-    "time": 6125,
-    "midi": [
-      72
-    ],
-    "duration": 125
-  },
-  {
-    "time": 6250,
-    "midi": [
-      71,
-      59
-    ],
-    "duration": 250
-  },
-  {
-    "time": 6500,
-    "midi": [
-      72
-    ],
-    "duration": 250
-  },
-  {
-    "time": 6750,
-    "midi": [
-      76,
-      64
-    ],
-    "duration": 500
-  },
-  {
-    "time": 7250,
-    "midi": [
-      81
-    ],
-    "duration": 125
-  },
-  {
-    "time": 7375,
-    "midi": [
-      79
-    ],
-    "duration": 125
-  },
-  {
-    "time": 7500,
-    "midi": [
-      77,
-      69
-    ],
-    "duration": 250
-  },
-  {
-    "time": 7750,
-    "midi": [
-      76
-    ],
-    "duration": 250
-  },
-  {
-    "time": 8000,
-    "midi": [
-      74,
-      62
-    ],
-    "duration": 250
-  },
-  {
-    "time": 8250,
-    "midi": [
-      72
-    ],
-    "duration": 250
-  },
-  {
-    "time": 8500,
-    "midi": [
-      71,
-      59
-    ],
-    "duration": 250
-  },
-  {
-    "time": 8750,
-    "midi": [
-      69
-    ],
-    "duration": 250
-  },
-  {
-    "time": 9000,
-    "midi": [
-      69,
-      57
-    ],
-    "duration": 500
-  },
-  {
-    "time": 9500,
-    "midi": [
-      76
-    ],
-    "duration": 125
-  },
-  {
-    "time": 9625,
-    "midi": [
-      74
-    ],
-    "duration": 125
-  },
-  {
-    "time": 9750,
-    "midi": [
-      72,
-      60
-    ],
-    "duration": 250
-  },
-  {
-    "time": 10000,
-    "midi": [
-      74
-    ],
-    "duration": 250
-  },
-  {
-    "time": 10250,
-    "midi": [
-      76,
-      64
-    ],
-    "duration": 500
-  },
-  {
-    "time": 10750,
-    "midi": [
-      79
-    ],
-    "duration": 125
-  },
-  {
-    "time": 10875,
-    "midi": [
-      77
-    ],
-    "duration": 125
-  },
-  {
-    "time": 11000,
-    "midi": [
-      76,
-      60
-    ],
-    "duration": 250
-  },
-  {
-    "time": 11250,
-    "midi": [
-      77
-    ],
-    "duration": 250
-  },
-  {
-    "time": 11500,
-    "midi": [
-      79,
-      67
-    ],
-    "duration": 500
-  },
-  {
-    "time": 12000,
-    "midi": [
-      81
-    ],
-    "duration": 125
-  },
-  {
-    "time": 12125,
-    "midi": [
-      79
-    ],
-    "duration": 125
-  },
-  {
-    "time": 12250,
-    "midi": [
-      77,
-      69
-    ],
-    "duration": 250
-  },
-  {
-    "time": 12500,
-    "midi": [
-      76
-    ],
-    "duration": 250
-  },
-  {
-    "time": 12750,
-    "midi": [
-      74,
-      62
-    ],
-    "duration": 250
-  },
-  {
-    "time": 13000,
-    "midi": [
-      72
-    ],
-    "duration": 250
-  },
-  {
-    "time": 13250,
-    "midi": [
-      71,
-      59
-    ],
-    "duration": 250
-  },
-  {
-    "time": 13500,
-    "midi": [
-      69
-    ],
-    "duration": 250
-  },
-  {
-    "time": 13750,
-    "midi": [
-      69,
-      57
-    ],
-    "duration": 500
-  },
-  {
-    "time": 14250,
-    "midi": [
-      76
-    ],
-    "duration": 125
-  },
-  {
-    "time": 14375,
-    "midi": [
-      74
-    ],
-    "duration": 125
-  },
-  {
-    "time": 14500,
-    "midi": [
-      72,
-      60
-    ],
-    "duration": 250
-  },
-  {
-    "time": 14750,
-    "midi": [
-      74
-    ],
-    "duration": 250
-  },
-  {
-    "time": 15000,
-    "midi": [
-      76,
-      64
-    ],
-    "duration": 500
-  },
-  {
-    "time": 15500,
-    "midi": [
-      79
-    ],
-    "duration": 125
-  },
-  {
-    "time": 15625,
-    "midi": [
-      77
-    ],
-    "duration": 125
-  },
-  {
-    "time": 15750,
-    "midi": [
-      76,
-      60
-    ],
-    "duration": 250
-  },
-  {
-    "time": 16000,
-    "midi": [
-      77
-    ],
-    "duration": 250
-  },
-  {
-    "time": 16250,
-    "midi": [
-      79,
-      67
-    ],
-    "duration": 500
-  },
-  {
-    "time": 16750,
-    "midi": [
-      81
-    ],
-    "duration": 125
-  },
-  {
-    "time": 16875,
-    "midi": [
-      79
-    ],
-    "duration": 125
-  },
-  {
-    "time": 17000,
-    "midi": [
-      77,
-      69
-    ],
-    "duration": 250
-  },
-  {
-    "time": 17250,
-    "midi": [
-      76
-    ],
-    "duration": 250
-  },
-  {
-    "time": 17500,
-    "midi": [
-      74,
-      62
-    ],
-    "duration": 250
-  },
-  {
-    "time": 17750,
-    "midi": [
-      72
-    ],
-    "duration": 250
-  },
-  {
-    "time": 18000,
-    "midi": [
-      71,
-      59
-    ],
-    "duration": 250
-  },
-  {
-    "time": 18250,
-    "midi": [
-      69
-    ],
-    "duration": 250
-  },
-  {
-    "time": 18500,
-    "midi": [
-      69,
-      57
-    ],
-    "duration": 500
-  },
-  {
-    "time": 19000,
-    "midi": [
-      81,
-      77,
-      73,
-      69
-    ],
-    "duration": 250
-  },
-  {
-    "time": 19250,
-    "midi": [
-      69,
-      57
-    ],
-    "duration": 250
-  },
-  {
-    "time": 19500,
-    "midi": [
-      81,
-      77,
-      73,
-      69
-    ],
-    "duration": 250
-  },
-  {
-    "time": 19750,
-    "midi": [
-      69,
-      57
-    ],
-    "duration": 250
-  },
-  {
-    "time": 20000,
-    "midi": [
-      81,
-      77,
-      73,
-      69
-    ],
-    "duration": 250
-  },
-  {
-    "time": 20250,
-    "midi": [
-      69,
-      57
-    ],
-    "duration": 250
-  },
-  {
-    "time": 20500,
-    "midi": [
-      79,
-      76,
-      71,
-      67
-    ],
-    "duration": 250
-  },
-  {
-    "time": 20750,
-    "midi": [
-      67,
-      55
-    ],
-    "duration": 250
-  },
-  {
-    "time": 21000,
-    "midi": [
-      78,
-      74,
-      71,
-      66
-    ],
-    "duration": 250
-  },
-  {
-    "time": 21250,
-    "midi": [
-      66,
-      54
-    ],
-    "duration": 250
-  },
-  {
-    "time": 21500,
-    "midi": [
-      78,
-      74,
-      71,
-      66
-    ],
-    "duration": 250
-  },
-  {
-    "time": 21750,
-    "midi": [
-      66,
-      54
-    ],
-    "duration": 250
-  },
-  {
-    "time": 22000,
-    "midi": [
-      78,
-      74,
-      71,
-      66
-    ],
-    "duration": 250
-  },
-  {
-    "time": 22250,
-    "midi": [
-      66,
-      54
-    ],
-    "duration": 250
-  },
-  {
-    "time": 22500,
-    "midi": [
-      76,
-      73,
-      69,
-      64
-    ],
-    "duration": 250
-  },
-  {
-    "time": 22750,
-    "midi": [
-      64,
-      52
-    ],
-    "duration": 250
-  },
-  {
-    "time": 23000,
-    "midi": [
-      81,
-      77,
-      73,
-      69
-    ],
-    "duration": 250
-  },
-  {
-    "time": 23250,
-    "midi": [
-      69,
-      57
-    ],
-    "duration": 250
-  },
-  {
-    "time": 23500,
-    "midi": [
-      81,
-      77,
-      73,
-      69
-    ],
-    "duration": 250
-  },
-  {
-    "time": 23750,
-    "midi": [
-      69,
-      57
-    ],
-    "duration": 250
-  },
-  {
-    "time": 24000,
-    "midi": [
-      81,
-      77,
-      73,
-      69
-    ],
-    "duration": 250
-  },
-  {
-    "time": 24250,
-    "midi": [
-      69,
-      57
-    ],
-    "duration": 250
-  },
-  {
-    "time": 24500,
-    "midi": [
-      79,
-      76,
-      71,
-      67
-    ],
-    "duration": 250
-  },
-  {
-    "time": 24750,
-    "midi": [
-      67,
-      55
-    ],
-    "duration": 250
-  },
-  {
-    "time": 25000,
-    "midi": [
-      78,
-      74,
-      71,
-      66
-    ],
-    "duration": 250
-  },
-  {
-    "time": 25250,
-    "midi": [
-      66,
-      54
-    ],
-    "duration": 250
-  },
-  {
-    "time": 25500,
-    "midi": [
-      78,
-      74,
-      71,
-      66
-    ],
-    "duration": 250
-  },
-  {
-    "time": 25750,
-    "midi": [
-      66,
-      54
-    ],
-    "duration": 250
-  },
-  {
-    "time": 26000,
-    "midi": [
-      78,
-      74,
-      71,
-      66
-    ],
-    "duration": 500
-  },
-  {
-    "time": 26500,
-    "midi": [
-      69,
-      57
-    ],
-    "duration": 500
-  },
-  {
-    "time": 27000,
-    "midi": [
-      81,
-      77,
-      73,
-      69
-    ],
-    "duration": 250
-  },
-  {
-    "time": 27250,
-    "midi": [
-      69,
-      57
-    ],
-    "duration": 250
-  },
-  {
-    "time": 27500,
-    "midi": [
-      81,
-      77,
-      73,
-      69
-    ],
-    "duration": 250
-  },
-  {
-    "time": 27750,
-    "midi": [
-      69,
-      57
-    ],
-    "duration": 250
-  },
-  {
-    "time": 28000,
-    "midi": [
-      81,
-      77,
-      73,
-      69
-    ],
-    "duration": 250
-  },
-  {
-    "time": 28250,
-    "midi": [
-      69,
-      57
-    ],
-    "duration": 250
-  },
-  {
-    "time": 28500,
-    "midi": [
-      79,
-      76,
-      71,
-      67
-    ],
-    "duration": 250
-  },
-  {
-    "time": 28750,
-    "midi": [
-      67,
-      55
-    ],
-    "duration": 250
-  },
-  {
-    "time": 29000,
-    "midi": [
-      78,
-      74,
-      71,
-      66
-    ],
-    "duration": 250
-  },
-  {
-    "time": 29250,
-    "midi": [
-      66,
-      54
-    ],
-    "duration": 250
-  },
-  {
-    "time": 29500,
-    "midi": [
-      78,
-      74,
-      71,
-      66
-    ],
-    "duration": 250
-  },
-  {
-    "time": 29750,
-    "midi": [
-      66,
-      54
-    ],
-    "duration": 250
-  },
-  {
-    "time": 30000,
-    "midi": [
-      78,
-      74,
-      71,
-      66
-    ],
-    "duration": 250
-  },
-  {
-    "time": 30250,
-    "midi": [
-      66,
-      54
-    ],
-    "duration": 250
-  },
-  {
-    "time": 30500,
-    "midi": [
-      76,
-      73,
-      69,
-      64
-    ],
-    "duration": 250
-  },
-  {
-    "time": 30750,
-    "midi": [
-      64,
-      52
-    ],
-    "duration": 250
-  },
-  {
-    "time": 31000,
-    "midi": [
-      81,
-      77,
-      73,
-      69
-    ],
-    "duration": 250
-  },
-  {
-    "time": 31250,
-    "midi": [
-      69,
-      57
-    ],
-    "duration": 250
-  },
-  {
-    "time": 31500,
-    "midi": [
-      81,
-      77,
-      73,
-      69
-    ],
-    "duration": 250
-  },
-  {
-    "time": 31750,
-    "midi": [
-      69,
-      57
-    ],
-    "duration": 250
-  },
-  {
-    "time": 32000,
-    "midi": [
-      81,
-      77,
-      73,
-      69
-    ],
-    "duration": 250
-  },
-  {
-    "time": 32250,
-    "midi": [
-      69,
-      57
-    ],
-    "duration": 250
-  },
-  {
-    "time": 32500,
-    "midi": [
-      79,
-      76,
-      71,
-      67
-    ],
-    "duration": 250
-  },
-  {
-    "time": 32750,
-    "midi": [
-      67,
-      55
-    ],
-    "duration": 250
-  },
-  {
-    "time": 33000,
-    "midi": [
-      78,
-      74,
-      71,
-      66
-    ],
-    "duration": 250
-  },
-  {
-    "time": 33250,
-    "midi": [
-      66,
-      54
-    ],
-    "duration": 250
-  },
-  {
-    "time": 33500,
-    "midi": [
-      78,
-      74,
-      71,
-      66
-    ],
-    "duration": 250
-  },
-  {
-    "time": 33750,
-    "midi": [
-      66,
-      54
-    ],
-    "duration": 250
-  },
-  {
-    "time": 34000,
-    "midi": [
-      78,
-      74,
-      71,
-      66
-    ],
-    "duration": 500
-  },
-  {
-    "time": 34500,
-    "midi": [
-      69,
-      57
-    ],
-    "duration": 500
-  }
+  { time: 500, midi: [71], duration: 125 },
+  { time: 625, midi: [69], duration: 125 },
+  { time: 750, midi: [68], duration: 125 },
+  { time: 875, midi: [69], duration: 125 },
+  { time: 1000, midi: [57, 72], duration: 250 },
+  { time: 1250, midi: [60, 64], duration: 250 },
+  { time: 1500, midi: [60, 64, 74], duration: 250 },
+  { time: 1625, midi: [72], duration: 125 },
+  { time: 1750, midi: [60, 64, 71], duration: 250 },
+  { time: 1875, midi: [72], duration: 125 },
+  { time: 2000, midi: [57, 76], duration: 250 },
+  { time: 2250, midi: [60, 64], duration: 250 },
+  { time: 2500, midi: [60, 64, 77], duration: 250 },
+  { time: 2625, midi: [76], duration: 125 },
+  { time: 2750, midi: [60, 64, 75], duration: 250 },
+  { time: 2875, midi: [76], duration: 125 },
+  { time: 3000, midi: [57, 83], duration: 250 },
+  { time: 3125, midi: [81], duration: 125 },
+  { time: 3250, midi: [60, 64, 80], duration: 250 },
+  { time: 3375, midi: [81], duration: 125 },
+  { time: 3500, midi: [57, 83], duration: 250 },
+  { time: 3625, midi: [81], duration: 125 },
+  { time: 3750, midi: [60, 64, 80], duration: 250 },
+  { time: 3875, midi: [81], duration: 125 },
+  { time: 4000, midi: [57, 84], duration: 500 },
+  { time: 4250, midi: [60, 64], duration: 250 },
+  { time: 4500, midi: [60, 64, 81], duration: 250 },
+  { time: 4750, midi: [60, 64, 84], duration: 250 },
+  { time: 4930, midi: [79], duration: 60 },
+  { time: 4965, midi: [81], duration: 60 },
+  { time: 5000, midi: [52, 83], duration: 250 },
+  { time: 5250, midi: [59, 64, 78, 81], duration: 250 },
+  { time: 5500, midi: [59, 64, 76, 79], duration: 250 },
+  { time: 5750, midi: [59, 64, 78, 81], duration: 250 },
+  { time: 5930, midi: [79], duration: 60 },
+  { time: 5965, midi: [81], duration: 60 },
+  { time: 6000, midi: [52, 83], duration: 250 },
+  { time: 6250, midi: [59, 64, 78, 81], duration: 250 },
+  { time: 6500, midi: [59, 64, 76, 79], duration: 250 },
+  { time: 6750, midi: [59, 64, 78, 81], duration: 250 },
+  { time: 6930, midi: [79], duration: 60 },
+  { time: 6965, midi: [81], duration: 60 },
+  { time: 7000, midi: [52, 83], duration: 250 },
+  { time: 7250, midi: [59, 64, 78, 81], duration: 250 },
+  { time: 7500, midi: [47, 76, 79], duration: 250 },
+  { time: 7750, midi: [59, 75, 78], duration: 250 },
+  { time: 8000, midi: [52, 76], duration: 500 },
+  { time: 8500, midi: [72, 76], duration: 250 },
+  { time: 8750, midi: [74, 77], duration: 250 },
+  { time: 9000, midi: [48, 76, 79], duration: 250 },
+  { time: 9250, midi: [60, 76, 79], duration: 250 },
+  { time: 9500, midi: [52, 81], duration: 250 },
+  { time: 9625, midi: [79], duration: 125 },
+  { time: 9750, midi: [64, 77], duration: 250 },
+  { time: 9875, midi: [76], duration: 125 },
+  { time: 10000, midi: [55, 71, 74], duration: 500 },
+  { time: 10250, midi: [67], duration: 250 },
+  { time: 10500, midi: [72, 76], duration: 250 },
+  { time: 10750, midi: [74, 77], duration: 250 },
+  { time: 11000, midi: [48, 76, 79], duration: 250 },
+  { time: 11250, midi: [60, 76, 79], duration: 250 },
+  { time: 11500, midi: [52, 81], duration: 250 },
+  { time: 11625, midi: [79], duration: 125 },
+  { time: 11750, midi: [64, 77], duration: 250 },
+  { time: 11875, midi: [76], duration: 125 },
+  { time: 12000, midi: [55, 71, 74], duration: 500 },
+  { time: 12500, midi: [69, 72], duration: 250 },
+  { time: 12750, midi: [71, 74], duration: 250 },
+  { time: 13000, midi: [45, 72, 76], duration: 250 },
+  { time: 13250, midi: [57, 72, 76], duration: 250 },
+  { time: 13500, midi: [48, 77], duration: 250 },
+  { time: 13625, midi: [76], duration: 125 },
+  { time: 13750, midi: [60, 74], duration: 250 },
+  { time: 13875, midi: [72], duration: 125 },
+  { time: 14000, midi: [52, 68, 71], duration: 500 },
+  { time: 14250, midi: [64], duration: 250 },
+  { time: 14500, midi: [69, 72], duration: 250 },
+  { time: 14750, midi: [71, 74], duration: 250 },
+  { time: 15000, midi: [45, 72, 76], duration: 250 },
+  { time: 15250, midi: [57, 72, 76], duration: 250 },
+  { time: 15500, midi: [48, 77], duration: 250 },
+  { time: 15625, midi: [76], duration: 125 },
+  { time: 15750, midi: [60, 74], duration: 250 },
+  { time: 15875, midi: [72], duration: 125 },
+  { time: 16000, midi: [52, 68, 71], duration: 500 },
+  { time: 16500, midi: [71], duration: 125 },
+  { time: 16625, midi: [69], duration: 125 },
+  { time: 16750, midi: [68], duration: 125 },
+  { time: 16875, midi: [69], duration: 125 },
+  { time: 17000, midi: [57, 72], duration: 250 },
+  { time: 17250, midi: [60, 64], duration: 250 },
+  { time: 17500, midi: [60, 64, 74], duration: 250 },
+  { time: 17625, midi: [72], duration: 125 },
+  { time: 17750, midi: [60, 64, 71], duration: 250 },
+  { time: 17875, midi: [72], duration: 125 },
+  { time: 18000, midi: [57, 76], duration: 250 },
+  { time: 18250, midi: [60, 64], duration: 250 },
+  { time: 18500, midi: [60, 64, 77], duration: 250 },
+  { time: 18625, midi: [76], duration: 125 },
+  { time: 18750, midi: [60, 64, 75], duration: 250 },
+  { time: 18875, midi: [76], duration: 125 },
+  { time: 19000, midi: [57, 83], duration: 250 },
+  { time: 19125, midi: [81], duration: 125 },
+  { time: 19250, midi: [60, 64, 80], duration: 250 },
+  { time: 19375, midi: [81], duration: 125 },
+  { time: 19500, midi: [57, 83], duration: 250 },
+  { time: 19625, midi: [81], duration: 125 },
+  { time: 19750, midi: [60, 64, 80], duration: 250 },
+  { time: 19875, midi: [81], duration: 125 },
+  { time: 20000, midi: [53, 84], duration: 250 },
+  { time: 20250, midi: [57, 63], duration: 250 },
+  { time: 20500, midi: [57, 63, 81], duration: 250 },
+  { time: 20750, midi: [57, 63, 83], duration: 250 },
+  { time: 21000, midi: [52, 84], duration: 250 },
+  { time: 21250, midi: [57, 64, 83], duration: 250 },
+  { time: 21500, midi: [50, 81], duration: 250 },
+  { time: 21750, midi: [53, 59, 80], duration: 250 },
+  { time: 22000, midi: [48, 81], duration: 250 },
+  { time: 22250, midi: [52, 57, 76], duration: 250 },
+  { time: 22500, midi: [50, 77], duration: 250 },
+  { time: 22750, midi: [53, 59, 74], duration: 250 },
+  { time: 23000, midi: [52, 57, 72], duration: 500 },
+  { time: 23250, midi: [52, 57], duration: 250 },
+  { time: 23500, midi: [52, 56, 71], duration: 375 },
+  { time: 23750, midi: [52, 56], duration: 250 },
+  { time: 23875, midi: [69], duration: 62 },
+  { time: 23938, midi: [71], duration: 62 },
+  { time: 24000, midi: [45, 57, 69], duration: 500 },
+  { time: 24500, midi: [69, 81], duration: 250 },
+  { time: 24750, midi: [71, 83], duration: 250 },
+  { time: 24895, midi: [45], duration: 60 },
+  { time: 24930, midi: [49], duration: 60 },
+  { time: 24965, midi: [52], duration: 60 },
+  { time: 25000, midi: [57, 73, 85], duration: 500 },
+  { time: 25250, midi: [57], duration: 250 },
+  { time: 25500, midi: [57, 69, 81], duration: 250 },
+  { time: 25750, midi: [57, 71, 83], duration: 250 },
+  { time: 25895, midi: [45], duration: 60 },
+  { time: 25930, midi: [49], duration: 60 },
+  { time: 25965, midi: [52], duration: 60 },
+  { time: 26000, midi: [57, 73, 85], duration: 250 },
+  { time: 26250, midi: [57, 71, 83], duration: 250 },
+  { time: 26500, midi: [57, 69, 81], duration: 250 },
+  { time: 26750, midi: [57, 68, 80], duration: 250 },
+  { time: 26895, midi: [38], duration: 60 },
+  { time: 26930, midi: [42], duration: 60 },
+  { time: 26965, midi: [45], duration: 60 },
+  { time: 27000, midi: [50, 66, 78], duration: 250 },
+  { time: 27250, midi: [50, 68, 80], duration: 250 },
+  { time: 27395, midi: [39], duration: 60 },
+  { time: 27430, midi: [42], duration: 60 },
+  { time: 27465, midi: [45], duration: 60 },
+  { time: 27500, midi: [51, 69, 81], duration: 250 },
+  { time: 27750, midi: [51, 71, 83], duration: 250 },
+  { time: 27895, midi: [40], duration: 60 },
+  { time: 27930, midi: [44], duration: 60 },
+  { time: 27965, midi: [47], duration: 60 },
+  { time: 28000, midi: [52, 68, 80], duration: 250 },
+  { time: 28250, midi: [52, 64, 76], duration: 250 },
+  { time: 28500, midi: [52, 69, 81], duration: 250 },
+  { time: 28750, midi: [52, 71, 83], duration: 250 },
+  { time: 28895, midi: [45], duration: 60 },
+  { time: 28930, midi: [49], duration: 60 },
+  { time: 28965, midi: [52], duration: 60 },
+  { time: 29000, midi: [57, 73, 85], duration: 500 },
+  { time: 29250, midi: [57], duration: 250 },
+  { time: 29500, midi: [57, 69, 81], duration: 250 },
+  { time: 29750, midi: [57, 71, 83], duration: 250 },
+  { time: 29895, midi: [45], duration: 60 },
+  { time: 29930, midi: [49], duration: 60 },
+  { time: 29965, midi: [52], duration: 60 },
+  { time: 30000, midi: [57, 73, 85], duration: 250 },
+  { time: 30250, midi: [57, 71, 83], duration: 250 },
+  { time: 30500, midi: [57, 69, 81], duration: 250 },
+  { time: 30750, midi: [57, 68, 80], duration: 250 },
+  { time: 30895, midi: [38], duration: 60 },
+  { time: 30930, midi: [42], duration: 60 },
+  { time: 30965, midi: [45], duration: 60 },
+  { time: 31000, midi: [50, 66, 78], duration: 250 },
+  { time: 31250, midi: [50, 71, 83], duration: 250 },
+  { time: 31395, midi: [40], duration: 60 },
+  { time: 31430, midi: [44], duration: 60 },
+  { time: 31465, midi: [47], duration: 60 },
+  { time: 31500, midi: [52, 68, 80], duration: 250 },
+  { time: 31750, midi: [52, 64, 76], duration: 250 },
+  { time: 32000, midi: [45, 69, 81], duration: 500 },
+  { time: 32500, midi: [85], duration: 125 },
+  { time: 32625, midi: [86], duration: 125 },
+  { time: 32750, midi: [85], duration: 125 },
+  { time: 32875, midi: [83], duration: 125 },
+  { time: 33000, midi: [54, 81], duration: 250 },
+  { time: 33125, midi: [83], duration: 125 },
+  { time: 33250, midi: [57, 61, 81], duration: 250 },
+  { time: 33375, midi: [80], duration: 125 },
+  { time: 33500, midi: [57, 61, 78], duration: 250 },
+  { time: 33625, midi: [81], duration: 125 },
+  { time: 33750, midi: [57, 61, 80], duration: 250 },
+  { time: 33875, midi: [78], duration: 125 },
+  { time: 34000, midi: [56, 77], duration: 250 },
+  { time: 34125, midi: [78], duration: 125 },
+  { time: 34250, midi: [59, 61, 80], duration: 250 },
+  { time: 34375, midi: [77], duration: 125 },
+  { time: 34500, midi: [59, 61, 73], duration: 250 },
+  { time: 34625, midi: [75], duration: 125 },
+  { time: 34750, midi: [59, 61, 77], duration: 250 },
+  { time: 34875, midi: [73], duration: 125 },
+  { time: 35000, midi: [54, 78], duration: 250 },
+  { time: 35125, midi: [77], duration: 125 },
+  { time: 35250, midi: [57, 61, 78], duration: 250 },
+  { time: 35375, midi: [80], duration: 125 },
+  { time: 35500, midi: [57, 61, 81], duration: 250 },
+  { time: 35625, midi: [80], duration: 125 },
+  { time: 35750, midi: [57, 61, 81], duration: 250 },
+  { time: 35875, midi: [83], duration: 125 },
+  { time: 36000, midi: [53, 85], duration: 250 },
+  { time: 36125, midi: [84], duration: 125 },
+  { time: 36250, midi: [56, 61, 85], duration: 250 },
+  { time: 36375, midi: [84], duration: 125 },
+  { time: 36500, midi: [56, 61, 85], duration: 250 },
+  { time: 36625, midi: [86], duration: 125 },
+  { time: 36750, midi: [56, 61, 85], duration: 250 },
+  { time: 36875, midi: [83], duration: 125 },
+  { time: 37000, midi: [54, 81], duration: 250 },
+  { time: 37125, midi: [83], duration: 125 },
+  { time: 37250, midi: [57, 61, 81], duration: 250 },
+  { time: 37375, midi: [80], duration: 125 },
+  { time: 37500, midi: [57, 61, 78], duration: 250 },
+  { time: 37625, midi: [81], duration: 125 },
+  { time: 37750, midi: [57, 61, 80], duration: 250 },
+  { time: 37875, midi: [78], duration: 125 },
+  { time: 38000, midi: [56, 76], duration: 250 },
+  { time: 38125, midi: [78], duration: 125 },
+  { time: 38250, midi: [61, 64, 80], duration: 250 },
+  { time: 38375, midi: [76], duration: 125 },
+  { time: 38500, midi: [61, 64, 73], duration: 250 },
+  { time: 38625, midi: [75], duration: 125 },
+  { time: 38750, midi: [61, 64, 76], duration: 250 },
+  { time: 38875, midi: [73], duration: 125 },
+  { time: 39000, midi: [56, 75], duration: 250 },
+  { time: 39125, midi: [76], duration: 125 },
+  { time: 39250, midi: [63, 66, 78], duration: 250 },
+  { time: 39375, midi: [75], duration: 125 },
+  { time: 39500, midi: [63, 66, 72], duration: 250 },
+  { time: 39625, midi: [73], duration: 125 },
+  { time: 39750, midi: [63, 66, 75], duration: 250 },
+  { time: 39875, midi: [72], duration: 125 },
+  { time: 40000, midi: [61, 64, 73], duration: 500 },
+  { time: 40500, midi: [76], duration: 125 },
+  { time: 40625, midi: [74], duration: 125 },
+  { time: 40750, midi: [73], duration: 125 },
+  { time: 40875, midi: [71], duration: 125 },
+  { time: 41000, midi: [57, 69], duration: 250 },
+  { time: 41125, midi: [71], duration: 125 },
+  { time: 41250, midi: [61, 64, 73], duration: 250 },
+  { time: 41375, midi: [74], duration: 125 },
+  { time: 41500, midi: [61, 64, 76], duration: 250 },
+  { time: 41625, midi: [78], duration: 125 },
+  { time: 41750, midi: [61, 64, 80], duration: 250 },
+  { time: 41875, midi: [81], duration: 125 },
+  { time: 42000, midi: [59, 81], duration: 250 },
+  { time: 42125, midi: [80], duration: 125 },
+  { time: 42250, midi: [62, 64, 78], duration: 250 },
+  { time: 42375, midi: [76], duration: 125 },
+  { time: 42500, midi: [56, 76], duration: 250 },
+  { time: 42625, midi: [74], duration: 125 },
+  { time: 42750, midi: [62, 64, 73], duration: 250 },
+  { time: 42875, midi: [71], duration: 125 },
+  { time: 43000, midi: [57, 69], duration: 250 },
+  { time: 43125, midi: [71], duration: 125 },
+  { time: 43250, midi: [61, 64, 73], duration: 250 },
+  { time: 43375, midi: [74], duration: 125 },
+  { time: 43500, midi: [61, 64, 76], duration: 250 },
+  { time: 43625, midi: [78], duration: 125 },
+  { time: 43750, midi: [61, 64, 80], duration: 250 },
+  { time: 43875, midi: [81], duration: 125 },
+  { time: 44000, midi: [52, 82], duration: 250 },
+  { time: 44250, midi: [56, 62, 83], duration: 250 },
+  { time: 44500, midi: [56, 62, 76], duration: 250 },
+  { time: 44625, midi: [74], duration: 125 },
+  { time: 44750, midi: [56, 62, 73], duration: 250 },
+  { time: 44875, midi: [71], duration: 125 },
+  { time: 45000, midi: [57, 69], duration: 250 },
+  { time: 45125, midi: [71], duration: 125 },
+  { time: 45250, midi: [61, 64, 73], duration: 250 },
+  { time: 45375, midi: [74], duration: 125 },
+  { time: 45500, midi: [61, 64, 76], duration: 250 },
+  { time: 45625, midi: [78], duration: 125 },
+  { time: 45750, midi: [61, 64, 80], duration: 250 },
+  { time: 45875, midi: [81], duration: 125 },
+  { time: 46000, midi: [59, 81], duration: 250 },
+  { time: 46125, midi: [80], duration: 125 },
+  { time: 46250, midi: [62, 64, 78], duration: 250 },
+  { time: 46375, midi: [76], duration: 125 },
+  { time: 46500, midi: [56, 76], duration: 250 },
+  { time: 46625, midi: [74], duration: 125 },
+  { time: 46750, midi: [62, 64, 73], duration: 250 },
+  { time: 46875, midi: [71], duration: 125 },
+  { time: 47000, midi: [57, 73], duration: 250 },
+  { time: 47125, midi: [76], duration: 125 },
+  { time: 47250, midi: [54, 69], duration: 250 },
+  { time: 47375, midi: [73], duration: 125 },
+  { time: 47500, midi: [50, 71], duration: 250 },
+  { time: 47625, midi: [74], duration: 125 },
+  { time: 47750, midi: [52, 68], duration: 250 },
+  { time: 47875, midi: [71], duration: 125 },
+  { time: 48000, midi: [45, 69], duration: 500 },
+  { time: 48250, midi: [57], duration: 250 },
+  { time: 48500, midi: [85], duration: 125 },
+  { time: 48625, midi: [86], duration: 125 },
+  { time: 48750, midi: [85], duration: 125 },
+  { time: 48875, midi: [83], duration: 125 },
+  { time: 49000, midi: [54, 81], duration: 250 },
+  { time: 49125, midi: [83], duration: 125 },
+  { time: 49250, midi: [57, 61, 81], duration: 250 },
+  { time: 49375, midi: [80], duration: 125 },
+  { time: 49500, midi: [57, 61, 78], duration: 250 },
+  { time: 49625, midi: [81], duration: 125 },
+  { time: 49750, midi: [57, 61, 80], duration: 250 },
+  { time: 49875, midi: [78], duration: 125 },
+  { time: 50000, midi: [56, 77], duration: 250 },
+  { time: 50125, midi: [78], duration: 125 },
+  { time: 50250, midi: [59, 61, 80], duration: 250 },
+  { time: 50375, midi: [77], duration: 125 },
+  { time: 50500, midi: [59, 61, 73], duration: 250 },
+  { time: 50625, midi: [75], duration: 125 },
+  { time: 50750, midi: [59, 61, 77], duration: 250 },
+  { time: 50875, midi: [73], duration: 125 },
+  { time: 51000, midi: [54, 78], duration: 250 },
+  { time: 51125, midi: [77], duration: 125 },
+  { time: 51250, midi: [57, 61, 78], duration: 250 },
+  { time: 51375, midi: [80], duration: 125 },
+  { time: 51500, midi: [57, 61, 81], duration: 250 },
+  { time: 51625, midi: [80], duration: 125 },
+  { time: 51750, midi: [57, 61, 81], duration: 250 },
+  { time: 51875, midi: [83], duration: 125 },
+  { time: 52000, midi: [49, 85], duration: 250 },
+  { time: 52125, midi: [84], duration: 125 },
+  { time: 52250, midi: [56, 61, 85], duration: 250 },
+  { time: 52375, midi: [84], duration: 125 },
+  { time: 52500, midi: [55, 61, 85], duration: 250 },
+  { time: 52625, midi: [84], duration: 125 },
+  { time: 52750, midi: [54, 61, 85], duration: 250 },
+  { time: 52875, midi: [82], duration: 125 },
+  { time: 53000, midi: [47, 86], duration: 250 },
+  { time: 53125, midi: [85], duration: 125 },
+  { time: 53250, midi: [54, 59, 86], duration: 250 },
+  { time: 53375, midi: [85], duration: 125 },
+  { time: 53500, midi: [54, 59, 86], duration: 250 },
+  { time: 53625, midi: [85], duration: 125 },
+  { time: 53750, midi: [54, 59, 86], duration: 250 },
+  { time: 53875, midi: [85], duration: 125 },
+  { time: 54000, midi: [47, 86], duration: 250 },
+  { time: 54125, midi: [85], duration: 125 },
+  { time: 54250, midi: [56, 59, 83], duration: 250 },
+  { time: 54375, midi: [81], duration: 125 },
+  { time: 54500, midi: [56, 59, 80], duration: 250 },
+  { time: 54625, midi: [81], duration: 125 },
+  { time: 54750, midi: [56, 59, 83], duration: 250 },
+  { time: 54875, midi: [80], duration: 125 },
+  { time: 55000, midi: [49, 81], duration: 250 },
+  { time: 55125, midi: [83], duration: 125 },
+  { time: 55250, midi: [54, 57, 85], duration: 250 },
+  { time: 55375, midi: [78], duration: 125 },
+  { time: 55500, midi: [49, 77], duration: 250 },
+  { time: 55625, midi: [78], duration: 125 },
+  { time: 55750, midi: [56, 59, 80], duration: 250 },
+  { time: 55875, midi: [77], duration: 125 },
+  { time: 56000, midi: [54, 57, 78], duration: 500 },
+  { time: 56500, midi: [69, 81], duration: 250 },
+  { time: 56750, midi: [71, 83], duration: 250 },
+  { time: 56895, midi: [45], duration: 60 },
+  { time: 56930, midi: [49], duration: 60 },
+  { time: 56965, midi: [52], duration: 60 },
+  { time: 57000, midi: [57, 73, 85], duration: 500 },
+  { time: 57250, midi: [57], duration: 250 },
+  { time: 57500, midi: [57, 69, 81], duration: 250 },
+  { time: 57750, midi: [57, 71, 83], duration: 250 },
+  { time: 57895, midi: [45], duration: 60 },
+  { time: 57930, midi: [49], duration: 60 },
+  { time: 57965, midi: [52], duration: 60 },
+  { time: 58000, midi: [57, 73, 85], duration: 250 },
+  { time: 58250, midi: [57, 71, 83], duration: 250 },
+  { time: 58500, midi: [57, 69, 81], duration: 250 },
+  { time: 58750, midi: [57, 68, 80], duration: 250 },
+  { time: 58895, midi: [38], duration: 60 },
+  { time: 58930, midi: [42], duration: 60 },
+  { time: 58965, midi: [45], duration: 60 },
+  { time: 59000, midi: [50, 66, 78], duration: 250 },
+  { time: 59250, midi: [50, 68, 80], duration: 250 },
+  { time: 59395, midi: [39], duration: 60 },
+  { time: 59430, midi: [42], duration: 60 },
+  { time: 59465, midi: [45], duration: 60 },
+  { time: 59500, midi: [51, 69, 81], duration: 250 },
+  { time: 59750, midi: [51, 71, 83], duration: 250 },
+  { time: 59895, midi: [40], duration: 60 },
+  { time: 59930, midi: [44], duration: 60 },
+  { time: 59965, midi: [47], duration: 60 },
+  { time: 60000, midi: [52, 68, 80], duration: 250 },
+  { time: 60250, midi: [52, 64, 76], duration: 250 },
+  { time: 60500, midi: [52, 69, 81], duration: 250 },
+  { time: 60750, midi: [52, 71, 83], duration: 250 },
+  { time: 60895, midi: [45], duration: 60 },
+  { time: 60930, midi: [49], duration: 60 },
+  { time: 60965, midi: [52], duration: 60 },
+  { time: 61000, midi: [57, 73, 85], duration: 500 },
+  { time: 61250, midi: [57], duration: 250 },
+  { time: 61500, midi: [57, 69, 81], duration: 250 },
+  { time: 61750, midi: [57, 71, 83], duration: 250 },
+  { time: 61895, midi: [45], duration: 60 },
+  { time: 61930, midi: [49], duration: 60 },
+  { time: 61965, midi: [52], duration: 60 },
+  { time: 62000, midi: [57, 73, 85], duration: 250 },
+  { time: 62250, midi: [57, 71, 83], duration: 250 },
+  { time: 62500, midi: [57, 69, 81], duration: 250 },
+  { time: 62750, midi: [57, 68, 80], duration: 250 },
+  { time: 62895, midi: [38], duration: 60 },
+  { time: 62930, midi: [42], duration: 60 },
+  { time: 62965, midi: [45], duration: 60 },
+  { time: 63000, midi: [50, 66, 78], duration: 250 },
+  { time: 63250, midi: [50, 71, 83], duration: 250 },
+  { time: 63395, midi: [40], duration: 60 },
+  { time: 63430, midi: [44], duration: 60 },
+  { time: 63465, midi: [47], duration: 60 },
+  { time: 63500, midi: [52, 68, 80], duration: 250 },
+  { time: 63750, midi: [52, 64, 76], duration: 250 },
+  { time: 64000, midi: [45, 69, 81], duration: 500 },
+  { time: 64500, midi: [71], duration: 125 },
+  { time: 64625, midi: [69], duration: 125 },
+  { time: 64750, midi: [68], duration: 125 },
+  { time: 64875, midi: [69], duration: 125 },
+  { time: 65000, midi: [57, 72], duration: 250 },
+  { time: 65250, midi: [60, 64], duration: 250 },
+  { time: 65500, midi: [60, 64, 74], duration: 250 },
+  { time: 65625, midi: [72], duration: 125 },
+  { time: 65750, midi: [60, 64, 71], duration: 250 },
+  { time: 65875, midi: [72], duration: 125 },
+  { time: 66000, midi: [57, 76], duration: 250 },
+  { time: 66250, midi: [60, 64], duration: 250 },
+  { time: 66500, midi: [60, 64, 77], duration: 250 },
+  { time: 66625, midi: [76], duration: 125 },
+  { time: 66750, midi: [60, 64, 75], duration: 250 },
+  { time: 66875, midi: [76], duration: 125 },
+  { time: 67000, midi: [57, 83], duration: 250 },
+  { time: 67125, midi: [81], duration: 125 },
+  { time: 67250, midi: [60, 64, 80], duration: 250 },
+  { time: 67375, midi: [81], duration: 125 },
+  { time: 67500, midi: [57, 83], duration: 250 },
+  { time: 67625, midi: [81], duration: 125 },
+  { time: 67750, midi: [60, 64, 80], duration: 250 },
+  { time: 67875, midi: [81], duration: 125 },
+  { time: 68000, midi: [57, 84], duration: 500 },
+  { time: 68250, midi: [60, 64], duration: 250 },
+  { time: 68500, midi: [60, 64, 81], duration: 250 },
+  { time: 68750, midi: [60, 64, 84], duration: 250 },
+  { time: 68930, midi: [79], duration: 60 },
+  { time: 68965, midi: [81], duration: 60 },
+  { time: 69000, midi: [52, 83], duration: 250 },
+  { time: 69250, midi: [59, 64, 78, 81], duration: 250 },
+  { time: 69500, midi: [59, 64, 76, 79], duration: 250 },
+  { time: 69750, midi: [59, 64, 78, 81], duration: 250 },
+  { time: 69930, midi: [79], duration: 60 },
+  { time: 69965, midi: [81], duration: 60 },
+  { time: 70000, midi: [52, 83], duration: 250 },
+  { time: 70250, midi: [59, 64, 78, 81], duration: 250 },
+  { time: 70500, midi: [59, 64, 76, 79], duration: 250 },
+  { time: 70750, midi: [59, 64, 78, 81], duration: 250 },
+  { time: 70930, midi: [79], duration: 60 },
+  { time: 70965, midi: [81], duration: 60 },
+  { time: 71000, midi: [52, 83], duration: 250 },
+  { time: 71250, midi: [59, 64, 78, 81], duration: 250 },
+  { time: 71500, midi: [47, 76, 79], duration: 250 },
+  { time: 71750, midi: [59, 75, 78], duration: 250 },
+  { time: 72000, midi: [52, 76], duration: 500 },
+  { time: 72500, midi: [72, 76], duration: 250 },
+  { time: 72750, midi: [74, 77], duration: 250 },
+  { time: 73000, midi: [48, 76, 79], duration: 250 },
+  { time: 73250, midi: [60, 76, 79], duration: 250 },
+  { time: 73500, midi: [52, 81], duration: 250 },
+  { time: 73625, midi: [79], duration: 125 },
+  { time: 73750, midi: [64, 77], duration: 250 },
+  { time: 73875, midi: [76], duration: 125 },
+  { time: 74000, midi: [55, 71, 74], duration: 500 },
+  { time: 74250, midi: [67], duration: 250 },
+  { time: 74500, midi: [72, 76], duration: 250 },
+  { time: 74750, midi: [74, 77], duration: 250 },
+  { time: 75000, midi: [48, 76, 79], duration: 250 },
+  { time: 75250, midi: [60, 76, 79], duration: 250 },
+  { time: 75500, midi: [52, 81], duration: 250 },
+  { time: 75625, midi: [79], duration: 125 },
+  { time: 75750, midi: [64, 77], duration: 250 },
+  { time: 75875, midi: [76], duration: 125 },
+  { time: 76000, midi: [55, 71, 74], duration: 500 },
+  { time: 76500, midi: [69, 72], duration: 250 },
+  { time: 76750, midi: [71, 74], duration: 250 },
+  { time: 77000, midi: [45, 72, 76], duration: 250 },
+  { time: 77250, midi: [57, 72, 76], duration: 250 },
+  { time: 77500, midi: [48, 77], duration: 250 },
+  { time: 77625, midi: [76], duration: 125 },
+  { time: 77750, midi: [60, 74], duration: 250 },
+  { time: 77875, midi: [72], duration: 125 },
+  { time: 78000, midi: [52, 68, 71], duration: 500 },
+  { time: 78250, midi: [64], duration: 250 },
+  { time: 78500, midi: [69, 72], duration: 250 },
+  { time: 78750, midi: [71, 74], duration: 250 },
+  { time: 79000, midi: [45, 72, 76], duration: 250 },
+  { time: 79250, midi: [57, 72, 76], duration: 250 },
+  { time: 79500, midi: [48, 77], duration: 250 },
+  { time: 79625, midi: [76], duration: 125 },
+  { time: 79750, midi: [60, 74], duration: 250 },
+  { time: 79875, midi: [72], duration: 125 },
+  { time: 80000, midi: [52, 68, 71], duration: 500 },
+  { time: 80500, midi: [71], duration: 125 },
+  { time: 80625, midi: [69], duration: 125 },
+  { time: 80750, midi: [68], duration: 125 },
+  { time: 80875, midi: [69], duration: 125 },
+  { time: 81000, midi: [57, 72], duration: 250 },
+  { time: 81250, midi: [60, 64], duration: 250 },
+  { time: 81500, midi: [60, 64, 74], duration: 250 },
+  { time: 81625, midi: [72], duration: 125 },
+  { time: 81750, midi: [60, 64, 71], duration: 250 },
+  { time: 81875, midi: [72], duration: 125 },
+  { time: 82000, midi: [57, 76], duration: 250 },
+  { time: 82250, midi: [60, 64], duration: 250 },
+  { time: 82500, midi: [60, 64, 77], duration: 250 },
+  { time: 82625, midi: [76], duration: 125 },
+  { time: 82750, midi: [60, 64, 75], duration: 250 },
+  { time: 82875, midi: [76], duration: 125 },
+  { time: 83000, midi: [57, 83], duration: 250 },
+  { time: 83125, midi: [81], duration: 125 },
+  { time: 83250, midi: [60, 64, 80], duration: 250 },
+  { time: 83375, midi: [81], duration: 125 },
+  { time: 83500, midi: [57, 83], duration: 250 },
+  { time: 83625, midi: [81], duration: 125 },
+  { time: 83750, midi: [60, 64, 80], duration: 250 },
+  { time: 83875, midi: [81], duration: 125 },
+  { time: 84000, midi: [53, 84], duration: 250 },
+  { time: 84250, midi: [57, 63], duration: 250 },
+  { time: 84500, midi: [57, 63, 81], duration: 250 },
+  { time: 84750, midi: [57, 63, 83], duration: 250 },
+  { time: 85000, midi: [52, 84], duration: 250 },
+  { time: 85250, midi: [57, 64, 83], duration: 250 },
+  { time: 85500, midi: [50, 81], duration: 250 },
+  { time: 85750, midi: [53, 59, 80], duration: 250 },
+  { time: 86000, midi: [48, 81], duration: 250 },
+  { time: 86250, midi: [52, 57, 76], duration: 250 },
+  { time: 86500, midi: [50, 77], duration: 250 },
+  { time: 86750, midi: [53, 59, 74], duration: 250 },
+  { time: 87000, midi: [52, 57, 72], duration: 500 },
+  { time: 87250, midi: [52, 57], duration: 250 },
+  { time: 87500, midi: [52, 56, 71], duration: 375 },
+  { time: 87750, midi: [52, 56], duration: 250 },
+  { time: 87875, midi: [69], duration: 62 },
+  { time: 87938, midi: [71], duration: 62 },
+  { time: 88000, midi: [45, 57, 69], duration: 500 },
+  { time: 88500, midi: [69], duration: 125 },
+  { time: 88625, midi: [81], duration: 125 },
+  { time: 88750, midi: [71], duration: 125 },
+  { time: 88860, midi: [83], duration: 125 },
+  { time: 88895, midi: [45], duration: 60 },
+  { time: 88930, midi: [49], duration: 60 },
+  { time: 88965, midi: [52], duration: 60 },
+  { time: 89000, midi: [57, 73], duration: 250 },
+  { time: 89125, midi: [85], duration: 125 },
+  { time: 89250, midi: [57], duration: 250 },
+  { time: 89500, midi: [57, 69], duration: 250 },
+  { time: 89625, midi: [81], duration: 125 },
+  { time: 89750, midi: [57, 71], duration: 207 },
+  { time: 89860, midi: [83], duration: 125 },
+  { time: 89895, midi: [45], duration: 60 },
+  { time: 89930, midi: [49], duration: 60 },
+  { time: 89965, midi: [52], duration: 60 },
+  { time: 90000, midi: [57, 73], duration: 250 },
+  { time: 90125, midi: [85], duration: 125 },
+  { time: 90250, midi: [57, 71], duration: 250 },
+  { time: 90375, midi: [83], duration: 125 },
+  { time: 90500, midi: [57, 69], duration: 250 },
+  { time: 90625, midi: [81], duration: 125 },
+  { time: 90750, midi: [57, 68], duration: 207 },
+  { time: 90860, midi: [80], duration: 125 },
+  { time: 90895, midi: [38], duration: 60 },
+  { time: 90930, midi: [42], duration: 60 },
+  { time: 90965, midi: [45], duration: 60 },
+  { time: 91000, midi: [50, 66], duration: 250 },
+  { time: 91125, midi: [78], duration: 125 },
+  { time: 91250, midi: [50, 68], duration: 207 },
+  { time: 91360, midi: [80], duration: 125 },
+  { time: 91395, midi: [39], duration: 60 },
+  { time: 91430, midi: [42], duration: 60 },
+  { time: 91465, midi: [45], duration: 60 },
+  { time: 91500, midi: [51, 69], duration: 250 },
+  { time: 91625, midi: [81], duration: 125 },
+  { time: 91750, midi: [51, 71], duration: 207 },
+  { time: 91860, midi: [83], duration: 125 },
+  { time: 91895, midi: [40], duration: 60 },
+  { time: 91930, midi: [44], duration: 60 },
+  { time: 91965, midi: [47], duration: 60 },
+  { time: 92000, midi: [52, 68], duration: 250 },
+  { time: 92125, midi: [80], duration: 125 },
+  { time: 92250, midi: [52, 64], duration: 250 },
+  { time: 92375, midi: [76], duration: 125 },
+  { time: 92500, midi: [52, 69], duration: 250 },
+  { time: 92625, midi: [81], duration: 125 },
+  { time: 92750, midi: [52, 71], duration: 207 },
+  { time: 92860, midi: [83], duration: 125 },
+  { time: 92895, midi: [45], duration: 60 },
+  { time: 92930, midi: [49], duration: 60 },
+  { time: 92965, midi: [52], duration: 60 },
+  { time: 93000, midi: [57, 73], duration: 250 },
+  { time: 93125, midi: [85], duration: 125 },
+  { time: 93250, midi: [57], duration: 250 },
+  { time: 93500, midi: [57, 69], duration: 250 },
+  { time: 93625, midi: [81], duration: 125 },
+  { time: 93750, midi: [57, 71], duration: 207 },
+  { time: 93860, midi: [83], duration: 125 },
+  { time: 93895, midi: [45], duration: 60 },
+  { time: 93930, midi: [49], duration: 60 },
+  { time: 93965, midi: [52], duration: 60 },
+  { time: 94000, midi: [57, 73], duration: 250 },
+  { time: 94125, midi: [85], duration: 125 },
+  { time: 94250, midi: [57, 71], duration: 250 },
+  { time: 94375, midi: [83], duration: 125 },
+  { time: 94500, midi: [57, 69], duration: 250 },
+  { time: 94625, midi: [81], duration: 125 },
+  { time: 94750, midi: [57, 68], duration: 207 },
+  { time: 94860, midi: [80], duration: 125 },
+  { time: 94895, midi: [38], duration: 60 },
+  { time: 94930, midi: [42], duration: 60 },
+  { time: 94965, midi: [45], duration: 60 },
+  { time: 95000, midi: [50, 66], duration: 250 },
+  { time: 95125, midi: [78], duration: 125 },
+  { time: 95250, midi: [50, 71], duration: 207 },
+  { time: 95360, midi: [83], duration: 125 },
+  { time: 95395, midi: [40], duration: 60 },
+  { time: 95430, midi: [44], duration: 60 },
+  { time: 95465, midi: [47], duration: 60 },
+  { time: 95500, midi: [52, 68], duration: 250 },
+  { time: 95625, midi: [80], duration: 125 },
+  { time: 95750, midi: [52, 64], duration: 250 },
+  { time: 95875, midi: [76], duration: 125 },
+  { time: 96000, midi: [45, 69, 81], duration: 457 },
+  { time: 96395, midi: [45, 69], duration: 60 },
+  { time: 96430, midi: [49], duration: 60 },
+  { time: 96465, midi: [52], duration: 60 },
+  { time: 96500, midi: [57, 69, 81], duration: 500 },
+  { time: 96750, midi: [57], duration: 250 },
+  { time: 97000, midi: [57, 73, 85], duration: 500 },
+  { time: 97250, midi: [57], duration: 207 },
+  { time: 97360, midi: [85], duration: 125 },
+  { time: 97395, midi: [45], duration: 60 },
+  { time: 97430, midi: [49], duration: 60 },
+  { time: 97465, midi: [52], duration: 60 },
+  { time: 97500, midi: [57, 73, 76, 81, 85], duration: 1000 },
+  { time: 97750, midi: [57], duration: 250 },
+  { time: 98000, midi: [57], duration: 250 },
+  { time: 98250, midi: [57], duration: 207 },
+  { time: 98395, midi: [45], duration: 60 },
+  { time: 98430, midi: [49], duration: 60 },
+  { time: 98465, midi: [52], duration: 60 },
+  { time: 98500, midi: [57, 73, 76, 81, 85], duration: 1000 },
+  { time: 98750, midi: [57], duration: 250 },
+  { time: 99000, midi: [57], duration: 250 },
+  { time: 99250, midi: [57], duration: 207 },
+  { time: 99395, midi: [45], duration: 60 },
+  { time: 99430, midi: [49], duration: 60 },
+  { time: 99465, midi: [52], duration: 60 },
+  { time: 99500, midi: [57, 86], duration: 250 },
+  { time: 99625, midi: [85], duration: 125 },
+  { time: 99750, midi: [57, 83], duration: 250 },
+  { time: 99875, midi: [85], duration: 125 },
+  { time: 100000, midi: [57, 86], duration: 250 },
+  { time: 100125, midi: [85], duration: 125 },
+  { time: 100250, midi: [57, 83], duration: 207 },
+  { time: 100360, midi: [85], duration: 125 },
+  { time: 100395, midi: [38], duration: 60 },
+  { time: 100430, midi: [42], duration: 60 },
+  { time: 100465, midi: [45], duration: 60 },
+  { time: 100500, midi: [50, 78, 81, 86], duration: 943 },
+  { time: 100750, midi: [50], duration: 250 },
+  { time: 101000, midi: [50], duration: 250 },
+  { time: 101250, midi: [50], duration: 207 },
+  { time: 101360, midi: [86], duration: 60 },
+  { time: 101395, midi: [45], duration: 60 },
+  { time: 101430, midi: [49], duration: 60 },
+  { time: 101465, midi: [52], duration: 60 },
+  { time: 101500, midi: [57, 76, 81, 85], duration: 250 },
+  { time: 101693, midi: [86], duration: 60 },
+  { time: 101750, midi: [57, 76, 81, 85], duration: 250 },
+  { time: 101943, midi: [86], duration: 60 },
+  { time: 102000, midi: [57, 76, 81, 85], duration: 250 },
+  { time: 102193, midi: [86], duration: 60 },
+  { time: 102250, midi: [57, 76, 81, 85], duration: 250 },
+  { time: 102395, midi: [40], duration: 60 },
+  { time: 102430, midi: [44], duration: 60 },
+  { time: 102465, midi: [47], duration: 60 },
+  { time: 102500, midi: [52, 76, 80, 83], duration: 1000 },
+  { time: 102750, midi: [52], duration: 250 },
+  { time: 103000, midi: [52], duration: 250 },
+  { time: 103250, midi: [52, 88], duration: 250 },
+  { time: 103395, midi: [45], duration: 60 },
+  { time: 103430, midi: [49], duration: 60 },
+  { time: 103465, midi: [52], duration: 60 },
+  { time: 103500, midi: [57, 73, 76, 81, 85], duration: 1000 },
+  { time: 103750, midi: [57], duration: 250 },
+  { time: 104000, midi: [57], duration: 250 },
+  { time: 104250, midi: [57], duration: 207 },
+  { time: 104395, midi: [45], duration: 60 },
+  { time: 104430, midi: [49], duration: 60 },
+  { time: 104465, midi: [52], duration: 60 },
+  { time: 104500, midi: [57, 73, 76, 81, 85], duration: 1000 },
+  { time: 104750, midi: [57], duration: 250 },
+  { time: 105000, midi: [57], duration: 250 },
+  { time: 105250, midi: [57], duration: 207 },
+  { time: 105395, midi: [45], duration: 60 },
+  { time: 105430, midi: [49], duration: 60 },
+  { time: 105465, midi: [52], duration: 60 },
+  { time: 105500, midi: [57, 86], duration: 250 },
+  { time: 105625, midi: [85], duration: 125 },
+  { time: 105750, midi: [57, 83], duration: 250 },
+  { time: 105875, midi: [85], duration: 125 },
+  { time: 106000, midi: [57, 86], duration: 250 },
+  { time: 106125, midi: [85], duration: 125 },
+  { time: 106250, midi: [57, 83], duration: 207 },
+  { time: 106360, midi: [85], duration: 125 },
+  { time: 106395, midi: [38], duration: 60 },
+  { time: 106430, midi: [42], duration: 60 },
+  { time: 106465, midi: [45], duration: 60 },
+  { time: 106500, midi: [50, 78, 81, 86], duration: 943 },
+  { time: 106750, midi: [50], duration: 250 },
+  { time: 107000, midi: [50], duration: 250 },
+  { time: 107250, midi: [50], duration: 207 },
+  { time: 107360, midi: [86], duration: 60 },
+  { time: 107395, midi: [45], duration: 60 },
+  { time: 107430, midi: [49], duration: 60 },
+  { time: 107465, midi: [52], duration: 60 },
+  { time: 107500, midi: [57, 76, 81, 85], duration: 943 },
+  { time: 107750, midi: [57], duration: 250 },
+  { time: 108000, midi: [57], duration: 250 },
+  { time: 108250, midi: [57], duration: 207 },
+  { time: 108360, midi: [85], duration: 60 },
+  { time: 108395, midi: [40], duration: 60 },
+  { time: 108430, midi: [44], duration: 60 },
+  { time: 108465, midi: [47], duration: 60 },
+  { time: 108500, midi: [52, 76, 80, 83], duration: 250 },
+  { time: 108693, midi: [85], duration: 60 },
+  { time: 108750, midi: [52, 76, 80, 83], duration: 250 },
+  { time: 108943, midi: [85], duration: 60 },
+  { time: 109000, midi: [52, 76, 80, 83], duration: 250 },
+  { time: 109193, midi: [85], duration: 60 },
+  { time: 109250, midi: [52, 76, 80, 83], duration: 250 },
+  { time: 109500, midi: [57, 81], duration: 471 },
+  { time: 109625, midi: [64], duration: 125 },
+  { time: 109750, midi: [61], duration: 125 },
+  { time: 109875, midi: [64], duration: 125 },
+  { time: 109930, midi: [76], duration: 60 },
+  { time: 109965, midi: [81], duration: 60 },
+  { time: 110000, midi: [57, 85], duration: 375 },
+  { time: 110125, midi: [64], duration: 125 },
+  { time: 110250, midi: [61], duration: 125 },
+  { time: 110375, midi: [64, 85], duration: 125 },
+  { time: 110430, midi: [76], duration: 60 },
+  { time: 110465, midi: [81], duration: 60 },
+  { time: 110500, midi: [57, 85], duration: 971 },
+  { time: 110625, midi: [64], duration: 125 },
+  { time: 110750, midi: [61], duration: 125 },
+  { time: 110875, midi: [64], duration: 125 },
+  { time: 111000, midi: [57], duration: 125 },
+  { time: 111125, midi: [64], duration: 125 },
+  { time: 111250, midi: [61], duration: 125 },
+  { time: 111375, midi: [64], duration: 125 },
+  { time: 111430, midi: [76], duration: 60 },
+  { time: 111465, midi: [81], duration: 60 },
+  { time: 111500, midi: [57, 85], duration: 1000 },
+  { time: 111625, midi: [64], duration: 125 },
+  { time: 111750, midi: [61], duration: 125 },
+  { time: 111875, midi: [64], duration: 125 },
+  { time: 112000, midi: [57], duration: 125 },
+  { time: 112125, midi: [64], duration: 125 },
+  { time: 112250, midi: [61], duration: 125 },
+  { time: 112375, midi: [64], duration: 125 },
+  { time: 112500, midi: [57, 86], duration: 125 },
+  { time: 112625, midi: [64, 85], duration: 125 },
+  { time: 112750, midi: [61, 83], duration: 125 },
+  { time: 112875, midi: [64, 85], duration: 125 },
+  { time: 113000, midi: [57, 86], duration: 125 },
+  { time: 113125, midi: [64, 85], duration: 125 },
+  { time: 113250, midi: [61, 83], duration: 125 },
+  { time: 113375, midi: [64, 85], duration: 125 },
+  { time: 113500, midi: [57, 86], duration: 943 },
+  { time: 113625, midi: [66], duration: 125 },
+  { time: 113750, midi: [62], duration: 125 },
+  { time: 113875, midi: [66], duration: 125 },
+  { time: 114000, midi: [57], duration: 125 },
+  { time: 114125, midi: [66], duration: 125 },
+  { time: 114250, midi: [62], duration: 125 },
+  { time: 114375, midi: [66], duration: 125 },
+  { time: 114443, midi: [86], duration: 60 },
+  { time: 114500, midi: [57, 85], duration: 193 },
+  { time: 114625, midi: [64], duration: 125 },
+  { time: 114693, midi: [86], duration: 60 },
+  { time: 114750, midi: [61, 85], duration: 193 },
+  { time: 114875, midi: [64], duration: 125 },
+  { time: 114943, midi: [86], duration: 60 },
+  { time: 115000, midi: [57, 85], duration: 193 },
+  { time: 115125, midi: [64], duration: 125 },
+  { time: 115193, midi: [86], duration: 60 },
+  { time: 115250, midi: [61, 85], duration: 250 },
+  { time: 115375, midi: [64], duration: 125 },
+  { time: 115500, midi: [52, 83], duration: 750 },
+  { time: 115625, midi: [64], duration: 125 },
+  { time: 115750, midi: [56], duration: 125 },
+  { time: 115875, midi: [64], duration: 125 },
+  { time: 116000, midi: [52], duration: 125 },
+  { time: 116125, midi: [64], duration: 125 },
+  { time: 116250, midi: [56, 88], duration: 250 },
+  { time: 116360, midi: [64], duration: 82 },
+  { time: 116395, midi: [45], duration: 60 },
+  { time: 116430, midi: [49], duration: 60 },
+  { time: 116465, midi: [52], duration: 60 },
+  { time: 116500, midi: [57, 73, 76, 81, 85], duration: 1000 },
+  { time: 116750, midi: [57], duration: 250 },
+  { time: 117000, midi: [57], duration: 250 },
+  { time: 117250, midi: [57], duration: 207 },
+  { time: 117395, midi: [45], duration: 60 },
+  { time: 117430, midi: [49], duration: 60 },
+  { time: 117465, midi: [52], duration: 60 },
+  { time: 117500, midi: [57, 73, 76, 81, 85], duration: 1000 },
+  { time: 117750, midi: [57], duration: 250 },
+  { time: 118000, midi: [57], duration: 250 },
+  { time: 118250, midi: [57], duration: 207 },
+  { time: 118395, midi: [45], duration: 60 },
+  { time: 118430, midi: [49], duration: 60 },
+  { time: 118465, midi: [52], duration: 60 },
+  { time: 118500, midi: [57, 86], duration: 250 },
+  { time: 118625, midi: [85], duration: 125 },
+  { time: 118750, midi: [57, 83], duration: 250 },
+  { time: 118875, midi: [85], duration: 125 },
+  { time: 119000, midi: [57, 86], duration: 250 },
+  { time: 119125, midi: [85], duration: 125 },
+  { time: 119250, midi: [57, 83], duration: 207 },
+  { time: 119360, midi: [85], duration: 125 },
+  { time: 119395, midi: [38], duration: 60 },
+  { time: 119430, midi: [42], duration: 60 },
+  { time: 119465, midi: [45], duration: 60 },
+  { time: 119500, midi: [50, 78, 81, 86], duration: 943 },
+  { time: 119750, midi: [50], duration: 250 },
+  { time: 120000, midi: [50], duration: 250 },
+  { time: 120250, midi: [50], duration: 207 },
+  { time: 120360, midi: [86], duration: 60 },
+  { time: 120395, midi: [45], duration: 60 },
+  { time: 120430, midi: [49], duration: 60 },
+  { time: 120465, midi: [52], duration: 60 },
+  { time: 120500, midi: [57, 76, 81, 85], duration: 943 },
+  { time: 120750, midi: [57], duration: 250 },
+  { time: 121000, midi: [57], duration: 250 },
+  { time: 121250, midi: [57], duration: 207 },
+  { time: 121360, midi: [85], duration: 60 },
+  { time: 121395, midi: [40], duration: 60 },
+  { time: 121430, midi: [44], duration: 60 },
+  { time: 121465, midi: [47], duration: 60 },
+  { time: 121500, midi: [52, 76, 80, 83], duration: 250 },
+  { time: 121693, midi: [85], duration: 60 },
+  { time: 121750, midi: [52, 76, 80, 83], duration: 250 },
+  { time: 121943, midi: [85], duration: 60 },
+  { time: 122000, midi: [52, 76, 80, 83], duration: 250 },
+  { time: 122193, midi: [85], duration: 60 },
+  { time: 122250, midi: [52, 76, 80, 83], duration: 250 },
+  { time: 122395, midi: [45], duration: 60 },
+  { time: 122430, midi: [49], duration: 60 },
+  { time: 122465, midi: [52], duration: 60 },
+  { time: 122500, midi: [57, 69, 73, 76, 81], duration: 750 },
+  { time: 122750, midi: [57], duration: 250 },
+  { time: 123000, midi: [57], duration: 250 },
+  { time: 123250, midi: [57, 73, 85], duration: 250 },
+  { time: 123395, midi: [45], duration: 60 },
+  { time: 123430, midi: [49], duration: 60 },
+  { time: 123465, midi: [52], duration: 60 },
+  { time: 123500, midi: [57, 69, 81], duration: 750 },
+  { time: 123750, midi: [57], duration: 250 },
+  { time: 124000, midi: [57], duration: 250 },
+  { time: 124250, midi: [57, 76, 88], duration: 250 },
+  { time: 124395, midi: [45], duration: 60 },
+  { time: 124430, midi: [49], duration: 60 },
+  { time: 124465, midi: [52], duration: 60 },
+  { time: 124500, midi: [57, 69, 81], duration: 750 },
+  { time: 124750, midi: [57], duration: 250 },
+  { time: 125000, midi: [57], duration: 250 },
+  { time: 125250, midi: [57, 73, 85], duration: 250 },
+  { time: 125395, midi: [45], duration: 60 },
+  { time: 125430, midi: [49], duration: 60 },
+  { time: 125465, midi: [52], duration: 60 },
+  { time: 125500, midi: [57, 69, 81], duration: 250 },
+  { time: 125750, midi: [57, 73, 85], duration: 250 },
+  { time: 125895, midi: [45], duration: 60 },
+  { time: 125930, midi: [49], duration: 60 },
+  { time: 125965, midi: [52], duration: 60 },
+  { time: 126000, midi: [57, 69, 81], duration: 250 },
+  { time: 126250, midi: [57, 76, 88], duration: 250 },
+  { time: 126500, midi: [45, 69, 81], duration: 500 },
+  { time: 127000, midi: [45, 49, 52, 57, 69, 73, 76, 81], duration: 500 },
+  { time: 127500, midi: [45, 49, 52, 57, 69, 73, 76, 81], duration: 500 },
 ];

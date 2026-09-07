@@ -432,6 +432,12 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                           <Gi.GiHeartPlus size={11} className="text-rose-500" />
                           <span>{dRobot?.currentHp ?? 12}/{dRobot?.maxHp ?? 12}</span>
                         </span>
+                        {dRobot?.defenseRegen && dRobot.defenseRegen.expiresAt > Date.now() && (
+                          <span className="text-[10px] text-emerald-800 bg-emerald-50 border border-emerald-300 px-1 rounded inline-flex items-center gap-0.5 font-bold" title="防衛リジェネ効果中: 1時間毎にHPが1回復">
+                            <Gi.GiHealing size={11} className="text-emerald-600 animate-pulse" />
+                            <span>リジェネ中({Math.max(1, Math.ceil((dRobot.defenseRegen.expiresAt - Date.now()) / (60 * 60 * 1000)))}h)</span>
+                          </span>
+                        )}
                         {isResting && (
                           <span className="text-[10px] bg-rose-600 text-white font-bold px-1.5 py-0.2 rounded animate-pulse">
                             HP切れ

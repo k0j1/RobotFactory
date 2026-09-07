@@ -44,6 +44,12 @@ export interface Material {
   baseStats: { hp: number; power: number; defense: number; agility: number; dexterity: number; intelligence: number; };
 }
 
+export interface DefenseRegenEffect {
+  activatedAt: number;     // 付与日時 (タイムスタンプ ms)
+  expiresAt: number;       // 効果終了日時 (タイムスタンプ ms)
+  lastHealedAt: number;    // 前回HP回復日時 (タイムスタンプ ms)
+}
+
 export interface Robot {
   id: string;
   name: string;
@@ -57,6 +63,7 @@ export interface Robot {
     losses: number;
     draws: number;
   };
+  defenseRegen?: DefenseRegenEffect; // 防衛戦勝利によるリジェネ効果 (12時間・1時間毎HP+1)
   createdAt: number;
   value: number;
 }
@@ -175,4 +182,5 @@ export interface GameState {
   completedRequestDeadlines?: { King?: number; Noble?: number; OldMan?: number };
   repairKits?: number;
   craftedRobots?: Robot[];
+  lastDefenseVictoryTime?: number; // 拠点防衛戦の前回防衛成功時刻（ミリ秒）
 }

@@ -1,6 +1,7 @@
 import { GameState, Robot, ClientRequest, Attribute, RequestRank, RobotPart, PartType, AttributeNames, WeatherType, WeatherInfo } from './models';
 import { MATERIALS, LOCATIONS, getMaterialCraftableVisuals } from './data';
 import { AttributeColors } from './models';
+import { getDefenseDailyResetInfo, DefenseResetInfo } from '../components/minigames/Shared';
 
 const INITIAL_STATE: GameState = {
   gold: 0,
@@ -414,6 +415,83 @@ export class GameEngine {
       else robot.battleStats.draws += 1;
       this.saveState();
     }
+  }
+
+  /**
+   * 防衛戦勝利ロボットにリジェネ効果を付与（指定時間・1時間毎HP+1回復）
+   */
+  public applyDefenseRegen(robotId: string, hours: number = 12) {
+    const robot = this.state.robots.find(r => r.id === robotId);
+    if (robot) {
+      const now = Date.now();
+      const ONE_HOUR = 60 * 60 * 1000;
+      const DURATION = hours * ONE_HOUR; // 指定時間（3h, 6h, 9h, 12h, 24h）
+      robot.defenseRegen = {
+        activatedAt: now,
+        expiresAt: now + DURATION,
+        lastHealedAt: now,
+      };
+      this.saveState();
+    }
+  }
+
+  /**
+   * 拠点防衛戦の防衛成功（勝利）を記録
+   * 当日は以降プレイ不可となり、翌日（または当日）朝9:00にリセットされます
+   */
+  public recordDefenseVictory(now: number = Date.now()) {
+    this.state.lastDefenseVictoryTime = now;
+    this.saveState();
+  }
+
+  /**
+   * 拠点防衛戦の朝9:00デイリーリセット状態を取得
+   */
+  public getDefenseResetInfo(now: number = Date.now()): DefenseResetInfo {
+    return getDefenseDailyResetInfo(this.state.lastDefenseVictoryTime, now);
+  }
+
+  /**
+   * 本日すでに防衛戦をクリア済みかどうか判定
+   */
+  public isDefenseCompletedToday(now: number = Date.now()): boolean {
+    return this.getDefenseResetInfo(now).isCompletedToday;
+  }
+
+  /**
+   * 防衛戦リジェネ効果の進行・HP回復処理
+   */
+  private processDefenseRegen(now: number): boolean {
+    let changed = false;
+    const ONE_HOUR = 60 * 60 * 1000;
+
+    if (!this.state.robots) return false;
+
+    for (const robot of this.state.robots) {
+      if (!robot.defenseRegen) continue;
+
+      const { expiresAt, lastHealedAt } = robot.defenseRegen;
+      const effectiveNow = Math.min(now, expiresAt);
+      const elapsedHours = Math.floor((effectiveNow - lastHealedAt) / ONE_HOUR);
+
+      if (elapsedHours > 0) {
+        const maxHp = robot.maxHp ?? 12;
+        const currentHp = robot.currentHp ?? 12;
+        if (currentHp < maxHp) {
+          robot.currentHp = Math.min(maxHp, currentHp + elapsedHours);
+        }
+        robot.defenseRegen.lastHealedAt += elapsedHours * ONE_HOUR;
+        changed = true;
+      }
+
+      // 12時間経過でバフ終了
+      if (now >= expiresAt) {
+        delete robot.defenseRegen;
+        changed = true;
+      }
+    }
+
+    return changed;
   }
 
   public addGold(amount: number) {
@@ -890,6 +968,11 @@ export class GameEngine {
     this.processAutoDispatches();
     const now = Date.now();
     let changed = false;
+
+    // 防衛戦勝利リジェネ効果（12時間・1時間毎HP+1）の定期更新
+    if (this.processDefenseRegen(now)) {
+      changed = true;
+    }
 
     // Check if in-progress request expired
     if (this.state.currentRequest) {
