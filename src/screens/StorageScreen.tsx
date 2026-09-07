@@ -277,7 +277,9 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                 return (
                   <Card 
                     key={`${r.id}-${idx}`} 
-                    className={`relative p-4 transition-all duration-300 overflow-hidden ${
+                    className={`relative p-4 transition-all duration-300 ${
+                      activeTooltipRobotId === r.id ? 'z-40' : 'z-10'
+                    } ${
                       isRecentlyRepaired 
                         ? 'ring-2 ring-emerald-400 bg-emerald-50/40 shadow-lg' 
                         : isHpLow 
