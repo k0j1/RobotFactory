@@ -454,11 +454,11 @@ export const PianoGame: React.FC<PianoGameProps> = ({
 
   const performanceRank = getPerformanceRank();
 
-  // 全曲演奏終了時の処理：演奏精度が80%以上をクリアとする
+  // 全曲演奏終了時の処理：演奏精度が90%以上をクリアとする
   useEffect(() => {
     if (progress >= 100 && !isFinished && !isPaused && !isFinishedHandledRef.current) {
       isFinishedHandledRef.current = true;
-      const isWin = accuracyPercent >= 80;
+      const isWin = accuracyPercent >= 90;
       
       // スコアとベストスコアの保存
       const saveRes = savePianoScore({
@@ -517,7 +517,7 @@ export const PianoGame: React.FC<PianoGameProps> = ({
 
   // 演奏結果画面（リザルト画面）: 全ての情報を綺麗に配置した専用カルテビュー
   if (isFinished) {
-    const isWin = accuracyPercent >= 80;
+    const isWin = accuracyPercent >= 90;
     const rewardKits = Math.max(1, Math.ceil(song.level / 2));
     const prevBest = saveResult.previousRecord;
 
@@ -583,8 +583,8 @@ export const PianoGame: React.FC<PianoGameProps> = ({
                 </div>
                 <p className="text-xs text-stone-300 mt-0.5">
                   {isWin 
-                    ? `クリア基準（演奏精度80.0%以上）を達成！ 工房演習の修了が認定されました。` 
-                    : `クリア条件は「演奏精度80.0%以上」です（今回の精度: ${accuracyPercent}%）。IntとDexを高めて再挑戦しよう！`}
+                    ? `クリア基準（演奏精度90.0%以上）を達成！ 工房演習の修了が認定されました。` 
+                    : `クリア条件は「演奏精度90.0%以上」です（今回の精度: ${accuracyPercent}%）。IntとDexを高めて再挑戦しよう！`}
                 </p>
               </div>
             </div>
@@ -627,11 +627,11 @@ export const PianoGame: React.FC<PianoGameProps> = ({
                 </span>
               )}
               <div className="text-[11px] text-stone-400 font-bold mb-1 font-mono">演奏精度 (ACCURACY)</div>
-              <div className={`text-2xl sm:text-3xl font-black font-mono tracking-tight ${accuracyPercent >= 80 ? 'text-emerald-400' : 'text-rose-400'}`}>
+              <div className={`text-2xl sm:text-3xl font-black font-mono tracking-tight ${accuracyPercent >= 90 ? 'text-emerald-400' : 'text-rose-400'}`}>
                 {accuracyPercent}%
               </div>
               <div className="text-[10px] text-stone-400 font-mono mt-1">
-                クリア基準: <span className="text-amber-400 font-bold">80.0%</span> 以上
+                クリア基準: <span className="text-amber-400 font-bold">90.0%</span> 以上
               </div>
             </div>
 
@@ -666,15 +666,15 @@ export const PianoGame: React.FC<PianoGameProps> = ({
           {/* 演奏精度のクリアゲージバー */}
           <div className="bg-stone-950/60 p-3 rounded-xl border border-stone-800 space-y-1.5">
             <div className="flex justify-between text-xs font-mono text-stone-400">
-              <span>演奏精度ゲージ（クリアライン: 80%）</span>
+              <span>演奏精度ゲージ（クリアライン: 90%）</span>
               <span className="font-bold text-stone-200">{accuracyPercent}% / 100%</span>
             </div>
             <div className="relative w-full h-3 bg-stone-800 rounded-full overflow-hidden">
-              {/* クリアライン位置マーカー (80%) */}
-              <div className="absolute top-0 bottom-0 left-[80%] w-0.5 bg-amber-400 z-10 shadow-[0_0_4px_#fbbf24]" />
+              {/* クリアライン位置マーカー (90%) */}
+              <div className="absolute top-0 bottom-0 left-[90%] w-0.5 bg-amber-400 z-10 shadow-[0_0_4px_#fbbf24]" />
               <div 
                 className={`h-full transition-all duration-500 rounded-full ${
-                  accuracyPercent >= 80 
+                  accuracyPercent >= 90 
                     ? 'bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-400' 
                     : 'bg-gradient-to-r from-rose-700 to-rose-500'
                 }`}
@@ -803,11 +803,11 @@ export const PianoGame: React.FC<PianoGameProps> = ({
 
           <div className="text-right">
             <div className="text-xs font-bold px-2.5 py-0.5 rounded-full border inline-block mb-1 bg-amber-500/20 text-amber-300 border-amber-500/40 font-mono">
-              基準: 精度 80%
+              基準: 精度 90%
             </div>
             <div className="text-white font-mono text-sm">
               SCORE <span className="text-amber-400 text-lg font-black">{score.toLocaleString()}</span>
-              <span className="text-stone-400 text-xs ml-2">精度 <strong className={accuracyPercent >= 80 ? 'text-emerald-400' : 'text-stone-300'}>{accuracyPercent}%</strong></span>
+              <span className="text-stone-400 text-xs ml-2">精度 <strong className={accuracyPercent >= 90 ? 'text-emerald-400' : 'text-stone-300'}>{accuracyPercent}%</strong></span>
             </div>
           </div>
         </div>
@@ -822,6 +822,26 @@ export const PianoGame: React.FC<PianoGameProps> = ({
           ))}
         </div>
         
+        {/* 背景ロボット演奏演出（ウォーターマーク） */}
+        {!isFinished && (
+          <div className="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none z-0 overflow-hidden">
+            <motion.div
+              animate={{
+                y: keysPressed.length > 0 ? [-5, 5, -5] : [0, -2, 0],
+                scale: keysPressed.length > 0 ? [1, 1.05, 1] : 1,
+                rotate: keysPressed.length > 0 ? (keysPressed.length % 2 === 0 ? [-2, 2, -2] : [2, -2, 2]) : 0,
+              }}
+              transition={{
+                duration: keysPressed.length > 0 ? 0.3 : 3,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+            >
+              <RobotVisual robot={activeRobot} size={280} hideBackground={true} hideBubble={true} />
+            </motion.div>
+          </div>
+        )}
+
         {/* 落下するノーツ (時間ベースで位置を計算) */}
         <div className="absolute inset-0 pt-2 pointer-events-none">
           {currentNotes.map((note, idx) => {

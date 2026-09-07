@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { GameState } from '../core/models';
 import { GameEngine } from '../core/GameEngine';
 import { theme } from '../styles/theme';
@@ -103,6 +103,26 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
   const activePianoSong = PIANO_SONGS.find(s => s.id === pianoSongId) || PIANO_SONGS[0];
   const activeDefenseStage = DEFENSE_STAGES.find(s => s.id === defenseStageId) || DEFENSE_STAGES[0];
   
+  
+  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handlePointerDownReset = () => {
+    if (!isDefenseLocked) return;
+    longPressTimerRef.current = setTimeout(() => {
+      if (typeof (engine as any).resetDefenseVictory === 'function') {
+        (engine as any).resetDefenseVictory();
+        alert("【開発者用】防衛戦のプレイ制限をリセットしました。");
+      }
+    }, 15000);
+  };
+
+  const handlePointerUpReset = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
   const getEstimatedWinRate = (difficultyId: string, robot: any) => {
     if (!robot) return '--';
     const agi = robot.stats.agility || 10;
@@ -130,9 +150,9 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
     const song = PIANO_SONGS.find(s => s.id === songId) || PIANO_SONGS[0];
     const diffPenalty = song.level * 4;
     
-    // クリア条件「演奏精度80.0%以上」を達成できる推定確率
+    // クリア条件「演奏精度90.0%以上」を達成できる推定確率
     const expectedRoll = 50 + statBonus - diffPenalty;
-    const rate = Math.round((expectedRoll - 55) * 1.6);
+    const rate = Math.round((expectedRoll - 65) * 1.6);
     
     return Math.max(5, Math.min(99, rate));
   };
@@ -671,7 +691,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                       <h3 className={`${theme.typography.h3} text-stone-800`}>演奏曲を選ぶ</h3>
                     </div>
                     <span className="text-[11px] text-amber-800 font-bold bg-amber-100/90 px-2 py-0.5 rounded border border-amber-300">
-                      クリア条件: 演奏精度 80.0% 以上
+                      クリア条件: 演奏精度 90.0% 以上
                     </span>
                   </div>
                   <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1">
@@ -718,7 +738,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                               )}
                             </div>
                             <div className="bg-stone-100/90 p-1.5 rounded-lg border border-stone-200 flex items-center justify-between">
-                              <span className="text-stone-500 font-bold">予想クリア率(精度80%~):</span>
+                              <span className="text-stone-500 font-bold">予想クリア率(精度90%~):</span>
                               <span className="font-bold font-mono text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded border border-amber-300">
                                 約{getEstimatedPianoWinRate(song.id, activeRobot)}%
                               </span>
@@ -910,16 +930,22 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
           <div className="text-center pt-2">
             <Button
               onClick={handleStartBattle}
+              onPointerDown={handlePointerDownReset}
+              onPointerUp={handlePointerUpReset}
+              onPointerLeave={handlePointerUpReset}
+              onContextMenu={(e) => {
+                if (isDefenseLocked) e.preventDefault();
+              }}
               disabled={
                 isDefenseLocked
-                  ? true
+                  ? false
                   : selectedGame === 'defense'
                   ? selectedDefenseRobotIds.length === 0
                   : !selectedRobotId || (requiresOpponent && !selectedOpponentId)
               }
               className={`w-full sm:w-2/3 md:w-1/2 py-3.5 text-base font-bold shadow-md mx-auto transition-all ${
                 isDefenseLocked 
-                  ? 'bg-stone-200 hover:bg-stone-200 text-stone-600 border-2 border-stone-300 cursor-not-allowed shadow-none' 
+                  ? 'bg-stone-200 hover:bg-stone-200 text-stone-600 border-2 border-stone-300 cursor-not-allowed shadow-none opacity-50' 
                   : ''
               }`}
             >
@@ -966,12 +992,18 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                 </div>
                 <Button
                   onClick={handleStartBattle}
+                  onPointerDown={handlePointerDownReset}
+                  onPointerUp={handlePointerUpReset}
+                  onPointerLeave={handlePointerUpReset}
+                  onContextMenu={(e) => {
+                    if (isDefenseLocked) e.preventDefault();
+                  }}
                   size="md"
                   variant={isDefenseLocked ? "secondary" : "primary"}
-                  disabled={isDefenseLocked}
+                  disabled={isDefenseLocked ? false : false}
                   className={`px-6 py-2 text-sm font-bold shadow-lg shrink-0 flex items-center gap-1.5 ${
                     isDefenseLocked 
-                      ? 'bg-stone-700 text-stone-400 cursor-not-allowed border border-stone-600' 
+                      ? 'bg-stone-700 text-stone-400 cursor-not-allowed border border-stone-600 opacity-50' 
                       : 'bg-amber-600 hover:bg-amber-500 text-white'
                   }`}
                 >

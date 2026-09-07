@@ -510,10 +510,10 @@ export const DefenseGame: React.FC<DefenseGameProps> = ({
       ) {
         state.timeSinceLastSpawn -= spawnInterval;
 
-        // 1回で1〜3体の小隊として同時に出撃（入口から出る敵の数を増加）
+        // 同時に出現する敵数を半減（1回に1体のみ出撃させることで、マップ上の敵数を半分に抑える）
         const remaining = stage.totalEnemies - state.spawnedCount;
         const spawnBatch = Math.min(
-          Math.floor(1 + Math.random() * 2.5),
+          1,
           remaining
         );
 
@@ -526,181 +526,52 @@ export const DefenseGame: React.FC<DefenseGameProps> = ({
           let iconName = 'GiSpiderBot';
           let sprite = '/assets/kenney/robots/robot_greenDrive1.png';
           let colorClass = 'text-emerald-400';
-          let hp = 1200;
+          let hp = 12000;
           let eSpeed = 80;
           let size = 36;
 
-          // 通常敵の決定ヘルパー（耐久値1000〜5000、脚が早いスプリンターボットを含む）
-          const assignNormalEnemy = () => {
-            const rand = Math.random();
-            if (rand < 0.25) {
-              // 脚が早い敵: 高速疾走スプリンターボット
-              type = 'sprinter';
-              name = '高速スプリンターボット';
-              iconName = 'GiFastArrow';
-              sprite = '/assets/kenney/robots/robot_greenDrive2.png';
-              colorClass = 'text-emerald-400';
-              hp = 1200 + Math.floor(Math.random() * 600); // 1200〜1800
-              eSpeed = 135; // 脚が通常の約2〜3倍速い！
-              size = 34;
-            } else if (rand < 0.45) {
-              // 偵察スカウト
-              type = 'scout';
-              name = '偵察スカウトボット';
-              iconName = 'GiSpiderBot';
-              sprite = '/assets/kenney/robots/robot_greenDrive1.png';
-              colorClass = 'text-teal-400';
-              hp = 1000 + Math.floor(Math.random() * 500); // 1000〜1500
-              eSpeed = 80;
-              size = 36;
-            } else if (rand < 0.68) {
-              // 機動クローラー
-              type = 'crawler';
-              name = '機動クローラーボット';
-              iconName = 'GiMonoWheelRobot';
-              sprite = '/assets/kenney/robots/robot_blueDrive1.png';
-              colorClass = 'text-sky-400';
-              hp = 2000 + Math.floor(Math.random() * 800); // 2000〜2800
-              eSpeed = 65;
-              size = 38;
-            } else if (rand < 0.85) {
-              // 重歩行ウォーカー
-              type = 'walker';
-              name = '重歩行ウォーカーボット';
-              iconName = 'GiTrackedRobot';
-              sprite = '/assets/kenney/robots/robot_yellowDrive1.png';
-              colorClass = 'text-amber-400';
-              hp = 3000 + Math.floor(Math.random() * 800); // 3000〜3800
-              eSpeed = 48;
-              size = 42;
-            } else {
-              // 重装甲ゴーレム
-              type = 'golem';
-              name = '重装甲アイアンゴーレム';
-              iconName = 'GiRobotGolem';
-              sprite = '/assets/kenney/robots/robot_redDrive1.png';
-              colorClass = 'text-rose-500';
-              hp = 4200 + Math.floor(Math.random() * 800); // 4200〜5000
-              eSpeed = 32;
-              size = 46;
-            }
+          const BOSS_DEFS: Record<string, any> = {
+            super_giant_boss: { name: '超巨大ボス: アポカリプスΩ', iconName: 'GiMegabot', sprite: '/assets/kenney/robots/robot_3Dred.png', colorClass: 'text-fuchsia-400', hp: 500000, eSpeed: 22, size: 72 },
+            giant_boss: { name: '巨大ボス: ギガフォートレス零式', iconName: 'GiMegabot', sprite: '/assets/kenney/robots/robot_3Dgrey.png', colorClass: 'text-red-500', hp: 250000, eSpeed: 28, size: 62 },
+            large_boss: { name: '大ボス: ドレッドノートタイタン', iconName: 'GiMegabot', sprite: '/assets/kenney/robots/robot_3Dred.png', colorClass: 'text-rose-500', hp: 150000, eSpeed: 34, size: 56 },
+            mid_boss: { name: '中ボス: シージデストロイヤー', iconName: 'GiWarBonnet', sprite: '/assets/kenney/robots/robot_3Dyellow.png', colorClass: 'text-amber-400', hp: 100000, eSpeed: 40, size: 50 },
+            mini_boss: { name: '小ボス: ストライクコマンドー', iconName: 'GiLaserSparks', sprite: '/assets/kenney/robots/robot_3Dblue.png', colorClass: 'text-purple-400', hp: 50000, eSpeed: 45, size: 46 }
           };
 
-          // 難易度ステージに応じた厳密な敵・ボス生成
+          const NORMAL_ENEMIES = [
+            { weight: 0.25, type: 'sprinter', name: '高速スプリンターボット', iconName: 'GiFastArrow', sprite: '/assets/kenney/robots/robot_greenDrive2.png', colorClass: 'text-emerald-400', hpBase: 6000, hpVar: 3000, eSpeed: 135, size: 34 },
+            { weight: 0.45, type: 'scout', name: '偵察スカウトボット', iconName: 'GiSpiderBot', sprite: '/assets/kenney/robots/robot_greenDrive1.png', colorClass: 'text-teal-400', hpBase: 5000, hpVar: 2500, eSpeed: 80, size: 36 },
+            { weight: 0.68, type: 'crawler', name: '機動クローラーボット', iconName: 'GiMonoWheelRobot', sprite: '/assets/kenney/robots/robot_blueDrive1.png', colorClass: 'text-sky-400', hpBase: 10000, hpVar: 4000, eSpeed: 65, size: 38 },
+            { weight: 0.85, type: 'walker', name: '重歩行ウォーカーボット', iconName: 'GiTrackedRobot', sprite: '/assets/kenney/robots/robot_yellowDrive1.png', colorClass: 'text-amber-400', hpBase: 15000, hpVar: 4000, eSpeed: 48, size: 42 },
+            { weight: 1.0, type: 'golem', name: '重装甲アイアンゴーレム', iconName: 'GiRobotGolem', sprite: '/assets/kenney/robots/robot_redDrive1.png', colorClass: 'text-rose-500', hpBase: 21000, hpVar: 4000, eSpeed: 32, size: 46 }
+          ];
+
+          let assignedBoss: string | null = null;
           if (stage.id === 'stage5') {
-            // レベル5: 敵数5000
-            // 最初の2000は小ボス(10000)、次1500は中ボス(20000)、次1000は大ボス(30000)、そこから500毎に巨大ボス(50000)、最後は超巨大ボス(100000)
-            if (currentSpawnIndex >= 5000) {
-              type = 'super_giant_boss';
-              name = '超巨大ボス: アポカリプスΩ';
-              iconName = 'GiMegabot';
-              sprite = '/assets/kenney/robots/robot_3Dred.png';
-              colorClass = 'text-fuchsia-400';
-              hp = 100000;
-              eSpeed = 22;
-              size = 72;
-            } else if (currentSpawnIndex >= 4500 && currentSpawnIndex % 500 === 0) {
-              type = 'giant_boss';
-              name = '巨大ボス: ギガフォートレス零式';
-              iconName = 'GiMegabot';
-              sprite = '/assets/kenney/robots/robot_3Dgrey.png';
-              colorClass = 'text-red-500';
-              hp = 50000;
-              eSpeed = 28;
-              size = 62;
-            } else if (currentSpawnIndex <= 2000) {
-              type = 'mini_boss';
-              name = '小ボス: ストライクコマンドー';
-              iconName = 'GiLaserSparks';
-              sprite = '/assets/kenney/robots/robot_3Dblue.png';
-              colorClass = 'text-purple-400';
-              hp = 10000;
-              eSpeed = 45;
-              size = 46;
-            } else if (currentSpawnIndex <= 3500) {
-              type = 'mid_boss';
-              name = '中ボス: シージデストロイヤー';
-              iconName = 'GiWarBonnet';
-              sprite = '/assets/kenney/robots/robot_3Dyellow.png';
-              colorClass = 'text-amber-400';
-              hp = 20000;
-              eSpeed = 40;
-              size = 50;
-            } else if (currentSpawnIndex <= 4500) {
-              type = 'large_boss';
-              name = '大ボス: ドレッドノートタイタン';
-              iconName = 'GiMegabot';
-              sprite = '/assets/kenney/robots/robot_3Dred.png';
-              colorClass = 'text-rose-500';
-              hp = 30000;
-              eSpeed = 34;
-              size = 56;
-            } else {
-              assignNormalEnemy();
-            }
+            if (currentSpawnIndex >= 500) assignedBoss = 'super_giant_boss';
+            else if (currentSpawnIndex >= 450 && currentSpawnIndex % 50 === 0) assignedBoss = 'giant_boss';
+            else if (currentSpawnIndex <= 200) assignedBoss = 'mini_boss';
+            else if (currentSpawnIndex <= 350) assignedBoss = 'mid_boss';
+            else if (currentSpawnIndex <= 450) assignedBoss = 'large_boss';
           } else if (stage.id === 'stage4') {
-            // レベル4: 敵数4000、1000毎に大ボス(30000)、最後に巨大ボス(50000)
-            if (currentSpawnIndex >= 4000) {
-              type = 'giant_boss';
-              name = '巨大ボス: ギガフォートレス零式';
-              iconName = 'GiMegabot';
-              sprite = '/assets/kenney/robots/robot_3Dgrey.png';
-              colorClass = 'text-red-500';
-              hp = 50000;
-              eSpeed = 28;
-              size = 62;
-            } else if (currentSpawnIndex % 1000 === 0) {
-              type = 'large_boss';
-              name = '大ボス: ドレッドノートタイタン';
-              iconName = 'GiMegabot';
-              sprite = '/assets/kenney/robots/robot_3Dred.png';
-              colorClass = 'text-rose-500';
-              hp = 30000;
-              eSpeed = 34;
-              size = 56;
-            } else {
-              assignNormalEnemy();
-            }
+            if (currentSpawnIndex >= 400) assignedBoss = 'giant_boss';
+            else if (currentSpawnIndex >= 301) assignedBoss = 'mini_boss';
           } else if (stage.id === 'stage3') {
-            // レベル3: 敵数3000、1000毎に中ボス(20000)、最後に大ボス(30000)
-            if (currentSpawnIndex >= 3000) {
-              type = 'large_boss';
-              name = '大ボス: ドレッドノートタイタン';
-              iconName = 'GiMegabot';
-              sprite = '/assets/kenney/robots/robot_3Dred.png';
-              colorClass = 'text-rose-500';
-              hp = 30000;
-              eSpeed = 34;
-              size = 56;
-            } else if (currentSpawnIndex % 1000 === 0) {
-              type = 'mid_boss';
-              name = '中ボス: シージデストロイヤー';
-              iconName = 'GiWarBonnet';
-              sprite = '/assets/kenney/robots/robot_3Dyellow.png';
-              colorClass = 'text-amber-400';
-              hp = 20000;
-              eSpeed = 40;
-              size = 50;
-            } else {
-              assignNormalEnemy();
-            }
+            if (currentSpawnIndex >= 300) assignedBoss = 'large_boss';
+            else if (currentSpawnIndex % 100 === 0) assignedBoss = 'mid_boss';
           } else if (stage.id === 'stage2') {
-            // レベル2: 敵数2000、1000毎に小ボス(10000)
-            if (currentSpawnIndex % 1000 === 0) {
-              type = 'mini_boss';
-              name = '小ボス: ストライクコマンドー';
-              iconName = 'GiLaserSparks';
-              sprite = '/assets/kenney/robots/robot_3Dblue.png';
-              colorClass = 'text-purple-400';
-              hp = 10000;
-              eSpeed = 45;
-              size = 46;
-            } else {
-              assignNormalEnemy();
-            }
+            if (currentSpawnIndex % 100 === 0) assignedBoss = 'mini_boss';
+          }
+
+          if (assignedBoss && BOSS_DEFS[assignedBoss]) {
+            const b = BOSS_DEFS[assignedBoss];
+            type = assignedBoss as EnemyType; name = b.name; iconName = b.iconName; sprite = b.sprite; colorClass = b.colorClass; hp = b.hp; eSpeed = b.eSpeed; size = b.size;
           } else {
-            // レベル1: ボスなし、すべて通常敵 (1000〜5000)
-            assignNormalEnemy();
+            const rand = Math.random();
+            const e = NORMAL_ENEMIES.find(x => rand < x.weight) || NORMAL_ENEMIES[4];
+            type = e.type as EnemyType; name = e.name; iconName = e.iconName; sprite = e.sprite; colorClass = e.colorClass;
+            hp = e.hpBase + Math.floor(Math.random() * e.hpVar);
+            eSpeed = e.eSpeed; size = e.size;
           }
 
           // 道幅50pxの中での横方向オフセット（-6px 〜 +6px に抑制し、タイルからのはみ出しを完全防止）
@@ -753,15 +624,15 @@ export const DefenseGame: React.FC<DefenseGameProps> = ({
       if (e.pathIndex >= dungeonMap.pathPoints.length - 1) {
         const damageToBase =
           e.type === 'super_giant_boss'
-            ? 30
+            ? 200
             : e.type === 'giant_boss'
-            ? 20
+            ? 100
             : e.type === 'large_boss'
-            ? 15
+            ? 60
             : e.type === 'mid_boss'
-            ? 10
+            ? 30
             : e.type === 'mini_boss'
-            ? 6
+            ? 10
             : e.type === 'golem'
             ? 4
             : e.type === 'walker'

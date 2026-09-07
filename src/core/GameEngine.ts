@@ -445,6 +445,14 @@ export class GameEngine {
   }
 
   /**
+   * 拠点防衛戦のプレイ制限を強制リセット（デバッグ・裏技用）
+   */
+  public resetDefenseVictory() {
+    this.state.lastDefenseVictoryTime = undefined;
+    this.saveState();
+  }
+
+  /**
    * 拠点防衛戦の朝9:00デイリーリセット状態を取得
    */
   public getDefenseResetInfo(now: number = Date.now()): DefenseResetInfo {

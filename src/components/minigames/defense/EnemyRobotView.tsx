@@ -131,16 +131,7 @@ export const EnemyRobotView: React.FC<EnemyRobotViewProps> = React.memo(({ enemy
         )}
       </div>
 
-      {/* ボス用警戒オーラ */}
-      {isBoss && (
-        <div className="absolute inset-0 rounded-full border-2 border-purple-500/80 animate-ping pointer-events-none" />
-      )}
-      {enemy.type === 'super_giant_boss' && (
-        <div className="absolute -inset-2 rounded-full border-2 border-amber-400/90 animate-spin pointer-events-none" />
-      )}
-      {enemy.type === 'sprinter' && (
-        <div className="absolute -inset-1 rounded-full border border-emerald-400/60 animate-pulse pointer-events-none" />
-      )}
+      
 
       {/* Kenney ロボットスプライト本体（くっきりとしたドロップシャドウで他の敵と重なっても輪郭を維持） */}
       <div
