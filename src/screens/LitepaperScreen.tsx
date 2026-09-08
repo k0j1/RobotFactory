@@ -12,9 +12,20 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
       </div>
 
       <Card className="bg-stone-50 border-2 border-stone-200">
-        <h3 className={`${theme.typography.h3} mb-4 text-stone-700`}>ポンコツロボット工房 v1.0.240 仕様まとめ</h3>
+        <h3 className={`${theme.typography.h3} mb-4 text-stone-700`}>ポンコツロボット工房 v1.0.241 仕様まとめ</h3>
         
         <div className="space-y-6 text-sm text-stone-800">
+          <section>
+            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">モーションスタジオ (v1.0.241)</h4>
+            <ul className="list-disc list-inside space-y-2">
+              <li><strong>独立リム（手足）アニメーションの完全対応:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li>従来は左右の腕・脚が連動して動いていた一部のアニメーションを修正し、<strong>全アニメーション</strong>で右腕・左腕、右脚・左脚が独立したパーツとして精密に動くように対応しました。</li>
+                  <li><strong>新規アニメーションの追加:</strong> バンザイ大歓喜、やった～！大はしゃぎ、ツインビーム・シュート、フルバースト・ミサイルの4つの新しいアニメーションを実装。左右の手足がバラバラに動く躍動感あるモーションを楽しめます。</li>
+                </ul>
+              </li>
+            </ul>
+          </section>
           <section>
             <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">演習・ミニゲーム (v1.0.240)</h4>
             <ul className="list-disc list-inside space-y-2">
