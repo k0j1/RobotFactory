@@ -141,7 +141,7 @@ export interface PianoSong {
 
 const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
-// MIDI 33 (A1) to MIDI 100 (E7) -> 40 white keys total (index 0 to 39)
+// MIDI 21 (A0) to MIDI 108 (C8) -> 52 white keys total
 export const midiToKeyInfo = (midi: number): { name: string; isBlack: boolean; lanePos: number; whiteIndex: number } => {
   const octave = Math.floor(midi / 12) - 1;
   const pitchClass = midi % 12;
@@ -149,7 +149,7 @@ export const midiToKeyInfo = (midi: number): { name: string; isBlack: boolean; l
   const isBlack = [1, 3, 6, 8, 10].includes(pitchClass);
 
   let whiteKeysBelow = 0;
-  for (let m = 33; m < midi; m++) {
+  for (let m = 21; m < midi; m++) {
     const pc = m % 12;
     if (![1, 3, 6, 8, 10].includes(pc)) {
       whiteKeysBelow++;

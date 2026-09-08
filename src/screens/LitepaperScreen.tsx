@@ -12,9 +12,53 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
       </div>
 
       <Card className="bg-stone-50 border-2 border-stone-200">
-        <h3 className={`${theme.typography.h3} mb-4 text-stone-700`}>ポンコツロボット工房 v1.0.236 仕様まとめ</h3>
+        <h3 className={`${theme.typography.h3} mb-4 text-stone-700`}>ポンコツロボット工房 v1.0.240 仕様まとめ</h3>
         
         <div className="space-y-6 text-sm text-stone-800">
+          <section>
+            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">演習・ミニゲーム (v1.0.240)</h4>
+            <ul className="list-disc list-inside space-y-2">
+              <li><strong>ピアノ鍵盤の88鍵フルスケール対応:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li><strong>A0〜C8の全音域への拡張:</strong> ラ・カンパネラをはじめとする高難度楽曲の全音域をカバーするため、従来の40鍵（A1〜E7）から標準的なグランドピアノと同じ88鍵（白鍵52鍵、黒鍵36鍵）のフルスケールへと拡張しました。</li>
+                  <li><strong>正確な打鍵アニメーション:</strong> より広大な鍵盤幅に対してロボットの腕が左右へダイナミックに交差・跳躍するようになり、超絶技巧の視覚的迫力が大幅に向上しました。</li>
+                </ul>
+              </li>
+            </ul>
+          </section>
+          <section>
+            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">演習・ミニゲーム (v1.0.239)</h4>
+            <ul className="list-disc list-inside space-y-2">
+              <li><strong>ラ・カンパネラ 楽譜10ページ分の完全フル演奏対応:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li><strong>全140小節・5分間に及ぶ完全版データへの刷新:</strong> これまで展開部（23小節）までにとどまっていた演奏データを抜本的に刷新し、公開されている標準的なMIDIデータを独自パーサーにより抽出。楽譜全10ページ分、約5分間に及ぶリストの超絶技巧すべてを完全再現する演奏エンジンを実装しました。</li>
+                  <li><strong>正確な運指と和声の完全サポート:</strong> 最序盤からフィナーレに至るまで、跳躍・トリル・重音・急速なアルペジオなどの超絶技巧がロボットの腕のアニメーションと共に息つく暇もなく展開されるようになりました。</li>
+                </ul>
+              </li>
+            </ul>
+          </section>
+          <section>
+            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">演習・ミニゲーム (v1.0.238)</h4>
+            <ul className="list-disc list-inside space-y-2">
+              <li><strong>ラ・カンパネラ 演奏譜面の原典完全準拠・フルコーラス対応:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li><strong>演奏時間が短かった問題の解消:</strong> これまでイントロとメロディの入り口のみで終わっていた譜面データを大幅に拡張。第23小節の展開部まで長く演奏を楽しめるように修正しました。</li>
+                  <li><strong>左右の手（伴奏と旋律）の正確な和音再現:</strong> 右手の跳躍（D#6, B5等）に加え、左手のバス・和音（G#2や和音コード）も原曲（ID:110）通りに採譜してMIDI化。より豊かで圧倒的な重厚感を持つ本格的なピアノ演奏を再現しました。</li>
+                </ul>
+              </li>
+            </ul>
+          </section>
+          <section>
+            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">演習・ミニゲーム (v1.0.237)</h4>
+            <ul className="list-disc list-inside space-y-2">
+              <li><strong>ラ・カンパネラ 演奏譜面の原典完全準拠対応:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li><strong>原典楽譜通りの譜面へ修正:</strong> ミニゲーム「ピアノ演奏」における「ラ・カンパネラ」の譜面が不正確だった問題を修正。指定楽譜(pianoclassics.net ID 110)に完全準拠し、嬰ト短調の主旋律（D#6から始まる鐘の音色、B5やG#5への跳躍など）を正確なMIDIノートとして再構成。</li>
+                  <li><strong>演奏フィードバックの向上:</strong> メロディラインが正確になったことで、GSAPロボットアニメーションと打鍵の連動がより直感的に楽しめるようになりました。</li>
+                </ul>
+              </li>
+            </ul>
+          </section>
           <section>
             <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">GSAP モーションスタジオ＆左右四肢完全独立リグエンジン (v1.0.236)</h4>
             <ul className="list-disc list-inside space-y-2">

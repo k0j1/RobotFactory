@@ -14,7 +14,7 @@ interface PianoGameProps extends Omit<MinigameProps, 'activeOpponent'> {
 }
 
 // 40白鍵 (A1: 33 〜 E7: 100)
-const TOTAL_WHITE_KEYS = 40;
+const TOTAL_WHITE_KEYS = 52;
 
 // Web Audio API による高品位グランドピアノシンセサイザー（フォールバック＆即時再生用）
 const playSynthesizedPiano = (
@@ -493,17 +493,17 @@ export const PianoGame: React.FC<PianoGameProps> = ({
     }
   };
 
-  // 40白鍵の生成 (A1〜E7)
+  // 52白鍵の生成 (A0〜C8: 88鍵フルスケール)
   const whiteKeyDefs = React.useMemo(() => {
     const notesBase = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
     const midiBase = [0, 2, 4, 5, 7, 9, 11]; // Cから始まる半音オフセット
     const keys: { index: number; hasBlackKey: boolean; name: string; midi: number }[] = [];
     
-    // A1, B1
-    keys.push({ index: 0, hasBlackKey: true, name: 'A1', midi: 33 });
-    keys.push({ index: 1, hasBlackKey: false, name: 'B1', midi: 35 });
+    // A0, B0
+    keys.push({ index: 0, hasBlackKey: true, name: 'A0', midi: 21 });
+    keys.push({ index: 1, hasBlackKey: false, name: 'B0', midi: 23 });
 
-    let currentOctave = 2;
+    let currentOctave = 1;
     for (let i = 2; i < TOTAL_WHITE_KEYS; i++) {
       const offset = (i - 2) % 7;
       if (offset === 0 && i > 2) currentOctave++;
