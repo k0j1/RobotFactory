@@ -5,6 +5,7 @@ import { Card, Button, Badge } from '../components/ui/core';
 import { theme } from '../styles/theme';
 import { RobotVisual, PartVisual } from '../components/robot/RobotVisual';
 import { RobotGalleryCard } from '../components/robot/RobotGalleryCard';
+import { GSAPMotionStudioModal } from '../components/robot/GSAPMotionStudioModal';
 import { SVG_HEADS, SVG_BODIES, SVG_ARMS, SVG_LEGS } from '../components/robot/RobotSVGs';
 import { MATERIALS, getMaterialCraftableVisuals } from '../core/data';
 import * as Gi from 'react-icons/gi';
@@ -125,6 +126,10 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
   const [filterRarity, setFilterRarity] = useState<number | 'All'>('All');
   const [sortOrder, setSortOrder] = useState<'newest'|'oldest'|'price_desc'|'price_asc'>('newest');
   const [filterPartType, setFilterPartType] = useState<string>('All');
+
+  // GSAP モーションスタジオのモーダル状態
+  const [isMotionStudioOpen, setIsMotionStudioOpen] = useState<boolean>(false);
+  const [motionStudioRobot, setMotionStudioRobot] = useState<Robot | null>(null);
 
   // ロボットギャラリー：クラフトされたユニークロボット一覧
   const uniqueCraftedRobots = useMemo(() => {
@@ -381,6 +386,42 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
 
       {tab === 'robots' && (
         <div className="space-y-4">
+          {/* GSAPモーションスタジオ起動バナー */}
+          <div className="bg-gradient-to-r from-amber-600 to-amber-700 text-white p-3 sm:p-4 rounded-xl shadow-md border-2 border-amber-500 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-stone-900/40 rounded-xl text-amber-300 border border-amber-400/30">
+                <Gi.GiFilmProjector size={28} />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-bold text-white text-base">
+                    GSAP ロボットモーションスタジオ
+                  </span>
+                  <span className="text-[10px] bg-amber-400 text-stone-950 px-2 py-0.5 rounded-full font-bold">
+                    GreenSock 搭載
+                  </span>
+                </div>
+                <p className="text-xs text-amber-100 mt-0.5 leading-relaxed">
+                  戦闘スラッシュ、ビーム砲撃、分解展開図、ブレイクダンス等、全24種類のアニメーションを部位別イージングで再生鑑賞！
+                </p>
+              </div>
+            </div>
+
+            <Button
+              id="open-studio-banner-btn"
+              size="sm"
+              variant="secondary"
+              onClick={() => {
+                setMotionStudioRobot(uniqueCraftedRobots[0] || null);
+                setIsMotionStudioOpen(true);
+              }}
+              className="bg-stone-900 text-amber-300 hover:bg-stone-800 border-amber-400 font-bold whitespace-nowrap text-xs flex items-center gap-1.5 shadow-sm py-2 px-3 self-stretch sm:self-auto justify-center cursor-pointer"
+            >
+              <Gi.GiPlayButton size={14} className="text-amber-400" />
+              スタジオを開く
+            </Button>
+          </div>
+
           <div className="bg-amber-50/90 border border-amber-300 p-3 rounded-xl text-sm text-stone-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 shadow-2xs">
             <div className="flex items-center gap-2.5">
               <div className="p-2 bg-amber-100 rounded-lg text-amber-700">
@@ -389,7 +430,7 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
               <div>
                 <span className="font-bold text-stone-800 text-sm block">ロボットギャラリー (Robot Gallery)</span>
                 <span className="text-xs text-stone-600">
-                  これまでに製造したユニークロボットの図鑑です。「構成パーツ詳細」から各部位のステータス（Component Stats）を確認できます。
+                  これまでに製造したユニークロボットの図鑑です。「構成パーツ詳細」や「GSAP モーションスタジオ」でアニメーションとステータスを確認できます。
                 </span>
               </div>
             </div>
@@ -407,7 +448,7 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
                 クラフトされたロボットがまだありません
               </h3>
               <p className="text-xs text-stone-500 max-w-md mx-auto">
-                「工房」で素材からパーツを製造し、4つの部位（ヘッド・ボディ・アーム・レッグ）を組み立ててロボットを完成させると、ここにステータス詳細付きで登録されます！
+                「工房」で素材からパーツを製造し、4つの部位（ヘッド・ボディ・アーム・レッグ）を組み立ててロボットを完成させると、ここにステータス詳細やGSAPアニメーション演習付きで登録されます！
               </p>
             </Card>
           ) : (
@@ -422,6 +463,10 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
                     key={robot.id}
                     robot={robot}
                     statusLabel={statusLabel}
+                    onOpenMotionStudio={(r) => {
+                      setMotionStudioRobot(r);
+                      setIsMotionStudioOpen(true);
+                    }}
                   />
                 );
               })}
@@ -592,6 +637,18 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
             );
           })}
         </div>
+      )}
+
+      {/* GSAP ロボットモーションスタジオ モーダル */}
+      {isMotionStudioOpen && (
+        <GSAPMotionStudioModal
+          initialRobot={motionStudioRobot}
+          robotsList={uniqueCraftedRobots}
+          onClose={() => {
+            setIsMotionStudioOpen(false);
+            setMotionStudioRobot(null);
+          }}
+        />
       )}
     </div>
   );

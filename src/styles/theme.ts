@@ -69,6 +69,18 @@ export const theme = {
     sectionHeader: "font-bold text-[#5c3e28] text-sm tracking-wider flex items-center gap-2",
     innerCard: "bg-[#fffdfa] rounded-xl border-2 border-[#dcc5b0] p-3 shadow-2xs",
   },
+  studio: {
+    viewportBg: "bg-stone-900 border-2 border-stone-700 shadow-inner rounded-2xl relative overflow-hidden",
+    viewportLight: "bg-stone-100 border-2 border-stone-300 shadow-inner rounded-2xl relative overflow-hidden",
+    stageGrid: "opacity-25 pointer-events-none absolute inset-0",
+    controlPanel: "bg-[#faf6f0] border-2 border-[#cbb29a] rounded-xl p-3 shadow-sm space-y-3",
+    actionButton: "border-2 border-stone-300 bg-white hover:border-amber-500 hover:bg-amber-50/80 transition-all rounded-lg p-2 text-left flex flex-col justify-between shadow-2xs cursor-pointer",
+    actionButtonActive: "border-2 border-amber-600 bg-amber-100/90 text-amber-950 font-bold shadow-xs",
+    tagBadge: "text-[10px] px-2 py-0.5 rounded-full font-bold shadow-2xs",
+    speedBtnActive: "bg-amber-600 text-white font-bold border border-amber-700 shadow-xs",
+    speedBtnInactive: "bg-stone-200 text-stone-700 hover:bg-stone-300 border border-stone-300",
+    infoCard: "bg-stone-800/90 border border-stone-600 rounded-lg p-2.5 text-stone-200 text-xs shadow-inner",
+  },
   spacing: {
     xs: "p-2",
     sm: "p-4",

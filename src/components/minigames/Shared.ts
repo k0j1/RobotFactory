@@ -117,6 +117,7 @@ export interface DanmakuDifficultyConfig {
 
 
 import { FUR_ELISE_RAW_NOTES } from './furEliseData';
+import { LA_CAMPANELLA_RAW_NOTES } from './laCampanellaData';
 import { TURKISH_MARCH_RAW_NOTES } from './turkishMarchData';
 
 export interface PianoNoteData {
@@ -186,7 +187,29 @@ export const TURKISH_MARCH_NOTES: PianoNoteData[] = TURKISH_MARCH_RAW_NOTES.map(
   };
 });
 
+
+export const LA_CAMPANELLA_NOTES: PianoNoteData[] = LA_CAMPANELLA_RAW_NOTES.map(n => {
+  const keyInfos = n.midi.map(m => midiToKeyInfo(m));
+  return {
+    time: n.time,
+    midi: n.midi,
+    lanes: keyInfos.map(k => k.lanePos),
+    pitches: keyInfos.map(k => k.name),
+    duration: n.duration
+  };
+});
+
 export const PIANO_SONGS: PianoSong[] = [
+  { 
+    id: 'la_campanella', 
+    title: 'ラ・カンパネラ', 
+    composer: 'リスト', 
+    level: 10, 
+    songSpeed: 1.0,
+    desc: 'パガニーニ大練習曲 第3番 嬰ト短調。pianoclassics.net (ID 110) 準拠。特徴的な跳躍と高音の鐘の音を再現したテーマ部。', 
+    notes: LA_CAMPANELLA_NOTES
+  },
+
   { 
     id: 'fur_elise', 
     title: 'エリーゼのために', 

@@ -12,9 +12,23 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
       </div>
 
       <Card className="bg-stone-50 border-2 border-stone-200">
-        <h3 className={`${theme.typography.h3} mb-4 text-stone-700`}>ポンコツロボット工房 v1.0.231 仕様まとめ</h3>
+        <h3 className={`${theme.typography.h3} mb-4 text-stone-700`}>ポンコツロボット工房 v1.0.236 仕様まとめ</h3>
         
         <div className="space-y-6 text-sm text-stone-800">
+          <section>
+            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">GSAP モーションスタジオ＆左右四肢完全独立リグエンジン (v1.0.236)</h4>
+            <ul className="list-disc list-inside space-y-2">
+              <li><strong>左右四肢独立リグエンジン (Independent Left/Right Limb Kinematics):</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li><strong>左右アーム・左右レッグの完全独立パーツ分割:</strong> 従来のモノリシックな両腕・両脚一体描画から、左腕 (ArmLeft)、右腕 (ArmRight)、左脚 (LegLeft)、右脚 (LegRight) を完全独立コンポーネント＆個別DOM参照へ進化。左右で全く異なるポージング・軌道・回転軸をリアルタイムに制御可能。</li>
+                  <li><strong>パーツ消失防止と確実なSVG重層描画:</strong> 各パーツ（Head, Body, ArmLeft, ArmRight, LegLeft, LegRight）のSVGコンポーネントを独立した高精度レイヤーとして保持し、全パーツ・全レアリティ・全属性で100%確実に表示。初期ロード時やアニメーション切替時にもパーツが消えないセーフティ機構を確立。</li>
+                  <li><strong>独立関節ボーン＆ジョイントHUD (Rig Joints Overlay):</strong> トグルボタンにより、首（50% 32%）、炉心コア（50% 55%）、左肩（25% 46%）、右肩（75% 46%）、左股関節（38% 72%）、右股関節（62% 72%）の回転ピボットと関節マーカーをホログラム状に可視化。</li>
+                  <li><strong>4カテゴリー・全28種の独立四肢モーション完全網羅:</strong> 戦闘（二刀流、二丁拳銃、スラッシュ、ビームキャノン、連射、シールドガード等）、特殊（手足交互疾走、跳び回し蹴り、開脚ブレイクダンス、空中宙返り、6方向分解展開図等）、点検（個別サーボ診断、生体アイドル、浮遊、急速充電等）、感情（片手ガッツポーズ、正面クラップ、パニック等）の多彩なアニメーションをシームレスに鑑賞可能。</li>
+                  <li><strong>GSAP タイムライン＆リアクティブ同期:</strong> タイムライン進行度（0%〜100%）をリアルタイムに視覚化。一時停止・再生、ループ切替、再生速度変更（0.5x〜2.0x）を遅延なくシームレスに操作可能。</li>
+                </ul>
+              </li>
+            </ul>
+          </section>
           <section>
             <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">演習・ミニゲーム (拠点防衛戦・ボス被ダメ倍率＆耐久力調整)</h4>
             <ul className="list-disc list-inside space-y-2">
@@ -149,6 +163,22 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
               <li><strong>ロボットの修理 &amp; 修理演出アニメーション:</strong> 探索や遠征でHPが減った・HP切れ（0〜1）になったロボットに「修理キット」を使用すると、専用の<strong>修理演出アニメーション</strong>が再生されます。回転するレンチやハンマー、飛び散るスパーク（<Gi.GiLightningTrio className="inline text-yellow-500" />）、グリーンの回復光パルス（Healing Wave）と舞い散るハート＆スターエフェクト（<Gi.GiHeartPlus className="inline text-pink-500" />✨）とともに、HPゲージがスムーズに100%まで全快し、ロボットが両手をあげて喜ぶ演出が表示されます（不要なテキスト表示は削除され、洗練されたアニメーション演出となります）。また倉庫カードおよびダッシュボードの自動探索カードからもワンタップでクイック修理＆探索再開が可能です。</li>
               <li><strong>素材商店・交換所（コンパクトグリッド）:</strong> 工房画面上で直感的にタップして商店を開くことができます。素材の購入や「修理キット」への交換を、<strong>アイコンとボタンが一体化した直感的なグリッドパネル</strong>から1タップで素早く行えます。</li>
               <li><strong>図鑑・仕様書（ロボット図鑑 &amp; パーツ図鑑 &amp; 素材別出現一覧 &amp; 納品履歴）:</strong> 商店カードと分離し、上部のコンパクトな情報ナビゲーションとして配置。新設された<strong>「ロボット図鑑（Robot Gallery）」タブ</strong>では、これまでにクラフトしたすべてのユニークロボットを美麗なグラフィックスやクラフト日時、属性比率、総合ステータスとともにアーカイブ。さらに各機体の<strong>「構成パーツ詳細 (Component Stats)」</strong>を展開することで、ヘッド・ボディ・アーム・レッグ各パーツの個別ステータス（HP・攻撃・防御・素早さ・器用・知力）や属性、レアリティ内訳を詳細に確認・比較できるようになりました。また、全パーツ形状を部位別・レア度別に一覧できる<strong>「パーツ図鑑」</strong>、素材ごとの出現候補がわかる<strong>「素材別出現一覧」</strong>、過去の納品履歴も完備しています。</li>
+              <li><strong>GSAP (GreenSock Animation Platform) ロボットモーションスタジオ &amp; 全24種のアクション演習:</strong> ロボット図鑑（Robot Gallery）に、業界標準の高性能アニメーションライブラリ「GSAP」を全面統合した専用の<strong>モーションスタジオ（GSAP Motion Studio）</strong>を新設しました。
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li><strong>厳格なOOPアーキテクチャ設計:</strong> <code>BaseRobotAnimation</code>基底クラス、シングルトンパターンの<code>GSAPRobotAnimationRegistry</code>、およびライフサイクル・タイムライン解放を完全管理する<code>GSAPRobotAnimationController</code>により、メモリリークのない堅牢で拡張性の高いアニメーションエンジンを構築。</li>
+                  <li><strong>全24種類の多彩なアニメーションパターン:</strong>
+                    <ul className="list-disc list-inside space-y-0.5 ml-4 mt-0.5 text-xs text-stone-600">
+                      <li><strong>⚔️ Combat (戦闘・アクション):</strong> 斬撃スラッシュ、2連撃コンボ、集束ビーム砲撃、防御シールド展開、渾身のロケットパンチ、EMPショックパルス、ハイパーオーバードライブ。</li>
+                      <li><strong>🤸 Acrobatic (曲芸・機動):</strong> バック宙返り(Backflip)、ハイパーダッシュ突進、ブレイクダンス(Breakdance)、高速スピン回転、ジグザグステップ回避、ドリルスクリューダイブ。</li>
+                      <li><strong>⚙️ Mechanical (機構・メンテナンス):</strong> 分解・展開図(Exploded View)、磁力組み立て(Assembly)、システムブート(Boot)、自己リペア(Repair)、変形トランスフォーム(Transform)、オーバーヒート排熱(Overheat)。</li>
+                      <li><strong>✨ Emotion (感情・ポーズ):</strong> 勝利のガッツポーズ(Victory)、大喜び歓喜(Celebrate)、オロオロ困惑(Confused)、ノリノリダンス(Groove)、気品あるお辞儀(Bow)。</li>
+                    </ul>
+                  </li>
+                  <li><strong>部位別独立制御 (Head・Body・Arms・Legs):</strong> ロボットの各パーツDOMノードを個別ターゲットとして認識し、独自の回転軸（<code>transformOrigin</code>）、反動、イージング（<code>back.out</code>, <code>elastic.out</code>, <code>power2.inOut</code>等）を組み合わせた有機的で立体感のあるメカニカルモーションを実現。</li>
+                  <li><strong>スタジオ操作パネル:</strong> 再生/一時停止、再生速度変更（0.25xスロー 〜 2.0x高速）、ループ/ワンショット切り替え、タイムライン進行度シークバー（Scrubber）、および機体切替セレクターを完備。</li>
+                  <li><strong>図鑑カードでの即時プレビュー切替:</strong> 図鑑一覧のカード上でも「🎬 GSAPプレビュー」スイッチにより、標準アニメーションとGSAPモーションをシームレスに切り替えて鑑賞可能です。</li>
+                </ul>
+              </li>
               <li><strong>☆2ボディの幾何学的スケーリング＆各部位接合の最適化:</strong> ロボット合成時に☆2ボディ（ハイテクコアボディ、バイザーコアボディ）が縦に大きくなり脚部やすねを覆い隠してしまっていたバランスを抜本的に再設計。100×100の親空間グリッドに合わせてボディ描画領域（幅34、高さ32）にスマートスケール化することで、ヘッドの首元との密着、レッグの太もも・膝・足底の完璧な露出、およびアームの肩アーマー・関節の露出バランスを調和させ、どのパーツと組み合わせても力強く引き締まったプロポーションを実現しました。</li>
               <li><strong>☆2ナックルアームのサイズ最適化＆肩関節固定スケーリング:</strong> ロボット合成時に巨大化していた☆2腕部「ナックルアーム」について、肩の付け根（接合ジョイント）座標を正確に固定したままサイズを1/2（50%）に最適化。各ボディパーツの肩口との自然な接続を維持しつつ、腕の長さが腰・大腿部付近で美しく収まるようプロポーションを再設計しました。また、パーツ図鑑等の単体表示においても中央にバランスよくプレビュー表示されるよう画角を自動調整しています。</li>
             </ul>

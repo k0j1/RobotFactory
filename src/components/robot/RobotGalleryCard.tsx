@@ -3,11 +3,13 @@ import { Robot, RobotPart, AttributeColors, AttributeNames } from '../../core/mo
 import { theme } from '../../styles/theme';
 import { Card, Button, Badge } from '../ui/core';
 import { RobotVisual, PartVisual } from './RobotVisual';
+import { GSAPRobotCanvas } from './GSAPRobotCanvas';
 import * as Gi from 'react-icons/gi';
 
 interface RobotGalleryCardProps {
   robot: Robot;
   statusLabel?: 'owned' | 'delivered' | 'archived';
+  onOpenMotionStudio?: (robot: Robot) => void;
 }
 
 const STAT_CONFIG: { key: keyof RobotPart['stats']; label: string; icon: React.ReactNode; color: string }[] = [
@@ -26,8 +28,14 @@ const PART_TYPE_CONFIG: { type: 'head' | 'body' | 'arms' | 'legs'; label: string
   { type: 'legs', label: 'レッグ', icon: <Gi.GiLegArmor size={14} /> },
 ];
 
-export const RobotGalleryCard: React.FC<RobotGalleryCardProps> = ({ robot, statusLabel = 'archived' }) => {
+export const RobotGalleryCard: React.FC<RobotGalleryCardProps> = ({ 
+  robot, 
+  statusLabel = 'archived',
+  onOpenMotionStudio 
+}) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [useGsapPreview, setUseGsapPreview] = useState(false);
+  const [activePattern, setActivePattern] = useState<'bio_breathing' | 'slash_combo' | 'spring_jump' | 'victory_cheer'>('bio_breathing');
 
   // 総合戦闘力スコア
   const totalScore = robot.stats.hp + robot.stats.power + robot.stats.defense + 
@@ -53,14 +61,65 @@ export const RobotGalleryCard: React.FC<RobotGalleryCardProps> = ({ robot, statu
       className={`${theme.workshop.mainCard} transition-all duration-200 hover:border-amber-500 hover:shadow-lg`}
     >
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-        {/* ロボット外観 */}
+        {/* ロボット外観 & GSAPミニプレビュー */}
         <div className="flex flex-col items-center shrink-0 w-full sm:w-auto">
-          <div className="relative p-2 bg-stone-100 rounded-xl border border-stone-300 shadow-inner flex items-center justify-center">
-            <RobotVisual robot={robot} size={110} />
-            <div className="absolute top-1 right-1 flex items-center gap-0.5 bg-amber-500/90 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-xs">
+          <div className="relative p-2 bg-stone-100 rounded-xl border border-stone-300 shadow-inner flex items-center justify-center min-w-[120px] min-h-[120px]">
+            {useGsapPreview ? (
+              <GSAPRobotCanvas
+                robot={robot}
+                size={110}
+                patternId={activePattern}
+                speed={1.0}
+                loop={true}
+                hideStageDecorations={true}
+              />
+            ) : (
+              <RobotVisual robot={robot} size={110} />
+            )}
+
+            <div className="absolute top-1 right-1 flex items-center gap-0.5 bg-amber-500/90 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-xs z-20">
               <Gi.GiStarFormation size={11} />
               <span>★{maxRarity}</span>
             </div>
+
+            {/* GSAPバッジ */}
+            {useGsapPreview && (
+              <div className="absolute bottom-1 left-1 bg-amber-600/90 text-white text-[9px] font-mono font-bold px-1 rounded shadow-2xs z-20">
+                GSAP
+              </div>
+            )}
+          </div>
+
+          {/* クイックGSAPアニメーション切替バー */}
+          <div className="flex items-center gap-1 mt-1.5">
+            <button
+              type="button"
+              onClick={() => {
+                setUseGsapPreview(!useGsapPreview);
+                if (!useGsapPreview) setActivePattern('bio_breathing');
+              }}
+              className={`text-[10px] px-2 py-0.5 rounded font-bold transition-all border ${
+                useGsapPreview 
+                  ? 'bg-amber-600 text-white border-amber-700 shadow-2xs' 
+                  : 'bg-stone-200 text-stone-700 border-stone-300 hover:bg-amber-100 hover:text-amber-800'
+              }`}
+              title="カード内でのGSAPアニメーション表示切替"
+            >
+              {useGsapPreview ? 'GSAP停止' : '⚡GSAP可動'}
+            </button>
+
+            {useGsapPreview && (
+              <select
+                className="text-[10px] p-0.5 bg-white border border-stone-300 rounded font-bold text-stone-700"
+                value={activePattern}
+                onChange={e => setActivePattern(e.target.value as any)}
+              >
+                <option value="bio_breathing">待機呼吸</option>
+                <option value="slash_combo">スラッシュ</option>
+                <option value="spring_jump">ジャンプ</option>
+                <option value="victory_cheer">歓喜</option>
+              </select>
+            )}
           </div>
         </div>
 
@@ -134,8 +193,23 @@ export const RobotGalleryCard: React.FC<RobotGalleryCardProps> = ({ robot, statu
             ))}
           </div>
 
-          {/* アコーディオン開閉ボタン */}
-          <div className="flex justify-end pt-1">
+          {/* アクションボタン群 */}
+          <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
+            {/* GSAPモーションスタジオ起動ボタン */}
+            {onOpenMotionStudio && (
+              <Button
+                id={`open-motion-studio-btn-${robot.id}`}
+                size="sm"
+                variant="primary"
+                onClick={() => onOpenMotionStudio(robot)}
+                className="text-xs flex items-center gap-1.5 py-1 px-3 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 shadow-2xs font-bold"
+              >
+                <Gi.GiFilmProjector size={15} />
+                GSAP モーションスタジオ (全24種)
+              </Button>
+            )}
+
+            {/* アコーディオン開閉ボタン */}
             <Button
               id={`toggle-components-btn-${robot.id}`}
               size="sm"
@@ -226,3 +300,4 @@ export const RobotGalleryCard: React.FC<RobotGalleryCardProps> = ({ robot, statu
     </Card>
   );
 };
+
