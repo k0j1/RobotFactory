@@ -12,9 +12,97 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
       </div>
 
       <Card className="bg-stone-50 border-2 border-stone-200">
-        <h3 className={`${theme.typography.h3} mb-4 text-stone-700`}>ポンコツロボット工房 v1.0.253 仕様まとめ</h3>
+        <h3 className={`${theme.typography.h3} mb-4 text-stone-700`}>ポンコツロボット工房 v1.0.258 仕様まとめ</h3>
         
         <div className="space-y-6 text-sm text-stone-800">
+          <section>
+            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">モーションスタジオ：スナイパーライフル全両手持ち化＆複合武器モーション削除 (v1.0.258)</h4>
+            <ul className="list-disc list-inside space-y-2">
+              <li><strong>スナイパーライフル全モーションの両手持ち（左手・右手保持）化:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li>『精密スナイパー照準』『ヘビースナイパー・精密狙撃』『しゃがみ狙撃・徹甲バースト』『空中アクロバットスナイプ』『【必殺奥義】極光オメガバスター』等のスナイパーライフルを使用する全アニメーションについて、右手（グリップ＆トリガー）と左手（フォアグリップ支持）の両手で構える重厚かつ本格的なスナイパースタンスへと動作を統一補正しました。</li>
+                </ul>
+              </li>
+              <li><strong>剣＆スナイパーライフル複合アニメーションの削除:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li>ユーザー指定に基づき、剣とスナイパーライフルを同時に使用する複合アニメーション（『ガン＆ブレード・タクティカル』および『【必殺奥義】神威ジェネシス・アサルト』）をモーションスタジオおよびアニメーションレジストリから完全に削除しました。</li>
+                </ul>
+              </li>
+            </ul>
+          </section>
+          <section>
+            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">モーションスタジオ：ソード＆スナイパーライフル必殺奥義専用カットイン＆極大エフェクト演出 (v1.0.257)</h4>
+            <ul className="list-disc list-inside space-y-2">
+              <li><strong>必殺技専用カットイン＆特殊エフェクト演出システムの実装:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li><strong>ドラマチックカットイン演出バナー (`mountDramaticCutinEffect`):</strong> 画面暗転・高輝度白光フラッシュとともに、奥義名・サブタイトル・眼光照準HUD・スラッシュアクセントを伴うダイナミックなバナー演出を実装。</li>
+                  <li><strong>極大エネルギー充填オーラ (`mountEnergyChargeAuraEffect`):</strong> 16本の超高密度集中スピードライン、渦巻く粒子リング、中心パルスコアによる限界オーバーチャージ演出。</li>
+                  <li><strong>超極大X字クロス両断光線 (`mountOmegaCrossSlashEffect`):</strong> 画面全域を斜めに切り裂くシアン＆紅蓮の極大光刃と星型インパクト衝撃波。</li>
+                  <li><strong>極太超電導ハイパービーム・オメガバスター (`mountOmegaBeamBusterEffect`):</strong> 4連螺旋電磁プラズマリング、超極太貫通ビームシリンダー、マズル超新星フラッシュエフェクト。</li>
+                </ul>
+              </li>
+              <li><strong>長刀ビームサーベル＆ヘビースナイパーライフルを駆使する終極奥義3種を追加:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li><strong>【必殺奥義】星断オメガクロス (Omega Slash):</strong> 双刀長刀ビームサーベルを構え、ドラマチックカットインから極限オーラを充填。超神速踏み込みで空間ごと両断する極大X字クロス一閃＆爆砕シェイク。</li>
+                  <li><strong>【必殺奥義】極光オメガバスター (Hyper Buster):</strong> ヘビースナイパーライフルを両手で完全固定し、照準ロックオンカットインから限界オーバーチャージ。極太超電導ハイパービームを放射して標的を消滅させる終極狙撃奥義。</li>
+                  <li><strong>【必殺奥義】神威ジェネシス・アサルト (Genesis Assault):</strong> 右手スナイパーライフル＋左手長刀ビームサーベルの全兵装リミッター解除！覚醒カットインから貫通バスター連射→神速ワープ踏み込み→終焉ビームサーベル両断へと繋ぐ究極コンボ。</li>
+                </ul>
+              </li>
+              <li><strong>Web Audio API音源エンジンの拡張（4種の必殺技専用SE合成）:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li>カットイン専用高周波アルペジオ（`cutin`）、エネルギー充填レゾナンススイープ（`charge`）、高エネルギー極太レーザー放電（`laser`）、重低音サブベース終極爆砕音（`hyper`）をWeb Audio APIでリアルタイム合成。タイムラインSEマーカーと完全同期しました。</li>
+                </ul>
+              </li>
+            </ul>
+          </section>
+          <section>
+            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">モーションスタジオ：超長尺ヘビースナイパーライフルSVG＆ソード・ライフル新規戦闘アクション8種追加 (v1.0.256)</h4>
+            <ul className="list-disc list-inside space-y-2">
+              <li><strong>超長尺ヘビースナイパーライフルSVG（長銃身・放熱スリット・シアン照準スコープ）の実装:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li>ユーザー指定の精密仕様に基づき、超長尺放熱スリットノズル（16本スリット）、シアン発光照準スコープ、フォアグリップ、マガジン、バイポッド、ショルダーストックを備えたヘビースナイパーライフルSVGを新規追加しました。</li>
+                  <li>ピストルグリップ位置（X: 17.0%, Y: 62.0%）を拳アンカーと正確に同期させ、ロボットの手甲マニピュレーターがトリガーを握り込むリアルなマウント機構（`mountSniperRifle`）を構築。</li>
+                  <li>超高エネルギー貫通ビームレール、二重プラズマ放電リング、星型マズルフラッシュを含む専用射撃エフェクト（`mountSniperShotEffect`）を実装しました。</li>
+                </ul>
+              </li>
+              <li><strong>ソード＆スナイパーライフルを駆使する多彩な新戦闘モーション8種の拡充:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li><strong>ビームサーベル・断空斬 (Saber Judgement):</strong> 天高く跳躍し、ビームサーベルを極限プラズマ増幅して頭上に構え、超高速急降下で地面を切り裂く必殺の一刀両断奥義。</li>
+                  <li><strong>双剣・幻影乱舞 (Mirage Saber Dance):</strong> 左右両腕に長刀ビームサーベルを構え、左袈裟・右逆袈裟・水平薙ぎ払いの神速4連撃から同時X字クロスフィニッシュを叩き込む高速乱舞。</li>
+                  <li><strong>サーベル・受け流し反撃 (Parry & Riposte):</strong> 敵の攻撃をビームサーベルで斜めに弾き（火花・リコイル）、姿勢を低く沈めて懐へ潜り込み、下段から豪快に切り上げる電光石火のカウンター。</li>
+                  <li><strong>神速・ビーム居合抜刀 (Iaido Quick Draw):</strong> 腰を低く落とし、左手で鞘を押さえ右手を柄に掛けた静寂の構えから、0.08秒の超神速踏み込みで一閃！残心の後に美しく納刀。</li>
+                  <li><strong>ヘビースナイパー・精密狙撃 (Heavy Sniper):</strong> 超長尺ヘビースナイパーライフルを両手で構え、左手フォアグリップ支持＆スコープ青色ロックオンから超電導貫通ビームを発射。重厚なマズルショックと排莢。</li>
+                  <li><strong>しゃがみ狙撃・徹甲バースト (Crouch AP Burst):</strong> 完全しゃがみスタンスでバイポッドを地面に固定し、低姿勢から3連続の徹甲電磁弾を高速バースト射撃。</li>
+                  <li><strong>空中アクロバットスナイプ (Jump Snipe):</strong> 後方へサマーソルト回転跳躍しながら、空中頂点でスナイパーライフルを水平に構えて撃ち抜き、華麗に着地スライディング。</li>
+                  <li><strong>ガン＆ブレード・タクティカル (Gun & Blade):</strong> 右手にスナイパーライフル、左手に長刀ビームサーベルを同時装備！左サーベルの近接袈裟斬りで敵を崩し、ゼロ距離貫通射撃を叩き込む複合戦術コンボ。</li>
+                </ul>
+              </li>
+            </ul>
+          </section>
+          <section>
+            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">モーションスタジオ：長刀ビームサーベルSVG（刃長2倍延長仕様）への更新 (v1.0.255)</h4>
+            <ul className="list-disc list-inside space-y-2">
+              <li><strong>長刀ビームサーベルSVG（刀身2倍延長・ロングブレード仕様）:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li>ユーザー指定の長刀仕様に基づき、ビームプラズマ外周オーラおよび白光コア光線の長さを2倍に延長した迫力の超長刀ビームサーベルSVGを実装しました。</li>
+                  <li>刀身の延長に合わせてエミッター噴出口ノズル、ヒルトグリップ（放熱スリット構造・出力スイッチ）、エンドキャップの幾何配置を最適化。</li>
+                  <li>新柄の握り手中心位置（X: 50.0%、Y: 89.33%）に合わせて肩ピボット・拳アンカーマウントの連動位置を精密同期し、アームパーツの肩・拳調整値および手甲マニピュレーターが自然に重なるよう調整しました。</li>
+                </ul>
+              </li>
+            </ul>
+          </section>
+          <section>
+            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">モーションスタジオ：新世代ビームサーベルSVGへの刷新＆連動最適化 (v1.0.254)</h4>
+            <ul className="list-disc list-inside space-y-2">
+              <li><strong>白光コア＆シアンオーラを放つビームサーベルSVG:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li>モーションスタジオ内のスラッシュ・抜刀系アニメーションで使用される武器SVGを、高密度プラズマビームサーベルへ刷新しました。</li>
+                  <li>ビーム核心部（白光コア）、外周プラズマオーラ（シアン）、メカニカルフィン放熱構造を持つメタリック柄、起動スイッチ、エンドキャップおよびストラップリングを備えた美麗かつ高精細なSVGレンダリングを実現。</li>
+                  <li>新柄の握り位置（Y: 77.8%）に合わせて肩ピボット・拳アンカーマウントの連動位置を精密同期し、アームパーツの肩・拳調整値と手甲マニピュレーターが自然に重なるよう調整しました。</li>
+                </ul>
+              </li>
+            </ul>
+          </section>
           <section>
             <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">肩＆拳位置調整モード：確定ボタンの常時可視化＆スライダー誤操作防止ロック機能 (v1.0.253)</h4>
             <ul className="list-disc list-inside space-y-2">

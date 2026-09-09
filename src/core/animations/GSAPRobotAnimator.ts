@@ -74,8 +74,8 @@ export interface RobotDOMRefs {
  */
 export interface AnimationSEMarker {
   time: number;          // 発生秒数 (0 <= time <= duration)
-  label: string;         // マーカーラベル（例: '抜刀', '炎チャージ', 'ファイア・スラッシュ', '爆砕着弾'）
-  type: 'draw' | 'swing' | 'slash' | 'hit' | 'flame' | 'spark'; // 効果音種別
+  label: string;         // マーカーラベル（例: '抜刀', 'カットイン', 'レーザー放射', '終極爆砕'）
+  type: 'draw' | 'swing' | 'slash' | 'hit' | 'flame' | 'spark' | 'cutin' | 'laser' | 'charge' | 'hyper'; // 効果音種別
   icon?: string;
 }
 
@@ -170,67 +170,94 @@ export abstract class BaseRobotAnimation implements IRobotAnimationPattern {
 
 
 // =========================================================================
-// 炎の曲刀 (Flame Curved Blade) SVG & 武器生成ヘルパー
+// ビームサーベル / ソード (Beam Saber / Sword) SVG & 武器生成ヘルパー
 // =========================================================================
 
 /**
- * 炎の刀身グラデーションを持つ曲刀のSVGマークアップを生成
+ * ビーム核心部・プラズマオーラ・メタリック柄を備えた高エネルギーサーベルのSVGマークアップを生成（長刀・ビーム延長版）
  */
-export function getFlameBladeSwordSVG(idPrefix: string = 'fb'): string {
+export function getFlameBladeSwordSVG(idPrefix: string = 'sw'): string {
   return `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="100%" height="100%" class="drop-shadow-[0_0_10px_rgba(249,115,22,0.85)] filter">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="100%" height="100%" class="drop-shadow-[0_0_12px_rgba(0,229,255,0.85)] filter">
   <defs>
-    <!-- 炎の刀身グラデーション -->
-    <linearGradient id="${idPrefix}-fire-blade" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#fff7ed"/>
-      <stop offset="30%" stop-color="#fdba74"/>
-      <stop offset="70%" stop-color="#f97316"/>
-      <stop offset="100%" stop-color="#dc2626"/>
+    <!-- ビーム核心部（白光） -->
+    <linearGradient id="${idPrefix}-beam-core" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="15%" stop-color="#ffffff"/>
+      <stop offset="50%" stop-color="#e0f7fa"/>
+      <stop offset="85%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#ffffff"/>
     </linearGradient>
 
-    <!-- 鍔（ダークメタル＆赤銅） -->
-    <linearGradient id="${idPrefix}-dark-fire-grad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#7f1d1d"/>
-      <stop offset="50%" stop-color="#450a0a"/>
-      <stop offset="100%" stop-color="#18181b"/>
+    <!-- ビーム外周プラズマ（グラデーションシアン） -->
+    <linearGradient id="${idPrefix}-beam-aura" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00e5ff" stop-opacity="0.8"/>
+      <stop offset="30%" stop-color="#18ffff" stop-opacity="0.95"/>
+      <stop offset="70%" stop-color="#18ffff" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#00e5ff" stop-opacity="0.8"/>
     </linearGradient>
 
-    <!-- コア（コアクリスタル） -->
-    <radialGradient id="${idPrefix}-fire-core" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#fef08a"/>
-      <stop offset="100%" stop-color="#ea580c"/>
-    </radialGradient>
+    <!-- サーベル柄（メタリックシルバー） -->
+    <linearGradient id="${idPrefix}-hilt-metal" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#cfd8dc"/>
+      <stop offset="30%" stop-color="#ffffff"/>
+      <stop offset="65%" stop-color="#90a4ae"/>
+      <stop offset="100%" stop-color="#37474f"/>
+    </linearGradient>
+
+    <!-- 柄のダークアーマー -->
+    <linearGradient id="${idPrefix}-hilt-dark" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#263238"/>
+      <stop offset="50%" stop-color="#102027"/>
+      <stop offset="100%" stop-color="#000000"/>
+    </linearGradient>
+
+    <!-- 発光スイッチ/インジケーター -->
+    <linearGradient id="${idPrefix}-glow-red" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ff5252"/>
+      <stop offset="100%" stop-color="#ff0000"/>
+    </linearGradient>
   </defs>
 
-  <g stroke="#09090b" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
-    <!-- 曲刀の刃（曲線を描く刀身） -->
-    <path d="M 150,220 C 140,160 110,90 200,15 C 160,70 165,130 150,220 Z" fill="url(#${idPrefix}-fire-blade)"/>
+  <!-- 全体太ストロークグループ -->
+  <g stroke="#000a12" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
 
-    <!-- 刃のバックライン（背の厚み） -->
-    <path d="M 150,220 C 142,165 118,105 185,28 C 162,75 160,135 150,220 Z" fill="#9a3412" opacity="0.5" stroke="none"/>
+    <!-- 1. ビームプラズマ外周（オーラ部分：2倍に長さを延長） -->
+    <path d="M 150,5 C 132,60 128,150 138,235 L 162,235 C 172,150 168,60 150,5 Z" fill="url(#${idPrefix}-beam-aura)" stroke="none" />
 
-    <!-- 鍔（片側の護拳ガード付き） -->
-    <path d="M 120,210 C 140,215 160,215 180,210 L 190,225 C 160,230 135,230 110,220 Z" fill="url(#${idPrefix}-dark-fire-grad)"/>
-    <path d="M 180,210 C 210,220 205,260 170,270 L 160,260 C 185,250 188,225 170,220 Z" fill="url(#${idPrefix}-dark-fire-grad)"/>
+    <!-- 2. ビーム核心部（超高熱コア光線：2倍に長さを延長） -->
+    <path d="M 150,10 C 138,65 136,150 143,235 L 157,235 C 164,150 162,65 150,10 Z" fill="url(#${idPrefix}-beam-core)" stroke="none" />
 
-    <!-- 柄（グリップ） -->
-    <path d="M 142,225 L 132,270 L 148,272 L 158,227 Z" fill="#27272a"/>
-    <line x1="140" y1="235" x2="152" y2="240" stroke="#f97316" stroke-width="2.5"/>
-    <line x1="137" y1="248" x2="149" y2="253" stroke="#f97316" stroke-width="2.5"/>
-    <line x1="134" y1="260" x2="146" y2="265" stroke="#f97316" stroke-width="2.5"/>
+    <!-- 3. ビーム先端・基部の放電エフェクト粒子 -->
+    <ellipse cx="150" cy="235" rx="14" ry="4" fill="#ffffff" stroke="none" />
+    <polygon points="150,2 145,18 150,12 155,18" fill="#ffffff" stroke="none" />
 
-    <!-- 柄頭（ポメル） -->
-    <path d="M 125,270 L 140,290 L 155,272 Z" fill="url(#${idPrefix}-dark-fire-grad)"/>
+    <!-- 4. 噴出口（エミッターノズル：刃に合わせて配置を調整） -->
+    <path d="M 134,230 L 166,230 L 162,245 L 138,245 Z" fill="url(#${idPrefix}-hilt-dark)" />
+    <rect x="136" y="245" width="28" height="5" fill="url(#${idPrefix}-hilt-metal)" />
 
-    <!-- 鍔の中央宝珠 -->
-    <circle cx="150" cy="220" r="7" fill="url(#${idPrefix}-fire-core)"/>
+    <!-- 5. サーベルグリップ（ヒルト本体） -->
+    <rect x="138" y="250" width="24" height="40" rx="3" fill="url(#${idPrefix}-hilt-metal)" />
+
+    <!-- メカニカル溝・フィン構造 -->
+    <rect x="136" y="256" width="28" height="3" fill="url(#${idPrefix}-hilt-dark)" />
+    <rect x="136" y="264" width="28" height="3" fill="url(#${idPrefix}-hilt-dark)" />
+    <rect x="136" y="272" width="28" height="3" fill="url(#${idPrefix}-hilt-dark)" />
+
+    <!-- 6. 起動スイッチ / 出力調整ダイヤル -->
+    <rect x="146" y="280" width="8" height="6" rx="1" fill="url(#${idPrefix}-glow-red)" />
+    <circle cx="150" cy="283" r="1.5" fill="#ffffff" stroke="none" />
+
+    <!-- 7. 柄頭（エンドキャップ / リングフック部） -->
+    <path d="M 136,290 L 164,290 L 160,298 L 140,298 Z" fill="url(#${idPrefix}-hilt-dark)" />
+
   </g>
 </svg>
   `;
 }
 
 /**
- * 炎の曲刀要素をfxContainer内に配置
+ * ソード要素をfxContainer内に配置
  * 肩を回転ピボットとする腕追従ラッパー (wrapper) と、拳（Fist）の位置に配置された手首スナップ用ソード本体 (el) の
  * 階層構造により、アームパーツごとのカスタム関節座標およびGSAPアニメーションの腕の振りに完全連動します。
  */
@@ -249,7 +276,7 @@ export function mountFlameSword(
   const wrapper = document.createElement('div');
   const el = document.createElement('div');
   const idPrefix = 'sw_' + Math.random().toString(36).substring(2, 7);
-  const size = options.sizePercent || 52;
+  const size = options.sizePercent || 54;
   const withGrip = options.withHandGrip !== false; // デフォルトtrue
   
   // 1. パーツ設定から肩・拳のアンカー座標を取得
@@ -266,28 +293,28 @@ export function mountFlameSword(
   wrapper.className = 'absolute inset-0 w-full h-full pointer-events-none will-change-transform';
   wrapper.style.transformOrigin = `${targetShoulderCoord.x}% ${targetShoulderCoord.y}%`;
 
-  // 3. ソード本体（拳の位置に配置、手首スナップ用ピボットは柄の握り手中心）
+  // 3. ソード本体（拳の位置に配置、手首スナップ用ピボットは柄の握り手中心 X:50%, Y:89.33%）
   el.className = 'absolute pointer-events-none will-change-transform';
   el.style.width = `${size}%`;
   el.style.height = `${size}%`;
 
   if (options.hand === 'right') {
-    // 右手用: 握り手ピボット(48.33%*size, 83.33%*size)が拳中心に重なるよう配置
-    const leftPct = targetHandCoord.x - (48.33 / 100) * size;
-    const topPct = targetHandCoord.y - (83.33 / 100) * size;
+    // 右手用: 握り手ピボット(50.0%*size, 89.33%*size)が拳中心に重なるよう配置
+    const leftPct = targetHandCoord.x - (50.0 / 100) * size;
+    const topPct = targetHandCoord.y - (89.33 / 100) * size;
     el.style.left = `${leftPct}%`;
     el.style.top = `${topPct}%`;
-    el.style.transformOrigin = '48.33% 83.33%';
+    el.style.transformOrigin = '50% 89.33%';
     if (options.initialRotation !== undefined) {
       el.style.transform = `rotate(${options.initialRotation}deg)`;
     }
   } else {
-    // 左手用: 水平反転 (scaleX(-1))、反転時の握り手中心は 51.67%, 83.33%
-    const leftPct = targetHandCoord.x - (51.67 / 100) * size;
-    const topPct = targetHandCoord.y - (83.33 / 100) * size;
+    // 左手用: 水平反転 (scaleX(-1))、握り手中心は 50.0%, 89.33%
+    const leftPct = targetHandCoord.x - (50.0 / 100) * size;
+    const topPct = targetHandCoord.y - (89.33 / 100) * size;
     el.style.left = `${leftPct}%`;
     el.style.top = `${topPct}%`;
-    el.style.transformOrigin = '51.67% 83.33%';
+    el.style.transformOrigin = '50% 89.33%';
     const rot = options.initialRotation || 0;
     el.style.transform = `scaleX(-1) rotate(${rot}deg)`;
   }
@@ -299,16 +326,16 @@ export function mountFlameSword(
   if (withGrip) {
     const gripSVG = `
     <!-- 手甲・拳カバー（柄を握り込むマニピュレーター） -->
-    <g stroke="#09090b" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+    <g stroke="#000a12" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
       <!-- 手甲ベースプレート -->
-      <rect x="135" y="235" width="22" height="15" rx="3" fill="#3f3f46" />
-      <rect x="137" y="237" width="18" height="11" rx="2" fill="#52525b" />
+      <rect x="136" y="260" width="28" height="18" rx="3" fill="#37474f" />
+      <rect x="139" y="263" width="22" height="12" rx="2" fill="#546e7a" />
       <!-- 指のナックル関節 -->
-      <line x1="139" y1="240" x2="153" y2="240" stroke="#71717a" stroke-width="2"/>
-      <line x1="139" y1="244" x2="153" y2="244" stroke="#71717a" stroke-width="2"/>
+      <line x1="140" y1="267" x2="160" y2="267" stroke="#90a4ae" stroke-width="2"/>
+      <line x1="140" y1="271" x2="160" y2="271" stroke="#90a4ae" stroke-width="2"/>
       <!-- リベット光沢 -->
-      <circle cx="140" cy="242" r="1.5" fill="#f43f5e" />
-      <circle cx="152" cy="242" r="1.5" fill="#f43f5e" />
+      <circle cx="141" cy="269" r="1.5" fill="#00e5ff" />
+      <circle cx="159" cy="269" r="1.5" fill="#00e5ff" />
     </g>
     `;
     // </svg>の直前に手甲を挿入
@@ -392,16 +419,564 @@ export function mountFlameSlashEffect(container: HTMLElement): { el: HTMLDivElem
   const uid = 'tr_' + Math.random().toString(36).substring(2, 7);
   el.className = 'absolute inset-0 pointer-events-none opacity-0 will-change-transform flex items-center justify-center';
   el.innerHTML = `
-    <svg viewBox="0 0 300 300" class="w-full h-full filter drop-shadow-[0_0_15px_#ea580c]">
+    <svg viewBox="0 0 300 300" class="w-full h-full filter drop-shadow-[0_0_15px_#00e5ff]">
       <defs>
         <linearGradient id="${uid}-trail" x1="0%" y1="100%" x2="100%" y2="0%">
-          <stop offset="0%" stop-color="#fff7ed" stop-opacity="0.95"/>
-          <stop offset="35%" stop-color="#fdba74" stop-opacity="0.9"/>
-          <stop offset="70%" stop-color="#f97316" stop-opacity="0.75"/>
-          <stop offset="100%" stop-color="#dc2626" stop-opacity="0"/>
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"/>
+          <stop offset="25%" stop-color="#a5f3fc" stop-opacity="0.9"/>
+          <stop offset="65%" stop-color="#00e5ff" stop-opacity="0.8"/>
+          <stop offset="100%" stop-color="#0891b2" stop-opacity="0"/>
         </linearGradient>
       </defs>
       <path d="M 20,270 C 40,110 180,35 285,25 C 195,75 95,155 45,280 Z" fill="url(#${uid}-trail)"/>
+    </svg>
+  `;
+  container.appendChild(el);
+  return {
+    el,
+    cleanup: () => {
+      if (el.parentNode) el.parentNode.removeChild(el);
+    }
+  };
+}
+
+// =========================================================================
+// ヘビースナイパーライフル (Heavy Sniper Rifle) SVG & 武器生成ヘルパー
+// =========================================================================
+
+/**
+ * 超長尺放熱スリットノズル＆シアン照準スコープ付きヘビースナイパーライフルのSVGマークアップを生成
+ */
+export function getSniperRifleSVG(idPrefix: string = 'sn'): string {
+  return `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="100%" height="100%" class="drop-shadow-[0_0_8px_rgba(6,182,212,0.6)] filter">
+  <defs>
+    <!-- メタルグラデーション (暗部・重量感) -->
+    <linearGradient id="${idPrefix}-heavy-metal-dark" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#334155"/>
+      <stop offset="50%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+
+    <!-- メタルグラデーション (装甲・明部) -->
+    <linearGradient id="${idPrefix}-heavy-metal-light" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#94a3b8"/>
+      <stop offset="40%" stop-color="#64748b"/>
+      <stop offset="100%" stop-color="#334155"/>
+    </linearGradient>
+
+    <!-- スコープレンズ発光 (シアン) -->
+    <linearGradient id="${idPrefix}-heavy-scope-lens" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a5f3fc"/>
+      <stop offset="50%" stop-color="#06b6d4"/>
+      <stop offset="100%" stop-color="#083344"/>
+    </linearGradient>
+
+    <!-- メカニカルフレーム（装甲ストック） -->
+    <linearGradient id="${idPrefix}-heavy-frame" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#020617"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 全体太ストローク・グループ -->
+  <g stroke="#090d16" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+
+    <!-- 1. メインバレル（基部銃身） -->
+    <rect x="75" y="141" width="60" height="10" rx="2" fill="url(#${idPrefix}-heavy-metal-dark)"/>
+
+    <!-- 【極限延長】超・長尺ノズル構造（x=135〜298まで超ロング化） -->
+    <!-- 第1段: バレルジョイントマウント -->
+    <rect x="135" y="139" width="15" height="14" rx="2" fill="url(#${idPrefix}-heavy-metal-dark)"/>
+    
+    <!-- 第2段: 超・長尺メインノズル（x=150から270まで120px以上ストレート延長） -->
+    <path d="M 150,137 L 270,137 L 270,155 L 150,155 Z" fill="url(#${idPrefix}-heavy-metal-light)"/>
+    
+    <!-- 第3段: 銃口先端マルチポートスリットノズル（x=270〜294） -->
+    <path d="M 270,138 L 294,138 L 294,154 L 270,154 Z" fill="url(#${idPrefix}-heavy-metal-dark)"/>
+    
+    <!-- 第4段: 限界先端ノズルホール（最右端 x=298） -->
+    <rect x="294" y="140" width="4" height="12" rx="1" fill="#090d16"/>
+
+    <!-- ノズル側面の連続超ロング放熱スリット（16本のラインで長さと精密度を表現） -->
+    <line x1="160" y1="139" x2="160" y2="153" stroke="#090d16" stroke-width="2"/>
+    <line x1="167" y1="139" x2="167" y2="153" stroke="#090d16" stroke-width="2"/>
+    <line x1="174" y1="139" x2="174" y2="153" stroke="#090d16" stroke-width="2"/>
+    <line x1="181" y1="139" x2="181" y2="153" stroke="#090d16" stroke-width="2"/>
+    <line x1="188" y1="139" x2="188" y2="153" stroke="#090d16" stroke-width="2"/>
+    <line x1="195" y1="139" x2="195" y2="153" stroke="#090d16" stroke-width="2"/>
+    <line x1="202" y1="139" x2="202" y2="153" stroke="#090d16" stroke-width="2"/>
+    <line x1="209" y1="139" x2="209" y2="153" stroke="#090d16" stroke-width="2"/>
+    <line x1="216" y1="139" x2="216" y2="153" stroke="#090d16" stroke-width="2"/>
+    <line x1="223" y1="139" x2="223" y2="153" stroke="#090d16" stroke-width="2"/>
+    <line x1="230" y1="139" x2="230" y2="153" stroke="#090d16" stroke-width="2"/>
+    <line x1="237" y1="139" x2="237" y2="153" stroke="#090d16" stroke-width="2"/>
+    <line x1="244" y1="139" x2="244" y2="153" stroke="#090d16" stroke-width="2"/>
+    <line x1="251" y1="139" x2="251" y2="153" stroke="#090d16" stroke-width="2"/>
+    <line x1="258" y1="139" x2="258" y2="153" stroke="#090d16" stroke-width="2"/>
+    <line x1="265" y1="139" x2="265" y2="153" stroke="#090d16" stroke-width="2"/>
+
+    <!-- 先端センサー発光部 -->
+    <circle cx="276" cy="146" r="2" fill="#06b6d4" stroke="none"/>
+    <circle cx="282" cy="146" r="2" fill="#06b6d4" stroke="none"/>
+    <circle cx="288" cy="146" r="2" fill="#06b6d4" stroke="none"/>
+
+    <!-- 2. シャーシ＆ハンドガード（位置を左に引き配置） -->
+    <polygon points="45,134 135,134 125,166 40,166" fill="url(#${idPrefix}-heavy-metal-light)"/>
+    
+    <!-- 放熱構造・アクセント -->
+    <rect x="50" y="138" width="75" height="12" rx="2" fill="url(#${idPrefix}-heavy-metal-dark)"/>
+    <line x1="58" y1="144" x2="72" y2="144" stroke="#06b6d4" stroke-width="3"/>
+    <line x1="80" y1="144" x2="94" y2="144" stroke="#06b6d4" stroke-width="3"/>
+    <line x1="102" y1="144" x2="116" y2="144" stroke="#06b6d4" stroke-width="3"/>
+
+    <!-- トップレール -->
+    <rect x="35" y="128" width="95" height="6" fill="url(#${idPrefix}-heavy-metal-dark)"/>
+
+    <!-- 3. スコープ（照準器） -->
+    <rect x="55" y="122" width="10" height="8" fill="url(#${idPrefix}-heavy-metal-dark)"/>
+    <rect x="85" y="122" width="10" height="8" fill="url(#${idPrefix}-heavy-metal-dark)"/>
+
+    <path d="M 35,104 L 65,112 L 115,112 L 140,102 L 155,102 L 155,124 L 140,124 L 115,120 L 65,120 L 35,126 Z" fill="url(#${idPrefix}-heavy-metal-dark)"/>
+    <rect x="85" y="98" width="14" height="8" fill="url(#${idPrefix}-heavy-metal-light)"/>
+    <rect x="87" y="106" width="10" height="6" fill="url(#${idPrefix}-heavy-metal-dark)"/>
+
+    <ellipse cx="155" cy="113" rx="4" ry="11" fill="url(#${idPrefix}-heavy-scope-lens)"/>
+    <ellipse cx="35" cy="115" rx="3" ry="10" fill="url(#${idPrefix}-heavy-scope-lens)"/>
+
+    <!-- 4. マガジン（弾倉） -->
+    <polygon points="75,166 105,166 93,210 63,210" fill="url(#${idPrefix}-heavy-frame)"/>
+    <line x1="81" y1="172" x2="72" y2="204" stroke="url(#${idPrefix}-heavy-metal-light)" stroke-width="3"/>
+    <line x1="91" y1="172" x2="82" y2="204" stroke="url(#${idPrefix}-heavy-metal-light)" stroke-width="3"/>
+
+    <!-- 5. ピストルグリップ & トリガー -->
+    <path d="M 40,166 L 60,166 L 45,212 L 28,208 Z" fill="url(#${idPrefix}-heavy-frame)"/>
+    <path d="M 60,166 C 75,166 75,182 60,182 Z" fill="none" stroke="#090d16" stroke-width="5"/>
+    <path d="M 68,169 C 65,174 68,178 68,178" fill="none" stroke="url(#${idPrefix}-heavy-metal-light)" stroke-width="4"/>
+
+    <!-- 6. ストック（銃床） -->
+    <path d="M 40,140 L 12,142 C 4,142 2,155 2,175 L 2,192 L 14,192 L 30,168 L 40,166 Z" fill="url(#${idPrefix}-heavy-frame)"/>
+    <rect x="12" y="132" width="24" height="10" rx="3" fill="url(#${idPrefix}-heavy-metal-light)"/>
+    <rect x="2" y="148" width="5" height="42" rx="2" fill="#090d16"/>
+
+    <!-- 7. バイポッド（超ロングノズルを支える安定配置） -->
+    <circle cx="140" cy="150" r="6" fill="url(#${idPrefix}-heavy-metal-light)"/>
+    <line x1="140" y1="152" x2="120" y2="218" stroke="url(#${idPrefix}-heavy-metal-dark)" stroke-width="6"/>
+    <line x1="140" y1="152" x2="155" y2="218" stroke="url(#${idPrefix}-heavy-metal-dark)" stroke-width="6"/>
+    <rect x="112" y="215" width="12" height="8" rx="2" fill="#090d16"/>
+    <rect x="150" y="215" width="12" height="8" rx="2" fill="#090d16"/>
+
+  </g>
+</svg>
+  `;
+}
+
+/**
+ * スナイパーライフル要素をfxContainer内に配置
+ * 肩ピボットラッパー（wrapper）と、グリップトリガー位置（X: 17%, Y: 62%）を拳位置に一致させた本体（el）の構造
+ */
+export function mountSniperRifle(
+  container: HTMLElement,
+  options: {
+    hand?: 'right' | 'left';
+    sizePercent?: number;
+    initialRotation?: number;
+    withHandGrip?: boolean;
+    armPartKey?: string;
+    customHandCoord?: { x: number; y: number };
+    customShoulderCoord?: { x: number; y: number };
+  } = {}
+): { wrapper: HTMLDivElement; el: HTMLDivElement; cleanup: () => void } {
+  const wrapper = document.createElement('div');
+  const el = document.createElement('div');
+  const idPrefix = 'sn_' + Math.random().toString(36).substring(2, 7);
+  const size = options.sizePercent || 72; // スナイパーライフルは超長尺なので大きめの72%
+  const hand = options.hand || 'right';
+  const withGrip = options.withHandGrip !== false;
+
+  const manager = HandAnchorManager.getInstance();
+  const conf = manager.getHandConfig(options.armPartKey || 'arm_r1_v0');
+
+  const targetShoulderCoord = options.customShoulderCoord || 
+    (hand === 'right' ? conf.rightShoulder : conf.leftShoulder);
+  const targetHandCoord = options.customHandCoord || 
+    (hand === 'right' ? conf.rightHand : conf.leftHand);
+
+  wrapper.className = 'absolute inset-0 w-full h-full pointer-events-none will-change-transform';
+  wrapper.style.transformOrigin = `${targetShoulderCoord.x}% ${targetShoulderCoord.y}%`;
+
+  el.className = 'absolute pointer-events-none will-change-transform';
+  el.style.width = `${size}%`;
+  el.style.height = `${size}%`;
+
+  // スナイパーライフルのグリップ中心（X: 17.0%, Y: 62.0%）
+  if (hand === 'right') {
+    const leftPct = targetHandCoord.x - (17.0 / 100) * size;
+    const topPct = targetHandCoord.y - (62.0 / 100) * size;
+    el.style.left = `${leftPct}%`;
+    el.style.top = `${topPct}%`;
+    el.style.transformOrigin = '17% 62%';
+    if (options.initialRotation !== undefined) {
+      el.style.transform = `rotate(${options.initialRotation}deg)`;
+    }
+  } else {
+    const leftPct = targetHandCoord.x - (83.0 / 100) * size;
+    const topPct = targetHandCoord.y - (62.0 / 100) * size;
+    el.style.left = `${leftPct}%`;
+    el.style.top = `${topPct}%`;
+    el.style.transformOrigin = '83% 62%';
+    const rot = options.initialRotation || 0;
+    el.style.transform = `scaleX(-1) rotate(${rot}deg)`;
+  }
+
+  let rifleHTML = getSniperRifleSVG(idPrefix);
+
+  if (withGrip) {
+    const gripSVG = `
+    <!-- 手甲・拳カバー（トリガー＆グリップを握り込むマニピュレーター） -->
+    <g stroke="#090d16" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="36" y="172" width="26" height="18" rx="3" fill="#334155" />
+      <rect x="39" y="175" width="20" height="12" rx="2" fill="#64748b" />
+      <line x1="40" y1="179" x2="58" y2="179" stroke="#94a3b8" stroke-width="2"/>
+      <line x1="40" y1="183" x2="58" y2="183" stroke="#94a3b8" stroke-width="2"/>
+      <circle cx="41" cy="181" r="1.5" fill="#06b6d4" />
+      <circle cx="57" cy="181" r="1.5" fill="#06b6d4" />
+    </g>
+    `;
+    rifleHTML = rifleHTML.replace('</svg>', gripSVG + '</svg>');
+  }
+
+  el.innerHTML = rifleHTML;
+  wrapper.appendChild(el);
+  container.appendChild(wrapper);
+
+  return {
+    wrapper,
+    el,
+    cleanup: () => {
+      if (wrapper.parentNode) {
+        wrapper.parentNode.removeChild(wrapper);
+      }
+    }
+  };
+}
+
+/**
+ * スナイパー超電導ビームショット・マズルフラッシュ＆貫通閃光エフェクト
+ */
+export function mountSniperShotEffect(container: HTMLElement): { el: HTMLDivElement; cleanup: () => void } {
+  const el = document.createElement('div');
+  const uid = 'sns_' + Math.random().toString(36).substring(2, 7);
+  el.className = 'absolute inset-0 pointer-events-none opacity-0 will-change-transform flex items-center justify-center';
+  el.innerHTML = `
+    <svg viewBox="0 0 400 300" class="w-full h-full filter drop-shadow-[0_0_20px_#06b6d4]">
+      <defs>
+        <!-- 貫通ビームレール -->
+        <linearGradient id="${uid}-beam" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="1"/>
+          <stop offset="20%" stop-color="#a5f3fc" stop-opacity="0.95"/>
+          <stop offset="70%" stop-color="#06b6d4" stop-opacity="0.9"/>
+          <stop offset="100%" stop-color="#0284c7" stop-opacity="0"/>
+        </linearGradient>
+        <!-- マズル衝撃波リング -->
+        <radialGradient id="${uid}-ring" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#ffffff"/>
+          <stop offset="40%" stop-color="#38bdf8"/>
+          <stop offset="100%" stop-color="#0369a1" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+
+      <!-- 1. 超高エネルギー貫通ビーム光線 -->
+      <polygon points="180,146 390,135 390,157 180,146" fill="url(#${uid}-beam)" opacity="0.95" />
+      <line x1="180" y1="146" x2="395" y2="146" stroke="#ffffff" stroke-width="5" stroke-linecap="round"/>
+
+      <!-- 2. プラズマ放電リング（2段） -->
+      <ellipse cx="210" cy="146" rx="8" ry="24" fill="none" stroke="#a5f3fc" stroke-width="3" opacity="0.85"/>
+      <ellipse cx="250" cy="146" rx="10" ry="32" fill="none" stroke="#06b6d4" stroke-width="2.5" opacity="0.7"/>
+
+      <!-- 3. マズルフラッシュ星型スパーク -->
+      <path d="M 180,146 L 165,130 L 175,146 L 160,150 L 175,152 L 170,165 L 180,155 L 195,160 L 185,150 L 205,146 L 185,142 L 192,130 Z" fill="#ffffff" />
+      <circle cx="180" cy="146" r="14" fill="url(#${uid}-ring)" />
+
+      <!-- 4. 弾道周囲の超高圧粒子 -->
+      <circle cx="230" cy="138" r="2.5" fill="#a5f3fc" />
+      <circle cx="280" cy="154" r="2" fill="#38bdf8" />
+      <circle cx="340" cy="140" r="3" fill="#ffffff" />
+    </svg>
+  `;
+  container.appendChild(el);
+  return {
+    el,
+    cleanup: () => {
+      if (el.parentNode) el.parentNode.removeChild(el);
+    }
+  };
+}
+
+// =========================================================================
+// 必殺技専用 特殊カットイン＆極大エフェクト (Special Finisher FX)
+// =========================================================================
+
+/**
+ * 1. ドラマチック・スラッシュ＆スナイプ カットイン演出バナー (Eye / Face & Weapon Cut-in Banner)
+ */
+export function mountDramaticCutinEffect(
+  container: HTMLElement,
+  options: {
+    title?: string;
+    subtitle?: string;
+    themeColor?: 'cyan' | 'amber' | 'crimson' | 'emerald';
+  } = {}
+): {
+  wrapper: HTMLDivElement;
+  banner: HTMLDivElement;
+  titleEl: HTMLDivElement;
+  subtitleEl: HTMLDivElement;
+  flashEl: HTMLDivElement;
+  cleanup: () => void;
+} {
+  const color = options.themeColor || 'cyan';
+  const colorMap = {
+    cyan: {
+      bg: 'linear-gradient(90deg, transparent 0%, rgba(6,182,212,0.92) 15%, rgba(15,23,42,0.98) 40%, rgba(15,23,42,0.98) 75%, rgba(6,182,212,0.92) 90%, transparent 100%)',
+      border: '#06b6d4',
+      glow: '0 0 35px rgba(6,182,212,0.85)',
+      textColor: '#a5f3fc',
+      titleColor: '#ffffff',
+      slashColor: '#38bdf8'
+    },
+    amber: {
+      bg: 'linear-gradient(90deg, transparent 0%, rgba(245,158,11,0.92) 15%, rgba(28,25,23,0.98) 40%, rgba(28,25,23,0.98) 75%, rgba(245,158,11,0.92) 90%, transparent 100%)',
+      border: '#f59e0b',
+      glow: '0 0 35px rgba(245,158,11,0.85)',
+      textColor: '#fef08a',
+      titleColor: '#ffffff',
+      slashColor: '#fbbf24'
+    },
+    crimson: {
+      bg: 'linear-gradient(90deg, transparent 0%, rgba(239,68,68,0.92) 15%, rgba(24,24,27,0.98) 40%, rgba(24,24,27,0.98) 75%, rgba(239,68,68,0.92) 90%, transparent 100%)',
+      border: '#ef4444',
+      glow: '0 0 35px rgba(239,68,68,0.85)',
+      textColor: '#fecaca',
+      titleColor: '#ffffff',
+      slashColor: '#f87171'
+    },
+    emerald: {
+      bg: 'linear-gradient(90deg, transparent 0%, rgba(16,185,129,0.92) 15%, rgba(6,78,59,0.98) 40%, rgba(6,78,59,0.98) 75%, rgba(16,185,129,0.92) 90%, transparent 100%)',
+      border: '#10b981',
+      glow: '0 0 35px rgba(16,185,129,0.85)',
+      textColor: '#a7f3d0',
+      titleColor: '#ffffff',
+      slashColor: '#34d399'
+    }
+  }[color];
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'absolute inset-0 pointer-events-none z-30 flex items-center justify-center overflow-hidden';
+
+  const flashEl = document.createElement('div');
+  flashEl.className = 'absolute inset-0 bg-white pointer-events-none opacity-0 z-40';
+
+  const banner = document.createElement('div');
+  banner.className = 'relative w-full h-[68px] flex items-center justify-between px-6 opacity-0 will-change-transform';
+  banner.style.background = colorMap.bg;
+  banner.style.borderTop = `2px solid ${colorMap.border}`;
+  banner.style.borderBottom = `2px solid ${colorMap.border}`;
+  banner.style.boxShadow = colorMap.glow;
+
+  // 劇的スラッシュ斜線デコレーション
+  const slashDeco = document.createElement('div');
+  slashDeco.className = 'absolute inset-0 pointer-events-none opacity-40 overflow-hidden';
+  slashDeco.innerHTML = `
+    <svg viewBox="0 0 500 70" class="w-full h-full preserve-3d" preserveAspectRatio="none">
+      <line x1="60" y1="0" x2="30" y2="70" stroke="${colorMap.slashColor}" stroke-width="4" />
+      <line x1="90" y1="0" x2="60" y2="70" stroke="${colorMap.slashColor}" stroke-width="2" />
+      <line x1="420" y1="0" x2="390" y2="70" stroke="${colorMap.slashColor}" stroke-width="3" />
+      <line x1="450" y1="0" x2="420" y2="70" stroke="${colorMap.slashColor}" stroke-width="5" />
+    </svg>
+  `;
+  banner.appendChild(slashDeco);
+
+  const textGroup = document.createElement('div');
+  textGroup.className = 'relative z-10 flex flex-col justify-center';
+
+  const subtitleEl = document.createElement('div');
+  subtitleEl.className = 'text-[11px] font-black tracking-[0.25em] uppercase font-mono drop-shadow-md';
+  subtitleEl.style.color = colorMap.textColor;
+  subtitleEl.textContent = options.subtitle || 'CRITICAL OVERDRIVE';
+
+  const titleEl = document.createElement('div');
+  titleEl.className = 'text-xl sm:text-2xl font-black italic tracking-wider drop-shadow-[0_2px_10px_rgba(0,0,0,0.9)]';
+  titleEl.style.color = colorMap.titleColor;
+  titleEl.textContent = options.title || '【奥義】';
+
+  textGroup.appendChild(subtitleEl);
+  textGroup.appendChild(titleEl);
+  banner.appendChild(textGroup);
+
+  // 右側の眼光・照準アイコン
+  const eyeIcon = document.createElement('div');
+  eyeIcon.className = 'relative z-10 flex items-center gap-1.5 opacity-90';
+  eyeIcon.innerHTML = `
+    <svg width="60" height="40" viewBox="0 0 60 40" fill="none">
+      <circle cx="30" cy="20" r="14" stroke="${colorMap.border}" stroke-width="2.5" stroke-dasharray="4 2"/>
+      <circle cx="30" cy="20" r="6" fill="${colorMap.border}"/>
+      <line x1="5" y1="20" x2="55" y2="20" stroke="${colorMap.border}" stroke-width="1.5"/>
+      <line x1="30" y1="2" x2="30" y2="38" stroke="${colorMap.border}" stroke-width="1.5"/>
+      <polygon points="50,10 58,20 50,30" fill="${colorMap.border}" />
+    </svg>
+  `;
+  banner.appendChild(eyeIcon);
+
+  wrapper.appendChild(flashEl);
+  wrapper.appendChild(banner);
+  container.appendChild(wrapper);
+
+  return {
+    wrapper,
+    banner,
+    titleEl,
+    subtitleEl,
+    flashEl,
+    cleanup: () => {
+      if (wrapper.parentNode) {
+        wrapper.parentNode.removeChild(wrapper);
+      }
+    }
+  };
+}
+
+/**
+ * 2. 巨大集中線＆極大エネルギーオーラエフェクト (Speed Lines & Energy Supercharge)
+ */
+export function mountEnergyChargeAuraEffect(container: HTMLElement): { el: HTMLDivElement; cleanup: () => void } {
+  const el = document.createElement('div');
+  const uid = 'en_' + Math.random().toString(36).substring(2, 7);
+  el.className = 'absolute inset-0 pointer-events-none opacity-0 will-change-transform flex items-center justify-center z-15';
+  el.innerHTML = `
+    <svg viewBox="0 0 400 400" class="w-full h-full filter drop-shadow-[0_0_30px_#06b6d4]">
+      <defs>
+        <!-- 放射状エネルギーパルス -->
+        <radialGradient id="${uid}-core" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"/>
+          <stop offset="30%" stop-color="#a5f3fc" stop-opacity="0.8"/>
+          <stop offset="65%" stop-color="#06b6d4" stop-opacity="0.6"/>
+          <stop offset="100%" stop-color="#0284c7" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+
+      <!-- 渦巻く粒子リング -->
+      <circle cx="200" cy="200" r="120" fill="none" stroke="#38bdf8" stroke-width="3" stroke-dasharray="12 16" opacity="0.85"/>
+      <circle cx="200" cy="200" r="160" fill="none" stroke="#a5f3fc" stroke-width="2" stroke-dasharray="20 30" opacity="0.7"/>
+
+      <!-- 中心エネルギーコア -->
+      <circle cx="200" cy="200" r="90" fill="url(#${uid}-core)"/>
+
+      <!-- 放射状集中スピードライン (16本) -->
+      ${[0, 22.5, 45, 67.5, 90, 112.5, 135, 157.5, 180, 202.5, 225, 247.5, 270, 292.5, 315, 337.5].map(deg => {
+        const rad = (deg * Math.PI) / 180;
+        const x1 = 200 + Math.cos(rad) * 195;
+        const y1 = 200 + Math.sin(rad) * 195;
+        const x2 = 200 + Math.cos(rad) * 110;
+        const y2 = 200 + Math.sin(rad) * 110;
+        return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" opacity="0.9"/>`;
+      }).join('')}
+    </svg>
+  `;
+  container.appendChild(el);
+  return {
+    el,
+    cleanup: () => {
+      if (el.parentNode) el.parentNode.removeChild(el);
+    }
+  };
+}
+
+/**
+ * 3. 画面全体を両断する超極大 X字クロス＆巨大三日月クロススラッシュ (Omega Cross Slash)
+ */
+export function mountOmegaCrossSlashEffect(container: HTMLElement): { el: HTMLDivElement; cleanup: () => void } {
+  const el = document.createElement('div');
+  const uid = 'omg_' + Math.random().toString(36).substring(2, 7);
+  el.className = 'absolute inset-0 pointer-events-none opacity-0 will-change-transform flex items-center justify-center z-25';
+  el.innerHTML = `
+    <svg viewBox="0 0 450 450" class="w-full h-full filter drop-shadow-[0_0_35px_#00e5ff]">
+      <defs>
+        <linearGradient id="${uid}-slash1" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="1"/>
+          <stop offset="30%" stop-color="#a5f3fc" stop-opacity="0.95"/>
+          <stop offset="70%" stop-color="#00e5ff" stop-opacity="0.85"/>
+          <stop offset="100%" stop-color="#0284c7" stop-opacity="0"/>
+        </linearGradient>
+        <linearGradient id="${uid}-slash2" x1="100%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="1"/>
+          <stop offset="30%" stop-color="#fef08a" stop-opacity="0.95"/>
+          <stop offset="70%" stop-color="#f97316" stop-opacity="0.85"/>
+          <stop offset="100%" stop-color="#dc2626" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+
+      <!-- スラッシュ 1 (左上から右下への極大三日月光刃) -->
+      <path d="M 40,40 C 180,180 270,270 410,410 C 270,310 180,220 40,40 Z" fill="url(#${uid}-slash1)"/>
+      <line x1="20" y1="20" x2="430" y2="430" stroke="#ffffff" stroke-width="7" stroke-linecap="round"/>
+
+      <!-- スラッシュ 2 (右上から左下への極大火炎刃) -->
+      <path d="M 410,40 C 270,180 180,270 40,410 C 180,310 270,220 410,40 Z" fill="url(#${uid}-slash2)"/>
+      <line x1="430" y1="20" x2="20" y2="430" stroke="#ffffff" stroke-width="7" stroke-linecap="round"/>
+
+      <!-- 中心炸裂星型インパクト -->
+      <circle cx="225" cy="225" r="30" fill="#ffffff" filter="drop-shadow(0 0 20px #ffffff)"/>
+      <circle cx="225" cy="225" r="60" fill="none" stroke="#a5f3fc" stroke-width="4" opacity="0.8"/>
+    </svg>
+  `;
+  container.appendChild(el);
+  return {
+    el,
+    cleanup: () => {
+      if (el.parentNode) el.parentNode.removeChild(el);
+    }
+  };
+}
+
+/**
+ * 4. 貫通型ハイパービーム・オメガバスター (Omega Hyper Beam Cannon & Shockwave Rings)
+ */
+export function mountOmegaBeamBusterEffect(container: HTMLElement): { el: HTMLDivElement; cleanup: () => void } {
+  const el = document.createElement('div');
+  const uid = 'obm_' + Math.random().toString(36).substring(2, 7);
+  el.className = 'absolute inset-0 pointer-events-none opacity-0 will-change-transform flex items-center justify-center z-25';
+  el.innerHTML = `
+    <svg viewBox="0 0 500 350" class="w-full h-full filter drop-shadow-[0_0_40px_#06b6d4]">
+      <defs>
+        <!-- 極太超電導ビームバレル -->
+        <linearGradient id="${uid}-hyperbeam" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="1"/>
+          <stop offset="15%" stop-color="#a5f3fc" stop-opacity="1"/>
+          <stop offset="50%" stop-color="#38bdf8" stop-opacity="0.95"/>
+          <stop offset="85%" stop-color="#0284c7" stop-opacity="0.9"/>
+          <stop offset="100%" stop-color="#0f172a" stop-opacity="0"/>
+        </linearGradient>
+        <!-- ビームコア高圧シリンダー -->
+        <linearGradient id="${uid}-beamcore" x1="0%" y1="50%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="#ffffff"/>
+          <stop offset="100%" stop-color="#38bdf8" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+
+      <!-- 1. 超極太貫通メインビーム本体 -->
+      <polygon points="120,175 490,120 490,230 120,175" fill="url(#${uid}-hyperbeam)" opacity="0.95" />
+      <polygon points="130,175 495,145 495,205 130,175" fill="#ffffff" opacity="0.9" />
+      <line x1="120" y1="175" x2="500" y2="175" stroke="#ffffff" stroke-width="12" stroke-linecap="round"/>
+
+      <!-- 2. 螺旋状プラズマ電磁フィールド (4連リング) -->
+      <ellipse cx="170" cy="175" rx="14" ry="42" fill="none" stroke="#ffffff" stroke-width="4" opacity="0.95"/>
+      <ellipse cx="230" cy="175" rx="18" ry="58" fill="none" stroke="#a5f3fc" stroke-width="4" opacity="0.9"/>
+      <ellipse cx="300" cy="175" rx="22" ry="74" fill="none" stroke="#38bdf8" stroke-width="3.5" opacity="0.85"/>
+      <ellipse cx="380" cy="175" rx="26" ry="90" fill="none" stroke="#0284c7" stroke-width="3" opacity="0.75"/>
+
+      <!-- 3. マズル超新星フラッシュ -->
+      <circle cx="125" cy="175" r="38" fill="#ffffff" />
+      <path d="M 125,175 L 90,140 L 115,175 L 80,185 L 115,190 L 95,220 L 125,200 L 150,230 L 135,185 L 175,175 L 135,165 L 155,130 Z" fill="#a5f3fc" />
     </svg>
   `;
   container.appendChild(el);
@@ -890,27 +1465,47 @@ export class SniperAimAnimation extends BaseRobotAnimation {
   category = RobotAnimationCategory.COMBAT;
   duration = 2.0;
   loop = true;
-  description = '左腕で銃身を支え、右腕でトリガーを引く本格スナイパースタンス。片膝立ちで精密射撃。';
+  description = '左手で銃身フォアグリップを支え、右手でトリガーを固定する本格スナイパースタンス。片膝立ちで精密狙撃。';
   technicalHighlights = [
-    '左腕 (フォアグリップ支持) と右腕 (グリップ＆トリガー操作) のリアルスタンス',
-    '左脚の屈曲 (片膝立ち) と右脚の踏ん張り姿勢',
-    '超高速トリガー発射 (Duration 0.06s) と急峻なマズルショック'
+    '左腕（フォアグリップ支持）と右腕（グリップ＆トリガー操作）による両手持ち本格スタンス',
+    '左脚の屈曲（片膝立ち）と右脚の踏ん張り姿勢',
+    '超高速トリガー発射（Duration 0.06s）と急峻なマズルショック'
   ];
 
   build(refs: RobotDOMRefs, tl: gsap.core.Timeline): void {
     this.resetElements(refs, tl);
-    const { container, head, body, arms, armLeft, armRight, legs, legLeft, legRight } = refs;
+    const { container, head, body, arms, armLeft, armRight, legs, legLeft, legRight, fxContainer } = refs;
 
-    // 狙撃スタンス（左腕でバレルを持ち上げ、右腕で構える）
+    let rifle: { wrapper: HTMLDivElement; el: HTMLDivElement; cleanup: () => void } | null = null;
+    let shot: { el: HTMLDivElement; cleanup: () => void } | null = null;
+
+    if (fxContainer && typeof document !== 'undefined') {
+      rifle = mountSniperRifle(fxContainer, { hand: 'right', sizePercent: 72, initialRotation: 12, armPartKey: refs.armPartKey });
+      shot = mountSniperShotEffect(fxContainer);
+      tl.set(rifle.wrapper, { opacity: 1 });
+      tl.set(rifle.el, { opacity: 0 });
+    }
+
+    tl.eventCallback('onComplete', () => {
+      rifle?.cleanup();
+      shot?.cleanup();
+    });
+
+    // 狙撃スタンス（左手フォアグリップ支持、右手グリップ操作の両手持ち）
     tl.to(head, { rotation: 8, x: 3, duration: 0.35 }, '<');
 
     if (legLeft) tl.to(legLeft, { scaleY: 0.78, y: 8, skewX: 6, duration: 0.35 }, '<');
     if (legRight) tl.to(legRight, { scaleY: 0.95, y: 2, skewX: 12, duration: 0.35 }, '<');
     if (!legLeft && !legRight && legs) tl.to(legs, { skewX: 10, scaleY: 0.9, duration: 0.35 }, '<');
 
-    if (armLeft) tl.to(armLeft, { rotation: 45, x: 12, y: -10, duration: 0.35 }, '<');
+    if (armLeft) tl.to(armLeft, { rotation: 48, x: 14, y: -8, duration: 0.35 }, '<');
     if (armRight) tl.to(armRight, { rotation: 65, x: 6, y: -4, duration: 0.35 }, '<');
-    if (!armLeft && !armRight && arms) tl.to(arms, { rotation: 50, x: 10, y: -10, duration: 0.35 }, '<');
+    if (!armLeft && !armRight && arms) tl.to(arms, { rotation: 55, x: 10, y: -8, duration: 0.35 }, '<');
+
+    if (rifle) {
+      tl.to(rifle.wrapper, { rotation: 65, x: 6, y: -4, duration: 0.35 }, '<');
+      tl.to(rifle.el, { opacity: 1, rotation: 12, duration: 0.35 }, '<');
+    }
 
     // 照準調整（微小な上下左右の微動ロックオン）
     tl.to(head, { rotation: 9, y: '-=1', duration: 0.4, ease: 'sine.inOut' })
@@ -919,10 +1514,23 @@ export class SniperAimAnimation extends BaseRobotAnimation {
     // 撃ち抜き発射！
     tl.to(container, { x: -18, rotation: -4, duration: 0.06, ease: 'power4.out' });
     if (armRight) tl.to(armRight, { rotation: 78, duration: 0.06 }, '<');
-    if (armLeft) tl.to(armLeft, { rotation: 52, duration: 0.06 }, '<');
-    if (!armLeft && !armRight && arms) tl.to(arms, { rotation: 65, duration: 0.06 }, '<');
+    if (armLeft) tl.to(armLeft, { rotation: 58, duration: 0.06 }, '<');
+    if (!armLeft && !armRight && arms) tl.to(arms, { rotation: 68, duration: 0.06 }, '<');
+    if (rifle) {
+      tl.to(rifle.wrapper, { rotation: 78, duration: 0.06 }, '<');
+      tl.to(rifle.el, { rotation: 18, duration: 0.06 }, '<');
+    }
+    if (shot) {
+      tl.to(shot.el, { opacity: 1, scale: 1.2, duration: 0.05 }, '<');
+      tl.to(shot.el, { opacity: 0, scale: 1.4, duration: 0.2 }, '>');
+    }
 
     // 薬莢排気・姿勢復帰
+    if (rifle) {
+      tl.to(rifle.el, { opacity: 0, duration: 0.25 }, '>');
+      tl.to(rifle.wrapper, { x: 0, y: 0, rotation: 0, duration: 0.35, ease: 'power2.out' }, '<');
+    }
+
     const allTargets = [container, head, body, arms, armLeft, armRight, legs, legLeft, legRight].filter(Boolean);
     tl.to(container, { x: 0, rotation: 0, duration: 0.5, ease: 'power2.out' })
       .to(allTargets, {
@@ -2784,7 +3392,1002 @@ export class FireSlashAnimation extends BaseRobotAnimation {
   }
 }
 
+/**
+ * 35. 必殺奥義：ビームサーベル・断空斬 (Beam Saber Judgement)
+ * 天高く跳躍し、ビームサーベルを極限プラズマ増幅して頭上に構え、超高速急降下で地面を切り裂く必殺一刀両断。
+ */
+export class BeamSaberJudgementAnimation extends BaseRobotAnimation {
+  id = 'beam_saber_judgement';
+  name = 'ビームサーベル・断空斬 (Saber Judgement)';
+  category = RobotAnimationCategory.COMBAT;
+  duration = 1.9;
+  loop = true;
+  description = '天高く跳躍し、ビームサーベルを極限プラズマ増幅して頭上に構え、超高速急降下で地面を切り裂く必殺一刀両断。';
+  technicalHighlights = [
+    '天高く飛び上がる急浮上と大上段両手持ち風のサーベルチャージ',
+    '超高速垂直急降下一刀両断スイング (Duration 0.12s)',
+    '地面への激突地割れ衝撃波＆画面シェイク'
+  ];
 
+  seMarkers: AnimationSEMarker[] = [
+    { time: 0.20, label: '抜刀・急浮上', type: 'draw' },
+    { time: 0.60, label: '極限プラズマチャージ', type: 'flame' },
+    { time: 0.95, label: '断空・急降下両断！', type: 'slash' },
+    { time: 1.15, label: '地割れ激突衝撃', type: 'hit' },
+  ];
+
+  build(refs: RobotDOMRefs, tl: gsap.core.Timeline): void {
+    this.resetElements(refs, tl);
+    const { container, head, body, armLeft, armRight, legLeft, legRight, fxContainer, auraOverlay } = refs;
+
+    let sword: { wrapper: HTMLDivElement; el: HTMLDivElement; cleanup: () => void } | null = null;
+    let burst: { el: HTMLDivElement; cleanup: () => void } | null = null;
+
+    if (fxContainer && typeof document !== 'undefined') {
+      sword = mountFlameSword(fxContainer, { hand: 'right', sizePercent: 60, initialRotation: -40, withHandGrip: true, armPartKey: refs.armPartKey });
+      burst = mountFireSlashBurstEffect(fxContainer);
+      tl.set(sword.wrapper, { opacity: 1 });
+      tl.set(sword.el, { opacity: 0 });
+    }
+
+    tl.eventCallback('onComplete', () => {
+      sword?.cleanup();
+      burst?.cleanup();
+    });
+
+    // 1. 抜刀＆天高く跳躍
+    tl.to(container, { y: -35, scaleY: 1.08, duration: 0.35, ease: 'power2.out' })
+      .to(head, { rotation: -12, duration: 0.35 }, '<');
+    if (legLeft) tl.to(legLeft, { scaleY: 0.85, skewX: 10, duration: 0.35 }, '<');
+    if (legRight) tl.to(legRight, { scaleY: 0.85, skewX: -10, duration: 0.35 }, '<');
+    if (armRight) tl.to(armRight, { rotation: -75, x: -10, y: -18, duration: 0.35, ease: 'power2.out' }, '<');
+    if (armLeft) tl.to(armLeft, { rotation: -60, x: -4, y: -14, duration: 0.35, ease: 'power2.out' }, '<');
+    if (sword) {
+      tl.to(sword.wrapper, { rotation: -75, x: -10, y: -18, duration: 0.35, ease: 'power2.out' }, '<');
+      tl.to(sword.el, { opacity: 1, rotation: -20, duration: 0.35 }, '<');
+    }
+
+    // 2. 空中ホバリング・極限プラズマチャージ
+    tl.to(container, { y: -38, duration: 0.35, ease: 'sine.inOut' });
+    if (auraOverlay) {
+      tl.to(auraOverlay, { opacity: 0.8, scale: 1.3, duration: 0.3 }, '<');
+    }
+    if (sword) {
+      tl.to(sword.el, { scale: 1.25, rotation: -35, duration: 0.35, ease: 'power2.in' }, '<');
+    }
+
+    // 3. 超音速急降下・断空一刀両断！
+    tl.to(container, { y: 2, scaleX: 1.15, scaleY: 0.88, duration: 0.12, ease: 'power4.in' })
+      .to(head, { rotation: 16, duration: 0.12 }, '<');
+    if (armRight) tl.to(armRight, { rotation: 95, x: 20, y: 15, duration: 0.12, ease: 'power4.out' }, '<');
+    if (armLeft) tl.to(armLeft, { rotation: 40, x: 6, y: 8, duration: 0.12, ease: 'power4.out' }, '<');
+    if (sword) {
+      tl.to(sword.wrapper, { rotation: 95, x: 20, y: 15, duration: 0.12, ease: 'power4.out' }, '<');
+      tl.to(sword.el, { rotation: 30, scale: 1.35, duration: 0.12, ease: 'power4.out' }, '<');
+    }
+    if (burst) {
+      tl.to(burst.el, { opacity: 1, scale: 1.5, rotation: 30, duration: 0.1 }, '<');
+    }
+
+    // 4. 地割れ激突・画面微振動
+    tl.to(container, { x: '+=3', y: '+=3', duration: 0.035, yoyo: true, repeat: 5, ease: 'rough' });
+    if (burst) {
+      tl.to(burst.el, { opacity: 0, scale: 1.8, duration: 0.3, ease: 'power2.out' }, '>');
+    }
+    if (auraOverlay) {
+      tl.to(auraOverlay, { opacity: 0, duration: 0.25 }, '<');
+    }
+
+    // 5. 残心＆復帰
+    tl.to({}, { duration: 0.2 });
+    if (sword) {
+      tl.to(sword.el, { opacity: 0, duration: 0.25 }, '>');
+      tl.to(sword.wrapper, { x: 0, y: 0, rotation: 0, duration: 0.4, ease: 'power2.out' }, '<');
+    }
+    const allTargets = [container, head, body, armLeft, armRight, legLeft, legRight].filter(Boolean);
+    tl.to(allTargets, {
+      x: 0, y: 0, rotation: 0, scale: 1, scaleX: 1, scaleY: 1, skewX: 0,
+      duration: 0.4,
+      ease: 'power2.out'
+    }, '<');
+  }
+}
+
+/**
+ * 36. 双剣・幻影乱舞 (Dual Saber Mirage Dance)
+ * 左右両腕に長刀ビームサーベルを構え、左右交互の神速4連スラッシュからX字クロスフィニッシュを叩き込む。
+ */
+export class DualSaberMirageDanceAnimation extends BaseRobotAnimation {
+  id = 'dual_saber_mirage_dance';
+  name = '双剣・幻影乱舞 (Mirage Saber Dance)';
+  category = RobotAnimationCategory.COMBAT;
+  duration = 1.9;
+  loop = true;
+  description = '左右両腕に長刀ビームサーベルを構え、左右交互の神速4連スラッシュからX字クロスフィニッシュを叩き込む高速連撃奥義。';
+  technicalHighlights = [
+    '左右両腕への長刀ビームサーベル同時マウント＆独立軌道制御',
+    '左袈裟→右逆袈裟→左水平薙ぎ払い→右切り上げの神速4連撃',
+    'フィニッシュ時の同時X字クロス交差と強烈なプラズマ閃光'
+  ];
+
+  seMarkers: AnimationSEMarker[] = [
+    { time: 0.20, label: '双剣起動', type: 'draw' },
+    { time: 0.40, label: '1段目・左袈裟斬り', type: 'slash' },
+    { time: 0.60, label: '2段目・右逆袈裟', type: 'slash' },
+    { time: 0.82, label: '3段目・左薙ぎ払い', type: 'slash' },
+    { time: 1.05, label: 'X字クロスフィニッシュ！', type: 'slash' },
+    { time: 1.25, label: '交差爆砕インパクト', type: 'hit' },
+  ];
+
+  build(refs: RobotDOMRefs, tl: gsap.core.Timeline): void {
+    this.resetElements(refs, tl);
+    const { container, head, body, armLeft, armRight, legLeft, legRight, fxContainer } = refs;
+
+    let swordR: { wrapper: HTMLDivElement; el: HTMLDivElement; cleanup: () => void } | null = null;
+    let swordL: { wrapper: HTMLDivElement; el: HTMLDivElement; cleanup: () => void } | null = null;
+    let trail: { el: HTMLDivElement; cleanup: () => void } | null = null;
+
+    if (fxContainer && typeof document !== 'undefined') {
+      swordR = mountFlameSword(fxContainer, { hand: 'right', sizePercent: 54, initialRotation: -30, armPartKey: refs.armPartKey });
+      swordL = mountFlameSword(fxContainer, { hand: 'left', sizePercent: 54, initialRotation: -30, armPartKey: refs.armPartKey });
+      trail = mountFlameSlashEffect(fxContainer);
+      tl.set([swordR.wrapper, swordL.wrapper], { opacity: 1 });
+      tl.set([swordR.el, swordL.el], { opacity: 0 });
+    }
+
+    tl.eventCallback('onComplete', () => {
+      swordR?.cleanup();
+      swordL?.cleanup();
+      trail?.cleanup();
+    });
+
+    // 1. 双剣起動・構え
+    tl.to(container, { y: 2, scaleY: 0.95, duration: 0.2 });
+    if (armLeft) tl.to(armLeft, { rotation: -40, x: -8, y: -4, duration: 0.2 }, '<');
+    if (armRight) tl.to(armRight, { rotation: -40, x: 8, y: -4, duration: 0.2 }, '<');
+    if (swordL) {
+      tl.to(swordL.wrapper, { rotation: -40, x: -8, y: -4, duration: 0.2 }, '<');
+      tl.to(swordL.el, { opacity: 1, duration: 0.2 }, '<');
+    }
+    if (swordR) {
+      tl.to(swordR.wrapper, { rotation: -40, x: 8, y: -4, duration: 0.2 }, '<');
+      tl.to(swordR.el, { opacity: 1, duration: 0.2 }, '<');
+    }
+
+    // 2. 1段目：左腕 袈裟斬り
+    tl.to(container, { x: 12, duration: 0.12, ease: 'power3.out' });
+    if (armLeft) tl.to(armLeft, { rotation: 65, x: 14, duration: 0.12, ease: 'power4.out' }, '<');
+    if (swordL) {
+      tl.to(swordL.wrapper, { rotation: 65, x: 14, duration: 0.12, ease: 'power4.out' }, '<');
+      tl.to(swordL.el, { rotation: 25, duration: 0.12 }, '<');
+    }
+    if (head) tl.to(head, { rotation: 10, duration: 0.12 }, '<');
+
+    // 3. 2段目：右腕 逆袈裟斬り
+    tl.to(container, { x: 18, duration: 0.14, ease: 'power3.out' });
+    if (armRight) tl.to(armRight, { rotation: 70, x: 16, duration: 0.14, ease: 'power4.out' }, '<');
+    if (swordR) {
+      tl.to(swordR.wrapper, { rotation: 70, x: 16, duration: 0.14, ease: 'power4.out' }, '<');
+      tl.to(swordR.el, { rotation: 20, duration: 0.14 }, '<');
+    }
+    if (armLeft) tl.to(armLeft, { rotation: -20, x: -4, duration: 0.14 }, '<');
+    if (swordL) tl.to(swordL.wrapper, { rotation: -20, x: -4, duration: 0.14 }, '<');
+
+    // 4. 3段目：左腕 水平薙ぎ払い
+    tl.to(container, { x: 22, duration: 0.14, ease: 'power3.out' });
+    if (armLeft) tl.to(armLeft, { rotation: 80, x: 18, duration: 0.14, ease: 'power4.out' }, '<');
+    if (swordL) {
+      tl.to(swordL.wrapper, { rotation: 80, x: 18, duration: 0.14, ease: 'power4.out' }, '<');
+      tl.to(swordL.el, { rotation: 35, duration: 0.14 }, '<');
+    }
+    if (armRight) tl.to(armRight, { rotation: -30, x: -6, duration: 0.14 }, '<');
+    if (swordR) tl.to(swordR.wrapper, { rotation: -30, x: -6, duration: 0.14 }, '<');
+
+    // 5. 4段目：両腕 同時X字クロスフィニッシュ！
+    tl.to(container, { x: 28, y: -3, scaleX: 1.1, duration: 0.15, ease: 'back.out(2)' });
+    if (armLeft) tl.to(armLeft, { rotation: 55, x: 12, y: -6, duration: 0.15, ease: 'power4.out' }, '<');
+    if (armRight) tl.to(armRight, { rotation: 55, x: 14, y: -6, duration: 0.15, ease: 'power4.out' }, '<');
+    if (swordL) {
+      tl.to(swordL.wrapper, { rotation: 55, x: 12, y: -6, duration: 0.15, ease: 'power4.out' }, '<');
+      tl.to(swordL.el, { rotation: 30, duration: 0.15 }, '<');
+    }
+    if (swordR) {
+      tl.to(swordR.wrapper, { rotation: 55, x: 14, y: -6, duration: 0.15, ease: 'power4.out' }, '<');
+      tl.to(swordR.el, { rotation: -30, duration: 0.15 }, '<');
+    }
+    if (trail) {
+      tl.to(trail.el, { opacity: 1, scale: 1.4, rotation: 45, duration: 0.08 }, '<');
+      tl.to(trail.el, { opacity: 0, scale: 1.6, duration: 0.2 }, '>');
+    }
+
+    // 6. 交差インパクト微振動
+    tl.to(container, { x: '+=2', y: '+=2', duration: 0.035, yoyo: true, repeat: 4 });
+
+    // 7. 残心＆復帰
+    tl.to({}, { duration: 0.2 });
+    if (swordL) {
+      tl.to(swordL.el, { opacity: 0, duration: 0.25 }, '>');
+      tl.to(swordL.wrapper, { x: 0, y: 0, rotation: 0, duration: 0.35, ease: 'power2.out' }, '<');
+    }
+    if (swordR) {
+      tl.to(swordR.el, { opacity: 0, duration: 0.25 }, '<');
+      tl.to(swordR.wrapper, { x: 0, y: 0, rotation: 0, duration: 0.35, ease: 'power2.out' }, '<');
+    }
+    const allTargets = [container, head, body, armLeft, armRight, legLeft, legRight].filter(Boolean);
+    tl.to(allTargets, {
+      x: 0, y: 0, rotation: 0, scale: 1, scaleX: 1, scaleY: 1, skewX: 0,
+      duration: 0.35,
+      ease: 'power2.out'
+    }, '<');
+  }
+}
+
+/**
+ * 37. サーベル・受け流し反撃 (Saber Parry & Riposte)
+ * 敵の攻撃をビームサーベルで斜めに弾き（パリィ火花）、姿勢を低く沈めて懐へ踏み込み、下段から豪快に切り上げるカウンタースラッシュ。
+ */
+export class SaberParryCounterAnimation extends BaseRobotAnimation {
+  id = 'saber_parry_counter';
+  name = 'サーベル・受け流し反撃 (Parry & Riposte)';
+  category = RobotAnimationCategory.COMBAT;
+  duration = 1.8;
+  loop = true;
+  description = '敵の攻撃をビームサーベルで斜めに弾き（パリィ火花）、姿勢を低く沈めて懐へ踏み込み、下段から豪快に切り上げるカウンタースラッシュ。';
+  technicalHighlights = [
+    'サーベルの斜めガード・受け流しポーズとマズルリコイル風の弾き衝撃',
+    '低姿勢への潜り込みから一気に跳ね上げるアッパースラッシュ',
+    'カウンターヒット瞬間の劇的ヒットストップ'
+  ];
+
+  seMarkers: AnimationSEMarker[] = [
+    { time: 0.20, label: '受け流し構え', type: 'draw' },
+    { time: 0.45, label: 'パリィ弾き火花！', type: 'hit' },
+    { time: 0.70, label: '低姿勢・懐潜り込み', type: 'flame' },
+    { time: 0.95, label: '電光石火・切り上げ反撃！', type: 'slash' },
+    { time: 1.15, label: '直撃インパクト', type: 'hit' },
+  ];
+
+  build(refs: RobotDOMRefs, tl: gsap.core.Timeline): void {
+    this.resetElements(refs, tl);
+    const { container, head, body, armLeft, armRight, legLeft, legRight, fxContainer } = refs;
+
+    let sword: { wrapper: HTMLDivElement; el: HTMLDivElement; cleanup: () => void } | null = null;
+    let trail: { el: HTMLDivElement; cleanup: () => void } | null = null;
+
+    if (fxContainer && typeof document !== 'undefined') {
+      sword = mountFlameSword(fxContainer, { hand: 'right', sizePercent: 54, initialRotation: 35, armPartKey: refs.armPartKey });
+      trail = mountFlameSlashEffect(fxContainer);
+      tl.set(sword.wrapper, { opacity: 1 });
+      tl.set(sword.el, { opacity: 0 });
+    }
+
+    tl.eventCallback('onComplete', () => {
+      sword?.cleanup();
+      trail?.cleanup();
+    });
+
+    // 1. パリィ受け流し構え
+    tl.to(container, { x: -4, y: 3, duration: 0.2 });
+    if (armRight) tl.to(armRight, { rotation: 35, x: 4, y: -6, duration: 0.2 }, '<');
+    if (sword) {
+      tl.to(sword.wrapper, { rotation: 35, x: 4, y: -6, duration: 0.2 }, '<');
+      tl.to(sword.el, { opacity: 1, rotation: 40, duration: 0.2 }, '<');
+    }
+
+    // 2. パリィ成功！敵の刃を斜めに弾く衝撃
+    tl.to(container, { x: -10, rotation: -3, duration: 0.08, ease: 'power4.out' });
+    if (armRight) tl.to(armRight, { rotation: 50, x: 8, duration: 0.08 }, '<');
+    if (sword) tl.to(sword.wrapper, { rotation: 50, x: 8, duration: 0.08 }, '<');
+    tl.to(container, { x: '+=2', y: '+=2', duration: 0.03, yoyo: true, repeat: 2 });
+
+    // 3. 懐へ低く潜り込む（タメ）
+    tl.to(container, { x: 10, y: 8, scaleY: 0.88, rotation: 0, duration: 0.25, ease: 'power2.in' })
+      .to(head, { rotation: -10, duration: 0.25 }, '<');
+    if (legLeft) tl.to(legLeft, { skewX: 14, duration: 0.25 }, '<');
+    if (armRight) tl.to(armRight, { rotation: -40, x: -6, y: 4, duration: 0.25 }, '<');
+    if (sword) {
+      tl.to(sword.wrapper, { rotation: -40, x: -6, y: 4, duration: 0.25 }, '<');
+      tl.to(sword.el, { rotation: -10, duration: 0.25 }, '<');
+    }
+
+    // 4. 下段からの電光石火・切り上げカウンタースラッシュ！
+    tl.to(container, { x: 26, y: -8, scaleY: 1.12, duration: 0.14, ease: 'power4.out' })
+      .to(head, { rotation: 18, duration: 0.14 }, '<');
+    if (armRight) tl.to(armRight, { rotation: 85, x: 22, y: -16, duration: 0.14, ease: 'power4.out' }, '<');
+    if (sword) {
+      tl.to(sword.wrapper, { rotation: 85, x: 22, y: -16, duration: 0.14, ease: 'power4.out' }, '<');
+      tl.to(sword.el, { rotation: 35, scale: 1.25, duration: 0.14, ease: 'power4.out' }, '<');
+    }
+    if (armLeft) tl.to(armLeft, { rotation: -45, x: -8, duration: 0.14 }, '<');
+    if (trail) {
+      tl.to(trail.el, { opacity: 1, scale: 1.3, rotation: -20, duration: 0.08 }, '<');
+      tl.to(trail.el, { opacity: 0, scale: 1.5, duration: 0.2 }, '>');
+    }
+
+    // 5. ヒットストップ＆残心
+    tl.to(container, { x: '+=2', y: '+=2', duration: 0.035, yoyo: true, repeat: 3 });
+    tl.to({}, { duration: 0.2 });
+
+    // 6. 復帰
+    if (sword) {
+      tl.to(sword.el, { opacity: 0, duration: 0.25 }, '>');
+      tl.to(sword.wrapper, { x: 0, y: 0, rotation: 0, duration: 0.35, ease: 'power2.out' }, '<');
+    }
+    const allTargets = [container, head, body, armLeft, armRight, legLeft, legRight].filter(Boolean);
+    tl.to(allTargets, {
+      x: 0, y: 0, rotation: 0, scale: 1, scaleX: 1, scaleY: 1, skewX: 0,
+      duration: 0.35,
+      ease: 'power2.out'
+    }, '<');
+  }
+}
+
+/**
+ * 38. 神速・ビーム居合抜刀 (Iaido Quick Draw)
+ * 腰を低く落とし、左手で鞘を押さえ右手を柄に掛けた静寂の構えから、0.08秒の超神速踏み込みで一閃！
+ */
+export class IaidoQuickDrawAnimation extends BaseRobotAnimation {
+  id = 'iaido_quick_draw';
+  name = '神速・ビーム居合抜刀 (Iaido Quick Draw)';
+  category = RobotAnimationCategory.COMBAT;
+  duration = 1.8;
+  loop = true;
+  description = '腰を低く落とし、左手で鞘を押さえ右手を柄に掛けた静寂の構えから、0.08秒の超神速踏み込みで一閃！残心の後に美しく納刀。';
+  technicalHighlights = [
+    '静寂の帯刀・居合タメポーズ (静と動のコントラスト)',
+    '0.08秒の瞬間最大加速抜刀一閃 (Duration 0.08s)',
+    '抜刀後の残心ブレードスピン＆静かな納刀モーション'
+  ];
+
+  seMarkers: AnimationSEMarker[] = [
+    { time: 0.25, label: '居合・帯刀構え', type: 'draw' },
+    { time: 0.65, label: '集中・静寂', type: 'flame' },
+    { time: 0.90, label: '神速抜刀一閃！', type: 'slash' },
+    { time: 1.10, label: '遅延切断衝撃', type: 'hit' },
+    { time: 1.45, label: '残心・納刀', type: 'draw' },
+  ];
+
+  build(refs: RobotDOMRefs, tl: gsap.core.Timeline): void {
+    this.resetElements(refs, tl);
+    const { container, head, body, armLeft, armRight, legLeft, legRight, fxContainer } = refs;
+
+    let sword: { wrapper: HTMLDivElement; el: HTMLDivElement; cleanup: () => void } | null = null;
+    let trail: { el: HTMLDivElement; cleanup: () => void } | null = null;
+
+    if (fxContainer && typeof document !== 'undefined') {
+      sword = mountFlameSword(fxContainer, { hand: 'right', sizePercent: 54, initialRotation: -70, armPartKey: refs.armPartKey });
+      trail = mountFlameSlashEffect(fxContainer);
+      tl.set(sword.wrapper, { opacity: 1 });
+      tl.set(sword.el, { opacity: 0 });
+    }
+
+    tl.eventCallback('onComplete', () => {
+      sword?.cleanup();
+      trail?.cleanup();
+    });
+
+    // 1. 腰を深く落とし、居合帯刀の構え（静寂のタメ）
+    tl.to(container, { x: -8, y: 7, scaleY: 0.9, duration: 0.4, ease: 'power2.inOut' })
+      .to(head, { rotation: -8, duration: 0.4 }, '<');
+    if (legLeft) tl.to(legLeft, { skewX: 16, scaleY: 0.85, duration: 0.4 }, '<');
+    if (legRight) tl.to(legRight, { skewX: -10, scaleY: 0.88, duration: 0.4 }, '<');
+
+    // 右腕を腰の柄に手を掛け、左腕で鞘を抑えるポーズ
+    if (armRight) tl.to(armRight, { rotation: -65, x: -12, y: 6, duration: 0.4, ease: 'power2.out' }, '<');
+    if (armLeft) tl.to(armLeft, { rotation: -35, x: -8, y: 4, duration: 0.4, ease: 'power2.out' }, '<');
+    if (sword) {
+      tl.to(sword.wrapper, { rotation: -65, x: -12, y: 6, duration: 0.4 }, '<');
+    }
+
+    // 2. 集中（微小な呼吸息止め）
+    tl.to(container, { y: 8, duration: 0.25, ease: 'sine.inOut' });
+
+    // 3. 神速抜刀一閃！（0.08秒で一気に踏み込み右腕を真横へ抜き放つ！）
+    tl.to(container, { x: 36, y: -2, scaleX: 1.12, scaleY: 1.05, duration: 0.08, ease: 'power4.out' })
+      .to(head, { rotation: 14, duration: 0.08 }, '<');
+    if (armRight) tl.to(armRight, { rotation: 80, x: 28, y: -4, duration: 0.08, ease: 'power4.out' }, '<');
+    if (sword) {
+      tl.to(sword.wrapper, { rotation: 80, x: 28, y: -4, duration: 0.08, ease: 'power4.out' }, '<');
+      tl.to(sword.el, { opacity: 1, rotation: 25, scale: 1.3, duration: 0.08, ease: 'power4.out' }, '<');
+    }
+    if (armLeft) tl.to(armLeft, { rotation: -60, x: -14, duration: 0.08 }, '<');
+    if (trail) {
+      tl.to(trail.el, { opacity: 1, scale: 1.5, rotation: 10, duration: 0.06 }, '<');
+      tl.to(trail.el, { opacity: 0, scale: 1.7, duration: 0.18 }, '>');
+    }
+
+    // 4. 遅延切断衝撃・画面振動
+    tl.to(container, { x: '+=3', y: '+=3', duration: 0.035, yoyo: true, repeat: 4 });
+
+    // 5. 残心（抜き切ったポーズで静止）
+    tl.to({}, { duration: 0.25 });
+
+    // 6. 優雅な納刀＆復帰
+    if (sword) {
+      tl.to(sword.el, { opacity: 0, duration: 0.25 }, '>');
+      tl.to(sword.wrapper, { x: 0, y: 0, rotation: 0, duration: 0.35, ease: 'power2.out' }, '<');
+    }
+    const allTargets = [container, head, body, armLeft, armRight, legLeft, legRight].filter(Boolean);
+    tl.to(allTargets, {
+      x: 0, y: 0, rotation: 0, scale: 1, scaleX: 1, scaleY: 1, skewX: 0,
+      duration: 0.35,
+      ease: 'power2.out'
+    }, '<');
+  }
+}
+
+/**
+ * 39. ヘビースナイパー・精密狙撃 (Heavy Sniper Execution)
+ * 超長尺ヘビースナイパーライフルを構え、左手フォアグリップ支持＆スコープ青色ロックオン、超電導貫通レールガンショット発射！
+ */
+export class HeavySniperExecutionAnimation extends BaseRobotAnimation {
+  id = 'heavy_sniper_execution';
+  name = 'ヘビースナイパー・精密狙撃 (Heavy Sniper)';
+  category = RobotAnimationCategory.COMBAT;
+  duration = 2.1;
+  loop = true;
+  description = '超長尺ヘビースナイパーライフルを両手で構え、左手フォアグリップ支持＆スコープ青色ロックオンから超電導貫通ビームを発射！強烈なマズルショック。';
+  technicalHighlights = [
+    '超長尺ヘビースナイパーライフルSVGの精密マウント（右手トリガー・左手フォアグリップ支持）',
+    'スコープ照準微動ロックオンから超高速貫通ビーム発射',
+    '重厚なヘビーリコイルショックと薬莢排煙エフェクト'
+  ];
+
+  seMarkers: AnimationSEMarker[] = [
+    { time: 0.30, label: 'ライフルマウント構え', type: 'draw' },
+    { time: 0.70, label: 'スコープ照準ロック', type: 'flame' },
+    { time: 1.10, label: '超電導貫通ビーム発射！', type: 'slash' },
+    { time: 1.25, label: '強烈マズルショック＆排莢', type: 'hit' },
+  ];
+
+  build(refs: RobotDOMRefs, tl: gsap.core.Timeline): void {
+    this.resetElements(refs, tl);
+    const { container, head, body, armLeft, armRight, legLeft, legRight, fxContainer } = refs;
+
+    let rifle: { wrapper: HTMLDivElement; el: HTMLDivElement; cleanup: () => void } | null = null;
+    let shot: { el: HTMLDivElement; cleanup: () => void } | null = null;
+
+    if (fxContainer && typeof document !== 'undefined') {
+      rifle = mountSniperRifle(fxContainer, { hand: 'right', sizePercent: 74, initialRotation: 12, armPartKey: refs.armPartKey });
+      shot = mountSniperShotEffect(fxContainer);
+      tl.set(rifle.wrapper, { opacity: 1 });
+      tl.set(rifle.el, { opacity: 0 });
+    }
+
+    tl.eventCallback('onComplete', () => {
+      rifle?.cleanup();
+      shot?.cleanup();
+    });
+
+    // 1. スナイパースタンス構え（両腕で超長尺銃身を安定保持）
+    tl.to(container, { y: 3, scaleY: 0.95, duration: 0.3, ease: 'power2.out' })
+      .to(head, { rotation: 8, x: 2, duration: 0.3 }, '<');
+    if (legLeft) tl.to(legLeft, { skewX: 8, scaleY: 0.92, duration: 0.3 }, '<');
+    if (legRight) tl.to(legRight, { skewX: -6, duration: 0.3 }, '<');
+
+    // 右腕トリガー・左腕フォアグリップ支持
+    if (armRight) tl.to(armRight, { rotation: 65, x: 10, y: -4, duration: 0.3, ease: 'power2.out' }, '<');
+    if (armLeft) tl.to(armLeft, { rotation: 48, x: 16, y: -8, duration: 0.3, ease: 'power2.out' }, '<');
+    if (rifle) {
+      tl.to(rifle.wrapper, { rotation: 65, x: 10, y: -4, duration: 0.3, ease: 'power2.out' }, '<');
+      tl.to(rifle.el, { opacity: 1, rotation: 12, duration: 0.3 }, '<');
+    }
+
+    // 2. スコープ照準・微小ロックオン（息止め）
+    tl.to(head, { rotation: 9, y: '-=1', duration: 0.35, ease: 'sine.inOut' })
+      .to(head, { rotation: 7.5, y: '+=1', duration: 0.35, ease: 'sine.inOut' });
+
+    // 3. 超電導貫通ビーム発射！（強烈なマズルショック＆後方リコイル）
+    tl.to(container, { x: -24, rotation: -4, duration: 0.06, ease: 'power4.out' });
+    if (armRight) tl.to(armRight, { rotation: 78, x: 6, duration: 0.06 }, '<');
+    if (armLeft) tl.to(armLeft, { rotation: 58, x: 12, duration: 0.06 }, '<');
+    if (rifle) {
+      tl.to(rifle.wrapper, { rotation: 78, x: 6, duration: 0.06 }, '<');
+      tl.to(rifle.el, { rotation: 18, duration: 0.06 }, '<');
+    }
+    if (shot) {
+      tl.to(shot.el, { opacity: 1, scale: 1.2, duration: 0.05 }, '<');
+      tl.to(shot.el, { opacity: 0, scale: 1.4, duration: 0.22 }, '>');
+    }
+
+    // 4. リコイル反動ブレ＆薬莢排気
+    tl.to(container, { x: -18, duration: 0.12, ease: 'power2.out' });
+    tl.to(container, { x: '+=2', y: '+=2', duration: 0.035, yoyo: true, repeat: 3 });
+
+    // 5. 残心＆復帰
+    tl.to({}, { duration: 0.25 });
+    if (rifle) {
+      tl.to(rifle.el, { opacity: 0, duration: 0.25 }, '>');
+      tl.to(rifle.wrapper, { x: 0, y: 0, rotation: 0, duration: 0.35, ease: 'power2.out' }, '<');
+    }
+    const allTargets = [container, head, body, armLeft, armRight, legLeft, legRight].filter(Boolean);
+    tl.to(allTargets, {
+      x: 0, y: 0, rotation: 0, scale: 1, scaleX: 1, scaleY: 1, skewX: 0,
+      duration: 0.35,
+      ease: 'power2.out'
+    }, '<');
+  }
+}
+
+/**
+ * 40. しゃがみ狙撃・徹甲バースト (Crouch AP Burst)
+ * 完全しゃがみスタンスでバイポッドを地面に固定し、低姿勢から3連続の徹甲電磁弾を高速バースト射撃。
+ */
+export class CrouchSniperBurstAnimation extends BaseRobotAnimation {
+  id = 'crouch_sniper_burst';
+  name = 'しゃがみ狙撃・徹甲バースト (Crouch AP Burst)';
+  category = RobotAnimationCategory.COMBAT;
+  duration = 2.0;
+  loop = true;
+  description = '完全しゃがみスタンスでバイポッドを地面に固定し、低姿勢から3連続の徹甲電磁弾を高速バースト射撃。';
+  technicalHighlights = [
+    '片膝立ち＆完全しゃがみ接地スタンス（LegLeft/LegRightの屈伸）',
+    '3連続の超高速トリガーリコイル（3-Round Burst）',
+    '地面接地バイポッドの反動吸収'
+  ];
+
+  seMarkers: AnimationSEMarker[] = [
+    { time: 0.25, label: 'しゃがみバイポッド設置', type: 'draw' },
+    { time: 0.55, label: '1射目バースト！', type: 'slash' },
+    { time: 0.75, label: '2射目バースト！', type: 'slash' },
+    { time: 0.95, label: '3射目・強徹甲弾！', type: 'hit' },
+    { time: 1.35, label: '姿勢復帰', type: 'draw' },
+  ];
+
+  build(refs: RobotDOMRefs, tl: gsap.core.Timeline): void {
+    this.resetElements(refs, tl);
+    const { container, head, body, armLeft, armRight, legLeft, legRight, fxContainer } = refs;
+
+    let rifle: { wrapper: HTMLDivElement; el: HTMLDivElement; cleanup: () => void } | null = null;
+    let shot: { el: HTMLDivElement; cleanup: () => void } | null = null;
+
+    if (fxContainer && typeof document !== 'undefined') {
+      rifle = mountSniperRifle(fxContainer, { hand: 'right', sizePercent: 74, initialRotation: 8, armPartKey: refs.armPartKey });
+      shot = mountSniperShotEffect(fxContainer);
+      tl.set(rifle.wrapper, { opacity: 1 });
+      tl.set(rifle.el, { opacity: 0 });
+    }
+
+    tl.eventCallback('onComplete', () => {
+      rifle?.cleanup();
+      shot?.cleanup();
+    });
+
+    // 1. しゃがみこみ＆バイポッド設置
+    tl.to(container, { y: 12, scaleY: 0.82, duration: 0.25, ease: 'power2.in' })
+      .to(head, { rotation: 6, y: 2, duration: 0.25 }, '<');
+    if (legLeft) tl.to(legLeft, { scaleY: 0.65, y: 8, skewX: 10, duration: 0.25 }, '<');
+    if (legRight) tl.to(legRight, { scaleY: 0.85, skewX: -8, duration: 0.25 }, '<');
+
+    if (armRight) tl.to(armRight, { rotation: 55, x: 8, y: -2, duration: 0.25 }, '<');
+    if (armLeft) tl.to(armLeft, { rotation: 42, x: 14, y: -4, duration: 0.25 }, '<');
+    if (rifle) {
+      tl.to(rifle.wrapper, { rotation: 55, x: 8, y: -2, duration: 0.25 }, '<');
+      tl.to(rifle.el, { opacity: 1, rotation: 8, duration: 0.25 }, '<');
+    }
+
+    // 2. 1射目！
+    tl.to(container, { x: -8, duration: 0.05, ease: 'power4.out' });
+    if (shot) {
+      tl.to(shot.el, { opacity: 0.85, scale: 1.1, duration: 0.04 }, '<');
+      tl.to(shot.el, { opacity: 0, duration: 0.1 }, '>');
+    }
+    tl.to(container, { x: 0, duration: 0.08, ease: 'power2.out' });
+
+    // 3. 2射目！
+    tl.to(container, { x: -10, duration: 0.05, ease: 'power4.out' }, '+=0.06');
+    if (shot) {
+      tl.to(shot.el, { opacity: 0.9, scale: 1.2, duration: 0.04 }, '<');
+      tl.to(shot.el, { opacity: 0, duration: 0.1 }, '>');
+    }
+    tl.to(container, { x: 0, duration: 0.08, ease: 'power2.out' });
+
+    // 4. 3射目・強徹甲弾！（最大反動）
+    tl.to(container, { x: -16, rotation: -3, duration: 0.06, ease: 'power4.out' }, '+=0.06');
+    if (armRight) tl.to(armRight, { rotation: 68, duration: 0.06 }, '<');
+    if (rifle) {
+      tl.to(rifle.wrapper, { rotation: 68, duration: 0.06 }, '<');
+      tl.to(rifle.el, { rotation: 16, duration: 0.06 }, '<');
+    }
+    if (shot) {
+      tl.to(shot.el, { opacity: 1, scale: 1.4, duration: 0.05 }, '<');
+      tl.to(shot.el, { opacity: 0, scale: 1.6, duration: 0.25 }, '>');
+    }
+    tl.to(container, { x: '+=2', y: '+=2', duration: 0.035, yoyo: true, repeat: 3 });
+
+    // 5. 立ち上がり・姿勢復帰
+    tl.to({}, { duration: 0.2 });
+    if (rifle) {
+      tl.to(rifle.el, { opacity: 0, duration: 0.25 }, '>');
+      tl.to(rifle.wrapper, { x: 0, y: 0, rotation: 0, duration: 0.35, ease: 'power2.out' }, '<');
+    }
+    const allTargets = [container, head, body, armLeft, armRight, legLeft, legRight].filter(Boolean);
+    tl.to(allTargets, {
+      x: 0, y: 0, rotation: 0, scale: 1, scaleX: 1, scaleY: 1, skewX: 0,
+      duration: 0.35,
+      ease: 'power2.out'
+    }, '<');
+  }
+}
+
+/**
+ * 41. 空中アクロバットスナイプ (Acrobatic Jump Snipe)
+ * 後方へサマーソルト回転跳躍しながら、空中頂点でスナイパーライフルを水平に構えて撃ち抜き、華麗に着地スライディング。
+ */
+export class AcrobaticJumpSnipeAnimation extends BaseRobotAnimation {
+  id = 'acrobatic_jump_snipe';
+  name = '空中アクロバットスナイプ (Jump Snipe)';
+  category = RobotAnimationCategory.ACROBATIC;
+  duration = 2.0;
+  loop = true;
+  description = '後方へサマーソルト回転跳躍しながら、空中頂点でスナイパーライフルを水平に構えて撃ち抜き、華麗に着地スライディング。';
+  technicalHighlights = [
+    '後方跳躍＆空中での360度宙返りサマーソルト',
+    '空中頂点でのスローモーションエイミング＆貫通ショット',
+    '着地時の前方スライドブレーキング'
+  ];
+
+  seMarkers: AnimationSEMarker[] = [
+    { time: 0.25, label: '後方宙返り跳躍', type: 'draw' },
+    { time: 0.60, label: '空中水平エイム', type: 'flame' },
+    { time: 0.85, label: '空中一撃狙撃！', type: 'slash' },
+    { time: 1.15, label: '着地スライディング衝撃', type: 'hit' },
+  ];
+
+  build(refs: RobotDOMRefs, tl: gsap.core.Timeline): void {
+    this.resetElements(refs, tl);
+    const { container, head, body, armLeft, armRight, legLeft, legRight, fxContainer } = refs;
+
+    let rifle: { wrapper: HTMLDivElement; el: HTMLDivElement; cleanup: () => void } | null = null;
+    let shot: { el: HTMLDivElement; cleanup: () => void } | null = null;
+
+    if (fxContainer && typeof document !== 'undefined') {
+      rifle = mountSniperRifle(fxContainer, { hand: 'right', sizePercent: 70, initialRotation: 0, armPartKey: refs.armPartKey });
+      shot = mountSniperShotEffect(fxContainer);
+      tl.set(rifle.wrapper, { opacity: 1 });
+      tl.set(rifle.el, { opacity: 0 });
+    }
+
+    tl.eventCallback('onComplete', () => {
+      rifle?.cleanup();
+      shot?.cleanup();
+    });
+
+    // 1. しゃがみタメから後方宙返り跳躍！
+    tl.to(container, { y: 6, scaleY: 0.9, duration: 0.15, ease: 'power2.in' });
+    tl.to(container, { y: -45, x: -15, rotation: -360, duration: 0.45, ease: 'power2.out' });
+    if (armRight) tl.to(armRight, { rotation: 40, x: 8, duration: 0.3 }, '<');
+    if (armLeft) tl.to(armLeft, { rotation: 32, x: 12, y: -4, duration: 0.3 }, '<');
+    if (rifle) {
+      tl.to(rifle.wrapper, { rotation: 40, x: 8, duration: 0.3 }, '<');
+      tl.to(rifle.el, { opacity: 1, rotation: 0, duration: 0.3 }, '<');
+    }
+
+    // 2. 空中頂点でのスローモーション水平エイム
+    tl.to(container, { y: -42, rotation: -360, duration: 0.2, ease: 'sine.inOut' });
+    if (head) tl.to(head, { rotation: 12, duration: 0.2 }, '<');
+
+    // 3. 空中一撃狙撃！
+    tl.to(container, { x: -25, duration: 0.05, ease: 'power4.out' });
+    if (armRight) tl.to(armRight, { rotation: 55, duration: 0.05 }, '<');
+    if (armLeft) tl.to(armLeft, { rotation: 46, duration: 0.05 }, '<');
+    if (rifle) {
+      tl.to(rifle.wrapper, { rotation: 55, duration: 0.05 }, '<');
+      tl.to(rifle.el, { rotation: 14, duration: 0.05 }, '<');
+    }
+    if (shot) {
+      tl.to(shot.el, { opacity: 1, scale: 1.3, duration: 0.05 }, '<');
+      tl.to(shot.el, { opacity: 0, scale: 1.5, duration: 0.2 }, '>');
+    }
+
+    // 4. 着地＆前方スライドブレーキング
+    tl.to(container, { y: 2, x: 0, rotation: 0, duration: 0.3, ease: 'power3.in' });
+    if (legLeft) tl.to(legLeft, { skewX: -14, scaleY: 0.85, duration: 0.2 }, '<');
+    if (legRight) tl.to(legRight, { skewX: 14, scaleY: 0.85, duration: 0.2 }, '<');
+    tl.to(container, { x: '+=2', y: '+=2', duration: 0.035, yoyo: true, repeat: 3 });
+
+    // 5. 復帰
+    tl.to({}, { duration: 0.2 });
+    if (rifle) {
+      tl.to(rifle.el, { opacity: 0, duration: 0.25 }, '>');
+      tl.to(rifle.wrapper, { x: 0, y: 0, rotation: 0, duration: 0.35, ease: 'power2.out' }, '<');
+    }
+    const allTargets = [container, head, body, armLeft, armRight, legLeft, legRight].filter(Boolean);
+    tl.to(allTargets, {
+      x: 0, y: 0, rotation: 0, scale: 1, scaleX: 1, scaleY: 1, skewX: 0,
+      duration: 0.35,
+      ease: 'power2.out'
+    }, '<');
+  }
+}
+// =========================================================================
+// 必殺技専用モーション (Ultimate Finisher Action Patterns)
+// =========================================================================
+
+/**
+ * 43. 必殺奥義・星断オメガクロススラッシュ (Ultimate Omega Cross Slash)
+ * 画面暗転＆ドラマチックカットイン発動！極限までエネルギーをチャージし、
+ * 長刀ビームサーベルの超高速神速踏み込みから大気ごと両断する極大X字クロス一閃を叩き込む最高峰の必殺剣技。
+ */
+export class UltimateOmegaCrossSlashAnimation extends BaseRobotAnimation {
+  id = 'ultimate_omega_cross_slash';
+  name = '【必殺奥義】星断オメガクロス (Omega Slash)';
+  category = RobotAnimationCategory.COMBAT;
+  duration = 3.2;
+  loop = true;
+  description = '【必殺技カットイン＆極大エフェクト演出】極限プラズマをチャージした長刀ビームサーベルで超神速踏み込みを行い、空間を切り裂く極大X字クロス両断を叩き込む終極奥義！';
+  technicalHighlights = [
+    'ドラマチック必殺技カットインバナー（Eye / Cut-in Banner）のインプレース演出',
+    '超高密度集中スピードライン＆極大エネルギーオーラのタイムライン連動',
+    '両腕ビームサーベルによる神速クロス踏み込み＆画面全体を両断するX字極大斬撃光線',
+    '重厚な画面フラッシュ、衝撃波振動シェイク、そして静寂の残心ポーズ'
+  ];
+
+  seMarkers: AnimationSEMarker[] = [
+    { time: 0.20, label: '抜刀＆構え', type: 'draw' },
+    { time: 0.50, label: '必殺カットイン！', type: 'cutin' },
+    { time: 1.10, label: 'エネルギー極大充填', type: 'charge' },
+    { time: 1.65, label: '神速踏み込み', type: 'flame' },
+    { time: 1.95, label: '星断オメガクロス一閃！', type: 'slash' },
+    { time: 2.15, label: '終極爆砕フィニッシュ！', type: 'hyper' },
+  ];
+
+  build(refs: RobotDOMRefs, tl: gsap.core.Timeline): void {
+    this.resetElements(refs, tl);
+    const { container, head, body, armLeft, armRight, legLeft, legRight, fxContainer } = refs;
+
+    let saberRight: { wrapper: HTMLDivElement; el: HTMLDivElement; cleanup: () => void } | null = null;
+    let saberLeft: { wrapper: HTMLDivElement; el: HTMLDivElement; cleanup: () => void } | null = null;
+    let cutin: { wrapper: HTMLDivElement; banner: HTMLDivElement; titleEl: HTMLDivElement; flashEl: HTMLDivElement; cleanup: () => void } | null = null;
+    let aura: { el: HTMLDivElement; cleanup: () => void } | null = null;
+    let crossSlash: { el: HTMLDivElement; cleanup: () => void } | null = null;
+
+    if (fxContainer && typeof document !== 'undefined') {
+      saberRight = mountFlameSword(fxContainer, { hand: 'right', sizePercent: 66, initialRotation: -15, armPartKey: refs.armPartKey });
+      saberLeft = mountFlameSword(fxContainer, { hand: 'left', sizePercent: 66, initialRotation: 15, armPartKey: refs.armPartKey });
+      cutin = mountDramaticCutinEffect(fxContainer, {
+        title: '星断・オメガクロス斬',
+        subtitle: 'ULTIMATE SWORD FINISHER',
+        themeColor: 'cyan'
+      });
+      aura = mountEnergyChargeAuraEffect(fxContainer);
+      crossSlash = mountOmegaCrossSlashEffect(fxContainer);
+
+      tl.set([saberRight.wrapper, saberLeft.wrapper], { opacity: 1 });
+      tl.set([saberRight.el, saberLeft.el], { opacity: 0 });
+    }
+
+    tl.eventCallback('onComplete', () => {
+      saberRight?.cleanup();
+      saberLeft?.cleanup();
+      cutin?.cleanup();
+      aura?.cleanup();
+      crossSlash?.cleanup();
+    });
+
+    // 1. 双刀抜刀・低姿勢の構え
+    tl.to(container, { y: 6, scaleY: 0.96, duration: 0.35, ease: 'power2.out' });
+    if (armRight) tl.to(armRight, { rotation: -35, x: 6, duration: 0.35, ease: 'power2.out' }, '<');
+    if (armLeft) tl.to(armLeft, { rotation: 35, x: -6, duration: 0.35, ease: 'power2.out' }, '<');
+    if (saberRight) {
+      tl.to(saberRight.wrapper, { rotation: -35, x: 6, duration: 0.35, ease: 'power2.out' }, '<');
+      tl.to(saberRight.el, { opacity: 1, duration: 0.3 }, '<');
+    }
+    if (saberLeft) {
+      tl.to(saberLeft.wrapper, { rotation: 35, x: -6, duration: 0.35, ease: 'power2.out' }, '<');
+      tl.to(saberLeft.el, { opacity: 1, duration: 0.3 }, '<');
+    }
+
+    // 2. ドラマチック必殺技カットイン展開！
+    if (cutin) {
+      tl.to(cutin.flashEl, { opacity: 0.85, duration: 0.08, ease: 'power2.out' });
+      tl.to(cutin.flashEl, { opacity: 0, duration: 0.15 }, '>');
+      tl.fromTo(cutin.banner, 
+        { opacity: 0, x: -60, scaleY: 0.3 }, 
+        { opacity: 1, x: 0, scaleY: 1, duration: 0.22, ease: 'back.out(1.8)' }, 
+        '<'
+      );
+      tl.to(cutin.banner, { x: 10, duration: 0.5, ease: 'none' });
+      tl.to(cutin.banner, { opacity: 0, x: 60, scaleY: 0.2, duration: 0.18, ease: 'power3.in' }, '>');
+    }
+
+    // 3. 極大エネルギーチャージ＆集中線オーラ渦巻き
+    if (aura) {
+      tl.fromTo(aura.el, { opacity: 0, scale: 0.5, rotation: -90 }, { opacity: 1, scale: 1.25, rotation: 180, duration: 0.55, ease: 'power2.out' }, '<-0.2');
+      tl.to(aura.el, { rotation: 360, scale: 1.35, duration: 0.3, ease: 'none' });
+    }
+    // ロボット機体が力を溜めて深く沈み込む
+    tl.to(container, { y: 12, scaleX: 1.08, scaleY: 0.92, duration: 0.45, ease: 'power3.inOut' }, '<');
+    if (head) tl.to(head, { y: 3, rotation: -5, duration: 0.45 }, '<');
+    if (armRight) tl.to(armRight, { rotation: -60, x: -10, duration: 0.45 }, '<');
+    if (armLeft) tl.to(armLeft, { rotation: 60, x: 10, duration: 0.45 }, '<');
+    if (saberRight) tl.to(saberRight.wrapper, { rotation: -60, x: -10, duration: 0.45 }, '<');
+    if (saberLeft) tl.to(saberLeft.wrapper, { rotation: 60, x: 10, duration: 0.45 }, '<');
+
+    // 4. 超神速踏み込み＆空間跳躍！
+    tl.to(container, { x: 38, y: -8, scaleX: 1.15, scaleY: 0.95, duration: 0.14, ease: 'power4.in' });
+    if (aura) tl.to(aura.el, { opacity: 0, scale: 1.6, duration: 0.1 }, '<');
+
+    // 5. 星断オメガクロススラッシュ一閃！
+    if (armRight) tl.to(armRight, { rotation: 85, x: 30, y: 10, duration: 0.1, ease: 'power4.out' }, '<');
+    if (armLeft) tl.to(armLeft, { rotation: -85, x: 30, y: -10, duration: 0.1, ease: 'power4.out' }, '<');
+    if (saberRight) tl.to(saberRight.wrapper, { rotation: 85, x: 30, y: 10, duration: 0.1, ease: 'power4.out' }, '<');
+    if (saberLeft) tl.to(saberLeft.wrapper, { rotation: -85, x: 30, y: -10, duration: 0.1, ease: 'power4.out' }, '<');
+
+    // 極大X字クロスエフェクト炸裂
+    if (crossSlash) {
+      tl.fromTo(crossSlash.el, 
+        { opacity: 0, scale: 0.4, rotation: -25 }, 
+        { opacity: 1, scale: 1.3, rotation: 0, duration: 0.12, ease: 'power4.out' }, 
+        '<'
+      );
+      tl.to(crossSlash.el, { scale: 1.5, opacity: 0, duration: 0.35, ease: 'power2.out' }, '>');
+    }
+
+    // 6. 爆砕衝撃大画面シェイク＆白光フラッシュ
+    if (cutin) {
+      tl.to(cutin.flashEl, { opacity: 0.95, duration: 0.05 }, '<-0.3');
+      tl.to(cutin.flashEl, { opacity: 0, duration: 0.25 }, '>');
+    }
+    tl.to(container, { x: '+=6', y: '+=6', duration: 0.03, yoyo: true, repeat: 7 }, '<-0.3');
+
+    // 7. 神速通過後の残心ポーズ (完全な静寂)
+    tl.to(container, { x: 20, y: 4, duration: 0.2, ease: 'power2.out' });
+    tl.to({}, { duration: 0.5 }); // 余韻
+
+    // 8. 復帰・納刀
+    if (saberRight) {
+      tl.to(saberRight.el, { opacity: 0, duration: 0.3 }, '>');
+      tl.to(saberRight.wrapper, { x: 0, y: 0, rotation: 0, duration: 0.4, ease: 'power2.out' }, '<');
+    }
+    if (saberLeft) {
+      tl.to(saberLeft.el, { opacity: 0, duration: 0.3 }, '<');
+      tl.to(saberLeft.wrapper, { x: 0, y: 0, rotation: 0, duration: 0.4, ease: 'power2.out' }, '<');
+    }
+    const allTargets = [container, head, body, armLeft, armRight, legLeft, legRight].filter(Boolean);
+    tl.to(allTargets, {
+      x: 0, y: 0, rotation: 0, scale: 1, scaleX: 1, scaleY: 1, skewX: 0,
+      duration: 0.4,
+      ease: 'power2.out'
+    }, '<');
+  }
+}
+
+/**
+ * 44. 必殺奥義・極光オメガバスター (Ultimate Hyper Snipe Buster)
+ * 画面暗転＆専用カットイン発動！ヘビースナイパーライフルを限界突破モードへとオーバーチャージし、
+ * 螺旋状プラズマ電磁フィールドを纏った極太超電導ハイパービームで目標を消滅させる終極精密狙撃奥義。
+ */
+export class UltimateHyperSnipeBusterAnimation extends BaseRobotAnimation {
+  id = 'ultimate_hyper_snipe_buster';
+  name = '【必殺奥義】極光オメガバスター (Hyper Buster)';
+  category = RobotAnimationCategory.COMBAT;
+  duration = 3.5;
+  loop = true;
+  description = '【必殺技カットイン＆極大ビーム砲演出】超長尺ヘビースナイパーライフルを両手で完全固定し、限界充填プラズマから極太超電導ハイパービームを撃ち放つ終極狙撃奥義！';
+  technicalHighlights = [
+    '専用必殺技カットイン（Eye Lock-on & Snipe Banner）演出',
+    'ヘビースナイパーライフルのマウント＆銃身オーバーヒート発光',
+    '螺旋プラズマ4連リング＆超極太貫通ハイパービームエフェクト',
+    '強烈なマズルキックバック・衝撃波・白光フラッシュ演出'
+  ];
+
+  seMarkers: AnimationSEMarker[] = [
+    { time: 0.25, label: 'ヘビーライフル展開', type: 'draw' },
+    { time: 0.55, label: '照準ロック＆カットイン！', type: 'cutin' },
+    { time: 1.15, label: '限界オーバーチャージ', type: 'charge' },
+    { time: 1.80, label: '極光オメガバスター発射！', type: 'laser' },
+    { time: 2.10, label: '消滅爆砕フィニッシュ！', type: 'hyper' },
+  ];
+
+  build(refs: RobotDOMRefs, tl: gsap.core.Timeline): void {
+    this.resetElements(refs, tl);
+    const { container, head, body, armLeft, armRight, legLeft, legRight, fxContainer } = refs;
+
+    let rifle: { wrapper: HTMLDivElement; el: HTMLDivElement; cleanup: () => void } | null = null;
+    let cutin: { wrapper: HTMLDivElement; banner: HTMLDivElement; titleEl: HTMLDivElement; flashEl: HTMLDivElement; cleanup: () => void } | null = null;
+    let chargeAura: { el: HTMLDivElement; cleanup: () => void } | null = null;
+    let megaBeam: { el: HTMLDivElement; cleanup: () => void } | null = null;
+
+    if (fxContainer && typeof document !== 'undefined') {
+      rifle = mountSniperRifle(fxContainer, { hand: 'right', sizePercent: 78, initialRotation: 0, armPartKey: refs.armPartKey });
+      cutin = mountDramaticCutinEffect(fxContainer, {
+        title: '極光・オメガバスター',
+        subtitle: 'ULTIMATE SNIPER EXECUTION',
+        themeColor: 'cyan'
+      });
+      chargeAura = mountEnergyChargeAuraEffect(fxContainer);
+      megaBeam = mountOmegaBeamBusterEffect(fxContainer);
+
+      tl.set(rifle.wrapper, { opacity: 1 });
+      tl.set(rifle.el, { opacity: 0 });
+    }
+
+    tl.eventCallback('onComplete', () => {
+      rifle?.cleanup();
+      cutin?.cleanup();
+      chargeAura?.cleanup();
+      megaBeam?.cleanup();
+    });
+
+    // 1. 超長尺ヘビースナイパーライフル展開・両手ホールド構え
+    tl.to(container, { y: 4, scaleX: 0.98, duration: 0.35, ease: 'power2.out' });
+    if (armRight) tl.to(armRight, { rotation: 55, x: 14, y: -4, duration: 0.35, ease: 'power2.out' }, '<');
+    if (armLeft) tl.to(armLeft, { rotation: 40, x: 2, y: 4, duration: 0.35, ease: 'power2.out' }, '<');
+    if (rifle) {
+      tl.to(rifle.wrapper, { rotation: 55, x: 14, y: -4, duration: 0.35, ease: 'power2.out' }, '<');
+      tl.to(rifle.el, { opacity: 1, duration: 0.3 }, '<');
+    }
+
+    // 2. 必殺技カットイン発動！
+    if (cutin) {
+      tl.to(cutin.flashEl, { opacity: 0.9, duration: 0.08, ease: 'power2.out' });
+      tl.to(cutin.flashEl, { opacity: 0, duration: 0.16 }, '>');
+      tl.fromTo(cutin.banner, 
+        { opacity: 0, x: -70, scaleY: 0.3 }, 
+        { opacity: 1, x: 0, scaleY: 1, duration: 0.24, ease: 'back.out(1.8)' }, 
+        '<'
+      );
+      tl.to(cutin.banner, { x: 12, duration: 0.55, ease: 'none' });
+      tl.to(cutin.banner, { opacity: 0, x: 70, scaleY: 0.2, duration: 0.18, ease: 'power3.in' }, '>');
+    }
+
+    // 3. 銃口へ極大エネルギー超収束（集中線＆粒子オーラ）
+    if (chargeAura) {
+      tl.fromTo(chargeAura.el, 
+        { opacity: 0, scale: 0.3, rotation: 0 }, 
+        { opacity: 1, scale: 1.2, rotation: 270, duration: 0.65, ease: 'power3.out' }, 
+        '<-0.2'
+      );
+    }
+    // ロボットの狙撃スタンス固定（低く重心を落とす）
+    tl.to(container, { x: -6, y: 8, scaleX: 1.05, duration: 0.55, ease: 'power2.inOut' }, '<');
+    if (head) tl.to(head, { rotation: -6, duration: 0.55 }, '<');
+    if (rifle) tl.to(rifle.el, { rotation: -2, duration: 0.55 }, '<');
+
+    // 4. 極光オメガバスター発射！！
+    tl.to(container, { x: -28, y: 2, scaleX: 0.94, duration: 0.08, ease: 'power4.out' });
+    if (armRight) tl.to(armRight, { rotation: 68, x: 6, duration: 0.08 }, '<');
+    if (rifle) {
+      tl.to(rifle.wrapper, { rotation: 68, x: 6, duration: 0.08 }, '<');
+      tl.to(rifle.el, { rotation: 8, duration: 0.08 }, '<');
+    }
+    if (chargeAura) tl.to(chargeAura.el, { opacity: 0, scale: 1.8, duration: 0.1 }, '<');
+
+    // 極太ハイパービーム炸裂
+    if (megaBeam) {
+      tl.fromTo(megaBeam.el, 
+        { opacity: 0, scaleX: 0.2, scaleY: 0.5 }, 
+        { opacity: 1, scaleX: 1.3, scaleY: 1.2, duration: 0.14, ease: 'power4.out' }, 
+        '<'
+      );
+      tl.to(megaBeam.el, { opacity: 0, scaleX: 1.5, scaleY: 0.8, duration: 0.45, ease: 'power2.in' }, '>');
+    }
+
+    // 5. フラッシュ＆重厚シェイク
+    if (cutin) {
+      tl.to(cutin.flashEl, { opacity: 0.95, duration: 0.06 }, '<-0.4');
+      tl.to(cutin.flashEl, { opacity: 0, duration: 0.28 }, '>');
+    }
+    tl.to(container, { x: '+=7', y: '+=5', duration: 0.035, yoyo: true, repeat: 8 }, '<-0.4');
+
+    // 6. 巨大排莢スモーク＆銃身放熱
+    tl.to(container, { x: -12, duration: 0.25, ease: 'power2.out' });
+    tl.to({}, { duration: 0.45 });
+
+    // 7. 復帰
+    if (rifle) {
+      tl.to(rifle.el, { opacity: 0, duration: 0.3 }, '>');
+      tl.to(rifle.wrapper, { x: 0, y: 0, rotation: 0, duration: 0.4, ease: 'power2.out' }, '<');
+    }
+    const allTargets = [container, head, body, armLeft, armRight, legLeft, legRight].filter(Boolean);
+    tl.to(allTargets, {
+      x: 0, y: 0, rotation: 0, scale: 1, scaleX: 1, scaleY: 1, skewX: 0,
+      duration: 0.4,
+      ease: 'power2.out'
+    }, '<');
+  }
+}
 
 export class GSAPRobotAnimationRegistry {
 
@@ -2805,7 +4408,9 @@ export class GSAPRobotAnimationRegistry {
 
   private registerDefaults(): void {
     const defaultPatterns: IRobotAnimationPattern[] = [
-      // 1. COMBAT
+      // 1. COMBAT (近接・射撃・特殊兵装)
+      new UltimateOmegaCrossSlashAnimation(),
+      new UltimateHyperSnipeBusterAnimation(),
       new SlashComboAnimation(),
       new DualSlashComboAnimation(),
       new BeamCannonAnimation(),
@@ -2814,9 +4419,14 @@ export class GSAPRobotAnimationRegistry {
       new ShieldBarrierAnimation(),
       new GunslingerStanceAnimation(),
       new SniperAimAnimation(),
+      new BeamSaberJudgementAnimation(),
+      new DualSaberMirageDanceAnimation(),
+      new SaberParryCounterAnimation(),
+      new IaidoQuickDrawAnimation(),
+      new HeavySniperExecutionAnimation(),
+      new CrouchSniperBurstAnimation(),
 
       // 2. ACROBATICS & SPECIALS
-      new SpringJumpAnimation(),
       new BreakdanceAnimation(),
       new ExplodedViewAnimation(),
       new OverdriveAnimation(),
@@ -2824,6 +4434,7 @@ export class GSAPRobotAnimationRegistry {
       new FlyingKickAnimation(),
       new DynamicMarchSprintAnimation(),
       new SpinTornadoAnimation(),
+      new AcrobaticJumpSnipeAnimation(),
 
       // 3. MECHANICAL
       new PrecisionScanAnimation(),

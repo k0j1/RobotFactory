@@ -494,6 +494,10 @@ export const GSAPMotionStudioModal: React.FC<GSAPMotionStudioModalProps> = ({
                         marker.type === 'flame' ? 'bg-orange-500 text-white border-orange-200 ring-orange-400' :
                         marker.type === 'draw' ? 'bg-amber-500 text-white border-amber-200 ring-amber-400' :
                         marker.type === 'hit' ? 'bg-purple-600 text-white border-purple-200 ring-purple-400' :
+                        marker.type === 'cutin' ? 'bg-amber-400 text-stone-900 border-amber-100 ring-amber-300 animate-pulse' :
+                        marker.type === 'laser' ? 'bg-cyan-500 text-white border-cyan-100 ring-cyan-300' :
+                        marker.type === 'charge' ? 'bg-emerald-500 text-white border-emerald-100 ring-emerald-300' :
+                        marker.type === 'hyper' ? 'bg-gradient-to-r from-red-600 to-amber-500 text-white border-yellow-200 ring-red-400 font-black' :
                         'bg-cyan-600 text-white border-cyan-200 ring-cyan-400';
 
                       return (
@@ -514,7 +518,11 @@ export const GSAPMotionStudioModal: React.FC<GSAPMotionStudioModalProps> = ({
                             {marker.type === 'slash' ? '⚔️' :
                              marker.type === 'flame' ? '🔥' :
                              marker.type === 'draw' ? '🗡️' :
-                             marker.type === 'hit' ? '💥' : '⚡'}
+                             marker.type === 'hit' ? '💥' :
+                             marker.type === 'cutin' ? '👁️' :
+                             marker.type === 'laser' ? '💫' :
+                             marker.type === 'charge' ? '⚡' :
+                             marker.type === 'hyper' ? '🌟' : '⚡'}
                           </div>
 
                           {/* ホバーツールチップ */}
@@ -543,7 +551,16 @@ export const GSAPMotionStudioModal: React.FC<GSAPMotionStudioModalProps> = ({
                           className="text-[10px] px-1.5 py-0.5 rounded bg-stone-100 hover:bg-amber-100 text-stone-700 hover:text-amber-900 border border-stone-300 flex items-center gap-1 cursor-pointer transition-colors"
                           title="クリックでSEを試聴"
                         >
-                          <span>{marker.type === 'slash' ? '⚔️' : marker.type === 'flame' ? '🔥' : marker.type === 'draw' ? '🗡️' : '💥'}</span>
+                          <span>
+                            {marker.type === 'slash' ? '⚔️' :
+                             marker.type === 'flame' ? '🔥' :
+                             marker.type === 'draw' ? '🗡️' :
+                             marker.type === 'hit' ? '💥' :
+                             marker.type === 'cutin' ? '👁️' :
+                             marker.type === 'laser' ? '💫' :
+                             marker.type === 'charge' ? '⚡' :
+                             marker.type === 'hyper' ? '🌟' : '✨'}
+                          </span>
                           <span className="font-medium">{marker.label}</span>
                           <span className="text-stone-400 font-mono text-[9px]">{marker.time}s</span>
                         </button>

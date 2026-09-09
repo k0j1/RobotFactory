@@ -3,7 +3,7 @@
  * 外部音声ファイルへの依存をゼロにし、Web Audio API でリアルタイムに高品質なSEを生成
  */
 
-export type SEType = 'draw' | 'swing' | 'slash' | 'hit' | 'flame' | 'spark';
+export type SEType = 'draw' | 'swing' | 'slash' | 'hit' | 'flame' | 'spark' | 'cutin' | 'laser' | 'charge' | 'hyper';
 
 export class RobotSEAudioEngine {
   private static instance: RobotSEAudioEngine | null = null;
@@ -88,6 +88,18 @@ export class RobotSEAudioEngine {
           break;
         case 'spark':
           this.playSparks(ctx);
+          break;
+        case 'cutin':
+          this.playCutinChime(ctx);
+          break;
+        case 'charge':
+          this.playEnergyCharge(ctx);
+          break;
+        case 'laser':
+          this.playLaserBlast(ctx);
+          break;
+        case 'hyper':
+          this.playHyperFinisher(ctx);
           break;
       }
     } catch (e) {
@@ -306,5 +318,166 @@ export class RobotSEAudioEngine {
     gain.connect(this.masterGain!);
     osc.start(now);
     osc.stop(now + 0.08);
+  }
+
+  /**
+   * 7. 必殺技カットイン発動音 (Cut-in Dramatic Flash Chime)
+   * 劇的な高域きらめき＋重厚な空間展開音
+   */
+  private playCutinChime(ctx: AudioContext): void {
+    const now = ctx.currentTime;
+
+    // A. ドラマチック・チャイム (高音アルペジオ風スイープ)
+    [880, 1174, 1568, 2093, 2793].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const offset = i * 0.035;
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now + offset);
+      osc.frequency.exponentialRampToValueAtTime(freq * 1.05, now + offset + 0.5);
+
+      gain.gain.setValueAtTime(0.001, now + offset);
+      gain.gain.linearRampToValueAtTime(0.25, now + offset + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + offset + 0.6);
+
+      osc.connect(gain);
+      gain.connect(this.masterGain!);
+      osc.start(now + offset);
+      osc.stop(now + offset + 0.6);
+    });
+
+    // B. パルスインパクト音
+    const pulse = ctx.createOscillator();
+    const pGain = ctx.createGain();
+    pulse.type = 'triangle';
+    pulse.frequency.setValueAtTime(440, now);
+    pulse.frequency.exponentialRampToValueAtTime(110, now + 0.3);
+    pGain.gain.setValueAtTime(0.4, now);
+    pGain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+    pulse.connect(pGain);
+    pGain.connect(this.masterGain!);
+    pulse.start(now);
+    pulse.stop(now + 0.35);
+  }
+
+  /**
+   * 8. エネルギー極大充填音 (Energy Overcharge)
+   * 低域から高域への力強いレゾナンススイープ
+   */
+  private playEnergyCharge(ctx: AudioContext): void {
+    const now = ctx.currentTime;
+    const dur = 0.8;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(90, now);
+    osc.frequency.exponentialRampToValueAtTime(880, now + dur);
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.Q.setValueAtTime(6.0, now);
+    filter.frequency.setValueAtTime(200, now);
+    filter.frequency.exponentialRampToValueAtTime(3200, now + dur);
+
+    gain.gain.setValueAtTime(0.01, now);
+    gain.gain.linearRampToValueAtTime(0.45, now + dur * 0.85);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + dur + 0.1);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.masterGain!);
+
+    osc.start(now);
+    osc.stop(now + dur + 0.1);
+  }
+
+  /**
+   * 9. 収束ハイパーレーザー放射音 (Hyper Laser Beam Cannon)
+   * 轟音と鋭いビーム放電音
+   */
+  private playLaserBlast(ctx: AudioContext): void {
+    const now = ctx.currentTime;
+    const dur = 0.6;
+
+    // 高周波ビーム放電
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(1800, now);
+    osc.frequency.exponentialRampToValueAtTime(220, now + dur);
+
+    gain.gain.setValueAtTime(0.5, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+
+    osc.connect(gain);
+    gain.connect(this.masterGain!);
+    osc.start(now);
+    osc.stop(now + dur);
+
+    // 重厚なビームサブベース
+    const sub = ctx.createOscillator();
+    const subGain = ctx.createGain();
+    sub.type = 'sine';
+    sub.frequency.setValueAtTime(240, now);
+    sub.frequency.exponentialRampToValueAtTime(45, now + dur);
+
+    subGain.gain.setValueAtTime(0.65, now);
+    subGain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+
+    sub.connect(subGain);
+    subGain.connect(this.masterGain!);
+    sub.start(now);
+    sub.stop(now + dur);
+  }
+
+  /**
+   * 10. 終極奥義爆砕フィニッシュ音 (Ultimate Finisher Burst)
+   * 重低音大爆発＋高周波スパーク余韻
+   */
+  private playHyperFinisher(ctx: AudioContext): void {
+    const now = ctx.currentTime;
+    const dur = 1.0;
+
+    // 超重低音ボム
+    const sub = ctx.createOscillator();
+    const subGain = ctx.createGain();
+    sub.type = 'sine';
+    sub.frequency.setValueAtTime(180, now);
+    sub.frequency.exponentialRampToValueAtTime(25, now + 0.7);
+
+    subGain.gain.setValueAtTime(0.85, now);
+    subGain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+
+    sub.connect(subGain);
+    subGain.connect(this.masterGain!);
+    sub.start(now);
+    sub.stop(now + 0.8);
+
+    // 爆発ノイズ
+    const bufSize = Math.floor(ctx.sampleRate * dur);
+    const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < bufSize; i++) d[i] = Math.random() * 2 - 1;
+
+    const noise = ctx.createBufferSource();
+    noise.buffer = buf;
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(3500, now);
+    filter.frequency.exponentialRampToValueAtTime(80, now + dur);
+
+    const noiseGain = ctx.createGain();
+    noiseGain.gain.setValueAtTime(0.7, now);
+    noiseGain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+
+    noise.connect(filter);
+    filter.connect(noiseGain);
+    noiseGain.connect(this.masterGain!);
+
+    noise.start(now);
+    noise.stop(now + dur);
   }
 }
