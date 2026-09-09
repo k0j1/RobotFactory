@@ -21,6 +21,7 @@ export const CombatGame: React.FC<MinigameProps> = ({
   battleResult: parentResult,
   onTogglePause,
   onSetSpeed,
+  activeCombatEquipments,
 }) => {
   const engineRef = useRef<CombatEngine | null>(null);
   const [snapshot, setSnapshot] = useState<CombatEngineSnapshot | null>(null);
@@ -49,7 +50,7 @@ export const CombatGame: React.FC<MinigameProps> = ({
       }
     }
 
-    const engine = new CombatEngine(activeRobot, activeOpponent);
+    const engine = new CombatEngine(activeRobot, activeOpponent, activeCombatEquipments);
     engineRef.current = engine;
     initializedKeyRef.current = currentKey;
     setSnapshot(engine.getSnapshot());

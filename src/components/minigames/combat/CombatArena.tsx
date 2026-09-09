@@ -68,6 +68,13 @@ export const CombatArena: React.FC<CombatArenaProps> = ({
     isPlayer: boolean;
   } | null>(null);
 
+  // 技固有アニメーション演出 (星断オメガクロス、ロケットパンチ、エネルギーシールド防御、炎刃旋風)
+  const [skillVisual, setSkillVisual] = useState<{
+    skillId: string;
+    isPlayer: boolean;
+    id: number;
+  } | null>(null);
+
   // 決着時のアニメーション同期
   useEffect(() => {
     if (isFinished) {
@@ -91,7 +98,7 @@ export const CombatArena: React.FC<CombatArenaProps> = ({
     const { attackerId, defenderId, type, skill, isDodge, isCritical, isHeal } = lastActionEvent;
     const isPlayerAttacking = attackerId === 'player';
 
-    // 技名コールの表示
+    // 技名コールの表示 & 専用エフェクト発動
     if (skill) {
       setSkillBanner({
         actorName: isPlayerAttacking ? player.name : opponent.name,
@@ -101,6 +108,16 @@ export const CombatArena: React.FC<CombatArenaProps> = ({
       setTimeout(() => {
         setSkillBanner(null);
       }, 1200);
+
+      // 技固有のダイナミック演出発動
+      setSkillVisual({
+        skillId: skill.id,
+        isPlayer: isPlayerAttacking,
+        id: Date.now(),
+      });
+      setTimeout(() => {
+        setSkillVisual(null);
+      }, 950);
     }
 
     // 攻撃側のモーション発動
@@ -447,6 +464,135 @@ export const CombatArena: React.FC<CombatArenaProps> = ({
             borderTop: '1px solid rgba(255, 255, 255, 0.1)'
           }}
         />
+
+        {/* 技固有のダイナミック・必殺技アニメーションレイヤー */}
+        <AnimatePresence>
+          {skillVisual && (
+            <div className="absolute inset-0 pointer-events-none z-35 flex items-center justify-center overflow-hidden">
+              {/* 1. 【必殺奥義】星断オメガクロス */}
+              {skillVisual.skillId === 'omega_cross_slash' && (
+                <div className="relative w-full h-full flex items-center justify-center">
+                  {/* 背景暗転フラッシュ */}
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: [0, 0.75, 0.4, 0] }}
+                    transition={{ duration: 0.85 }}
+                    className="absolute inset-0 bg-purple-950/70 backdrop-blur-xs"
+                  />
+                  {/* 十字光刃クロス (第1斬撃) */}
+                  <motion.div
+                    initial={{ scaleX: 0, opacity: 0, rotate: 45 }}
+                    animate={{ scaleX: [0, 2.8, 2.5, 0], opacity: [0, 1, 1, 0] }}
+                    transition={{ duration: 0.7, ease: 'easeOut' }}
+                    className="absolute w-72 h-3 bg-gradient-to-r from-transparent via-amber-300 to-transparent shadow-[0_0_25px_rgba(251,191,36,1)] rounded-full"
+                  />
+                  {/* 十字光刃クロス (第2斬撃：逆角度交差) */}
+                  <motion.div
+                    initial={{ scaleX: 0, opacity: 0, rotate: -45 }}
+                    animate={{ scaleX: [0, 2.8, 2.5, 0], opacity: [0, 1, 1, 0] }}
+                    transition={{ duration: 0.7, delay: 0.1, ease: 'easeOut' }}
+                    className="absolute w-72 h-3 bg-gradient-to-r from-transparent via-purple-300 to-transparent shadow-[0_0_25px_rgba(192,132,252,1)] rounded-full"
+                  />
+                  {/* 交差点の超高エネルギー爆轟コア */}
+                  <motion.div
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: [0, 2.2, 0], opacity: [0, 1, 0], rotate: 180 }}
+                    transition={{ duration: 0.8, delay: 0.15 }}
+                    className="relative text-amber-300 drop-shadow-[0_0_35px_rgba(234,179,8,1)]"
+                  >
+                    <Gi.GiCrossedSwords className="text-7xl" />
+                    <Gi.GiSparkles className="absolute -inset-4 text-8xl text-purple-300 animate-spin" />
+                  </motion.div>
+                  {/* 必殺技コールテロップ */}
+                  <motion.div
+                    initial={{ y: 20, opacity: 0, scale: 0.8 }}
+                    animate={{ y: -40, opacity: [0, 1, 1, 0], scale: 1.2 }}
+                    transition={{ duration: 0.85 }}
+                    className="absolute text-center font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-200 to-purple-300 text-lg sm:text-xl drop-shadow-[0_2px_10px_rgba(0,0,0,0.9)]"
+                  >
+                    ★ 星断オメガクロス ★
+                  </motion.div>
+                </div>
+              )}
+
+              {/* 2. ロケットパンチ */}
+              {skillVisual.skillId === 'rocket_punch' && (
+                <motion.div
+                  initial={{
+                    x: skillVisual.isPlayer ? -140 : 140,
+                    y: -10,
+                    opacity: 0,
+                    scale: 0.7,
+                  }}
+                  animate={{
+                    x: skillVisual.isPlayer ? [ -140, 130 ] : [ 140, -130 ],
+                    opacity: [0, 1, 1, 0],
+                    scale: [0.9, 1.4, 1.4, 0.9],
+                  }}
+                  transition={{ duration: 0.55, ease: 'easeInOut' }}
+                  className="absolute flex items-center justify-center pointer-events-none"
+                >
+                  <div className={`relative flex items-center ${skillVisual.isPlayer ? '' : 'transform scale-x-[-1]'}`}>
+                    {/* ジェット噴射炎 */}
+                    <div className="flex items-center -mr-2">
+                      <Gi.GiFlame className="text-4xl text-orange-500 animate-pulse drop-shadow-[0_0_15px_rgba(249,115,22,1)]" />
+                      <Gi.GiFluffyFlame className="text-3xl text-yellow-300 -ml-3 animate-ping" />
+                    </div>
+                    {/* ロケットパンチ本体ナックル */}
+                    <div className="bg-stone-900/90 p-2 rounded-xl border-2 border-orange-400 shadow-[0_0_20px_rgba(249,115,22,0.9)] text-orange-400">
+                      <Gi.GiPunch className="text-4xl" />
+                    </div>
+                    {/* 推進衝撃波 */}
+                    <Gi.GiWaveStrike className="absolute -right-4 text-3xl text-yellow-200 opacity-80" />
+                  </div>
+                </motion.div>
+              )}
+
+              {/* 3. エネルギーシールド防御 */}
+              {skillVisual.skillId === 'energy_shield_defense' && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: [0, 1, 1, 0], scale: [0.6, 1.25, 1.2, 0.8] }}
+                  transition={{ duration: 0.85, ease: 'easeOut' }}
+                  className={`absolute ${skillVisual.isPlayer ? 'left-16 sm:left-24' : 'right-16 sm:right-24'} bottom-16 flex flex-col items-center pointer-events-none`}
+                >
+                  <div className="relative">
+                    {/* 電磁ハニカムシールドリング */}
+                    <div className="w-28 h-36 rounded-2xl border-3 border-cyan-400 bg-cyan-500/25 backdrop-blur-xs shadow-[0_0_30px_rgba(6,182,212,0.8)] flex items-center justify-center">
+                      <Gi.GiShieldReflect className="text-5xl text-cyan-200 drop-shadow-[0_0_10px_rgba(255,255,255,1)]" />
+                    </div>
+                    {/* シールドパルス */}
+                    <div className="absolute inset-0 rounded-2xl border-2 border-white/60 animate-ping" />
+                  </div>
+                  <span className="mt-1.5 text-[11px] font-black text-cyan-300 bg-black/80 px-2 py-0.5 rounded border border-cyan-400">
+                    SHIELD DEFENSE
+                  </span>
+                </motion.div>
+              )}
+
+              {/* 4. 炎刃・旋風回転斬り */}
+              {skillVisual.skillId === 'flame_blade_cyclone' && (
+                <motion.div
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{
+                    scale: [0.5, 1.5, 1.4, 0],
+                    opacity: [0, 1, 1, 0],
+                    rotate: [0, 720],
+                  }}
+                  transition={{ duration: 0.75, ease: 'easeInOut' }}
+                  className="absolute flex items-center justify-center pointer-events-none"
+                >
+                  <div className="relative flex items-center justify-center">
+                    {/* 旋風竜巻エフェクト */}
+                    <Gi.GiSpinningBlades className="text-7xl text-red-500 drop-shadow-[0_0_30px_rgba(239,68,68,1)]" />
+                    <Gi.GiFireWave className="absolute text-8xl text-amber-400 opacity-85" />
+                    <Gi.GiSparkles className="absolute text-5xl text-yellow-200 animate-ping" />
+                  </div>
+                </motion.div>
+              )}
+            </div>
+          )}
+        </AnimatePresence>
 
         {/* -------------------- 自機ロボット（左側） -------------------- */}
         <div className="relative flex flex-col items-center">

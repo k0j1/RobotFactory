@@ -12,9 +12,186 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
       </div>
 
       <Card className="bg-stone-50 border-2 border-stone-200">
-        <h3 className={`${theme.typography.h3} mb-4 text-stone-700`}>ポンコツロボット工房 v1.0.258 仕様まとめ</h3>
+        <h3 className={`${theme.typography.h3} mb-4 text-stone-700`}>ポンコツロボット工房 v1.0.266 仕様まとめ</h3>
         
         <div className="space-y-6 text-sm text-stone-800">
+          <section>
+            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">演習・ミニゲーム総合ダッシュボードの追加 (v1.0.266)</h4>
+            <ul className="list-disc list-inside space-y-2">
+              <li><strong>戦績トラッキング:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li>各ミニゲーム（バトル演習、リバーシ、チェス、弾幕、ピアノ、防衛戦）ごとの「プレイ回数」「勝利数」を自動記録するようになりました。</li>
+                </ul>
+              </li>
+              <li><strong>ゲーム風ダッシュボードUI:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li>演習アリーナ画面の上部に、全体および各ゲームごとの戦績をひと目で確認できる専用ダッシュボードパネルを設置しました。</li>
+                  <li>戦績に応じて「S, A, B, C, D, E, F, G」の評価（伝説、達人、初心者など）がアイコンとともに楽しく表示されます。</li>
+                </ul>
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">戦闘専用装備の専用技発動システム (v1.0.266)</h4>
+            <ul className="list-disc list-inside space-y-2">
+              <li><strong>【必殺奥義】星断オメガクロス:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li>ビームサーベル装備時にのみ発動可能になる超高火力の剣技です。</li>
+                  <li>通常の2.5倍もの威力を誇り、発動すれば戦局を一気に決定づけることができます。</li>
+                </ul>
+              </li>
+              <li><strong>エネルギーシールド防御:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li>ビームシールド装備時にのみ発動可能になる特殊防御技です。</li>
+                  <li>発動から約10秒間、敵からのあらゆる攻撃ダメージをさらに半減する強固な光波防壁を展開します。</li>
+                </ul>
+              </li>
+              <li><strong>技図鑑（スキルモーダル）のUI改修:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li>各技の詳細画面で、その技を習得・発動するために特定の専用装備（ビームサーベル・ビームシールド）が必要かどうかを視覚的に確認できるよう改修しました。</li>
+                  <li><strong>防衛戦への適用:</strong> ビームサーベル装備時は防衛戦の出撃機体にPower+35が適用され、攻撃技が「【必殺奥義】星断オメガクロス」に変化します。ビームシールド装備時は拠点が受けるダメージが30%軽減され、さらに攻撃技が「エネルギーシールド防御(プラズマ波攻撃)」に変化します（両方装備時は交互に適用）。</li>
+                </ul>
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">バトル演習UI刷新とエレメント・専用武装システム (v1.0.266)</h4>
+            <ul className="list-disc list-inside space-y-2">
+              <li><strong>バトル演習セットアップUIの1カード化:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li>出撃ロボットと対戦相手の選択を1つの専用カードコンポーネント（CombatSetupCard）に統合。横スクロールの画像リストから直感的に自機と相手を選べるように改良しました。</li>
+                  <li>選択された自機および対戦相手のステータス情報だけが、選択リスト直下の専用領域にスッキリと表示される設計に変更しました。</li>
+                </ul>
+              </li>
+              <li><strong>対戦相手10段階とエレメント報酬の実装:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li>対戦相手を難易度レベル1から10まで拡充し、各レベルごとに個別のパーツ構成とステータスを定義しました。</li>
+                  <li>勝利時の報酬として、従来の「修理キット1個」に加え、新たなリソース「エレメント」を獲得可能に。レベルが高い相手ほど多くのエレメントが獲得できます。</li>
+                </ul>
+              </li>
+              <li><strong>戦闘専用装備（ビームサーベル・ビームシールド）の実装:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li>貯めたエレメント（各100個）を消費して、バトル演習でのみ使用可能な強力な専用装備を交換・着脱可能にしました。</li>
+                  <li><strong>ビームサーベル:</strong> 装備中は自機のPower(攻撃力)が+35され、強力な斬撃で戦局を有利にします。</li>
+                  <li><strong>ビームシールド:</strong> 装備中は自機のDefense(防御力)が+30されます。</li>
+                </ul>
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">ゲーム中アニメーション：アーム・レッグ左右独立リグ制御＆肩・拳調整値の完全統合 (v1.0.266)</h4>
+            <ul className="list-disc list-inside space-y-2">
+              <li><strong>ゲーム内全画面でのアーム・レッグ左右別々リグ制御:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li>ミニゲーム、バトル演習、探索歩行、ダッシュボード待機、素材発見歓喜（バンザイ＆ホップ）、工房クラフト組み立てなど、ゲーム中にロボットを描画するすべての箇所（`RobotVisual`）において、<strong>アーム（左腕・右腕）およびレッグ（左脚・右脚）を左右独立した別々のパーツとして分割・描画</strong>する構造へアップグレード。</li>
+                  <li>左腕・右腕および左脚・右脚がそれぞれ独立した位相・角度・スケールで動作するため、二足歩行での腕と脚の交互スイング（左腕前＋右脚前 / 右腕前＋左脚前）、大歓喜での左右対称バンザイ、ウキウキホップでの翼のようなパタパタ羽ばたきなど、ダイナミックで豊かな表現力を実現。</li>
+                </ul>
+              </li>
+              <li><strong>HandAnchorManager（肩＆拳位置設定）の値との完全同期:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li>モーションスタジオの「肩＆拳位置調整モード」で設定・保存された左右肩座標（`leftShoulder` / `rightShoulder`）および拳座標を、ゲーム内描画コンポーネント（`RobotVisual`）が自動的に取得し、腕の回転中心軸（`transformOrigin`）として常時適用。</li>
+                  <li>パーツのレアリティやヴィジュアルインデックスごとに最適化・微調整した関節座標が、スタジオ内だけでなく実際のゲームプレイ中（探索・戦闘・勝利演出）にも正確に反映されます。</li>
+                  <li>リアルタイム購読（`subscribe`）を実装しているため、スタジオで関節座標を変更・保存した瞬間、ゲーム内のロボット表示にも即座に反映されます。</li>
+                </ul>
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">バトル演習新スキル・探索素材発見歓喜・ジェットパック飛行モーション追加 (v1.0.262)</h4>
+            <ul className="list-disc list-inside space-y-2">
+              <li><strong>バトル演習：新規繰り出し技4種の追加＆専用ヴィジュアル演出:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li><strong>【必殺奥義】星断オメガクロス (Omega Cross):</strong> 宇宙空間カットイン背景とともに、縦横2連撃の極光十文字スラッシュがアリーナ全体を切り裂く超絶必殺技。</li>
+                  <li><strong>ロケットパンチ (Rocket Punch):</strong> 背部バーニアのフルブースト音とともに高推力ロケットマニピュレーターが飛び出し、敵陣を直撃粉砕するロマン砲。</li>
+                  <li><strong>エネルギーシールド防御 (Energy Shield):</strong> 六角形ハニカムの青色ホログラムエネルギー障壁を展開し、敵の打撃を完璧に防ぎ切る防御アクション。</li>
+                  <li><strong>炎刃・旋風回転斬り (Flame Cyclone Slash):</strong> 灼熱のプラズマ火炎ブレードを展開し、360度フルスピンの火炎旋風とともに敵を巻き込む連続回転斬り。</li>
+                </ul>
+              </li>
+              <li><strong>遠征・自動探索：素材発見時の自動歓喜アニメーション（バンザイ大歓喜 / ウキウキ・バウンスホップ）:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li>素材を発見して未回収ドロップがある際、ロボットの個体値に応じて<strong>「バンザイ大歓喜」</strong>または<strong>「ウキウキ・バウンスホップ」</strong>が自動的に発動。</li>
+                  <li>「素材発見！バンザイ！」「素材発見！るんるん♪」のフキダシとともに、跳ね回る全身モーションとキラキラパーティクルで探索成果をお祝い。</li>
+                  <li>自動探索カードに存在していたデバッグ用の感情切替バー（発見/困り）を削除し、ゲーム進行状況に応じた自然な自動リアクションへと統合・洗練。</li>
+                  <li>素材獲得受取モーダル内にも大歓喜するロボット演出を追加。</li>
+                </ul>
+              </li>
+              <li><strong>モーションスタジオ：ジェットパック飛行アニメーション2種の追加:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li><strong>ジェット飛行・垂直上昇 (Jetpack Ascent Flight):</strong> 背部ツインバーニアを最大点火して垂直急上昇（Y: -72px）！翼のように腕を広げて姿勢制御しながら上空ホバリングし、エアクッションでふんわりと大地に着地。</li>
+                  <li><strong>ジェット飛行・高速前進 (Jetpack Forward Flight):</strong> 機体を水平に倒して前空へ音速急加速（SkewX: -24deg, Rotation: 16deg, X: +75px, Y: -36px）！風圧を切り裂いて高速巡航し、身体を起こしてエアブレーキをかけながら滑らかに着地。</li>
+                  <li><strong>ツインバーニア噴射炎エフェクト (mountJetpackPlumeEffect):</strong> シアンの高熱プラズマコアとオレンジの外炎が吹き出すジェットバーニア噴射炎を新規実装。</li>
+                </ul>
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">モーションスタジオ：多彩なエモーションアニメーション8種の完全新規追加 (v1.0.261)</h4>
+            <ul className="list-disc list-inside space-y-2">
+              <li><strong>がっかり・落胆モーション（2種）:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li><strong>がっかり・脱力ため息 (Disappointed Sigh):</strong> 両肩がガクッと落ち、首（頭部）がだらりと前に垂れて全身が脱力して沈み込み、口元から青白いため息スモーク（`mountSighEffect`）と青ざめ縦線を吐き出す切ないモーション。</li>
+                  <li><strong>絶望のガックリ膝落ち (Despair Slump):</strong> 膝からガクンと腰を落として床に崩れ落ち（ORZポーズ）、両手をだらりと地面へ垂らして項垂れ、悔しさにプルプル震えながら床をペシッと叩くコミカルな絶望モーション。</li>
+                </ul>
+              </li>
+              <li><strong>怒り・プンプンモーション（2種）:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li><strong>激怒の地団駄・プンプン (Angry Stomp):</strong> 両拳を強く握りしめて全身を怒りで震わせ、頭上にピキピキ怒りマーク（💢）と蒸気（`mountAngryMarksEffect`）を吹き出しながら、左右の足でダン！ダン！ダン！と激しく地団駄を踏む大迫力アクション。</li>
+                  <li><strong>ぷんぷん・そっぽ腕組み (Fuming Pout):</strong> 「フンッ！」とぷいっと頭を横へ背けてそっぽを向き、両腕を胸の前で交差（腕組み）させ、不満そうにつま先をトントンと刻んで湯気を吐き出す強がりポーズ。</li>
+                </ul>
+              </li>
+              <li><strong>泣き・号泣モーション（2種）:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li><strong>しくしく大泣き・涙拭い (Sobbing Tears):</strong> 両手で顔を覆うように腕を引き上げ、肩をヒックヒックと上下に震わせながら大粒の涙（`mountTearsEffect` dropsモード）をポロポロこぼし、片手で涙をぬぐう愛らしく切ないモーション。</li>
+                  <li><strong>大号泣・じたばたパタパタ (Tantrum Cry):</strong> 天を仰いで首を後ろに反らし、「うわ〜〜ん！」と大粒の涙を左右に大噴水のように吹き出しながら、両腕をじたばた激しくパタパタ羽ばたかせる駄々っ子風の大号泣。</li>
+                </ul>
+              </li>
+              <li><strong>スキップ・ホップモーション（2種）:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li><strong>ご機嫌るんるんスキップ (Joyful Skipping):</strong> 左右交互に軽快にピョンッピョンッと弾むステップ。腕を前後に大きくリズミカルに振り、頭上にふわふわと音符（♪ ♫）（`mountMusicNotesEffect`）を浮かべてご機嫌にスキップ。</li>
+                  <li><strong>ウキウキ・バウンスホップ (Bouncing Hop):</strong> 左右両足を揃えてつま先でポン！ポン！ポン！とリズミカルに3連続ジャンプ。着地時にポヨンと伸縮しながら両腕を広げてバランスをとる愛らしいホッピング。</li>
+                </ul>
+              </li>
+            </ul>
+          </section>
+          <section>
+            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">モーションスタジオ：旧銃撃アニメーション全削除＆両手持ちスコープ接眼精密狙撃の完全新規追加 (v1.0.260)</h4>
+            <ul className="list-disc list-inside space-y-2">
+              <li><strong>旧銃撃・射撃アニメーション9種の完全削除:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li>片手持ちが含まれていた銃撃モーション（『収束ビーム砲撃』『ガトリング連射』『精密スナイパー照準』『二丁拳銃ガンマン』『ツインビーム・シュート』『ヘビースナイパー・精密狙撃』『しゃがみ狙撃・徹甲バースト』『空中アクロバットスナイプ』『【必殺奥義】極光オメガバスター』）を全てシステムから削除しました。</li>
+                </ul>
+              </li>
+              <li><strong>新アニメーション『両手持ちスコープ精密狙撃 (Scope Snipe)』の実装:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li><strong>スコープ接眼・顔密着エイミング:</strong> 頭部を前傾させスコープアイピースへ顔（目）を密着させながら、ホログラフィックHUDレティクル（`mountSniperScopeHUDEffect`）と前方への超微細レーザー照準光線を展開。</li>
+                  <li><strong>左手グリップ把持＆右手トリガー引きの完全両手持ちスタンス:</strong> 左腕が前胸部へ伸びてピストルグリップをがっちり包み込み、右腕がトリガー位置へ引きつけて指を掛けるリアルな射撃姿勢。</li>
+                  <li><strong>トリガー引き込み・超電導弾発射・反動キックバック:</strong> 右手がトリガーを引き絞る微動アクション直後、ドォォンと超電導レール弾を撃ち放ち、顔をあてたまま全身が後方へ押される重厚なリコイル、排莢、着弾確認（残心）を滑らかに表現。</li>
+                </ul>
+              </li>
+            </ul>
+          </section>
+          <section>
+            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">モーションスタジオ：スナイパーライフル全モーション「左手グリップ把持＆右手トリガー引き」両手持ち化 (v1.0.259)</h4>
+            <ul className="list-disc list-inside space-y-2">
+              <li><strong>スナイパーライフル全アニメーションの左手グリップ・右手トリガー両手持ち化:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li>『精密スナイパー照準』『ヘビースナイパー・精密狙撃』『しゃがみ狙撃・徹甲バースト』『空中アクロバットスナイプ』『【必殺奥義】極光オメガバスター』の全スナイパーライフルモーションにおいて、<strong>左手でピストルグリップを握り、右手でトリガーを引く</strong>本格的な両手持ちスタンスへ姿勢・アニメーション軌道を完全調整。</li>
+                  <li>射撃・バースト発射時には右手がトリガーを引き絞るキックバック反動と、左手がグリップを力強く抑えてブレを抑制するリアリスティックな反動制御モーションを反映。</li>
+                </ul>
+              </li>
+              <li><strong>両手持ちマニピュレーター武器マウント機構 (`mountSniperRifle`) の刷新:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li>左手マニピュレーター（メインピストルグリップを包み込む指関節スリット・装甲プレート・LED）と、右手マニピュレーター（トリガーガードに指を掛けトリガーを引く人差し指フィンガー・装甲プレート・LED）が精緻に描画される専用デュアルマニピュレーターSVGを構築。</li>
+                  <li>右手アンカーがトリガー位置（X: 22.0%, Y: 58.0%）、左手アンカーがグリップ位置（X: 14.0%, Y: 62.0%）と完全に重なり合うよう吸着座標を最適化。</li>
+                </ul>
+              </li>
+            </ul>
+          </section>
           <section>
             <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">モーションスタジオ：スナイパーライフル全両手持ち化＆複合武器モーション削除 (v1.0.258)</h4>
             <ul className="list-disc list-inside space-y-2">

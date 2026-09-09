@@ -40,18 +40,21 @@ export class CombatEngine {
   private lastLearnedSkill: { fighterId: string; fighterName: string; skill: SkillDef } | null = null;
   private lastActionEvent: CombatActionEvent | null = null;
 
-  constructor(robot: Robot, opponent: Opponent) {
+  constructor(robot: Robot, opponent: Opponent, options?: { beamSaber?: boolean; beamShield?: boolean }) {
     // プレイヤー側ファイター生成
     const rStats = robot.stats;
     const playerVitality = Math.max(1, rStats.hp || 10);
+    const saberBoost = options?.beamSaber ? 35 : 0;
+    const shieldBoost = options?.beamShield ? 30 : 0;
+
     this.player = {
       id: 'player',
       name: robot.name || '自機ロボット',
       isPlayer: true,
       robotRef: robot,
       vitality: playerVitality,
-      power: Math.max(1, rStats.power || 10),
-      defense: Math.max(1, rStats.defense || 5),
+      power: Math.max(1, (rStats.power || 10) + saberBoost),
+      defense: Math.max(1, (rStats.defense || 5) + shieldBoost),
       agility: Math.max(1, rStats.agility || 10),
       dexterity: Math.max(1, rStats.dexterity || 10),
       intelligence: Math.max(1, rStats.intelligence || 10),
@@ -67,6 +70,7 @@ export class CombatEngine {
       dodgesCount: 0,
       skillsTriggeredCount: 0,
       skillsLearnedCount: 0,
+      equipments: options,
     };
 
     // 対戦相手側ファイター生成
@@ -104,6 +108,26 @@ export class CombatEngine {
       isPlayer: false,
       message: `バトル演習開始！ [${this.player.name}] (耐久:${this.player.maxDurability.toLocaleString()}) VS [${this.opponent.name}] (耐久:${this.opponent.maxDurability.toLocaleString()})`
     });
+
+    if (options?.beamSaber) {
+      this.addLog({
+        type: 'buff',
+        actorId: 'player',
+        actorName: this.player.name,
+        isPlayer: true,
+        message: `⚔️【ビームサーベル】高エネルギー刃が起動！(攻撃力+35・強撃ブースト)`
+      });
+    }
+
+    if (options?.beamShield) {
+      this.addLog({
+        type: 'buff',
+        actorId: 'player',
+        actorName: this.player.name,
+        isPlayer: true,
+        message: `🛡️【ビームシールド】光波防御障壁を展開！(防御力+30)`
+      });
+    }
   }
 
   // 0.1秒単位等のTick更新処理
@@ -167,7 +191,8 @@ export class CombatEngine {
   }
 
   private getBuffDamageReduction(fighter: CombatFighter): number {
-    return fighter.activeBuffs.reduce((acc, b) => acc * (b.damageReductionMult ?? 1.0), 1.0);
+    const shieldMult = fighter.equipments?.beamShield ? 0.75 : 1.0;
+    return fighter.activeBuffs.reduce((acc, b) => acc * (b.damageReductionMult ?? 1.0), 1.0) * shieldMult;
   }
 
   // 1回の行動（攻撃または技）の実行

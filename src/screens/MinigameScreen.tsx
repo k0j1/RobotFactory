@@ -10,7 +10,9 @@ import { ChessGame } from '../components/minigames/ChessGame';
 import { DanmakuSurvivalGame } from '../components/minigames/DanmakuSurvivalGame';
 import { PianoGame } from '../components/minigames/PianoGame';
 import { CombatGame } from '../components/minigames/CombatGame';
+import { CombatSetupCard } from '../components/minigames/combat/CombatSetupCard';
 import { DefenseGame } from '../components/minigames/DefenseGame';
+import { MinigameDashboard } from '../components/minigames/MinigameDashboard';
 import { RobotVisual } from '../components/robot/RobotVisual';
 import { motion } from 'motion/react';
 import * as Gi from 'react-icons/gi';
@@ -169,6 +171,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
     } else if (activeRobot) {
       (engine as any).recordBattleResult(activeRobot.id, result);
     }
+    (engine as any).recordMinigameResult(selectedGame, result);
     setBattleResult(result);
     // ピアノ演奏のベストスコアを再読み込みして最新化
     if (selectedGame === 'piano') {
@@ -177,6 +180,9 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
     if (result === 'win') {
       if (requiresOpponent && activeOpponent) {
         (engine as any).addRepairKits(activeOpponent.rewardKits);
+        if (selectedGame === "combat" && activeOpponent.rewardElements) {
+          (engine as any).addBattleElements(activeOpponent.rewardElements);
+        }
       } else if (selectedGame === 'danmaku') {
         // Difficulty-based reward for danmaku survival (repair kits only)
         (engine as any).addRepairKits(activeDanmakuDiff.rewardKits);
@@ -270,6 +276,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
             setIsBattleActive(false);
             setBattleResult(null);
           }}
+          activeCombatEquipments={state.activeCombatEquipments}
         />
       );
     }
@@ -292,6 +299,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
           battleResult={battleResult} 
           onTogglePause={() => setIsPaused(!isPaused)}
           onSetSpeed={(s) => setSpeed(s)}
+          activeCombatEquipments={state.activeCombatEquipments}
         />
       );
       case 'othello': return <OthelloGame activeRobot={activeRobot} activeOpponent={opponent} onFinish={handleFinish} speed={speed} isPaused={isPaused} isFinished={battleResult !== null} battleResult={battleResult} />;
@@ -335,6 +343,10 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
           <span className="font-mono text-amber-700 text-sm">{state.repairKits || 0} 個</span>
         </div>
       </div>
+
+      {!isBattleActive && !battleResult && (
+        <MinigameDashboard records={state.minigameRecords} />
+      )}
 
       {!isBattleActive && !battleResult ? (
         <div className="space-y-5">
@@ -439,7 +451,24 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
             </Card>
           )}
 
-          {/* 自機選択 & 対戦相手/難易度選択の2カラム */}
+          
+          {selectedGame === 'combat' && (
+            <CombatSetupCard 
+              state={state}
+              activeRobot={activeRobot}
+              selectedRobotId={selectedRobotId}
+              setSelectedRobotId={setSelectedRobotId}
+              activeOpponent={activeOpponent}
+              selectedOpponentId={selectedOpponentId}
+              setSelectedOpponentId={setSelectedOpponentId}
+              onExchangeEquipment={(eq) => engine.exchangeCombatEquipment(eq)}
+              onToggleEquipment={(eq, enabled) => engine.toggleCombatEquipment(eq, enabled)}
+            />
+          )}
+
+          {selectedGame !== 'combat' && (
+            <>
+              {/* 自機選択 & 対戦相手/難易度選択の2カラム */}
           <div className={`grid grid-cols-1 ${requiresOpponent || selectedGame === 'danmaku' || selectedGame === 'piano' || selectedGame === 'defense' ? 'md:grid-cols-2' : ''} gap-4`}>
             {/* 拠点防衛戦の場合: STEP 1 としてステージ選択を先に配置 */}
             {selectedGame === 'defense' && (
@@ -818,6 +847,8 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
               </Card>
             )}
           </div>
+            </>
+          )}
 
           {/* 拠点防衛戦時の能力値ルールガイド */}
           {selectedGame === 'defense' && (
@@ -1132,6 +1163,12 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                       <span className="text-xl"><Gi.GiSpanner className="inline text-stone-500" /></span>
                       <span>獲得報酬: 修理キット +{activeOpponent?.rewardKits}個</span>
                     </p>
+                    {selectedGame === "combat" && activeOpponent?.rewardElements && (
+                      <p className="text-blue-900 font-bold text-sm sm:text-base flex items-center justify-center gap-2 mt-1">
+                        <span className="text-xl"><Gi.GiCrystalBars className="inline text-blue-500" /></span>
+                        <span>獲得報酬: エレメント +{activeOpponent.rewardElements}個</span>
+                      </p>
+                    )}
                   </div>
                 )}
                 {battleResult === 'win' && !requiresOpponent && selectedGame === 'danmaku' && (

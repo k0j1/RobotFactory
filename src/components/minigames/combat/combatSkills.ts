@@ -24,6 +24,56 @@ export const checkDodge = (attackerDex: number, defenderDex: number, defenderDod
 
 export const ALL_COMBAT_SKILLS: SkillDef[] = [
   {
+    id: 'omega_cross',
+    name: '【必殺奥義】星断オメガクロス',
+    desc: 'ビームサーベルの最大出力を解放し、十字の斬撃を放つ必殺の剣技。通常の2.5倍の威力を誇る。',
+    shortDesc: '専用・威力2.5倍十字斬り',
+    category: 'attack',
+    reqInt: 8,
+    reqEquipment: 'beamSaber',
+    reqStat: { stat: 'power', name: 'Power', value: 10 },
+    baseLearnChance: 15,
+    cooldownSeconds: 12,
+    iconName: 'GiBroadsword',
+    badgeColor: 'bg-rose-100 text-rose-800 border-rose-300',
+    execute: (attacker, defender) => {
+      if (checkDodge(attacker.dexterity, defender.dexterity)) {
+        return { damage: 0, isDodge: true, isCritical: false };
+      }
+      const { damage } = calcBaseDamage(attacker.power, defender.defense, 2.5);
+      return { damage, isDodge: false, isCritical: true, specialLog: '星を断つ光の十字が輝く！！' };
+    }
+  },
+  {
+    id: 'energy_shield',
+    name: 'エネルギーシールド防御',
+    desc: 'ビームシールドを過負荷状態にし、強固な光波防壁を展開。約10秒間、被ダメージを半減する。',
+    shortDesc: '専用・強固な光波防壁',
+    category: 'shield',
+    reqInt: 8,
+    reqEquipment: 'beamShield',
+    reqStat: { stat: 'defense', name: 'Defense', value: 10 },
+    baseLearnChance: 20,
+    cooldownSeconds: 18,
+    iconName: 'GiShield',
+    badgeColor: 'bg-cyan-100 text-cyan-800 border-cyan-300',
+    execute: (attacker) => {
+      return { 
+        damage: 0, 
+        isDodge: false, 
+        isCritical: false,
+        addBuff: {
+          id: 'energy_shield_buff',
+          name: '光波防壁',
+          durationMs: 10000,
+          damageReductionMult: 0.5,
+        },
+        specialLog: '強固な光波防御障壁が展開された！'
+      };
+    }
+  },
+
+  {
     id: 'smash',
     name: '粉砕スマッシュ',
     desc: '渾身のパワーで装甲の脆い部分を叩き割る強撃。通常の1.8倍前後の威力を誇る。',
@@ -50,7 +100,7 @@ export const ALL_COMBAT_SKILLS: SkillDef[] = [
     shortDesc: '2連撃＋行動値チャージ',
     category: 'rush',
     reqInt: 10,
-    reqStat: { stat: 'agility', name: 'Agility', value: 12 },
+    reqStat: { stat: 'agility', name: 'Agility', value: 10 },
     baseLearnChance: 20,
     cooldownSeconds: 8,
     iconName: 'GiRapidshareArrow',
@@ -86,7 +136,7 @@ export const ALL_COMBAT_SKILLS: SkillDef[] = [
     shortDesc: '必中・防御半減の急所撃ち',
     category: 'snipe',
     reqInt: 14,
-    reqStat: { stat: 'dexterity', name: 'Dexterity', value: 15 },
+    reqStat: { stat: 'dexterity', name: 'Dexterity', value: 10 },
     baseLearnChance: 20,
     cooldownSeconds: 9,
     iconName: 'GiBullseye',
@@ -104,8 +154,8 @@ export const ALL_COMBAT_SKILLS: SkillDef[] = [
     desc: 'エネルギー防壁を瞬時に展開。6秒間、受けるあらゆるダメージを50%軽減する。',
     shortDesc: '6秒間 被ダメージ50%カット',
     category: 'shield',
-    reqInt: 12,
-    reqStat: { stat: 'defense', name: 'Defense', value: 12 },
+    reqInt: 8,
+    reqStat: { stat: 'defense', name: 'Defense', value: 10 },
     baseLearnChance: 22,
     cooldownSeconds: 12,
     iconName: 'GiShieldReflect',
@@ -134,7 +184,7 @@ export const ALL_COMBAT_SKILLS: SkillDef[] = [
     shortDesc: '耐久値20%即時回復',
     category: 'repair',
     reqInt: 16,
-    reqStat: { stat: 'hp', name: 'Vitality', value: 15 },
+    reqStat: { stat: 'hp', name: 'Vitality', value: 10 },
     baseLearnChance: 18,
     cooldownSeconds: 15,
     iconName: 'GiHealing',
@@ -260,6 +310,124 @@ export const ALL_COMBAT_SKILLS: SkillDef[] = [
         specialLog: '★★ 零距離プラズマバースト炸裂！圧倒的破壊力！'
       };
     }
+  },
+  {
+    id: 'omega_cross_slash',
+    name: '【必殺奥義】星断オメガクロス',
+    desc: '天空を星ごと十字に断ち割る伝説の超必殺奥義。超高出力のオメガ交差十字斬撃で通常攻撃の3.2倍の壊滅的特大ダメージを与え、敵の次行動値(AP)を大幅に遅延させる。',
+    shortDesc: '特大3.2倍の星断十字撃＋敵AP半減',
+    category: 'attack',
+    reqInt: 40,
+    reqStat: { stat: 'power', name: 'Power', value: 30 },
+    baseLearnChance: 12,
+    cooldownSeconds: 20,
+    iconName: 'GiCrossedSwords',
+    badgeColor: 'bg-purple-200 text-purple-950 border-purple-400',
+    execute: (attacker, defender) => {
+      if (checkDodge(attacker.dexterity, defender.dexterity)) {
+        return { damage: 0, isDodge: true, isCritical: false };
+      }
+      const { damage } = calcBaseDamage(attacker.power, defender.defense, 3.2);
+      return {
+        damage,
+        isDodge: false,
+        isCritical: true,
+        targetApReduction: 400,
+        specialLog: '★★★【必殺奥義】星断オメガクロス炸裂！星をも断つ十字光が敵機を完全両断！'
+      };
+    }
+  },
+  {
+    id: 'rocket_punch',
+    name: 'ロケットパンチ',
+    desc: '肘のバーニアジェット噴射で鋼鉄のロケットナックルを射出！通常攻撃の1.9倍の強烈な推進打撃を叩き込み、次行動への加速（AP+200）を得る。',
+    shortDesc: '威力1.9倍の射出打撃＋AP加速',
+    category: 'attack',
+    reqInt: 14,
+    reqStat: { stat: 'power', name: 'Power', value: 16 },
+    baseLearnChance: 22,
+    cooldownSeconds: 8,
+    iconName: 'GiPunch',
+    badgeColor: 'bg-orange-100 text-orange-800 border-orange-300',
+    execute: (attacker, defender) => {
+      if (checkDodge(attacker.dexterity, defender.dexterity)) {
+        return { damage: 0, isDodge: true, isCritical: false, apGain: 100 };
+      }
+      const { damage } = calcBaseDamage(attacker.power, defender.defense, 1.9);
+      return {
+        damage,
+        isDodge: false,
+        isCritical: true,
+        apGain: 200,
+        specialLog: 'ロケットパンチ発射！爆熱ジェット推進の鋼鉄拳が敵装甲を粉砕！'
+      };
+    }
+  },
+  {
+    id: 'energy_shield_defense',
+    name: 'エネルギーシールド防御',
+    desc: '高密度の電磁バリアフィールドを全身に全開展開！装甲を瞬時に250自己修復するとともに、8秒間防御力+50%＆被ダメージ40%カットの鉄壁バリアを形成する。',
+    shortDesc: '耐久250修復＋8秒間 Def+50%＆軽減',
+    category: 'shield',
+    reqInt: 18,
+    reqStat: { stat: 'defense', name: 'Defense', value: 16 },
+    baseLearnChance: 20,
+    cooldownSeconds: 12,
+    iconName: 'GiShieldReflect',
+    badgeColor: 'bg-blue-100 text-blue-800 border-blue-300',
+    execute: () => {
+      return {
+        damage: 0,
+        isDodge: false,
+        isCritical: false,
+        healAmount: 250,
+        selfBuff: {
+          id: 'energy_shield_buff',
+          name: 'エネルギーシールド',
+          desc: '防御力+50%、被ダメージ40%カット',
+          icon: 'shield',
+          durationSeconds: 8,
+          defMult: 1.5,
+          damageReductionMult: 0.6
+        },
+        specialLog: 'エネルギーシールド防御展開！高密度電磁バリアが機体を強固に防護！'
+      };
+    }
+  },
+  {
+    id: 'flame_blade_cyclone',
+    name: '炎刃・旋風回転斬り',
+    desc: '灼熱のヒートブレードを両手に構え、機体を高速旋回させて放つ炎の竜巻3連撃！合計2.4倍の連続回転ダメージを叩き込む。',
+    shortDesc: '炎刃の3連旋風斬り（合計2.4倍）',
+    category: 'rush',
+    reqInt: 22,
+    reqStat: { stat: 'agility', name: 'Agility', value: 18 },
+    baseLearnChance: 18,
+    cooldownSeconds: 10,
+    iconName: 'GiSpinningBlades',
+    badgeColor: 'bg-red-100 text-red-900 border-red-400',
+    execute: (attacker, defender) => {
+      let totalDmg = 0;
+      let dodges = 0;
+      for (let i = 0; i < 3; i++) {
+        if (checkDodge(attacker.dexterity, defender.dexterity)) {
+          dodges++;
+        } else {
+          const { damage } = calcBaseDamage(attacker.power, defender.defense, 0.8);
+          totalDmg += damage;
+        }
+      }
+      if (dodges === 3) {
+        return { damage: 0, isDodge: true, isCritical: false };
+      }
+      return {
+        damage: totalDmg,
+        isDodge: false,
+        isCritical: true,
+        hitsCount: 3 - dodges,
+        specialLog: '炎刃・旋風回転斬り炸裂！燃え盛る烈火の旋風が敵機を連続両断！'
+      };
+    }
   }
 ];
 
@@ -271,6 +439,7 @@ export const tryLearnSkill = (fighter: CombatFighter): SkillDef | null => {
   const learnableSkills = ALL_COMBAT_SKILLS.filter(skill => {
     if (currentLearnedIds.has(skill.id)) return false;
     if (fighter.intelligence < skill.reqInt) return false;
+    if (skill.reqEquipment && !fighter.equipments?.[skill.reqEquipment]) return false;
     if (skill.reqStat) {
       let currentVal = 0;
       switch (skill.reqStat.stat) {
@@ -303,7 +472,10 @@ export const tryLearnSkill = (fighter: CombatFighter): SkillDef | null => {
 // 一度閃いた技を戦略に組み込んで選択する関数
 export const chooseStrategicSkill = (attacker: CombatFighter, defender: CombatFighter): SkillDef | null => {
   // 使用可能（クールダウンが0以下）な技
-  const readySkills = attacker.learnedSkills.filter(s => (attacker.cooldowns[s.id] || 0) <= 0);
+  const readySkills = attacker.learnedSkills.filter(s => 
+    (attacker.cooldowns[s.id] || 0) <= 0 && 
+    (!s.reqEquipment || attacker.equipments?.[s.reqEquipment])
+  );
   if (readySkills.length === 0) return null;
 
   const hpRatio = attacker.currentDurability / attacker.maxDurability;

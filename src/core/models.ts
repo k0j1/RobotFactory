@@ -183,4 +183,8 @@ export interface GameState {
   repairKits?: number;
   craftedRobots?: Robot[];
   lastDefenseVictoryTime?: number; // 拠点防衛戦の前回防衛成功時刻（ミリ秒）
+  battleElements?: number; // バトル演習報酬・エレメント所持数
+  combatEquipments?: { beamSaber?: boolean; beamShield?: boolean }; // 交換済み戦闘専用装備
+  activeCombatEquipments?: { beamSaber?: boolean; beamShield?: boolean }; // 戦闘出撃時に有効化する装備
+  minigameRecords?: Record<string, { plays: number; wins: number; losses: number; draws: number }>;
 }

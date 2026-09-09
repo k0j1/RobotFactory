@@ -28,7 +28,6 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
   const [isDispatchModalOpen, setIsDispatchModalOpen] = useState(false);
   const [selectedLocationId, setSelectedLocationId] = useState<string>('');
   const [selectedRobotId, setSelectedRobotId] = useState<string>('');
-  const [previewEmotions, setPreviewEmotions] = useState<{ [dispatchId: string]: 'auto' | 'happy' | 'troubled' | 'searching' }>({});
   const [repairingRobotState, setRepairingRobotState] = useState<{ robot: Robot; initialHp: number } | null>(null);
 
   const handleRepairRobot = (robot: Robot) => {
@@ -261,7 +260,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                 <div className="flex items-center gap-2.5 min-w-0">
                   <div className="p-1 bg-[#f7eee3] rounded-lg border border-[#dcc5b0] shrink-0">
                     {questRobot ? (
-                      <RobotVisual robot={questRobot} size={36} />
+                      <RobotVisual robot={questRobot} size={36} hasPendingDrops={questDone} />
                     ) : (
                       <div className="w-9 h-9 flex items-center justify-center text-amber-800">
                         <Gi.GiKnapsack size={22} />
@@ -363,7 +362,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
               const remain = Math.max(0, nextTime - Date.now());
               const pending = d.pendingDrops?.length || 0;
               const isResting = (dRobot?.currentHp ?? 12) <= 1;
-              const selectedEmotion = isResting ? 'troubled' : (previewEmotions[d.id] || 'auto');
+              const selectedEmotion = isResting ? 'troubled' : pending > 0 ? 'happy' : 'auto';
               const weather = dLoc ? engine.getLocationWeather(dLoc.id, Date.now()) : null;
 
               return (
@@ -376,38 +375,13 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                         size={40} 
                         containerWidth="100%"
                         containerHeight={90}
-                        animateExploration={!isResting} 
+                        animateExploration={!isResting && pending === 0} 
                         emotion={selectedEmotion}
                         hasPendingDrops={pending > 0 && !isResting}
                         locationId={d.locationId}
                         weatherType={weather?.type}
                         agility={dRobot.stats.agility}
                       />
-
-
-                      {/* 表情テスト切替 */}
-                      <div className="absolute top-1.5 right-1.5 flex items-center gap-1 bg-stone-900/85 p-0.5 rounded border border-stone-700/60 z-20">
-                        <button 
-                          onClick={() => setPreviewEmotions(prev => ({ ...prev, [d.id]: 'auto' }))}
-                          className={`text-[9px] px-1 py-0.2 rounded font-bold transition-colors ${selectedEmotion === 'auto' ? 'bg-amber-500 text-white' : 'text-stone-300 hover:bg-stone-800'}`}
-                        >
-                          自動
-                        </button>
-                        <button 
-                          onClick={() => setPreviewEmotions(prev => ({ ...prev, [d.id]: 'happy' }))}
-                          className={`text-[9px] px-1 py-0.2 rounded font-bold transition-colors flex items-center gap-0.5 ${selectedEmotion === 'happy' ? 'bg-amber-500 text-white' : 'text-stone-300 hover:bg-stone-800'}`}
-                        >
-                          <Gi.GiSparkles className="text-amber-300 text-[10px]" />
-                          <span>発見</span>
-                        </button>
-                        <button 
-                          onClick={() => setPreviewEmotions(prev => ({ ...prev, [d.id]: 'troubled' }))}
-                          className={`text-[9px] px-1 py-0.2 rounded font-bold transition-colors flex items-center gap-0.5 ${selectedEmotion === 'troubled' ? 'bg-blue-600 text-white' : 'text-stone-300 hover:bg-stone-800'}`}
-                        >
-                          <Gi.GiWaterDrop className="text-blue-400 text-[10px]" />
-                          <span>困り</span>
-                        </button>
-                      </div>
                     </div>
                   )}
 
@@ -811,11 +785,22 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.3 }}
-                    className="mb-4 font-bold text-xs sm:text-sm text-stone-700"
+                    className="mb-2 font-bold text-xs sm:text-sm text-stone-700"
                   >
                     {lootResult.subtitle}
                   </motion.p>
                 )}
+
+                {/* 素材獲得を大歓喜するロボット演出 */}
+                <div className="flex justify-center my-2">
+                  <RobotVisual
+                    robot={questRobot || state.robots[0]}
+                    size={68}
+                    emotion="happy"
+                    hasPendingDrops={true}
+                    hideBackground={true}
+                  />
+                </div>
                 
                 <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-6 max-h-64 overflow-y-auto p-4 bg-stone-100 rounded-lg shadow-inner">
                   {lootResult.drops.map((dropId, i) => {

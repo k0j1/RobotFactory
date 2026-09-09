@@ -4,6 +4,7 @@ import { Robot, AttributeColors } from '../../core/models';
 import { SVG_HEADS, SVG_BODIES, SVG_ARMS, SVG_LEGS } from './RobotSVGs';
 import { theme } from '../../styles/theme';
 import { LocationEnvironment } from './LocationEnvironment';
+import { HandAnchorManager, ArmHandConfig } from '../../core/animations/HandAnchorManager';
 
 import { motion } from 'motion/react';
 
@@ -18,6 +19,7 @@ interface RobotVisualProps {
   animateVictory?: boolean;
   animateExploration?: boolean;
   emotion?: 'auto' | 'normal' | 'happy' | 'troubled' | 'searching';
+  happyVariant?: 'banzai' | 'bounce' | 'auto';
   hasPendingDrops?: boolean;
   isTroubled?: boolean;
   locationId?: string; // 探索地に応じた背景・天気
@@ -25,6 +27,7 @@ interface RobotVisualProps {
   agility?: number; // ロボットの素早さ（歩行・アニメーション速度に反映）
   hideBackground?: boolean;
   hideBubble?: boolean;
+  customHandConfig?: ArmHandConfig; // 外部注入の肩＆拳設定
 }
 
 export const PartVisual: React.FC<{ part: any, size?: number }> = ({ part, size = 64 }) => {
@@ -76,13 +79,15 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
   animateVictory = false, 
   animateExploration = false,
   emotion = 'auto',
+  happyVariant = 'auto',
   hasPendingDrops = false,
   isTroubled = false,
   locationId,
   weatherType,
   agility,
   hideBackground = false,
-  hideBubble = false
+  hideBubble = false,
+  customHandConfig
 }) => {
   const parts = robot?.parts || {};
   const { head, body, arms, legs } = parts;
@@ -102,6 +107,40 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
   const bodyColor = body ? AttributeColors[body.attribute] : '#000';
   const armsColor = arms ? AttributeColors[arms.attribute] : '#000';
   const legsColor = legs ? AttributeColors[legs.attribute] : '#000';
+
+  // アームパーツ識別キー (例: arm_r1_v0)
+  const armPartKey = React.useMemo(() => {
+    const rarity = arms?.rarity || 1;
+    const visualIndex = arms?.visualIndex || 0;
+    return HandAnchorManager.generatePartKey(rarity, visualIndex);
+  }, [arms?.rarity, arms?.visualIndex]);
+
+  // 肩＆拳位置設定の動的監視・同期（ユーザーが設定したカスタム座標を完全反映）
+  const [handConfig, setHandConfig] = React.useState<ArmHandConfig>(() => {
+    return customHandConfig || HandAnchorManager.getInstance().getHandConfig(armPartKey);
+  });
+
+  React.useEffect(() => {
+    if (customHandConfig) {
+      setHandConfig(customHandConfig);
+      return;
+    }
+    setHandConfig(HandAnchorManager.getInstance().getHandConfig(armPartKey));
+    const unsubscribe = HandAnchorManager.getInstance().subscribe(() => {
+      setHandConfig(HandAnchorManager.getInstance().getHandConfig(armPartKey));
+    });
+    return unsubscribe;
+  }, [armPartKey, customHandConfig]);
+
+  // 安全な左右肩・拳の座標（ユーザーが設定した値を最優先で使用）
+  const safeJoints = React.useMemo(() => {
+    return {
+      leftShoulder: handConfig?.leftShoulder || { x: 25.0, y: 46.0 },
+      rightShoulder: handConfig?.rightShoulder || { x: 75.0, y: 46.0 },
+      leftHand: handConfig?.leftHand || { x: 24.0, y: 62.0 },
+      rightHand: handConfig?.rightHand || { x: 76.0, y: 62.0 },
+    };
+  }, [handConfig]);
 
   // ロボットのAgility（props.agility または robot.stats.agility）
   const robotAgility = agility ?? (robot?.stats?.agility || 0);
@@ -125,6 +164,14 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
       : animateExploration
       ? 'searching'
       : 'normal';
+
+  // 素材発見・歓喜アニメーション（バンザイ大歓喜 or ウキウキ・バウンスホップ）の種別決定
+  const activeHappyVariant = React.useMemo<'banzai' | 'bounce'>(() => {
+    if (happyVariant && happyVariant !== 'auto') return happyVariant;
+    const str = `${robot?.id || ''}_${robot?.name || 'r'}`;
+    const code = str.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+    return code % 2 === 0 ? 'banzai' : 'bounce';
+  }, [happyVariant, robot?.id, robot?.name]);
 
   const bgGridSize = Math.max(10, size / 8);
   const defaultBgStyle = {
@@ -157,18 +204,30 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
         }
       : {};
 
-  // === ANIMATION DEFINITIONS ===
+  // === ANIMATION DEFINITIONS (左右完全独立リグモーション) ===
 
   // 1. Body motion
   const bodyMotion = currentEmotion === 'happy'
-    ? {
-        animate: { 
-          y: [0, -12, 0, -7, 0],
-          scale: [1, 1.06, 0.97, 1.03, 1],
-          rotate: [0, -3, 3, -1.5, 0]
-        },
-        transition: { duration: 0.8, repeat: Infinity, ease: "easeInOut" }
-      }
+    ? activeHappyVariant === 'banzai'
+      ? {
+          // 【バンザイ大歓喜】大きく伸び上がって全身で喜びを爆発
+          animate: { 
+            y: [0, -15, 0, -8, 0],
+            scale: [1, 1.09, 0.95, 1.04, 1],
+            rotate: [0, -4, 4, -2, 0]
+          },
+          transition: { duration: 0.75, repeat: Infinity, ease: "easeInOut" }
+        }
+      : {
+          // 【ウキウキ・バウンスホップ】ポン！ポン！ピョン！とリズミカルに跳ねる
+          animate: {
+            y: [0, -6, 0, -8, 0, -16, 0],
+            scaleY: [1, 1.05, 0.95, 1.07, 0.93, 1.12, 0.92, 1],
+            scaleX: [1, 0.96, 1.04, 0.94, 1.06, 0.92, 1.08, 1],
+            rotate: [0, -3, 3, -4, 4, 0, 0]
+          },
+          transition: { duration: 1.05, repeat: Infinity, ease: "easeInOut" }
+        }
     : currentEmotion === 'troubled'
     ? {
         // 困ってオロオロ震えて沈み込むモーション
@@ -187,50 +246,135 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
         },
         transition: { duration: walkDuration, repeat: Infinity, ease: "easeInOut" }
       }
-    : {};
-
-  // 2. Arms motion
-  const armsMotion = currentEmotion === 'happy'
-    ? {
-        // 両手を高く上げて「やったー！」とバンザイ＆ガッツポーズ
-        animate: { 
-          y: [-4, -16, -6, -16, -4], 
-          scaleY: [1, 1.18, 1, 1.18, 1],
-          rotate: [-20, 20, -20, 20, -20]
+    : {
+        animate: {
+          y: [0, -1.5, 0],
         },
-        transition: { duration: 0.8, repeat: Infinity, ease: "easeInOut" }
-      }
+        transition: { duration: 2.4, repeat: Infinity, ease: "easeInOut" }
+      };
+
+  // 2. Arms motion (左腕・右腕を左右独立分割＆設定された肩位置を中心軸として駆動)
+  // 左腕 (Left Arm)
+  const armLeftMotion = currentEmotion === 'happy'
+    ? activeHappyVariant === 'banzai'
+      ? {
+          // 【バンザイ大歓喜】左肩を軸に左上方へ大きく万歳！
+          animate: { 
+            rotate: [-20, -56, -26, -56, -20],
+            y: [-2, -14, -5, -14, -2],
+            x: [0, -3, -1, -3, 0],
+            scaleY: [1, 1.16, 1, 1.16, 1]
+          },
+          transition: { duration: 0.75, repeat: Infinity, ease: "easeInOut" }
+        }
+      : {
+          // 【ウキウキ・バウンスホップ】翼のように上下にパタパタ羽ばたく
+          animate: { 
+            rotate: [-12, -38, -14, -46, -12, -54, -12],
+            y: [0, -6, 0, -8, 0, -14, 0],
+            scaleX: [1, 1.1, 1, 1.15, 1, 1.2, 1]
+          },
+          transition: { duration: 1.05, repeat: Infinity, ease: "easeInOut" }
+        }
     : currentEmotion === 'troubled'
     ? {
-        // 頭を抱えてオロオロする動き
+        // 胸元・お腹を抱えるようにオロオロ小刻みに震える
         animate: { 
-          y: [-12, -8, -12, -8, -12],
-          rotate: [-15, 15, -15, 15, -15],
-          scaleX: [0.95, 1.05, 0.95, 1.05, 0.95]
+          rotate: [14, 24, 12, 26, 14],
+          x: [1, 3, 1, 3, 1],
+          y: [-4, -2, -4, -2, -4]
         },
         transition: { duration: 1.1, repeat: Infinity, ease: "easeInOut" }
       }
     : currentEmotion === 'searching'
     ? {
+        // 二足歩行で前後にしっかり腕振り（右腕・左脚と逆位相！）
         animate: { 
-          rotate: [-8, 8, -8, 8, -8],
-          y: [0, -2, 0, -2, 0]
+          rotate: [24, -24, 24],
+          y: [0, -2, 0]
         },
         transition: { duration: walkDuration, repeat: Infinity, ease: "easeInOut" }
       }
-    : {};
+    : {
+        // 待機バイオブリージング
+        animate: {
+          rotate: [-4, 4, -4],
+          y: [0, 1, 0]
+        },
+        transition: { duration: 2.4, repeat: Infinity, ease: "easeInOut" }
+      };
+
+  // 右腕 (Right Arm)
+  const armRightMotion = currentEmotion === 'happy'
+    ? activeHappyVariant === 'banzai'
+      ? {
+          // 【バンザイ大歓喜】右肩を軸に右上方へ大きく万歳！
+          animate: { 
+            rotate: [20, 56, 26, 56, 20],
+            y: [-2, -14, -5, -14, -2],
+            x: [0, 3, 1, 3, 0],
+            scaleY: [1, 1.16, 1, 1.16, 1]
+          },
+          transition: { duration: 0.75, repeat: Infinity, ease: "easeInOut" }
+        }
+      : {
+          // 【ウキウキ・バウンスホップ】翼のように上下にパタパタ羽ばたく
+          animate: { 
+            rotate: [12, 38, 14, 46, 12, 54, 12],
+            y: [0, -6, 0, -8, 0, -14, 0],
+            scaleX: [1, 1.1, 1, 1.15, 1, 1.2, 1]
+          },
+          transition: { duration: 1.05, repeat: Infinity, ease: "easeInOut" }
+        }
+    : currentEmotion === 'troubled'
+    ? {
+        // 頭部を抑えるようにオロオロする
+        animate: { 
+          rotate: [-18, -28, -16, -30, -18],
+          x: [-2, -5, -2, -5, -2],
+          y: [-8, -6, -8, -6, -8]
+        },
+        transition: { duration: 1.1, repeat: Infinity, ease: "easeInOut" }
+      }
+    : currentEmotion === 'searching'
+    ? {
+        // 二足歩行で前後にしっかり腕振り（左腕・右脚と逆位相！）
+        animate: { 
+          rotate: [-24, 24, -24],
+          y: [0, -2, 0]
+        },
+        transition: { duration: walkDuration, repeat: Infinity, ease: "easeInOut" }
+      }
+    : {
+        // 待機バイオブリージング
+        animate: {
+          rotate: [4, -4, 4],
+          y: [0, 1, 0]
+        },
+        transition: { duration: 2.4, repeat: Infinity, ease: "easeInOut" }
+      };
 
   // 3. Head motion
   const headMotion = currentEmotion === 'happy'
-    ? {
-        // 嬉しそうに頷く＆笑顔で左右に傾げる
-        animate: { 
-          rotate: [-8, 8, -8],
-          y: [-3, 1, -3],
-          scale: [1, 1.05, 1]
-        },
-        transition: { duration: 0.8, repeat: Infinity, ease: "easeInOut" }
-      }
+    ? activeHappyVariant === 'banzai'
+      ? {
+          // 【バンザイ大歓喜】頭を天に仰いで満面の笑顔で左右に頷く
+          animate: { 
+            rotate: [-10, 10, -10],
+            y: [-5, 1, -5],
+            scale: [1, 1.08, 1]
+          },
+          transition: { duration: 0.75, repeat: Infinity, ease: "easeInOut" }
+        }
+      : {
+          // 【ウキウキ・バウンスホップ】バウンスに合わせて頭をピョコピョコ跳ねる
+          animate: {
+            y: [0, -4, 0, -5, 0, -9, 0],
+            rotate: [-5, 5, -6, 6, -10, 10, 0],
+            scale: [1, 1.04, 1, 1.06, 1, 1.1, 1]
+          },
+          transition: { duration: 1.05, repeat: Infinity, ease: "easeInOut" }
+        }
     : currentEmotion === 'troubled'
     ? {
         // 困惑して首をかしげたりオロオロ左右に振る
@@ -251,39 +395,120 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
         },
         transition: { duration: headSearchDuration, repeat: Infinity, ease: "easeInOut" }
       }
-    : {};
-
-  // 4. Legs motion
-  const legsMotion = currentEmotion === 'happy'
-    ? {
-        // ぴょんぴょん跳ねる＆足踏み
+    : {
         animate: {
-          y: [0, -5, 0, -3, 0],
-          skewX: [-4, 4, -4, 4, -4],
-          scaleY: [1, 0.92, 1, 0.95, 1]
+          rotate: [-1.5, 1.5, -1.5],
+          y: [0, -0.8, 0]
         },
-        transition: { duration: 0.8, repeat: Infinity, ease: "easeInOut" }
-      }
+        transition: { duration: 2.8, repeat: Infinity, ease: "easeInOut" }
+      };
+
+  // 4. Legs motion (左脚・右脚を左右独立分割制御)
+  // 左脚 (Left Leg)
+  const legLeftMotion = currentEmotion === 'happy'
+    ? activeHappyVariant === 'banzai'
+      ? {
+          // 【バンザイ大歓喜】大地を蹴ってピョンピョン歓喜ジャンプ
+          animate: {
+            y: [0, -8, 0, -4, 0],
+            skewX: [-5, 5, -5, 5, -5],
+            scaleY: [1, 0.88, 1, 0.94, 1],
+            rotate: [0, -4, 0, -2, 0]
+          },
+          transition: { duration: 0.75, repeat: Infinity, ease: "easeInOut" }
+        }
+      : {
+          // 【ウキウキ・バウンスホップ】つま先でポン！ポン！ピョン！
+          animate: {
+            y: [0, -5, 0, -7, 0, -12, 0],
+            skewX: [-4, 4, -5, 5, -6, 6, 0],
+            scaleY: [1, 0.92, 1, 0.90, 1, 0.86, 1],
+            rotate: [-2, 3, -2, 4, -3, 5, 0]
+          },
+          transition: { duration: 1.05, repeat: Infinity, ease: "easeInOut" }
+        }
     : currentEmotion === 'troubled'
     ? {
-        // モジモジ立ち止まる
+        // 内股気味にモジモジ立ち止まる
         animate: {
           skewX: [4, -4, 4, -4, 4],
           scaleX: [0.96, 1.04, 0.96, 1.04, 0.96],
+          rotate: [3, -2, 3, -2, 3],
           y: [0, 1, 0, 1, 0]
         },
         transition: { duration: 1.1, repeat: Infinity, ease: "easeInOut" }
       }
     : currentEmotion === 'searching'
     ? {
+        // 交互に大地を踏みしめる二足歩行ステップ（右脚と逆位相！）
         animate: {
-          skewX: [-6, 6, -6, 6, -6],
-          y: [0, -2, 0, -2, 0],
-          scaleY: [1, 0.93, 1, 0.93, 1]
+          rotate: [-16, 16, -16],
+          skewX: [-6, 6, -6],
+          y: [0, -3, 0],
+          scaleY: [0.94, 1.05, 0.94]
         },
         transition: { duration: walkDuration, repeat: Infinity, ease: "easeInOut" }
       }
-    : {};
+    : {
+        animate: {
+          scaleY: [1, 0.98, 1],
+          y: [0, 0.5, 0]
+        },
+        transition: { duration: 2.4, repeat: Infinity, ease: "easeInOut" }
+      };
+
+  // 右脚 (Right Leg)
+  const legRightMotion = currentEmotion === 'happy'
+    ? activeHappyVariant === 'banzai'
+      ? {
+          // 【バンザイ大歓喜】大地を蹴ってピョンピョン歓喜ジャンプ
+          animate: {
+            y: [0, -8, 0, -4, 0],
+            skewX: [5, -5, 5, -5, 5],
+            scaleY: [1, 0.88, 1, 0.94, 1],
+            rotate: [0, 4, 0, 2, 0]
+          },
+          transition: { duration: 0.75, repeat: Infinity, ease: "easeInOut" }
+        }
+      : {
+          // 【ウキウキ・バウンスホップ】つま先でポン！ポン！ピョン！
+          animate: {
+            y: [0, -5, 0, -7, 0, -12, 0],
+            skewX: [4, -4, 5, -5, 6, -6, 0],
+            scaleY: [1, 0.92, 1, 0.90, 1, 0.86, 1],
+            rotate: [2, -3, 2, -4, 3, -5, 0]
+          },
+          transition: { duration: 1.05, repeat: Infinity, ease: "easeInOut" }
+        }
+    : currentEmotion === 'troubled'
+    ? {
+        // 内股気味にモジモジ立ち止まる
+        animate: {
+          skewX: [-4, 4, -4, 4, -4],
+          scaleX: [0.96, 1.04, 0.96, 1.04, 0.96],
+          rotate: [-3, 2, -3, 2, -3],
+          y: [0, 1, 0, 1, 0]
+        },
+        transition: { duration: 1.1, repeat: Infinity, ease: "easeInOut" }
+      }
+    : currentEmotion === 'searching'
+    ? {
+        // 交互に大地を踏みしめる二足歩行ステップ（左脚と逆位相！）
+        animate: {
+          rotate: [16, -16, 16],
+          skewX: [6, -6, 6],
+          y: [0, -3, 0],
+          scaleY: [1.05, 0.94, 1.05]
+        },
+        transition: { duration: walkDuration, repeat: Infinity, ease: "easeInOut" }
+      }
+    : {
+        animate: {
+          scaleY: [1, 0.98, 1],
+          y: [0, 0.5, 0]
+        },
+        transition: { duration: 2.4, repeat: Infinity, ease: "easeInOut" }
+      };
 
   return (
     <motion.div 
@@ -337,12 +562,12 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
                 ) : hasPendingDrops ? (
                   <>
                     <Gi.GiPresent className="text-amber-200 inline" />
-                    <span>素材発見！</span>
+                    <span>{activeHappyVariant === 'banzai' ? '素材発見！バンザイ！' : '素材発見！るんるん♪'}</span>
                   </>
                 ) : (
                   <>
                     <Gi.GiSparkles className="text-amber-200 inline" />
-                    <span>やったー！</span>
+                    <span>{activeHappyVariant === 'banzai' ? 'バンザイ大歓喜！' : 'ウキウキホップ♪'}</span>
                   </>
                 )}
               </span>
@@ -404,26 +629,91 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
         </>
       )}
 
-      {/* Robot Parts with animations */}
+      {/* Robot Parts with animations (アーム＆レッグ左右独立レンダリング) */}
       <motion.div style={{ width: size, height: size }} className="relative z-0" {...bodyMotion}>
+        {/* レッグ (左脚 & 右脚 を左右別々に分割独立制御) */}
         {LegsComp && (
-          <motion.div className="absolute inset-0 w-full h-full z-[1]" {...(animateCrafting ? animProps(0, 50) : legsMotion)}>
-            <LegsComp color={legsColor} className="w-full h-full" />
-          </motion.div>
+          <>
+            {/* 左脚 (Left Leg) */}
+            <motion.div 
+              id="robot-visual-part-leg-left"
+              className="absolute inset-0 w-full h-full z-[1] will-change-transform pointer-events-none"
+              style={{
+                transformOrigin: '38% 72%',
+                clipPath: 'polygon(0% 0%, 50% 0%, 50% 100%, 0% 100%)',
+              }}
+              {...(animateCrafting ? animProps(0, 50) : legLeftMotion)}
+            >
+              <LegsComp color={legsColor} className="w-full h-full block" />
+            </motion.div>
+
+            {/* 右脚 (Right Leg) */}
+            <motion.div 
+              id="robot-visual-part-leg-right"
+              className="absolute inset-0 w-full h-full z-[1] will-change-transform pointer-events-none"
+              style={{
+                transformOrigin: '62% 72%',
+                clipPath: 'polygon(50% 0%, 100% 0%, 100% 100%, 50% 100%)',
+              }}
+              {...(animateCrafting ? animProps(0.1, 50) : legRightMotion)}
+            >
+              <LegsComp color={legsColor} className="w-full h-full block" />
+            </motion.div>
+          </>
         )}
+
+        {/* 胴体 (Body) */}
         {BodyComp && (
-          <motion.div className="absolute inset-0 w-full h-full z-[2]" {...(animateCrafting ? animProps(0.3, -50) : {})}>
-            <BodyComp color={bodyColor} className="w-full h-full" />
+          <motion.div 
+            id="robot-visual-part-body"
+            className="absolute inset-0 w-full h-full z-[2] will-change-transform pointer-events-none" 
+            style={{ transformOrigin: '50% 55%' }}
+            {...(animateCrafting ? animProps(0.3, -50) : {})}
+          >
+            <BodyComp color={bodyColor} className="w-full h-full block" />
           </motion.div>
         )}
+
+        {/* アーム (左腕 & 右腕 を設定された肩位置をピボットとして左右別々に分割独立制御) */}
         {ArmsComp && (
-          <motion.div className="absolute inset-0 w-full h-full z-[3]" {...(animateCrafting ? animProps(0.6, -30) : armsMotion)}>
-            <ArmsComp color={armsColor} className="w-full h-full" />
-          </motion.div>
+          <>
+            {/* 左腕 (Left Arm) - 設定された leftShoulder 座標を回転中心として使用 */}
+            <motion.div 
+              id="robot-visual-part-arm-left"
+              className="absolute inset-0 w-full h-full z-[3] will-change-transform pointer-events-none"
+              style={{
+                transformOrigin: `${safeJoints.leftShoulder.x}% ${safeJoints.leftShoulder.y}%`,
+                clipPath: 'polygon(0% 0%, 50% 0%, 50% 100%, 0% 100%)',
+              }}
+              {...(animateCrafting ? animProps(0.5, -30) : armLeftMotion)}
+            >
+              <ArmsComp color={armsColor} className="w-full h-full block" />
+            </motion.div>
+
+            {/* 右腕 (Right Arm) - 設定された rightShoulder 座標を回転中心として使用 */}
+            <motion.div 
+              id="robot-visual-part-arm-right"
+              className="absolute inset-0 w-full h-full z-[3] will-change-transform pointer-events-none"
+              style={{
+                transformOrigin: `${safeJoints.rightShoulder.x}% ${safeJoints.rightShoulder.y}%`,
+                clipPath: 'polygon(50% 0%, 100% 0%, 100% 100%, 50% 100%)',
+              }}
+              {...(animateCrafting ? animProps(0.65, -30) : armRightMotion)}
+            >
+              <ArmsComp color={armsColor} className="w-full h-full block" />
+            </motion.div>
+          </>
         )}
+
+        {/* 頭部 (Head) */}
         {HeadComp && (
-          <motion.div className="absolute inset-0 w-full h-full z-[4]" {...(animateCrafting ? animProps(0.9, -80) : headMotion)}>
-            <HeadComp color={headColor} className="w-full h-full" />
+          <motion.div 
+            id="robot-visual-part-head"
+            className="absolute inset-0 w-full h-full z-[4] will-change-transform pointer-events-none" 
+            style={{ transformOrigin: '50% 32%' }}
+            {...(animateCrafting ? animProps(0.9, -80) : headMotion)}
+          >
+            <HeadComp color={headColor} className="w-full h-full block" />
           </motion.div>
         )}
       </motion.div>

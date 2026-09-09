@@ -36,6 +36,7 @@ export interface SkillDef {
   shortDesc: string;
   category: SkillCategory;
   reqInt: number;
+  reqEquipment?: 'beamSaber' | 'beamShield';
   reqStat?: {
     stat: 'power' | 'defense' | 'agility' | 'dexterity' | 'hp';
     name: string;
@@ -83,6 +84,12 @@ export interface CombatFighter {
   dodgesCount: number;
   skillsTriggeredCount: number;
   skillsLearnedCount: number;
+
+  // 戦闘専用装備（ビームサーベル・ビームシールド）
+  equipments?: {
+    beamSaber?: boolean;
+    beamShield?: boolean;
+  };
 }
 
 export type CombatLogType = 'normal_attack' | 'skill_attack' | 'learn_skill' | 'dodge' | 'heal' | 'buff' | 'emp' | 'ko';

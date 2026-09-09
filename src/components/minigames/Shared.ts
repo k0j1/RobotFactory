@@ -4,6 +4,7 @@ export interface Opponent {
   id: string;
   name: string;
   org: string;
+  level: number;
   int: number;
   agi: number;
   dex: number;
@@ -11,6 +12,7 @@ export interface Opponent {
   power: number;
   defense: number;
   rewardKits: number;
+  rewardElements: number;
 }
 
 export type DanmakuDifficulty = 'easy' | 'normal' | 'hard';
@@ -267,10 +269,16 @@ export const DANMAKU_DIFFICULTIES: DanmakuDifficultyConfig[] = [
 ];
 
 export const OPPONENTS: Opponent[] = [
-  { id: 'op1', name: 'ポンコツ試作機', org: '町の発明家', int: 4, agi: 8, dex: 6, hp: 10, power: 10, defense: 4, rewardKits: 1 },
-  { id: 'op2', name: '汎用作業ボット', org: 'アポロ工業', int: 12, agi: 16, dex: 14, hp: 25, power: 22, defense: 12, rewardKits: 2 },
-  { id: 'op3', name: '戦術演算ユニット', org: 'ゼニス・コーポレーション', int: 32, agi: 32, dex: 28, hp: 50, power: 45, defense: 28, rewardKits: 3 },
-  { id: 'op4', name: 'オメガ・マスター', org: '世界AI協会', int: 65, agi: 55, dex: 50, hp: 85, power: 75, defense: 48, rewardKits: 5 },
+  { id: 'op1', level: 1, name: 'ポンコツ試作機', org: '町の発明家', int: 4, agi: 8, dex: 6, hp: 10, power: 10, defense: 4, rewardKits: 1, rewardElements: 10 },
+  { id: 'op2', level: 2, name: 'ジャンク・スカベンジャー', org: '廃品回収ギルド', int: 8, agi: 12, dex: 10, hp: 16, power: 16, defense: 8, rewardKits: 1, rewardElements: 15 },
+  { id: 'op3', level: 3, name: '汎用作業ボット', org: 'アポロ重工', int: 14, agi: 16, dex: 14, hp: 25, power: 24, defense: 14, rewardKits: 1, rewardElements: 20 },
+  { id: 'op4', level: 4, name: '警邏パトロールボット', org: 'シティ警察機構', int: 20, agi: 22, dex: 18, hp: 35, power: 32, defense: 20, rewardKits: 1, rewardElements: 25 },
+  { id: 'op5', level: 5, name: '戦術演算ユニット', org: 'ゼニス・コーポレーション', int: 28, agi: 28, dex: 24, hp: 48, power: 42, defense: 28, rewardKits: 1, rewardElements: 35 },
+  { id: 'op6', level: 6, name: '重装機甲ストライカー', org: 'ネオ・ミリタリー', int: 36, agi: 34, dex: 30, hp: 62, power: 54, defense: 38, rewardKits: 1, rewardElements: 50 },
+  { id: 'op7', level: 7, name: '高機動ファントム', org: 'シャドウ・ラボラトリー', int: 46, agi: 52, dex: 40, hp: 78, power: 68, defense: 46, rewardKits: 1, rewardElements: 65 },
+  { id: 'op8', level: 8, name: '要塞ガーディアン', org: '古代防衛システム', int: 56, agi: 44, dex: 48, hp: 98, power: 84, defense: 62, rewardKits: 1, rewardElements: 80 },
+  { id: 'op9', level: 9, name: 'サイバネティクス・カイザー', org: '帝国兵器工廠', int: 72, agi: 64, dex: 60, hp: 125, power: 106, defense: 78, rewardKits: 1, rewardElements: 100 },
+  { id: 'op10', level: 10, name: 'オメガ・マスター', org: '世界AI協会', int: 92, agi: 86, dex: 80, hp: 160, power: 135, defense: 98, rewardKits: 1, rewardElements: 150 },
 ];
 
 export interface MinigameProps {
@@ -283,6 +291,7 @@ export interface MinigameProps {
   battleResult?: 'win' | 'lose' | 'draw' | null;
   onTogglePause?: () => void;
   onSetSpeed?: (speed: number) => void;
+  activeCombatEquipments?: { beamSaber?: boolean; beamShield?: boolean };
 }
 
 /**

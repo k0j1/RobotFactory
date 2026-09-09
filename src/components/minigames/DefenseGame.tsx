@@ -21,6 +21,7 @@ interface DefenseGameProps {
   isFinished: boolean;
   battleResult: 'win' | 'lose' | 'draw' | null;
   onExit: () => void;
+  activeCombatEquipments?: { beamSaber?: boolean; beamShield?: boolean };
 }
 
 export const DefenseGame: React.FC<DefenseGameProps> = ({
@@ -32,6 +33,7 @@ export const DefenseGame: React.FC<DefenseGameProps> = ({
   isFinished,
   battleResult,
   onExit,
+  activeCombatEquipments,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -306,10 +308,21 @@ export const DefenseGame: React.FC<DefenseGameProps> = ({
 
     const towers: Tower[] = sortedRobots.slice(0, stage.maxRobots).map((robot, idx) => {
       const pos = dungeonMap.towerPositions[idx] || { x: 400, y: 300 };
-      const pow = robot.stats.power || 10;
+      let pow = robot.stats.power || 10;
       const agi = robot.stats.agility || 10;
       const int = robot.stats.intelligence || 10;
       const dex = robot.stats.dexterity || 10;
+
+      let useSaber = activeCombatEquipments?.beamSaber;
+      let useShield = activeCombatEquipments?.beamShield;
+      if (useSaber && useShield) {
+        if (idx % 2 === 0) useShield = false;
+        else useSaber = false;
+      }
+
+      if (activeCombatEquipments?.beamSaber) {
+        pow += 35; // ビームサーベルの攻撃力アップ反映
+      }
 
       // Intelligence & Dexterity及び他能力値による攻撃パターン・技の決定
       let skillName = 'アサルト弾';
@@ -320,7 +333,23 @@ export const DefenseGame: React.FC<DefenseGameProps> = ({
       let bulletColor = '#f97316';
       let range = 120 + int * 1.5;
 
-      if (int >= 35 && dex >= 30) {
+      if (useSaber) {
+        skillName = '【必殺奥義】星断オメガクロス';
+        skillType = 'laser';
+        skillMultiplier = 5.0;
+        splashRadius = 45;
+        bulletSpeed = 900;
+        bulletColor = '#f43f5e';
+        range = 160 + int * 1.5;
+      } else if (useShield) {
+        skillName = 'エネルギーシールド防御';
+        skillType = 'nova';
+        skillMultiplier = 2.5;
+        splashRadius = 85;
+        bulletSpeed = 400;
+        bulletColor = '#22d3ee';
+        range = 140 + int * 1.2;
+      } else if (int >= 35 && dex >= 30) {
         // 超絶技: ディメンションノヴァ
         skillName = '極滅ノヴァ';
         skillType = 'nova';

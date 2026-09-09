@@ -403,6 +403,71 @@ export class GameEngine {
     this.saveState();
   }
 
+  /**
+   * バトル演習報酬エレメントの加算
+   */
+  public addBattleElements(amount: number) {
+    this.state.battleElements = (this.state.battleElements || 0) + amount;
+    this.saveState();
+  }
+
+  /**
+   * 戦闘カテゴリ専用装備（ビームサーベル・ビームシールド）の交換（各100エレメント）
+   */
+  public exchangeCombatEquipment(equipment: 'beamSaber' | 'beamShield'): boolean {
+    const currentElements = this.state.battleElements || 0;
+    const COST = 100;
+    if (currentElements < COST) {
+      return false;
+    }
+    if (!this.state.combatEquipments) {
+      this.state.combatEquipments = {};
+    }
+    if (this.state.combatEquipments[equipment]) {
+      return false; // すでに所持している
+    }
+
+    this.state.battleElements = currentElements - COST;
+    this.state.combatEquipments[equipment] = true;
+    
+    // 入手時は自動的に有効化
+    if (!this.state.activeCombatEquipments) {
+      this.state.activeCombatEquipments = {};
+    }
+    this.state.activeCombatEquipments[equipment] = true;
+
+    this.saveState();
+    return true;
+  }
+
+  /**
+   * 戦闘出撃時の戦闘専用装備の有効・無効切り替え
+   */
+  public toggleCombatEquipment(equipment: 'beamSaber' | 'beamShield', enabled?: boolean) {
+    if (!this.state.combatEquipments?.[equipment]) return;
+    if (!this.state.activeCombatEquipments) {
+      this.state.activeCombatEquipments = {};
+    }
+    const current = !!this.state.activeCombatEquipments[equipment];
+    this.state.activeCombatEquipments[equipment] = enabled !== undefined ? enabled : !current;
+    this.saveState();
+  }
+
+
+  public recordMinigameResult(gameId: string, result: 'win' | 'lose' | 'draw') {
+    if (!this.state.minigameRecords) {
+      this.state.minigameRecords = {};
+    }
+    if (!this.state.minigameRecords[gameId]) {
+      this.state.minigameRecords[gameId] = { plays: 0, wins: 0, losses: 0, draws: 0 };
+    }
+    const record = this.state.minigameRecords[gameId];
+    record.plays += 1;
+    if (result === 'win') record.wins += 1;
+    else if (result === 'lose') record.losses += 1;
+    else record.draws += 1;
+    this.saveState();
+  }
   public recordBattleResult(robotId: string, result: 'win' | 'lose' | 'draw') {
     const robot = this.state.robots.find(r => r.id === robotId);
     if (robot) {
