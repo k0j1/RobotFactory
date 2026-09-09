@@ -12,9 +12,160 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
       </div>
 
       <Card className="bg-stone-50 border-2 border-stone-200">
-        <h3 className={`${theme.typography.h3} mb-4 text-stone-700`}>ポンコツロボット工房 v1.0.241 仕様まとめ</h3>
+        <h3 className={`${theme.typography.h3} mb-4 text-stone-700`}>ポンコツロボット工房 v1.0.252 仕様まとめ</h3>
         
         <div className="space-y-6 text-sm text-stone-800">
+          <section>
+            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">モーションスタジオ：ソードSVGアニメーションの拳位置＆腕回転完全連動 (v1.0.252)</h4>
+            <ul className="list-disc list-inside space-y-2">
+              <li><strong>拳位置・肩ピボットに連動した2層階層マウント構造:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li>ソード（紅蓮の曲刀SVG）のマウント方式を刷新し、肩座標（回転軸）をピボットとする`wrapper`階層と、拳座標（グリップ位置）に配置される`el`（刀身本体）階層の2段階構造を導入しました。</li>
+                  <li>肩＆拳位置調整モードで設定・保存された各パーツ固有の座標（`HandAnchorManager`）がそのままソードのマウント位置・回転軸として動的に反映されます。</li>
+                </ul>
+              </li>
+              <li><strong>全ソード系GSAPアニメーションの同期アップデート:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li><strong>スラッシュコンボ（Slash Combo）:</strong> 腕の振り下ろし・引き戻しの肩回転に`wrapper`が完全追従し、手首のスナップに合わせて刀身が滑らかに連動。</li>
+                  <li><strong>二刀流クロススラッシュ（Dual Slash Combo）:</strong> 左右両腕それぞれの肩・拳アンカー位置に合わせて左右の刀身が独立同期し、美しいX字クロス軌道を描くよう改善。</li>
+                  <li><strong>紅蓮ブレード・一刀両断（Sword Slash）:</strong> 抜刀・タメ・一閃・納刀シークエンスで腕の可動と拳のグリップ位置が精密に一致。</li>
+                  <li><strong>炎刃・旋風回転斬り（Flame Cyclone） / 紅蓮・突進突き（Flame Blade Thrust）:</strong> 水平薙ぎ・水平突き出しポーズにおいて拳位置を起点としたダイナミックな突進・スピンを実現。</li>
+                  <li><strong>必殺奥義・ファイア・スラッシュ（Fire Slash）:</strong> 大上段の構えから天を切り裂く振り下ろしまで、腕と拳の角度・位置に完全同期した迫力のシネマティック演出を実現。</li>
+                </ul>
+              </li>
+            </ul>
+          </section>
+          <section>
+            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">肩＆拳位置調整モード：視界クリア化・ヘッダー表示修正・全パーツコピー＆アニメーション連動 (v1.0.251)</h4>
+            <ul className="list-disc list-inside space-y-2">
+              <li><strong>ロボット描画を遮らないクリアなキャリブレーション視界:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li>調整モード起動時にロボット中央を覆っていた不要なボーンHUD情報ボックスや汎用関節ドットを抑止し、調整対象である4つのカラーピン（左肩・右肩・左拳・右拳）とガイドラインのみを明瞭かつ高コントラストに描画。</li>
+                  <li>ピンのドラッグ操作時にロボット全身・腕・拳の動きを遮ることなく直感的に位置調整を行えるように改善しました。</li>
+                </ul>
+              </li>
+              <li><strong>モーダルヘッダーの重なり解消:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li>モーダルのZインデックス階層（z-[120]）および上部余白・スクロールレイアウトを最適化し、アプリのタイトルバーにモーダルヘッダーが隠れることなく常時快適に操作できるように調整しました。</li>
+                </ul>
+              </li>
+              <li><strong>パーツごとの永続保存＆GSAPアニメーションへの即時反映:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li>調整した肩・拳座標はパーツ単位（★1〜★5各アーム）で自動保存され、GSAPアニメーションエンジン（`GSAPRobotAnimator`）の各モーション再生時にもパーツごとの肩回転軸（transformOrigin）および拳起端が正しく適用されるように連動強化しました。</li>
+                </ul>
+              </li>
+              <li><strong>全パーツ分の一括JSONコピー＆一括同期:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li>「全パーツコピー (JSON)」ボタンにより、登録されている全アームパーツの肩・拳座標設定をワンクリックでまとめてクリップボードへコピー可能にしました。</li>
+                  <li>「全パーツに一括適用」機能により、調整したお気に入りの位置バランスを全パーツへ瞬時に同期できます。</li>
+                </ul>
+              </li>
+            </ul>
+          </section>
+          <section>
+            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">肩＆拳位置調整モードの独立・パーツ図鑑統合 (v1.0.250)</h4>
+            <ul className="list-disc list-inside space-y-2">
+              <li><strong>パーツ図鑑からパーツごとに直接調整:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li>これまでは個別のロボットのGSAPモーションスタジオから肩＆拳の位置調整を行っていましたが、設定は「アームパーツ単位」で保存されるため、アームパーツそのものを一覧できる<strong>「パーツ図鑑（アーム）」の各カードから直接調整モードを起動できる</strong>ように設計を見直しました。</li>
+                  <li>GSAPモーションスタジオからは調整モードのUIを削除し、ロボット本来のモーション確認機能に純化しました。</li>
+                  <li>パーツ図鑑でアームの「肩＆拳 位置調整」ボタンを押すと、専用の調整用リグロボットが表示されたキャリブレーターモーダルが起動し、アームパーツごとに効率よくドラッグ調整やJSON保存が可能です。</li>
+                </ul>
+              </li>
+            </ul>
+          </section>
+          <section>
+            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">モーションスタジオ：肩＆拳位置調整モードのレイアウト最適化＆視界クリア化 (v1.0.249)</h4>
+            <ul className="list-disc list-inside space-y-2">
+              <li><strong>作業視界を妨げないサイド・バイ・サイド (並列) UIレイアウト:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li><strong>右カラムへのキャリブレータパネル配置:</strong> 調整モード起動時、これまでビューポートの下に積み重なり画面スクロールを強いられていたキャリブレータパネルを右カラム（モーション一覧エリア）へ移動配置。左側のロボットキャンバス（全身・腕・関節）を常時フルビューで見渡しつつ、右側のスライダーや数値入力、JSON操作を並列操作できるよう改善。</li>
+                  <li><strong>右カラムの「肩＆拳調整 / モーション選択」シームレス切替タブ:</strong> 調整中でも右上のタブからモーション一覧や再生パターンの切り替えが可能。「✕ 閉じる」ボタンで素早く通常レイアウトへ復帰。</li>
+                </ul>
+              </li>
+              <li><strong>キャンバス描画の非侵入型ミニマルバッジ化:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li><strong>左肩・腕を遮っていた巨大HUDボックスの撤去:</strong> 以前キャンバス左上に常時覆いかぶさっていた幅280pxの固定情報ボックスを撤去。ピン直近の座標チップおよび右カラムのコントローラーに情報を集約し、右下にコンパクトな微小バッジのみを表示することで、ロボット全身・腕・拳を一切遮ることなく快適にピンの直接ドラッグ調整を行えるようブラッシュアップ。</li>
+                </ul>
+              </li>
+            </ul>
+          </section>
+          <section>
+            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">モーションスタジオ：肩＆拳位置調整モードの安定性・互換性強化 (v1.0.248)</h4>
+            <ul className="list-disc list-inside space-y-2">
+              <li><strong>肩・拳座標の防御的フォールバック＆型安全化:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li><strong>旧ストレージデータ互換＆安全なデフォルトマージ:</strong> 以前のバージョンで保存された古いlocalStorage設定（肩座標プロパティ未定義状態）やパーツ切り替え時の初期化遅延が発生した場合でも、エラーなくデフォルト肩座標（左肩: 25%, 46% / 右肩: 75%, 46%）へ安全に自動マージ・補完する防衛処理を実装。</li>
+                  <li><strong>GSAPRobotCanvasレンダリングガード:</strong> 腕の回転中心軸（transform-origin）、ジョイントマーカー、HUDオーバーレイ描画において`safeHandConfig`を導入し、`Cannot read properties of undefined`を完全抑止。</li>
+                  <li><strong>キャリブレータパネルのプロパティ互換性向上:</strong> `ArmJointCalibratorPanel`のプロパティ（currentArmPartKey / currentPartKey、handConfig / config等）双方に完全対応し、閉じる（✕）ボタンを追加してUI操作性を向上。</li>
+                </ul>
+              </li>
+            </ul>
+          </section>
+          <section>
+            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">モーションスタジオ：左右アームの「肩と拳の位置調整モード」＆JSON共有・パーツ間複製 (v1.0.247)</h4>
+            <ul className="list-disc list-inside space-y-2">
+              <li><strong>左右アームの肩＆拳 位置調整モード (4点独立キャリブレーション):</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li><strong>肩（回転ピボット）と拳（武器グリップ）の独立制御:</strong> 腕の根本である「右肩」「左肩」の回転中心軸（transform-origin）と、武装を握る「右手」「左手」のアンカー位置をそれぞれ0〜100%座標でパーツごとに精密調整可能にしました。</li>
+                  <li><strong>数値入力・スライダー・ステップ微調整:</strong> 各ジョイントのX/Y座標を数値直接入力、スライダー、±0.5%ステップボタンで即座に変更可能。現在のパーツで定義されている座標を明瞭に数値表示します。</li>
+                  <li><strong>キャンバス上での直感的ドラッグ操作:</strong> モーションスタジオ画面上のロボットアーム上でピン（肩: 円形ドット、拳: 照準レティクル）を直接ドラッグしてリアルタイムに動かすことも可能です。肩と拳を繋ぐアライメントガイド線も描画されます。</li>
+                  <li><strong>表示フィルター切り替え:</strong> 「全表示」「肩のみ」「拳のみ」「右腕」「左腕」を切り替えて作業対象をフォーカスできます。</li>
+                </ul>
+              </li>
+              <li><strong>JSONクリップボードコピー＆他パーツへの貼り付け・一括同期:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li><strong>単一パーツ/全パーツJSONコピー:</strong> 現在調整中のパーツの肩・拳位置設定、あるいは全登録パーツの設定をワンクリックでJSON形式でクリップボードにコピーできます。</li>
+                  <li><strong>他パーツへの貼り付け（複製）:</strong> 調整した設定をドロップダウンから選択した別の腕パーツへ瞬時にコピー・保存できます。</li>
+                  <li><strong>全腕パーツへの一括適用:</strong> 調整したベストな位置バランスを、すべての腕パーツ（★1〜★5の全バリエーション）へワンクリックで一括同期できます。</li>
+                  <li><strong>JSONインポート・ペースト:</strong> 外部で共有された設定JSONを貼り付けて即時インポートできます。</li>
+                </ul>
+              </li>
+            </ul>
+          </section>
+          <section>
+            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">モーションスタジオ：拳位置キャリブレータ＆JSON設定共有 (v1.0.246)</h4>
+            <ul className="list-disc list-inside space-y-2">
+              <li><strong>拳アンカーマーカー＆リアルタイム位置調整:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li><strong>視覚的マーカー表示＆ドラッグ調整:</strong> モーションスタジオに「🎯 拳マーカー」トグルを追加。ロボットの拳（手）の位置にレティクル（十字照準）とドラッグ可能なピンマーカーを表示し、画面上で直感的に武器の保持位置を調整可能にしました。</li>
+                  <li><strong>スライダー＆微調整ボタン:</strong> 右手・左手のX座標・Y座標を0.1%単位で微調整できるスライダーおよび±0.5%ステップボタンを搭載しました。</li>
+                  <li><strong>パーツ別拳位置の永続化管理:</strong> <code>HandAnchorManager</code> により、各アームパーツ（★1〜★5、ビジュアルバリエーション）ごとに個別の拳アンカー座標をローカルストレージに自動保存・管理します。</li>
+                </ul>
+              </li>
+              <li><strong>設定のJSONコピー＆ペースト機能:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li><strong>ワンクリック設定コピー:</strong> 「📋 設定をコピー」ボタンを押すことで、現在選択中のアームパーツおよび全アームパーツの拳位置設定をまとめたJSONデータをクリップボードにコピーできます。チャットやメモ帳にそのまま貼り付けて共有可能です。</li>
+                  <li><strong>設定ペースト・インポート:</strong> 「📥 ペースト」ボタンを押すことで、コピーした設定JSONを貼り付けて一括反映。外部から提供されたパーツごとの拳位置設定をワンタッチで取り込むことができます。</li>
+                </ul>
+              </li>
+              <li><strong>炎の神剣「ファイア・スラッシュ」アニメーション:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li>指定された炎のソードSVGを組み込み、紅蓮の炎を纏った刀身での居合・構え・大上段袈裟斬り・残心モーションをGSAPで完全アニメーション化。</li>
+                  <li>タイムライン上に剣を振る瞬間や炎の爆炎、着弾衝撃を示すSE発生タイミングマーカーを実装し、視覚的なインジケーターおよび自動SE再生と個別試聴に対応しました。</li>
+                </ul>
+              </li>
+            </ul>
+          </section>
+          <section>
+            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">モーションスタジオ：武器・アイテム装備 (v1.0.243)</h4>
+            <ul className="list-disc list-inside space-y-2">
+              <li><strong>武器やアイテムを用いた特殊アニメーションの追加:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li><strong>ブレード・スラッシュ:</strong> プラズマブレードを動的に生成し、腕の振りに合わせて強烈な袈裟斬りを放ちます。斬撃軌跡の残像エフェクト付きです。</li>
+                  <li><strong>エネルギーシールド防御:</strong> 左腕から六角形のハニカム光子シールドを展開し、被弾時の衝撃波（弾性反動）とともに敵の攻撃をガードします。</li>
+                  <li><strong>スマートミサイル発射:</strong> ロボットの肩部・背面からスマートミサイルオブジェクトを射出。GSAPを用いた曲線軌道アニメーションと白煙エフェクトでミサイルの飛翔を表現しました。</li>
+                </ul>
+              </li>
+            </ul>
+          </section>
+          <section>
+            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">UI・表示改善 (v1.0.242)</h4>
+            <ul className="list-disc list-inside space-y-2">
+              <li><strong>図鑑のレイアウト改善:</strong> 図鑑画面上部に表示されていたモーションスタジオのバナーを削除し、各ロボットのカードから個別にモーションスタジオを開くUIに一本化しました。</li>
+              <li><strong>モーションスタジオの表示修正:</strong> モーダル表示時にスマホ等のタイトルバーにヘッダーが被って隠れてしまう問題を修正するため、上部に十分なパディング（セーフエリア確保）を追加しました。</li>
+            </ul>
+          </section>
           <section>
             <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">モーションスタジオ (v1.0.241)</h4>
             <ul className="list-disc list-inside space-y-2">
@@ -218,19 +369,27 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
               <li><strong>ロボットの修理 &amp; 修理演出アニメーション:</strong> 探索や遠征でHPが減った・HP切れ（0〜1）になったロボットに「修理キット」を使用すると、専用の<strong>修理演出アニメーション</strong>が再生されます。回転するレンチやハンマー、飛び散るスパーク（<Gi.GiLightningTrio className="inline text-yellow-500" />）、グリーンの回復光パルス（Healing Wave）と舞い散るハート＆スターエフェクト（<Gi.GiHeartPlus className="inline text-pink-500" />✨）とともに、HPゲージがスムーズに100%まで全快し、ロボットが両手をあげて喜ぶ演出が表示されます（不要なテキスト表示は削除され、洗練されたアニメーション演出となります）。また倉庫カードおよびダッシュボードの自動探索カードからもワンタップでクイック修理＆探索再開が可能です。</li>
               <li><strong>素材商店・交換所（コンパクトグリッド）:</strong> 工房画面上で直感的にタップして商店を開くことができます。素材の購入や「修理キット」への交換を、<strong>アイコンとボタンが一体化した直感的なグリッドパネル</strong>から1タップで素早く行えます。</li>
               <li><strong>図鑑・仕様書（ロボット図鑑 &amp; パーツ図鑑 &amp; 素材別出現一覧 &amp; 納品履歴）:</strong> 商店カードと分離し、上部のコンパクトな情報ナビゲーションとして配置。新設された<strong>「ロボット図鑑（Robot Gallery）」タブ</strong>では、これまでにクラフトしたすべてのユニークロボットを美麗なグラフィックスやクラフト日時、属性比率、総合ステータスとともにアーカイブ。さらに各機体の<strong>「構成パーツ詳細 (Component Stats)」</strong>を展開することで、ヘッド・ボディ・アーム・レッグ各パーツの個別ステータス（HP・攻撃・防御・素早さ・器用・知力）や属性、レアリティ内訳を詳細に確認・比較できるようになりました。また、全パーツ形状を部位別・レア度別に一覧できる<strong>「パーツ図鑑」</strong>、素材ごとの出現候補がわかる<strong>「素材別出現一覧」</strong>、過去の納品履歴も完備しています。</li>
-              <li><strong>GSAP (GreenSock Animation Platform) ロボットモーションスタジオ &amp; 全24種のアクション演習:</strong> ロボット図鑑（Robot Gallery）に、業界標準の高性能アニメーションライブラリ「GSAP」を全面統合した専用の<strong>モーションスタジオ（GSAP Motion Studio）</strong>を新設しました。
+              <li><strong>GSAP (GreenSock Animation Platform) ロボットモーションスタジオ &amp; 多彩なアクション演習:</strong> ロボット図鑑（Robot Gallery）に、業界標準の高性能アニメーションライブラリ「GSAP」を全面統合した専用の<strong>モーションスタジオ（GSAP Motion Studio）</strong>を新設しました。各ロボットカードの「GSAP モーションスタジオ」ボタンから直接起動可能です。
                 <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
                   <li><strong>厳格なOOPアーキテクチャ設計:</strong> <code>BaseRobotAnimation</code>基底クラス、シングルトンパターンの<code>GSAPRobotAnimationRegistry</code>、およびライフサイクル・タイムライン解放を完全管理する<code>GSAPRobotAnimationController</code>により、メモリリークのない堅牢で拡張性の高いアニメーションエンジンを構築。</li>
-                  <li><strong>全24種類の多彩なアニメーションパターン:</strong>
+                  <li><strong>新武装レイヤー（fxContainer）と炎の曲刀SVGの統合:</strong> ロボット前面に動的ウェポン・エフェクト専用レイヤー（<code>fxContainer</code>）を新設。精緻な炎の刀身グラデーション・赤銅鍔・宝珠コアを持つ<strong>「炎の曲刀 (Flame Curved Blade)」SVG</strong>を実装し、ロボットの腕・関節のピボット座標に完全同期した抜刀・スラッシュ・残心モーションを実現。さらに手甲マニピュレーターによる柄の前面サンドイッチマウントにより、「ロボットの拳が物理的に剣の柄を握り締めている」自然なグリップ表現を達成しました。</li>
+                  <li><strong>必殺斬撃モーション「ファイア・スラッシュ (Fire Slash)」:</strong> 炎の曲刀を右腕に構え、紅蓮のオーラを全身にチャージ。大上段から地面を切り裂く巨大な三日月型炎の斬撃波（Fire Slash Burst）と火炎爆砕を放つ必殺の火炎撃を実装。</li>
+                  <li><strong>Web Audio API リアルタイムSEシンセサイザー &amp; タイムラインSEマーカー:</strong>
                     <ul className="list-disc list-inside space-y-0.5 ml-4 mt-0.5 text-xs text-stone-600">
-                      <li><strong>⚔️ Combat (戦闘・アクション):</strong> 斬撃スラッシュ、2連撃コンボ、集束ビーム砲撃、防御シールド展開、渾身のロケットパンチ、EMPショックパルス、ハイパーオーバードライブ。</li>
-                      <li><strong>🤸 Acrobatic (曲芸・機動):</strong> バック宙返り(Backflip)、ハイパーダッシュ突進、ブレイクダンス(Breakdance)、高速スピン回転、ジグザグステップ回避、ドリルスクリューダイブ。</li>
-                      <li><strong>⚙️ Mechanical (機構・メンテナンス):</strong> 分解・展開図(Exploded View)、磁力組み立て(Assembly)、システムブート(Boot)、自己リペア(Repair)、変形トランスフォーム(Transform)、オーバーヒート排熱(Overheat)。</li>
-                      <li><strong>✨ Emotion (感情・ポーズ):</strong> 勝利のガッツポーズ(Victory)、大喜び歓喜(Celebrate)、オロオロ困惑(Confused)、ノリノリダンス(Groove)、気品あるお辞儀(Bow)。</li>
+                      <li><strong>リアルタイム効果音合成 (<code>RobotSEAudioEngine</code>):</strong> 外部音声ファイルへの依存をゼロにし、ブラウザ標準のWeb Audio APIで抜刀金属音、風切りスイング音、鋭い火炎斬撃音、紅蓮チャージ音、重低音爆砕ヒット音をプログラム合成してリアルタイム出力（ミュート切替ボタン付き）。</li>
+                      <li><strong>視覚的SEマーカー:</strong> タイムライン進行度バー上に抜刀（🗡️）、チャージ（🔥）、一閃（⚔️）、着弾（💥）の発生タイミングピンを表示。再生バー通過時に完全同期で自動発音するほか、マーカーをクリックして個別試聴も可能です。</li>
+                    </ul>
+                  </li>
+                  <li><strong>多彩なアニメーションパターン:</strong>
+                    <ul className="list-disc list-inside space-y-0.5 ml-4 mt-0.5 text-xs text-stone-600">
+                      <li><strong>⚔️ Combat (戦闘・武装アクション):</strong> ファイア・スラッシュ (Fire Slash)、紅蓮ブレード・一刀両断、連撃スラッシュ、二刀流クロススラッシュ（左右両手に曲刀を装備）、炎刃・旋風回転斬り（720度空中スピン）、紅蓮・突進突き（ロケットブースト急襲）、ミサイル発射、エネルギーシールド防御、集束ビーム砲撃、ガトリング斉射、ロケットパンチ、EMPショックパルス、ハイパーオーバードライブ。</li>
+                      <li><strong>🤸 Acrobatic (曲芸・機動):</strong> スプリングジャンプ、ジェットダッシュ突進、ブレイクダンス、高速スピン回転、ダイナミック前進スプリント、フライングキック、分解展開図。</li>
+                      <li><strong>⚙️ Mechanical (機構・メンテナンス):</strong> 精密スキャン診断、生体ブリージング、ホバー浮遊、急速充電、スリープ待機、キャリブレーション点検。</li>
+                      <li><strong>✨ Emotion (感情・ポーズ):</strong> 勝利のガッツポーズ、万歳歓喜、オロオロ困惑、敬礼・お辞儀、拍手喝采、小首かしげ、同意のうなずき。</li>
                     </ul>
                   </li>
                   <li><strong>部位別独立制御 (Head・Body・Arms・Legs):</strong> ロボットの各パーツDOMノードを個別ターゲットとして認識し、独自の回転軸（<code>transformOrigin</code>）、反動、イージング（<code>back.out</code>, <code>elastic.out</code>, <code>power2.inOut</code>等）を組み合わせた有機的で立体感のあるメカニカルモーションを実現。</li>
-                  <li><strong>スタジオ操作パネル:</strong> 再生/一時停止、再生速度変更（0.25xスロー 〜 2.0x高速）、ループ/ワンショット切り替え、タイムライン進行度シークバー（Scrubber）、および機体切替セレクターを完備。</li>
+                  <li><strong>スタジオ操作パネル:</strong> 再生/一時停止、再生速度変更（0.5x 〜 2.0x）、ループ/単発切り替え、タイムライン進行度シークバー、SEマーカーピン表示＆試聴、SEミュートボタン、ズーム（80%〜160%）、および機体切替セレクターを完備。</li>
                   <li><strong>図鑑カードでの即時プレビュー切替:</strong> 図鑑一覧のカード上でも「🎬 GSAPプレビュー」スイッチにより、標準アニメーションとGSAPモーションをシームレスに切り替えて鑑賞可能です。</li>
                 </ul>
               </li>

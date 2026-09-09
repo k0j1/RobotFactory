@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Robot, AttributeColors, AttributeNames } from '../../core/models';
 import {
   GSAPRobotAnimationRegistry,
@@ -6,6 +6,11 @@ import {
   ROBOT_ANIMATION_CATEGORIES,
   IRobotAnimationPattern,
 } from '../../core/animations/GSAPRobotAnimator';
+import {
+  HandAnchorManager,
+  HandAnchorConfig,
+} from '../../core/animations/HandAnchorManager';
+import { RobotSEAudioEngine } from '../../core/audio/RobotSEAudioEngine';
 import { GSAPRobotCanvas } from './GSAPRobotCanvas';
 import { theme } from '../../styles/theme';
 import { Card, Button, Badge } from '../ui/core';
@@ -126,7 +131,7 @@ export const GSAPMotionStudioModal: React.FC<GSAPMotionStudioModalProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<RobotAnimationCategory>(
     RobotAnimationCategory.COMBAT
   );
-  const [selectedPatternId, setSelectedPatternId] = useState<string>('slash_combo');
+  const [selectedPatternId, setSelectedPatternId] = useState<string>('fire_slash');
   const [speed, setSpeed] = useState<number>(1.0);
   const [loop, setLoop] = useState<boolean>(true);
   const [isPaused, setIsPaused] = useState<boolean>(false);
@@ -134,11 +139,33 @@ export const GSAPMotionStudioModal: React.FC<GSAPMotionStudioModalProps> = ({
   const [stageTheme, setStageTheme] = useState<'dark' | 'light' | 'grid'>('dark');
   const [showJoints, setShowJoints] = useState<boolean>(false);
   const [zoom, setZoom] = useState<number>(1.0);
+  const [isMuted, setIsMuted] = useState<boolean>(false);
+  const lastTriggeredTimeRef = useRef<number>(-1);
 
   // 現在選択されているロボット
   const currentRobot = useMemo(() => {
     return combinedRobotsList.find(r => r.id === selectedRobotId) || defaultRobot;
   }, [combinedRobotsList, selectedRobotId, defaultRobot]);
+
+  // 現在のアームパーツ識別Key (例: arm_r1_v0)
+  const currentArmPartKey = useMemo(() => {
+    const arms = currentRobot?.parts?.arms || { rarity: 1, visualIndex: 0 };
+    return HandAnchorManager.generatePartKey(arms.rarity, arms.visualIndex);
+  }, [currentRobot]);
+
+  // 現在の腕関節アンカー設定（肩・拳：アニメーション再生に使用）
+  const [handConfig, setHandConfig] = useState<HandAnchorConfig>(() => {
+    return HandAnchorManager.getInstance().getHandConfig(currentArmPartKey);
+  });
+
+  // HandAnchorManager の変更をリッスンして常に同期
+  useEffect(() => {
+    setHandConfig(HandAnchorManager.getInstance().getHandConfig(currentArmPartKey));
+    const unsub = HandAnchorManager.getInstance().subscribe(() => {
+      setHandConfig(HandAnchorManager.getInstance().getHandConfig(currentArmPartKey));
+    });
+    return unsub;
+  }, [currentArmPartKey]);
 
   // レジストリからパターン一覧を取得
   const registry = useMemo(() => GSAPRobotAnimationRegistry.getInstance(), []);
@@ -179,7 +206,7 @@ export const GSAPMotionStudioModal: React.FC<GSAPMotionStudioModalProps> = ({
   return (
     <div 
       id="gsap-motion-studio-modal"
-      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-sm overflow-y-auto"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-2 pt-16 sm:p-4 bg-black/80 backdrop-blur-sm overflow-y-auto"
     >
       <div className="bg-[#faf5ee] border-2 border-[#c29b77] rounded-2xl shadow-2xl max-w-5xl w-full max-h-[94vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         {/* ヘッダー */}
@@ -198,7 +225,7 @@ export const GSAPMotionStudioModal: React.FC<GSAPMotionStudioModalProps> = ({
                 </span>
               </div>
               <p className="text-xs text-stone-300">
-                パーツ別独立可動・解剖学的ジョイント・高精度イージングによる24種のアクション鑑賞
+                パーツ別独立可動・解剖学的ジョイント・武装エフェクトによる多彩なアクション鑑賞
               </p>
             </div>
           </div>
@@ -349,7 +376,26 @@ export const GSAPMotionStudioModal: React.FC<GSAPMotionStudioModalProps> = ({
                   isPaused={isPaused}
                   showJoints={showJoints}
                   zoom={zoom}
-                  onProgress={p => setAnimProgress(Math.round(p * 100))}
+                  onProgress={p => {
+                    const roundedProgress = Math.round(p * 100);
+                    setAnimProgress(roundedProgress);
+
+                    // SEマーカーの自動再生トリガー
+                    const markers = currentPattern.seMarkers;
+                    if (markers && markers.length > 0 && !isMuted) {
+                      const currentTime = p * currentPattern.duration;
+                      if (p < 0.04) {
+                        lastTriggeredTimeRef.current = -0.01;
+                      }
+                      const lastTime = lastTriggeredTimeRef.current;
+                      markers.forEach(m => {
+                        if (lastTime < m.time && currentTime >= m.time) {
+                          RobotSEAudioEngine.getInstance().playSE(m.type);
+                        }
+                      });
+                      lastTriggeredTimeRef.current = currentTime;
+                    }
+                  }}
                 />
 
                 {/* 現在のアニメーションバナー */}
@@ -396,18 +442,114 @@ export const GSAPMotionStudioModal: React.FC<GSAPMotionStudioModalProps> = ({
 
               {/* コントロールバー */}
               <div className="bg-white/95 border-2 border-stone-300 rounded-xl p-3 space-y-2.5 shadow-2xs">
-                {/* タイムライン進捗バー（視覚化） */}
-                <div className="space-y-1">
-                  <div className="flex justify-between text-[11px] font-bold text-stone-600">
-                    <span>タイムライン進行度</span>
-                    <span className="font-mono text-amber-700">{animProgress}% / {currentPattern.duration}s</span>
+                {/* タイムライン進捗バー（視覚化 ＆ SEマーカー配置） */}
+                <div className="space-y-1.5">
+                  <div className="flex justify-between items-center text-[11px] font-bold text-stone-600">
+                    <div className="flex items-center gap-1.5">
+                      <span>タイムライン進行度</span>
+                      {currentPattern.seMarkers && currentPattern.seMarkers.length > 0 && (
+                        <span className="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded border border-amber-300 flex items-center gap-1">
+                          <span>⚔️</span>
+                          <span>SEマーカー: {currentPattern.seMarkers.length}箇所</span>
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-amber-700">
+                        {((animProgress * currentPattern.duration) / 100).toFixed(2)}s / {currentPattern.duration}s ({animProgress}%)
+                      </span>
+                      {/* SE 音声ミュートトグル */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const next = RobotSEAudioEngine.getInstance().toggleMute();
+                          setIsMuted(next);
+                        }}
+                        className={`px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 transition-colors border cursor-pointer ${
+                          !isMuted
+                            ? 'bg-amber-500 text-white border-amber-600 shadow-2xs'
+                            : 'bg-stone-200 text-stone-600 border-stone-300'
+                        }`}
+                        title={!isMuted ? 'SE効果音 ON (クリックでミュート)' : 'SE効果音 OFF (クリックで有効化)'}
+                      >
+                        {!isMuted ? '🔊 SE ON' : '🔇 SE OFF'}
+                      </button>
+                    </div>
                   </div>
-                  <div className="w-full bg-stone-200 h-2 rounded-full overflow-hidden border border-stone-300">
+
+                  {/* プログレスバー本体＋SEマーカーの配置 */}
+                  <div className="relative w-full bg-stone-200 h-3 rounded-full border border-stone-300">
+                    {/* バー背景グラデーション進行ゲージ */}
                     <div
-                      className="bg-gradient-to-r from-amber-500 to-orange-500 h-full transition-all duration-75"
+                      className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 h-full rounded-full transition-all duration-75"
                       style={{ width: `${animProgress}%` }}
                     />
+
+                    {/* SEマーカーピンの配置 */}
+                    {currentPattern.seMarkers?.map((marker, idx) => {
+                      const pct = Math.min(100, Math.max(0, (marker.time / currentPattern.duration) * 100));
+                      const isPassed = (animProgress / 100) * currentPattern.duration >= marker.time;
+                      const markerColor =
+                        marker.type === 'slash' ? 'bg-rose-500 text-white border-rose-200 ring-rose-400' :
+                        marker.type === 'flame' ? 'bg-orange-500 text-white border-orange-200 ring-orange-400' :
+                        marker.type === 'draw' ? 'bg-amber-500 text-white border-amber-200 ring-amber-400' :
+                        marker.type === 'hit' ? 'bg-purple-600 text-white border-purple-200 ring-purple-400' :
+                        'bg-cyan-600 text-white border-cyan-200 ring-cyan-400';
+
+                      return (
+                        <div
+                          key={idx}
+                          className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-10 group/marker cursor-pointer"
+                          style={{ left: `${pct}%` }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            RobotSEAudioEngine.getInstance().playSE(marker.type);
+                          }}
+                          title={`${marker.label} (${marker.time}s) - クリックでSE試聴`}
+                        >
+                          {/* 縦のガイドライン */}
+                          <div className={`w-0.5 h-4 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 ${isPassed ? 'bg-amber-300' : 'bg-stone-400'} pointer-events-none opacity-60`} />
+                          {/* マーカーピン */}
+                          <div className={`w-4 h-4 rounded-full border shadow-sm flex items-center justify-center text-[9px] font-bold transition-transform group-hover/marker:scale-125 ${markerColor} ${isPassed ? 'ring-2' : 'opacity-85'}`}>
+                            {marker.type === 'slash' ? '⚔️' :
+                             marker.type === 'flame' ? '🔥' :
+                             marker.type === 'draw' ? '🗡️' :
+                             marker.type === 'hit' ? '💥' : '⚡'}
+                          </div>
+
+                          {/* ホバーツールチップ */}
+                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover/marker:flex flex-col items-center pointer-events-none z-30">
+                            <div className="bg-stone-900 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-lg whitespace-nowrap border border-amber-500/50 flex items-center gap-1">
+                              <span>{marker.label}</span>
+                              <span className="text-amber-400 font-mono">({marker.time}s)</span>
+                              <span className="text-stone-400 text-[9px]">♪試聴</span>
+                            </div>
+                            <div className="w-1.5 h-1.5 bg-stone-900 rotate-45 -mt-0.5" />
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
+
+                  {/* マーカーの凡例・個別トリガーチップ一覧 */}
+                  {currentPattern.seMarkers && currentPattern.seMarkers.length > 0 && (
+                    <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                      <span className="text-[10px] text-stone-500 font-bold">SEタイミング:</span>
+                      {currentPattern.seMarkers.map((marker, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => RobotSEAudioEngine.getInstance().playSE(marker.type)}
+                          className="text-[10px] px-1.5 py-0.5 rounded bg-stone-100 hover:bg-amber-100 text-stone-700 hover:text-amber-900 border border-stone-300 flex items-center gap-1 cursor-pointer transition-colors"
+                          title="クリックでSEを試聴"
+                        >
+                          <span>{marker.type === 'slash' ? '⚔️' : marker.type === 'flame' ? '🔥' : marker.type === 'draw' ? '🗡️' : '💥'}</span>
+                          <span className="font-medium">{marker.label}</span>
+                          <span className="text-stone-400 font-mono text-[9px]">{marker.time}s</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex items-center justify-between gap-2 flex-wrap pt-1">
@@ -540,7 +682,7 @@ export const GSAPMotionStudioModal: React.FC<GSAPMotionStudioModalProps> = ({
               </div>
 
               {/* パターンリスト */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 overflow-y-auto max-h-[360px] pr-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 overflow-y-auto max-h-[460px] pr-1">
                 {categoryPatterns.map(pattern => {
                   const isSelected = pattern.id === selectedPatternId;
                   return (

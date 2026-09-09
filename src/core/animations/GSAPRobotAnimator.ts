@@ -1,4 +1,5 @@
 import gsap from 'gsap';
+import { HandAnchorManager } from './HandAnchorManager';
 
 /**
  * ロボットアニメーションのカテゴリ定義
@@ -58,6 +59,7 @@ export interface RobotDOMRefs {
   legLeft?: HTMLElement | SVGGElement | null;   // 左脚 (向かって左)
   legRight?: HTMLElement | SVGGElement | null;  // 右脚 (向かって右)
   fxContainer?: HTMLElement | null;
+  armPartKey?: string;                          // 装着中のアームパーツ識別キー (例: arm_r1_v0)
   scanLine?: HTMLElement | null;
   auraOverlay?: HTMLElement | null;
   sparkles?: HTMLElement | null;
@@ -66,6 +68,17 @@ export interface RobotDOMRefs {
 /**
  * アニメーションパターンのインターフェース
  */
+
+/**
+ * タイムライン上の効果音（SE）発生タイミングマーカー
+ */
+export interface AnimationSEMarker {
+  time: number;          // 発生秒数 (0 <= time <= duration)
+  label: string;         // マーカーラベル（例: '抜刀', '炎チャージ', 'ファイア・スラッシュ', '爆砕着弾'）
+  type: 'draw' | 'swing' | 'slash' | 'hit' | 'flame' | 'spark'; // 効果音種別
+  icon?: string;
+}
+
 export interface IRobotAnimationPattern {
   id: string;
   name: string;
@@ -74,6 +87,7 @@ export interface IRobotAnimationPattern {
   loop: boolean;
   description: string;
   technicalHighlights: string[]; // GSAP技術ハイライト（イージング、タイムライン設計など）
+  seMarkers?: AnimationSEMarker[]; // 効果音（SE）発生タイミング定義
   build(refs: RobotDOMRefs, tl: gsap.core.Timeline): void;
 }
 
@@ -88,6 +102,7 @@ export abstract class BaseRobotAnimation implements IRobotAnimationPattern {
   abstract loop: boolean;
   abstract description: string;
   abstract technicalHighlights: string[];
+  seMarkers?: AnimationSEMarker[];
 
   abstract build(refs: RobotDOMRefs, tl: gsap.core.Timeline): void;
 
@@ -121,12 +136,23 @@ export abstract class BaseRobotAnimation implements IRobotAnimationPattern {
       });
     }
     // 解剖学的に自然な関節回転軸 (Pivot Point) を設定
+    // アームパーツごとのカスタム肩アンカー設定を自動適用
+    const armConfig = refs.armPartKey 
+      ? HandAnchorManager.getInstance().getHandConfig(refs.armPartKey)
+      : null;
+    const leftShoulderOrigin = armConfig 
+      ? `${armConfig.leftShoulder.x}% ${armConfig.leftShoulder.y}%` 
+      : '25% 46%';
+    const rightShoulderOrigin = armConfig 
+      ? `${armConfig.rightShoulder.x}% ${armConfig.rightShoulder.y}%` 
+      : '75% 46%';
+
     if (refs.container) tl.set(refs.container, { transformOrigin: '50% 80%' });
     if (refs.head) tl.set(refs.head, { transformOrigin: '50% 32%' });           // 首・頭部の付け根
     if (refs.body) tl.set(refs.body, { transformOrigin: '50% 55%' });           // 胴体の重心
     if (refs.arms) tl.set(refs.arms, { transformOrigin: '50% 46%' });           // 腕部全体
-    if (refs.armLeft) tl.set(refs.armLeft, { transformOrigin: '25% 46%' });     // 左肩 (向かって左)
-    if (refs.armRight) tl.set(refs.armRight, { transformOrigin: '75% 46%' });   // 右肩 (向かって右)
+    if (refs.armLeft) tl.set(refs.armLeft, { transformOrigin: leftShoulderOrigin });     // 左肩 (カスタム位置)
+    if (refs.armRight) tl.set(refs.armRight, { transformOrigin: rightShoulderOrigin });   // 右肩 (カスタム位置)
     if (refs.legs) tl.set(refs.legs, { transformOrigin: '50% 75%' });           // 脚部全体
     if (refs.legLeft) tl.set(refs.legLeft, { transformOrigin: '38% 72%' });     // 左股関節 (向かって左)
     if (refs.legRight) tl.set(refs.legRight, { transformOrigin: '62% 72%' });   // 右股関節 (向かって右)
@@ -134,7 +160,257 @@ export abstract class BaseRobotAnimation implements IRobotAnimationPattern {
     if (refs.scanLine) tl.set(refs.scanLine, { opacity: 0, y: -50 });
     if (refs.auraOverlay) tl.set(refs.auraOverlay, { opacity: 0, scale: 0.8 });
     if (refs.sparkles) tl.set(refs.sparkles, { opacity: 0 });
+
+    // 武器・手持ちエフェクトのクリーンアップ
+    if (refs.fxContainer && typeof document !== 'undefined') {
+      refs.fxContainer.innerHTML = '';
+    }
   }
+}
+
+
+// =========================================================================
+// 炎の曲刀 (Flame Curved Blade) SVG & 武器生成ヘルパー
+// =========================================================================
+
+/**
+ * 炎の刀身グラデーションを持つ曲刀のSVGマークアップを生成
+ */
+export function getFlameBladeSwordSVG(idPrefix: string = 'fb'): string {
+  return `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="100%" height="100%" class="drop-shadow-[0_0_10px_rgba(249,115,22,0.85)] filter">
+  <defs>
+    <!-- 炎の刀身グラデーション -->
+    <linearGradient id="${idPrefix}-fire-blade" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fff7ed"/>
+      <stop offset="30%" stop-color="#fdba74"/>
+      <stop offset="70%" stop-color="#f97316"/>
+      <stop offset="100%" stop-color="#dc2626"/>
+    </linearGradient>
+
+    <!-- 鍔（ダークメタル＆赤銅） -->
+    <linearGradient id="${idPrefix}-dark-fire-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#7f1d1d"/>
+      <stop offset="50%" stop-color="#450a0a"/>
+      <stop offset="100%" stop-color="#18181b"/>
+    </linearGradient>
+
+    <!-- コア（コアクリスタル） -->
+    <radialGradient id="${idPrefix}-fire-core" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="100%" stop-color="#ea580c"/>
+    </radialGradient>
+  </defs>
+
+  <g stroke="#09090b" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+    <!-- 曲刀の刃（曲線を描く刀身） -->
+    <path d="M 150,220 C 140,160 110,90 200,15 C 160,70 165,130 150,220 Z" fill="url(#${idPrefix}-fire-blade)"/>
+
+    <!-- 刃のバックライン（背の厚み） -->
+    <path d="M 150,220 C 142,165 118,105 185,28 C 162,75 160,135 150,220 Z" fill="#9a3412" opacity="0.5" stroke="none"/>
+
+    <!-- 鍔（片側の護拳ガード付き） -->
+    <path d="M 120,210 C 140,215 160,215 180,210 L 190,225 C 160,230 135,230 110,220 Z" fill="url(#${idPrefix}-dark-fire-grad)"/>
+    <path d="M 180,210 C 210,220 205,260 170,270 L 160,260 C 185,250 188,225 170,220 Z" fill="url(#${idPrefix}-dark-fire-grad)"/>
+
+    <!-- 柄（グリップ） -->
+    <path d="M 142,225 L 132,270 L 148,272 L 158,227 Z" fill="#27272a"/>
+    <line x1="140" y1="235" x2="152" y2="240" stroke="#f97316" stroke-width="2.5"/>
+    <line x1="137" y1="248" x2="149" y2="253" stroke="#f97316" stroke-width="2.5"/>
+    <line x1="134" y1="260" x2="146" y2="265" stroke="#f97316" stroke-width="2.5"/>
+
+    <!-- 柄頭（ポメル） -->
+    <path d="M 125,270 L 140,290 L 155,272 Z" fill="url(#${idPrefix}-dark-fire-grad)"/>
+
+    <!-- 鍔の中央宝珠 -->
+    <circle cx="150" cy="220" r="7" fill="url(#${idPrefix}-fire-core)"/>
+  </g>
+</svg>
+  `;
+}
+
+/**
+ * 炎の曲刀要素をfxContainer内に配置
+ * 肩を回転ピボットとする腕追従ラッパー (wrapper) と、拳（Fist）の位置に配置された手首スナップ用ソード本体 (el) の
+ * 階層構造により、アームパーツごとのカスタム関節座標およびGSAPアニメーションの腕の振りに完全連動します。
+ */
+export function mountFlameSword(
+  container: HTMLElement,
+  options: {
+    hand: 'right' | 'left';
+    sizePercent?: number;
+    initialRotation?: number;
+    withHandGrip?: boolean; // 手甲（拳）パーツを柄の手前に重ねて「握っている」見た目を再現
+    armPartKey?: string;    // アームパーツ識別キー (例: arm_r1_v0)
+    customHandCoord?: { x: number; y: number }; // 直接指定の拳座標 (%)
+    customShoulderCoord?: { x: number; y: number }; // 直接指定の肩座標 (%)
+  }
+): { wrapper: HTMLDivElement; el: HTMLDivElement; gripEl?: HTMLDivElement; cleanup: () => void } {
+  const wrapper = document.createElement('div');
+  const el = document.createElement('div');
+  const idPrefix = 'sw_' + Math.random().toString(36).substring(2, 7);
+  const size = options.sizePercent || 52;
+  const withGrip = options.withHandGrip !== false; // デフォルトtrue
+  
+  // 1. パーツ設定から肩・拳のアンカー座標を取得
+  const manager = HandAnchorManager.getInstance();
+  const conf = manager.getHandConfig(options.armPartKey || 'arm_r1_v0');
+  
+  const targetShoulderCoord = options.customShoulderCoord || 
+    (options.hand === 'right' ? conf.rightShoulder : conf.leftShoulder);
+  const targetHandCoord = options.customHandCoord || 
+    (options.hand === 'right' ? conf.rightHand : conf.leftHand);
+
+  // 2. 腕追従ラッパー（肩をピボットとする全画面レイヤー）
+  // 腕（armRight / armLeft）の回転・平行移動と完全に同期させることで、肩を中心に腕が振られたときに拳の軌道と100%一致します
+  wrapper.className = 'absolute inset-0 w-full h-full pointer-events-none will-change-transform';
+  wrapper.style.transformOrigin = `${targetShoulderCoord.x}% ${targetShoulderCoord.y}%`;
+
+  // 3. ソード本体（拳の位置に配置、手首スナップ用ピボットは柄の握り手中心）
+  el.className = 'absolute pointer-events-none will-change-transform';
+  el.style.width = `${size}%`;
+  el.style.height = `${size}%`;
+
+  if (options.hand === 'right') {
+    // 右手用: 握り手ピボット(48.33%*size, 83.33%*size)が拳中心に重なるよう配置
+    const leftPct = targetHandCoord.x - (48.33 / 100) * size;
+    const topPct = targetHandCoord.y - (83.33 / 100) * size;
+    el.style.left = `${leftPct}%`;
+    el.style.top = `${topPct}%`;
+    el.style.transformOrigin = '48.33% 83.33%';
+    if (options.initialRotation !== undefined) {
+      el.style.transform = `rotate(${options.initialRotation}deg)`;
+    }
+  } else {
+    // 左手用: 水平反転 (scaleX(-1))、反転時の握り手中心は 51.67%, 83.33%
+    const leftPct = targetHandCoord.x - (51.67 / 100) * size;
+    const topPct = targetHandCoord.y - (83.33 / 100) * size;
+    el.style.left = `${leftPct}%`;
+    el.style.top = `${topPct}%`;
+    el.style.transformOrigin = '51.67% 83.33%';
+    const rot = options.initialRotation || 0;
+    el.style.transform = `scaleX(-1) rotate(${rot}deg)`;
+  }
+  
+  // ソードSVGの本体
+  let swordHTML = getFlameBladeSwordSVG(idPrefix);
+  
+  // 手甲カバー（拳マニピュレーター）：柄の手前(Z上層)に重ねることで「手で握っている」表現を達成
+  if (withGrip) {
+    const gripSVG = `
+    <!-- 手甲・拳カバー（柄を握り込むマニピュレーター） -->
+    <g stroke="#09090b" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+      <!-- 手甲ベースプレート -->
+      <rect x="135" y="235" width="22" height="15" rx="3" fill="#3f3f46" />
+      <rect x="137" y="237" width="18" height="11" rx="2" fill="#52525b" />
+      <!-- 指のナックル関節 -->
+      <line x1="139" y1="240" x2="153" y2="240" stroke="#71717a" stroke-width="2"/>
+      <line x1="139" y1="244" x2="153" y2="244" stroke="#71717a" stroke-width="2"/>
+      <!-- リベット光沢 -->
+      <circle cx="140" cy="242" r="1.5" fill="#f43f5e" />
+      <circle cx="152" cy="242" r="1.5" fill="#f43f5e" />
+    </g>
+    `;
+    // </svg>の直前に手甲を挿入
+    swordHTML = swordHTML.replace('</svg>', gripSVG + '</svg>');
+  }
+  
+  el.innerHTML = swordHTML;
+  wrapper.appendChild(el);
+  container.appendChild(wrapper);
+  
+  return {
+    wrapper,
+    el,
+    cleanup: () => {
+      if (wrapper.parentNode) {
+        wrapper.parentNode.removeChild(wrapper);
+      }
+    }
+  };
+}
+
+/**
+ * 巨大ファイア・スラッシュ火炎波エフェクト（三日月型フレイムバースト）
+ */
+export function mountFireSlashBurstEffect(container: HTMLElement): { el: HTMLDivElement; cleanup: () => void } {
+  const el = document.createElement('div');
+  const uid = 'fs_' + Math.random().toString(36).substring(2, 7);
+  el.className = 'absolute inset-0 pointer-events-none opacity-0 will-change-transform flex items-center justify-center';
+  el.innerHTML = `
+    <svg viewBox="0 0 360 360" class="w-full h-full filter drop-shadow-[0_0_25px_#ea580c]">
+      <defs>
+        <!-- 巨大火炎三日月グラデーション -->
+        <linearGradient id="${uid}-fire-crescent" x1="0%" y1="100%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="1"/>
+          <stop offset="20%" stop-color="#fef08a" stop-opacity="0.95"/>
+          <stop offset="50%" stop-color="#f97316" stop-opacity="0.85"/>
+          <stop offset="80%" stop-color="#dc2626" stop-opacity="0.7"/>
+          <stop offset="100%" stop-color="#7f1d1d" stop-opacity="0"/>
+        </linearGradient>
+        <!-- 火炎爆風放射グラデーション -->
+        <radialGradient id="${uid}-fire-burst" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#ffffff"/>
+          <stop offset="35%" stop-color="#fdba74"/>
+          <stop offset="70%" stop-color="#ea580c"/>
+          <stop offset="100%" stop-color="#991b1b" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+
+      <!-- 放射状の火炎爆風 -->
+      <circle cx="180" cy="180" r="140" fill="url(#${uid}-fire-burst)" opacity="0.4" />
+
+      <!-- メインの巨大火炎三日月スラッシュ刃 -->
+      <path d="M 30,320 C 50,130 210,40 330,30 C 230,90 110,180 55,330 Z" fill="url(#${uid}-fire-crescent)"/>
+
+      <!-- 追従する第二の鋭利な熱線 -->
+      <path d="M 45,310 C 65,145 200,65 315,50 C 220,105 120,195 70,320 Z" fill="#ffffff" opacity="0.6"/>
+
+      <!-- 飛散する火炎スパーク -->
+      <circle cx="280" cy="80" r="6" fill="#fef08a" />
+      <circle cx="240" cy="60" r="4" fill="#f97316" />
+      <circle cx="310" cy="120" r="5" fill="#f97316" />
+      <circle cx="80" cy="270" r="5" fill="#fef08a" />
+      <circle cx="120" cy="240" r="3" fill="#ea580c" />
+      <circle cx="160" cy="200" r="4.5" fill="#ffffff" />
+    </svg>
+  `;
+  container.appendChild(el);
+  return {
+    el,
+    cleanup: () => {
+      if (el.parentNode) el.parentNode.removeChild(el);
+    }
+  };
+}
+
+/**
+ * 炎の斬撃軌跡（スラッシュエフェクト）
+ */
+export function mountFlameSlashEffect(container: HTMLElement): { el: HTMLDivElement; cleanup: () => void } {
+  const el = document.createElement('div');
+  const uid = 'tr_' + Math.random().toString(36).substring(2, 7);
+  el.className = 'absolute inset-0 pointer-events-none opacity-0 will-change-transform flex items-center justify-center';
+  el.innerHTML = `
+    <svg viewBox="0 0 300 300" class="w-full h-full filter drop-shadow-[0_0_15px_#ea580c]">
+      <defs>
+        <linearGradient id="${uid}-trail" x1="0%" y1="100%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#fff7ed" stop-opacity="0.95"/>
+          <stop offset="35%" stop-color="#fdba74" stop-opacity="0.9"/>
+          <stop offset="70%" stop-color="#f97316" stop-opacity="0.75"/>
+          <stop offset="100%" stop-color="#dc2626" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <path d="M 20,270 C 40,110 180,35 285,25 C 195,75 95,155 45,280 Z" fill="url(#${uid}-trail)"/>
+    </svg>
+  `;
+  container.appendChild(el);
+  return {
+    el,
+    cleanup: () => {
+      if (el.parentNode) el.parentNode.removeChild(el);
+    }
+  };
 }
 
 // =========================================================================
@@ -145,51 +421,88 @@ export abstract class BaseRobotAnimation implements IRobotAnimationPattern {
  * 1. 連撃スラッシュコンボ (Slash Combo)
  */
 export class SlashComboAnimation extends BaseRobotAnimation {
+  seMarkers: AnimationSEMarker[] = [
+    { time: 0.25, label: '曲刀構え', type: 'draw' },
+    { time: 0.43, label: '1段目スラッシュ', type: 'slash' },
+    { time: 0.70, label: '2段目返しスラッシュ', type: 'slash' },
+    { time: 0.85, label: '連撃インパクト', type: 'hit' },
+  ];
   id = 'slash_combo';
   name = '連撃スラッシュ (Slash Combo)';
   category = RobotAnimationCategory.COMBAT;
   duration = 1.4;
   loop = true;
-  description = '前方へ鋭く踏み込み、右腕・左腕で高速クロススラッシュを叩き込む近接斬撃モーション。左右の腕と脚が独立連動。';
+  description = '前方へ鋭く踏み込み、右腕の紅蓮曲刀で高速スラッシュを叩き込む近接斬撃モーション。';
   technicalHighlights = [
-    '左右アームの交互クロススラッシュ (Rotation & ScaleX 独立変形)',
+    'fxContainer への炎の曲刀SVGのマウントと腕部ピボット同期スイング',
     '踏み込み時の左脚軸・右脚前進の歩行スタンス',
-    'インパクト瞬間のContainer微振動シェイク & Head衝撃連動'
+    'インパクト瞬間のContainer微振動シェイク & 炎の斬撃軌跡'
   ];
 
   build(refs: RobotDOMRefs, tl: gsap.core.Timeline): void {
     this.resetElements(refs, tl);
-    const { container, head, body, arms, armLeft, armRight, legs, legLeft, legRight } = refs;
+    const { container, head, body, arms, armLeft, armRight, legs, legLeft, legRight, fxContainer } = refs;
+
+    let sword: { wrapper: HTMLDivElement; el: HTMLDivElement; cleanup: () => void } | null = null;
+    let trail: { el: HTMLDivElement; cleanup: () => void } | null = null;
+
+    if (fxContainer && typeof document !== 'undefined') {
+      sword = mountFlameSword(fxContainer, { hand: 'right', initialRotation: -15, armPartKey: refs.armPartKey });
+      trail = mountFlameSlashEffect(fxContainer);
+      tl.set(sword.wrapper, { opacity: 1 });
+      tl.set(sword.el, { opacity: 1 });
+    }
+
+    tl.eventCallback('onComplete', () => {
+      sword?.cleanup();
+      trail?.cleanup();
+    });
 
     // 構え・ため
     tl.to(container, { x: -8, y: 3, scaleY: 0.95, duration: 0.25, ease: 'power2.in' })
       .to(head, { rotation: -10, duration: 0.25 }, '<');
 
     if (armRight) tl.to(armRight, { rotation: -45, y: -6, duration: 0.25, ease: 'power2.out' }, '<');
+    if (sword) {
+      tl.to(sword.wrapper, { rotation: -45, y: -6, duration: 0.25, ease: 'power2.out' }, '<');
+      tl.to(sword.el, { rotation: -15, duration: 0.25, ease: 'power2.out' }, '<');
+    }
     if (armLeft) tl.to(armLeft, { rotation: 25, y: -2, duration: 0.25, ease: 'power2.out' }, '<');
     if (!armRight && !armLeft && arms) tl.to(arms, { rotation: -30, y: -6, duration: 0.25 }, '<');
 
     if (legLeft) tl.to(legLeft, { skewX: 8, scaleY: 0.92, duration: 0.25 }, '<');
     if (legRight) tl.to(legRight, { skewX: -8, scaleY: 0.96, duration: 0.25 }, '<');
 
-    // 踏み込み1段目（右アーム渾身のスラッシュ、左腕は防御ガード）
+    // 踏み込み1段目（右アーム渾身のスラッシュ、炎の刀身が一閃）
     tl.to(container, { x: 18, y: -4, scaleY: 1.05, duration: 0.18, ease: 'back.out(2)' })
       .to(head, { rotation: 12, duration: 0.14 }, '<');
 
     if (armRight) tl.to(armRight, { rotation: 65, x: 14, y: -10, duration: 0.14, ease: 'power4.in' }, '<');
+    if (sword) {
+      tl.to(sword.wrapper, { rotation: 65, x: 14, y: -10, duration: 0.14, ease: 'power4.in' }, '<');
+      tl.to(sword.el, { rotation: 15, duration: 0.14, ease: 'power4.in' }, '<');
+    }
     if (armLeft) tl.to(armLeft, { rotation: -20, x: -4, duration: 0.14 }, '<');
     if (!armRight && !armLeft && arms) tl.to(arms, { rotation: 45, y: -12, duration: 0.14 }, '<');
+    if (trail) {
+      tl.to(trail.el, { opacity: 0.9, scale: 1.1, rotation: 10, duration: 0.08 }, '<');
+      tl.to(trail.el, { opacity: 0, scale: 1.3, duration: 0.14 }, '>');
+    }
 
     if (legLeft) tl.to(legLeft, { skewX: -14, duration: 0.18 }, '<');
     if (legRight) tl.to(legRight, { skewX: 10, scaleY: 1.05, duration: 0.18 }, '<');
     if (!legLeft && !legRight && legs) tl.to(legs, { skewX: -12, duration: 0.18 }, '<');
 
-    // 2段目（左アームの返しの高速クロススラッシュ、右腕引き戻し）
+    // 2段目（左アームの返しの牽制、右腕引き戻し・返し構え）
     tl.to(container, { x: 24, y: 0, duration: 0.15, ease: 'power2.out' })
       .to(head, { rotation: -15, y: -2, duration: 0.15 }, '<');
 
     if (armLeft) tl.to(armLeft, { rotation: 70, x: 16, y: -8, duration: 0.15, ease: 'power3.inOut' }, '<');
-    if (armRight) tl.to(armRight, { rotation: -30, x: -6, duration: 0.15 }, '<');
+    if (armRight) tl.to(armRight, { rotation: -25, x: -4, duration: 0.15 }, '<');
+    if (sword) {
+      tl.to(sword.wrapper, { rotation: -25, x: -4, duration: 0.15 }, '<');
+      tl.to(sword.el, { rotation: -20, duration: 0.15 }, '<');
+    }
     if (!armRight && !armLeft && arms) tl.to(arms, { rotation: -50, scaleX: 1.15, duration: 0.15 }, '<');
 
     // インパクトヒットストップ & 振動
@@ -202,6 +515,10 @@ export class SlashComboAnimation extends BaseRobotAnimation {
       duration: 0.45,
       ease: 'power2.out'
     });
+    if (sword) {
+      tl.to(sword.wrapper, { x: 0, y: 0, rotation: 0, duration: 0.45, ease: 'power2.out' }, '<');
+      tl.to(sword.el, { x: 0, y: 0, rotation: -15, duration: 0.45, ease: 'power2.out' }, '<');
+    }
   }
 }
 
@@ -209,45 +526,103 @@ export class SlashComboAnimation extends BaseRobotAnimation {
  * 1B. 二刀流・X連撃クロススラッシュ (Dual Wield Cross Slash)
  */
 export class DualSlashComboAnimation extends BaseRobotAnimation {
+  seMarkers: AnimationSEMarker[] = [
+    { time: 0.25, label: '二刀抜刀', type: 'draw' },
+    { time: 0.38, label: '左・袈裟斬り', type: 'slash' },
+    { time: 0.58, label: '右・逆袈裟斬り', type: 'slash' },
+    { time: 0.82, label: 'X字クロスフィニッシュ', type: 'slash' },
+    { time: 0.98, label: '交差インパクト', type: 'hit' },
+  ];
   id = 'dual_slash_combo';
   name = '二刀流クロススラッシュ (Dual Slash)';
   category = RobotAnimationCategory.COMBAT;
   duration = 1.7;
   loop = true;
-  description = '左右両腕のブレードを同時に構え、左腕の袈裟斬り、右腕の逆袈裟斬り、そして両腕同時X字クロスフィニッシュを叩き込む。';
+  description = '左右両腕に炎の曲刀を2振り構え、左腕の袈裟斬り、右腕の逆袈裟斬り、そして両腕同時X字クロスフィニッシュを叩き込む。';
   technicalHighlights = [
-    '左右アームの独立逆位相スイング (ArmLeft: +60deg / ArmRight: -60deg)',
-    'フィニッシュ時の同時X字クロス交差 (左右アーム連動)',
-    '斬撃ごとの踏み込み足（左脚→右脚→両脚開脚）の独立ステップ'
+    '左右両手に炎の曲刀SVGを同時装備 (Left: 反転装備 / Right: 通常装備)',
+    '左右アームの独立逆位相スイング & 刀身の追従',
+    'フィニッシュ時の同時X字クロス交差 & 炎の閃光'
   ];
 
   build(refs: RobotDOMRefs, tl: gsap.core.Timeline): void {
     this.resetElements(refs, tl);
-    const { container, head, arms, armLeft, armRight, legs, legLeft, legRight } = refs;
+    const { container, head, arms, armLeft, armRight, legs, legLeft, legRight, fxContainer } = refs;
 
-    // 構え（左右アームを外側に開いてエネルギー充填）
+    let swordRight: { wrapper: HTMLDivElement; el: HTMLDivElement; cleanup: () => void } | null = null;
+    let swordLeft: { wrapper: HTMLDivElement; el: HTMLDivElement; cleanup: () => void } | null = null;
+    let trail: { el: HTMLDivElement; cleanup: () => void } | null = null;
+
+    if (fxContainer && typeof document !== 'undefined') {
+      swordRight = mountFlameSword(fxContainer, { hand: 'right', initialRotation: -20, armPartKey: refs.armPartKey });
+      swordLeft = mountFlameSword(fxContainer, { hand: 'left', initialRotation: -20, armPartKey: refs.armPartKey });
+      trail = mountFlameSlashEffect(fxContainer);
+      tl.set([swordRight.wrapper, swordLeft.wrapper], { opacity: 1 });
+      tl.set([swordRight.el, swordLeft.el], { opacity: 1 });
+    }
+
+    tl.eventCallback('onComplete', () => {
+      swordRight?.cleanup();
+      swordLeft?.cleanup();
+      trail?.cleanup();
+    });
+
+    // 構え（左右アームを外側に開いて炎の刀身を構える）
     tl.to(container, { y: 2, duration: 0.25 });
     if (armLeft) tl.to(armLeft, { rotation: -40, x: -8, y: -4, duration: 0.25, ease: 'back.out(2)' }, '<');
+    if (swordLeft) {
+      tl.to(swordLeft.wrapper, { rotation: -40, x: -8, y: -4, duration: 0.25, ease: 'back.out(2)' }, '<');
+      tl.to(swordLeft.el, { rotation: -20, duration: 0.25, ease: 'back.out(2)' }, '<');
+    }
     if (armRight) tl.to(armRight, { rotation: -40, x: 8, y: -4, duration: 0.25, ease: 'back.out(2)' }, '<');
+    if (swordRight) {
+      tl.to(swordRight.wrapper, { rotation: -40, x: 8, y: -4, duration: 0.25, ease: 'back.out(2)' }, '<');
+      tl.to(swordRight.el, { rotation: -20, duration: 0.25, ease: 'back.out(2)' }, '<');
+    }
     if (!armLeft && !armRight && arms) tl.to(arms, { rotation: -30, duration: 0.25 }, '<');
 
-    // 1撃目：左腕の袈裟斬り（左腕が斜め下へ一閃、左脚踏み込み）
+    // 1撃目：左腕の袈裟斬り（左刀が斜め下へ一閃、左脚踏み込み）
     tl.to(container, { x: 8, duration: 0.12, ease: 'power4.in' });
     if (armLeft) tl.to(armLeft, { rotation: 65, x: 12, y: 6, duration: 0.12, ease: 'power4.in' }, '<');
+    if (swordLeft) {
+      tl.to(swordLeft.wrapper, { rotation: 65, x: 12, y: 6, duration: 0.12, ease: 'power4.in' }, '<');
+      tl.to(swordLeft.el, { rotation: 20, duration: 0.12, ease: 'power4.in' }, '<');
+    }
     if (armRight) tl.to(armRight, { rotation: -60, x: -6, duration: 0.12 }, '<');
+    if (swordRight) {
+      tl.to(swordRight.wrapper, { rotation: -60, x: -6, duration: 0.12 }, '<');
+    }
     if (legLeft) tl.to(legLeft, { skewX: -10, duration: 0.12 }, '<');
 
-    // 2撃目：右腕の逆袈裟斬り（右腕が斜め上へ一閃、右脚踏み込み）
+    // 2撃目：右腕の逆袈裟斬り（右刀が斜め上へ一閃、右脚踏み込み）
     tl.to(container, { x: 16, duration: 0.12, ease: 'power4.in' }, '+=0.06');
     if (armRight) tl.to(armRight, { rotation: 70, x: 14, y: -8, duration: 0.12, ease: 'power4.in' }, '<');
+    if (swordRight) {
+      tl.to(swordRight.wrapper, { rotation: 70, x: 14, y: -8, duration: 0.12, ease: 'power4.in' }, '<');
+      tl.to(swordRight.el, { rotation: 20, duration: 0.12, ease: 'power4.in' }, '<');
+    }
     if (armLeft) tl.to(armLeft, { rotation: -20, x: -4, duration: 0.12 }, '<');
+    if (swordLeft) {
+      tl.to(swordLeft.wrapper, { rotation: -20, x: -4, duration: 0.12 }, '<');
+    }
     if (legRight) tl.to(legRight, { skewX: 12, duration: 0.12 }, '<');
 
     // フィニッシュ：両腕同時X字クロススラッシュ！
     tl.to(container, { x: 24, y: -4, duration: 0.15, ease: 'back.out(2)' }, '+=0.08');
     if (armLeft) tl.to(armLeft, { rotation: 55, x: 10, y: -2, duration: 0.12, ease: 'power4.out' }, '<');
+    if (swordLeft) {
+      tl.to(swordLeft.wrapper, { rotation: 55, x: 10, y: -2, duration: 0.12, ease: 'power4.out' }, '<');
+      tl.to(swordLeft.el, { rotation: 15, duration: 0.12, ease: 'power4.out' }, '<');
+    }
     if (armRight) tl.to(armRight, { rotation: 55, x: 10, y: -2, duration: 0.12, ease: 'power4.out' }, '<');
-    if (!armLeft && !armRight && arms) tl.to(arms, { rotation: 60, duration: 0.12 }, '<');
+    if (swordRight) {
+      tl.to(swordRight.wrapper, { rotation: 55, x: 10, y: -2, duration: 0.12, ease: 'power4.out' }, '<');
+      tl.to(swordRight.el, { rotation: 15, duration: 0.12, ease: 'power4.out' }, '<');
+    }
+    if (trail) {
+      tl.to(trail.el, { opacity: 1, scale: 1.25, rotation: -20, duration: 0.08 }, '<');
+      tl.to(trail.el, { opacity: 0, scale: 1.4, duration: 0.18 }, '>');
+    }
 
     // クロスインパクト振動
     tl.to(container, { x: '+=2', y: '+=2', duration: 0.04, yoyo: true, repeat: 3 });
@@ -259,6 +634,14 @@ export class DualSlashComboAnimation extends BaseRobotAnimation {
       duration: 0.45,
       ease: 'power2.out'
     }, '+=0.15');
+    if (swordLeft) {
+      tl.to(swordLeft.wrapper, { x: 0, y: 0, rotation: 0, duration: 0.45, ease: 'power2.out' }, '<');
+      tl.to(swordLeft.el, { x: 0, y: 0, rotation: -20, duration: 0.45, ease: 'power2.out' }, '<');
+    }
+    if (swordRight) {
+      tl.to(swordRight.wrapper, { x: 0, y: 0, rotation: 0, duration: 0.45, ease: 'power2.out' }, '<');
+      tl.to(swordRight.el, { x: 0, y: 0, rotation: -20, duration: 0.45, ease: 'power2.out' }, '<');
+    }
   }
 }
 
@@ -1838,7 +2221,573 @@ export class TwinBeamShootAnimation extends BaseRobotAnimation {
   }
 }
 
+
+/**
+ * 29. 武器使用：ブレード・スラッシュ (Sword Slash)
+ */
+export class SwordSlashAnimation extends BaseRobotAnimation {
+  seMarkers: AnimationSEMarker[] = [
+    { time: 0.22, label: '抜刀', type: 'draw' },
+    { time: 0.62, label: '一刀両断一閃', type: 'slash' },
+    { time: 0.78, label: 'ヒット衝撃', type: 'hit' },
+  ];
+  id = 'sword_slash_item';
+  name = '紅蓮ブレード・一刀両断 (Flame Sword)';
+  category = RobotAnimationCategory.COMBAT;
+  duration = 1.5;
+  loop = true;
+  description = '炎を宿した真紅の曲刀を右腕に装備し、渾身の構えから大迫力の紅蓮袈裟斬りを繰り出す専用武装モーション。';
+  technicalHighlights = [
+    'fxContainer 内への炎の曲刀SVGの精密マウント (柄・護拳・宝珠コア完全再現)',
+    '抜刀・ため・一閃・残心までのフルシークエンス制御',
+    '刀身の振りに完全同期した炎の斬撃波エフェクト'
+  ];
+
+  build(refs: RobotDOMRefs, tl: gsap.core.Timeline): void {
+    this.resetElements(refs, tl);
+    const { container, head, body, armLeft, armRight, legLeft, legRight, fxContainer } = refs;
+
+    let sword: { wrapper: HTMLDivElement; el: HTMLDivElement; cleanup: () => void } | null = null;
+    let trail: { el: HTMLDivElement; cleanup: () => void } | null = null;
+
+    if (fxContainer && typeof document !== 'undefined') {
+      sword = mountFlameSword(fxContainer, { hand: 'right', sizePercent: 54, initialRotation: -45, armPartKey: refs.armPartKey });
+      trail = mountFlameSlashEffect(fxContainer);
+      tl.set(sword.wrapper, { opacity: 1 });
+      tl.set(sword.el, { opacity: 0 });
+    }
+
+    tl.eventCallback('onComplete', () => {
+      sword?.cleanup();
+      trail?.cleanup();
+    });
+
+    // 1. 抜刀＆構え (刀が実体化して右手に握られる)
+    tl.to(container, { y: 3, duration: 0.22, ease: 'power2.out' })
+      .to(head, { rotation: 8, x: 2, duration: 0.22 }, '<');
+
+    if (legLeft) tl.to(legLeft, { skewX: 8, duration: 0.22 }, '<');
+    if (legRight) tl.to(legRight, { skewX: -6, duration: 0.22 }, '<');
+    if (armLeft) tl.to(armLeft, { rotation: -25, x: -4, duration: 0.22 }, '<');
+    if (armRight) tl.to(armRight, { rotation: -50, x: -10, y: -8, duration: 0.25, ease: 'power2.out' }, '<');
+    if (sword) {
+      tl.to(sword.wrapper, { rotation: -50, x: -10, y: -8, duration: 0.25, ease: 'power2.out' }, '<');
+      tl.to(sword.el, { opacity: 1, rotation: -20, duration: 0.25, ease: 'power2.out' }, '<');
+    }
+
+    // 2. 斬撃タメ（全身を絞り込み、炎の刀身が力強く引かれる）
+    tl.to(container, { x: -6, y: 4, scaleY: 0.94, duration: 0.22, ease: 'power3.in' }, '+=0.06')
+      .to(head, { rotation: -12, duration: 0.22 }, '<');
+    if (body) tl.to(body, { rotation: -8, duration: 0.22 }, '<');
+    if (armRight) tl.to(armRight, { rotation: -75, x: -16, y: -14, duration: 0.22, ease: 'power3.in' }, '<');
+    if (sword) {
+      tl.to(sword.wrapper, { rotation: -75, x: -16, y: -14, duration: 0.22, ease: 'power3.in' }, '<');
+      tl.to(sword.el, { rotation: -30, duration: 0.22, ease: 'power3.in' }, '<');
+    }
+
+    // 3. 一刀両断・斬撃一閃！（全身で踏み込み、刀が超高速スイング）
+    tl.to(container, { x: 24, y: -2, scaleY: 1.04, duration: 0.15, ease: 'power4.out' })
+      .to(head, { rotation: 14, duration: 0.15 }, '<');
+    if (body) tl.to(body, { rotation: 10, duration: 0.15 }, '<');
+    if (armRight) tl.to(armRight, { rotation: 88, x: 22, y: 8, duration: 0.15, ease: 'power4.out' }, '<');
+    if (sword) {
+      tl.to(sword.wrapper, { rotation: 88, x: 22, y: 8, duration: 0.15, ease: 'power4.out' }, '<');
+      tl.to(sword.el, { rotation: 25, duration: 0.15, ease: 'power4.out' }, '<');
+    }
+    if (armLeft) tl.to(armLeft, { rotation: -35, duration: 0.15 }, '<');
+
+    if (trail) {
+      tl.to(trail.el, { opacity: 1, scale: 1.25, rotation: 18, duration: 0.1 }, '<');
+      tl.to(trail.el, { opacity: 0, scale: 1.45, duration: 0.2 }, '>');
+    }
+
+    // 4. ヒットストップ & 残心
+    tl.to(container, { x: '+=2', y: '+=1', duration: 0.04, yoyo: true, repeat: 2 });
+    tl.to({}, { duration: 0.25 }); // 残心の静止時間
+
+    // 5. 納刀・復帰
+    if (sword) {
+      tl.to(sword.el, { opacity: 0, duration: 0.2 }, '>');
+      tl.to(sword.wrapper, { x: 0, y: 0, rotation: 0, duration: 0.4, ease: 'power2.inOut' }, '<');
+    }
+    const allTargets = [container, head, body, armLeft, armRight, legLeft, legRight].filter(Boolean);
+    tl.to(allTargets, {
+      x: 0, y: 0, rotation: 0, scale: 1, scaleX: 1, scaleY: 1, skewX: 0,
+      duration: 0.4,
+      ease: 'power2.inOut'
+    }, '<');
+  }
+}
+
+/**
+ * 30. 武器使用：エネルギーシールド (Energy Shield)
+ */
+export class ShieldBlockAnimation extends BaseRobotAnimation {
+  id = 'shield_block_item';
+  name = 'エネルギーシールド防御 (Shield Block)';
+  category = RobotAnimationCategory.COMBAT;
+  duration = 1.5;
+  loop = true;
+  description = '左腕から硬質光のエネルギーシールドを展開し、敵の強烈な攻撃をガード。';
+  technicalHighlights = [
+    '動的SVGによる六角形ハニカムシールドの生成',
+    '被弾時の弾性反動と衝撃波エフェクト'
+  ];
+
+  build(refs: RobotDOMRefs, tl: gsap.core.Timeline): void {
+    this.resetElements(refs, tl);
+    const { container, head, body, armLeft, armRight, legLeft, legRight, fxContainer } = refs;
+    
+    let shieldEl: HTMLDivElement | null = null;
+    let impactEl: HTMLDivElement | null = null;
+
+    if (fxContainer && typeof document !== 'undefined') {
+      shieldEl = document.createElement('div');
+      shieldEl.className = 'absolute w-32 h-40 pointer-events-none drop-shadow-[0_0_12px_#2dd4bf]';
+      shieldEl.style.top = '30%'; 
+      shieldEl.style.left = '-10%';
+      shieldEl.style.transformOrigin = 'center';
+      shieldEl.innerHTML = `<svg viewBox="0 0 100 120" class="w-full h-full text-teal-400/80 fill-current"><polygon points="50,5 95,25 95,85 50,115 5,85 5,25" stroke="currentColor" stroke-width="4"/></svg>`;
+      shieldEl.style.opacity = '0';
+      shieldEl.style.transform = 'scale(0.5)';
+      fxContainer.appendChild(shieldEl);
+
+      impactEl = document.createElement('div');
+      impactEl.className = 'absolute w-32 h-32 pointer-events-none rounded-full border-4 border-yellow-300 opacity-0';
+      impactEl.style.top = '35%';
+      impactEl.style.left = '-15%';
+      fxContainer.appendChild(impactEl);
+    }
+
+    tl.eventCallback('onComplete', () => {
+      if (shieldEl && shieldEl.parentNode) shieldEl.parentNode.removeChild(shieldEl);
+      if (impactEl && impactEl.parentNode) impactEl.parentNode.removeChild(impactEl);
+    });
+
+    // 防御構え
+    tl.to(container, { y: 4, duration: 0.2 }, '<')
+      .to(body, { rotation: 10, duration: 0.2 }, '<')
+      .to(head, { rotation: -15, x: -2, duration: 0.2 }, '<');
+    
+    if (legLeft) tl.to(legLeft, { x: -8, rotation: -10, scaleY: 0.9, duration: 0.2 }, '<');
+    if (legRight) tl.to(legRight, { x: 10, rotation: 15, scaleY: 0.9, duration: 0.2 }, '<');
+    
+    if (armLeft) tl.to(armLeft, { rotation: -50, x: -10, y: -10, duration: 0.2, ease: 'power2.out' }, '<');
+    if (armRight) tl.to(armRight, { rotation: -20, x: -5, duration: 0.2 }, '<');
+
+    // シールド展開
+    if (shieldEl) {
+      tl.to(shieldEl, { opacity: 1, scale: 1, duration: 0.25, ease: 'back.out(2)' }, '-=0.1');
+    }
+
+    // 被弾！
+    tl.to(container, { x: 10, rotation: 5, duration: 0.05, ease: 'power4.out' }, '+=0.3');
+    if (impactEl) {
+      tl.to(impactEl, { opacity: 0.8, scale: 1.5, duration: 0.1 }, '<');
+      tl.to(impactEl, { opacity: 0, scale: 2.0, duration: 0.15 }, '>');
+    }
+    
+    // ガード踏ん張り（揺り戻し）
+    tl.to(container, { x: 0, rotation: 0, duration: 0.4, ease: 'elastic.out(1, 0.5)' }, '+=0.05');
+
+    // シールド解除
+    if (shieldEl) {
+      tl.to(shieldEl, { opacity: 0, scale: 0.5, duration: 0.2 }, '+=0.1');
+    }
+    
+    // 復帰
+    const allTargets = [container, head, body, armLeft, armRight, legLeft, legRight].filter(Boolean);
+    tl.to(allTargets, { x: 0, y: 0, rotation: 0, scale: 1, scaleY: 1, duration: 0.3, ease: 'power2.inOut' }, '>');
+  }
+}
+
+/**
+ * 31. 武器使用：ミサイル発射 (Missile Fire)
+ */
+export class MissileFireAnimation extends BaseRobotAnimation {
+  id = 'missile_fire_item';
+  name = 'スマートミサイル発射 (Missile Launch)';
+  category = RobotAnimationCategory.COMBAT;
+  duration = 2.0;
+  loop = true;
+  description = '背中または肩からスマートミサイルを射出！ミサイルが弧を描いて飛んでいきます。';
+  technicalHighlights = [
+    '動的SVGによるミサイルオブジェクトの生成',
+    'GSAPモーションパス風の曲線軌道アニメーション'
+  ];
+
+  build(refs: RobotDOMRefs, tl: gsap.core.Timeline): void {
+    this.resetElements(refs, tl);
+    const { container, head, body, armLeft, armRight, legLeft, legRight, fxContainer } = refs;
+    
+    let missileEl: HTMLDivElement | null = null;
+    let smokeEl: HTMLDivElement | null = null;
+
+    if (fxContainer && typeof document !== 'undefined') {
+      missileEl = document.createElement('div');
+      missileEl.className = 'absolute w-12 h-6 pointer-events-none drop-shadow-[0_0_6px_#ef4444]';
+      missileEl.style.top = '10%'; 
+      missileEl.style.left = '40%';
+      missileEl.style.opacity = '0';
+      missileEl.innerHTML = `<svg viewBox="0 0 100 40" class="w-full h-full text-red-500 fill-current"><path d="M0,15 L20,10 L80,10 L100,20 L80,30 L20,30 L0,25 Z"/></svg>`;
+      fxContainer.appendChild(missileEl);
+
+      smokeEl = document.createElement('div');
+      smokeEl.className = 'absolute w-16 h-16 pointer-events-none rounded-full bg-stone-300 blur-md opacity-0';
+      smokeEl.style.top = '5%';
+      smokeEl.style.left = '35%';
+      fxContainer.appendChild(smokeEl);
+    }
+
+    tl.eventCallback('onComplete', () => {
+      if (missileEl && missileEl.parentNode) missileEl.parentNode.removeChild(missileEl);
+      if (smokeEl && smokeEl.parentNode) smokeEl.parentNode.removeChild(smokeEl);
+    });
+
+    // 発射体勢
+    tl.to(body, { y: 4, duration: 0.3, ease: 'power2.inOut' })
+      .to(head, { rotation: -10, duration: 0.3 }, '<')
+      .to(container, { rotation: 5, duration: 0.3 }, '<');
+      
+    if (legLeft) tl.to(legLeft, { scaleY: 0.9, x: -5, duration: 0.3 }, '<');
+    if (legRight) tl.to(legRight, { scaleY: 0.9, x: 5, duration: 0.3 }, '<');
+    
+    if (armLeft) tl.to(armLeft, { rotation: 20, x: -5, duration: 0.3 }, '<');
+    if (armRight) tl.to(armRight, { rotation: 20, x: 5, duration: 0.3 }, '<');
+
+    // ミサイル発射！
+    tl.to(container, { y: 8, duration: 0.1, ease: 'power4.out' }, '+=0.2');
+    
+    if (missileEl) {
+      tl.to(missileEl, { opacity: 1, duration: 0.05 }, '<');
+      // 曲線軌道をシミュレート: xは一定速度、yは上に上がってから下がる、rotationはそれに合わせる
+      tl.to(missileEl, { x: 300, duration: 0.6, ease: 'power1.in' }, '<');
+      tl.to(missileEl, { y: -100, duration: 0.3, ease: 'power2.out' }, '<');
+      tl.to(missileEl, { rotation: -15, duration: 0.3, ease: 'power2.out' }, '<');
+      tl.to(missileEl, { y: 20, duration: 0.3, ease: 'power2.in' }, '<0.3');
+      tl.to(missileEl, { rotation: 25, duration: 0.3, ease: 'power2.in' }, '<');
+    }
+    
+    if (smokeEl) {
+      tl.to(smokeEl, { opacity: 0.8, scale: 1.5, duration: 0.2 }, '<');
+      tl.to(smokeEl, { opacity: 0, scale: 3, duration: 0.4 }, '>');
+    }
+
+    // 姿勢復帰
+    const allTargets = [container, head, body, armLeft, armRight, legLeft, legRight].filter(Boolean);
+    tl.to(allTargets, { x: 0, y: 0, rotation: 0, scale: 1, scaleY: 1, duration: 0.5, ease: 'power2.inOut' }, '+=0.2');
+  }
+}
+
+/**
+ * 32. 武器使用：炎刃・旋風回転斬り (Flame Cyclone)
+ */
+export class FlameBladeCycloneAnimation extends BaseRobotAnimation {
+  seMarkers: AnimationSEMarker[] = [
+    { time: 0.20, label: '旋風跳躍構え', type: 'draw' },
+    { time: 0.40, label: '720°火炎旋風', type: 'slash' },
+    { time: 0.75, label: '全周囲炎刃風', type: 'flame' },
+    { time: 1.05, label: '着地衝撃', type: 'hit' },
+  ];
+  id = 'flame_blade_cyclone';
+  name = '炎刃・旋風回転斬り (Flame Cyclone)';
+  category = RobotAnimationCategory.COMBAT;
+  duration = 1.6;
+  loop = true;
+  description = '炎の曲刀を真横に突き出し、低空跳躍から全身を高速360度×2回転させて全周囲を薙ぎ払う豪快な回転奥義。';
+  technicalHighlights = [
+    '炎の曲刀SVGの水平固定マウント',
+    '3D風の高速スピン回転 (Container rotation: 720deg & Y軸浮遊)',
+    '全方位への炎の円舞エフェクト'
+  ];
+
+  build(refs: RobotDOMRefs, tl: gsap.core.Timeline): void {
+    this.resetElements(refs, tl);
+    const { container, head, body, armLeft, armRight, legLeft, legRight, fxContainer } = refs;
+
+    let sword: { wrapper: HTMLDivElement; el: HTMLDivElement; cleanup: () => void } | null = null;
+    let trail: { el: HTMLDivElement; cleanup: () => void } | null = null;
+
+    if (fxContainer && typeof document !== 'undefined') {
+      sword = mountFlameSword(fxContainer, { hand: 'right', sizePercent: 54, initialRotation: 45, armPartKey: refs.armPartKey });
+      trail = mountFlameSlashEffect(fxContainer);
+      tl.set(sword.wrapper, { opacity: 1 });
+      tl.set(sword.el, { opacity: 0 });
+    }
+
+    tl.eventCallback('onComplete', () => {
+      sword?.cleanup();
+      trail?.cleanup();
+    });
+
+    // 1. 跳躍・構え（刀を外側に水平に開く）
+    tl.to(container, { y: 4, scaleY: 0.92, duration: 0.2, ease: 'power2.in' });
+    if (armRight) tl.to(armRight, { rotation: 45, x: 10, duration: 0.2 }, '<');
+    if (sword) {
+      tl.to(sword.wrapper, { rotation: 45, x: 10, duration: 0.2 }, '<');
+      tl.to(sword.el, { opacity: 1, rotation: 20, duration: 0.2 }, '<');
+    }
+    if (armLeft) tl.to(armLeft, { rotation: -45, x: -10, duration: 0.2 }, '<');
+
+    // 2. 宙へ飛び上がり、回転開始！
+    tl.to(container, { y: -25, scaleY: 1.08, duration: 0.18, ease: 'power2.out' });
+    if (legLeft) tl.to(legLeft, { scaleY: 0.8, duration: 0.18 }, '<');
+    if (legRight) tl.to(legRight, { scaleY: 0.8, duration: 0.18 }, '<');
+
+    // 3. 高速スピン 720度！
+    tl.to(container, {
+      rotation: 720,
+      duration: 0.65,
+      ease: 'power2.inOut',
+    });
+    if (trail) {
+      tl.to(trail.el, { opacity: 0.85, scale: 1.3, rotation: 360, duration: 0.3 }, '<');
+      tl.to(trail.el, { opacity: 0, scale: 1.5, duration: 0.35 }, '>');
+    }
+
+    // 4. 着地衝撃
+    tl.to(container, { y: 2, scaleY: 0.9, duration: 0.15, ease: 'power3.out' });
+    tl.to(container, { x: '+=2', y: '+=2', duration: 0.04, yoyo: true, repeat: 2 });
+
+    // 5. 残心・復帰
+    tl.to({}, { duration: 0.2 });
+    if (sword) {
+      tl.to(sword.el, { opacity: 0, duration: 0.2 }, '>');
+      tl.to(sword.wrapper, { x: 0, y: 0, rotation: 0, duration: 0.35, ease: 'power2.out' }, '<');
+    }
+    const allTargets = [container, head, body, armLeft, armRight, legLeft, legRight].filter(Boolean);
+    tl.to(allTargets, {
+      x: 0, y: 0, rotation: 0, scale: 1, scaleX: 1, scaleY: 1, skewX: 0,
+      duration: 0.35,
+      ease: 'power2.out'
+    }, '<');
+  }
+}
+
+/**
+ * 33. 武器使用：紅蓮・突進突き (Flame Blade Thrust)
+ */
+export class FlameBladeThrustAnimation extends BaseRobotAnimation {
+  seMarkers: AnimationSEMarker[] = [
+    { time: 0.20, label: '中段突き構え', type: 'draw' },
+    { time: 0.44, label: '推進力チャージ', type: 'flame' },
+    { time: 0.68, label: 'ロケット急襲突き', type: 'slash' },
+    { time: 0.82, label: '装甲貫通衝撃', type: 'hit' },
+  ];
+  id = 'flame_blade_thrust';
+  name = '紅蓮・突進突き (Flame Blade Thrust)';
+  category = RobotAnimationCategory.COMBAT;
+  duration = 1.4;
+  loop = true;
+  description = '炎の曲刀を前方に真っ直ぐ突き構え、バーニア噴射で一気に加速して敵の装甲を貫く直線強襲突き。';
+  technicalHighlights = [
+    '炎の曲刀SVGの水平突き出しポーズ',
+    '後方へのタメから瞬間最大加速 (Backstep -> Rocket Thrust)',
+    '突き出し先端への衝撃波バースト'
+  ];
+
+  build(refs: RobotDOMRefs, tl: gsap.core.Timeline): void {
+    this.resetElements(refs, tl);
+    const { container, head, body, armLeft, armRight, legLeft, legRight, fxContainer } = refs;
+
+    let sword: { wrapper: HTMLDivElement; el: HTMLDivElement; cleanup: () => void } | null = null;
+    let trail: { el: HTMLDivElement; cleanup: () => void } | null = null;
+
+    if (fxContainer && typeof document !== 'undefined') {
+      sword = mountFlameSword(fxContainer, { hand: 'right', sizePercent: 54, initialRotation: 55, armPartKey: refs.armPartKey });
+      trail = mountFlameSlashEffect(fxContainer);
+      tl.set(sword.wrapper, { opacity: 1 });
+      tl.set(sword.el, { opacity: 0 });
+    }
+
+    tl.eventCallback('onComplete', () => {
+      sword?.cleanup();
+      trail?.cleanup();
+    });
+
+    // 1. 中段突き構え（右腕と刀を前方に突き出す準備）
+    tl.to(container, { y: 2, duration: 0.2 });
+    if (armRight) tl.to(armRight, { rotation: 55, x: 6, y: -2, duration: 0.2 }, '<');
+    if (sword) {
+      tl.to(sword.wrapper, { rotation: 55, x: 6, y: -2, duration: 0.2 }, '<');
+      tl.to(sword.el, { opacity: 1, rotation: 10, duration: 0.2 }, '<');
+    }
+    if (armLeft) tl.to(armLeft, { rotation: -30, x: -6, duration: 0.2 }, '<');
+
+    // 2. バックステップ＆エネルギー充填
+    tl.to(container, { x: -20, y: 4, scaleX: 0.95, duration: 0.24, ease: 'power2.in' });
+    if (head) tl.to(head, { rotation: -10, duration: 0.24 }, '<');
+    if (legLeft) tl.to(legLeft, { skewX: 12, duration: 0.24 }, '<');
+
+    // 3. 超加速ロケット突進突き！
+    tl.to(container, { x: 38, y: -3, scaleX: 1.1, duration: 0.12, ease: 'power4.out' });
+    if (armRight) tl.to(armRight, { rotation: 70, x: 26, duration: 0.12, ease: 'power4.out' }, '<');
+    if (sword) {
+      tl.to(sword.wrapper, { rotation: 70, x: 26, duration: 0.12, ease: 'power4.out' }, '<');
+      tl.to(sword.el, { rotation: 15, duration: 0.12, ease: 'power4.out' }, '<');
+    }
+
+    if (trail) {
+      tl.to(trail.el, { opacity: 1, scale: 1.3, rotation: -40, duration: 0.08 }, '<');
+      tl.to(trail.el, { opacity: 0, scale: 1.5, duration: 0.18 }, '>');
+    }
+
+    // 4. ブレーキ制動 & 衝撃振動
+    tl.to(container, { x: 34, duration: 0.1, ease: 'power2.in' });
+    tl.to(container, { x: '+=2', y: '+=2', duration: 0.04, yoyo: true, repeat: 3 });
+
+    // 5. 残心復帰
+    tl.to({}, { duration: 0.2 });
+    if (sword) {
+      tl.to(sword.el, { opacity: 0, duration: 0.2 }, '>');
+      tl.to(sword.wrapper, { x: 0, y: 0, rotation: 0, duration: 0.4, ease: 'power2.out' }, '<');
+    }
+    const allTargets = [container, head, body, armLeft, armRight, legLeft, legRight].filter(Boolean);
+    tl.to(allTargets, {
+      x: 0, y: 0, rotation: 0, scale: 1, scaleX: 1, scaleY: 1, skewX: 0,
+      duration: 0.4,
+      ease: 'power2.out'
+    }, '<');
+  }
+}
+
+/**
+ * 34. 必殺奥義：ファイア・スラッシュ (Fire Slash)
+ * 炎の曲刀を右腕に構え、紅蓮のオーラをチャージ。
+ * 大上段から地面を切り裂く巨大な三日月型炎の斬撃波と火炎爆砕を放つ必殺の火炎撃。
+ */
+export class FireSlashAnimation extends BaseRobotAnimation {
+  id = 'fire_slash';
+  name = 'ファイア・スラッシュ (Fire Slash)';
+  category = RobotAnimationCategory.COMBAT;
+  duration = 1.8;
+  loop = true;
+  description = '炎の曲刀を右腕に構え、紅蓮のオーラを全身にチャージ。大上段から地面を切り裂く巨大な三日月型炎の斬撃波と火炎爆砕を放つ必殺の火炎撃。';
+  technicalHighlights = [
+    '炎の曲刀SVGの手甲マニピュレーター精密グリップマウント (柄・手甲の完全サンドイッチ)',
+    '抜刀・紅蓮チャージ・火炎一閃・爆砕着弾までのフルシネマティック構成',
+    '巨大火炎スラッシュ波（Fire Slash Burst）と地割れ爆煙パーティクルの同期',
+    'タイムライン同期SEマーカー（抜刀・チャージ・一閃・着弾）完備'
+  ];
+
+  seMarkers: AnimationSEMarker[] = [
+    { time: 0.25, label: '抜刀・炎点火', type: 'draw' },
+    { time: 0.65, label: '紅蓮チャージ', type: 'flame' },
+    { time: 0.95, label: 'ファイア・スラッシュ一閃！', type: 'slash' },
+    { time: 1.15, label: '火炎爆砕・地割れ衝撃', type: 'hit' },
+  ];
+
+  build(refs: RobotDOMRefs, tl: gsap.core.Timeline): void {
+    this.resetElements(refs, tl);
+    const { container, head, body, armLeft, armRight, legLeft, legRight, fxContainer, auraOverlay } = refs;
+
+    let sword: { wrapper: HTMLDivElement; el: HTMLDivElement; cleanup: () => void } | null = null;
+    let burst: { el: HTMLDivElement; cleanup: () => void } | null = null;
+
+    if (fxContainer && typeof document !== 'undefined') {
+      sword = mountFlameSword(fxContainer, { hand: 'right', sizePercent: 56, initialRotation: -50, withHandGrip: true, armPartKey: refs.armPartKey });
+      burst = mountFireSlashBurstEffect(fxContainer);
+      tl.set(sword.wrapper, { opacity: 1 });
+      tl.set(sword.el, { opacity: 0 });
+    }
+
+    tl.eventCallback('onComplete', () => {
+      sword?.cleanup();
+      burst?.cleanup();
+    });
+
+    // 1. 抜刀＆炎点火 (0.0s - 0.35s) [SE: draw at 0.25s]
+    tl.to(container, { y: 2, scaleY: 0.97, duration: 0.25, ease: 'power2.out' })
+      .to(head, { rotation: 6, x: 2, duration: 0.25 }, '<');
+
+    if (legLeft) tl.to(legLeft, { skewX: 6, duration: 0.25 }, '<');
+    if (legRight) tl.to(legRight, { skewX: -6, duration: 0.25 }, '<');
+    if (armLeft) tl.to(armLeft, { rotation: -30, x: -6, duration: 0.25 }, '<');
+    if (armRight) tl.to(armRight, { rotation: -50, x: -8, y: -6, duration: 0.25, ease: 'power2.out' }, '<');
+    if (sword) {
+      tl.to(sword.wrapper, { rotation: -50, x: -8, y: -6, duration: 0.25, ease: 'power2.out' }, '<');
+      tl.to(sword.el, { opacity: 1, rotation: -20, duration: 0.25, ease: 'power2.out' }, '<');
+    }
+
+    // 2. 紅蓮チャージ・大上段タメ構え (0.35s - 0.85s) [SE: flame at 0.65s]
+    // 刀身を天にかざし、全身が沈み込んでエネルギーを凝縮
+    tl.to(container, { x: -10, y: 5, scaleY: 0.92, duration: 0.4, ease: 'power2.in' }, '+=0.05')
+      .to(head, { rotation: -14, y: -3, duration: 0.4 }, '<');
+    if (body) tl.to(body, { rotation: -10, duration: 0.4 }, '<');
+    if (legLeft) tl.to(legLeft, { skewX: 14, scaleY: 0.88, duration: 0.4 }, '<');
+    if (legRight) tl.to(legRight, { skewX: -8, duration: 0.4 }, '<');
+
+    // 右腕を頭上高くまで引き上げる（大上段の構え）
+    if (armRight) tl.to(armRight, { rotation: -88, x: -18, y: -20, duration: 0.4, ease: 'power3.in' }, '<');
+    if (sword) {
+      tl.to(sword.wrapper, { rotation: -88, x: -18, y: -20, duration: 0.4, ease: 'power3.in' }, '<');
+      tl.to(sword.el, {
+        rotation: -25,
+        scale: 1.12,
+        duration: 0.4,
+        ease: 'power3.in'
+      }, '<');
+    }
+    if (auraOverlay) {
+      tl.to(auraOverlay, { opacity: 0.6, scale: 1.2, duration: 0.35 }, '<');
+    }
+
+    // 3. 超高速一閃！ファイア・スラッシュ (0.85s - 1.05s) [SE: slash at 0.95s]
+    // 前方へ超加速踏み込み、天から地へ豪快に振り下ろす！
+    tl.to(container, { x: 30, y: -4, scaleX: 1.08, scaleY: 1.05, duration: 0.14, ease: 'power4.out' })
+      .to(head, { rotation: 18, duration: 0.14 }, '<');
+    if (body) tl.to(body, { rotation: 15, duration: 0.14 }, '<');
+
+    if (armRight) tl.to(armRight, { rotation: 92, x: 26, y: 12, duration: 0.14, ease: 'power4.out' }, '<');
+    if (sword) {
+      tl.to(sword.wrapper, { rotation: 92, x: 26, y: 12, duration: 0.14, ease: 'power4.out' }, '<');
+      tl.to(sword.el, {
+        rotation: 28,
+        scale: 1.25,
+        duration: 0.14,
+        ease: 'power4.out'
+      }, '<');
+    }
+    if (armLeft) tl.to(armLeft, { rotation: -45, x: -10, duration: 0.14 }, '<');
+    if (legLeft) tl.to(legLeft, { skewX: -16, duration: 0.14 }, '<');
+    if (legRight) tl.to(legRight, { skewX: 16, scaleY: 1.08, duration: 0.14 }, '<');
+
+    // 巨大火炎スラッシュ波バースト放出！
+    if (burst) {
+      tl.to(burst.el, { opacity: 1, scale: 1.35, rotation: 15, duration: 0.1 }, '<0.04');
+    }
+
+    // 4. 火炎爆砕＆地割れ衝撃 (1.05s - 1.35s) [SE: hit at 1.15s]
+    // ヒットストップと強烈な画面シェイク
+    tl.to(container, { x: '+=3', y: '+=3', duration: 0.035, yoyo: true, repeat: 4, ease: 'rough' });
+    if (burst) {
+      tl.to(burst.el, { opacity: 0, scale: 1.6, rotation: 25, duration: 0.25, ease: 'power2.out' }, '>');
+    }
+    if (auraOverlay) {
+      tl.to(auraOverlay, { opacity: 0, scale: 0.8, duration: 0.2 }, '<');
+    }
+
+    // 5. 残心（静止）(1.35s - 1.50s)
+    tl.to({}, { duration: 0.18 });
+
+    // 6. 納刀・炎の消滅・復帰 (1.50s - 1.80s)
+    if (sword) {
+      tl.to(sword.el, { opacity: 0, scale: 1, duration: 0.22, ease: 'power2.in' });
+      tl.to(sword.wrapper, { x: 0, y: 0, rotation: 0, duration: 0.35, ease: 'power2.out' }, '<');
+    }
+    const allTargets = [container, head, body, armLeft, armRight, legLeft, legRight].filter(Boolean);
+    tl.to(allTargets, {
+      x: 0, y: 0, rotation: 0, scale: 1, scaleX: 1, scaleY: 1, skewX: 0,
+      duration: 0.35,
+      ease: 'power2.out'
+    }, '<');
+  }
+}
+
+
+
 export class GSAPRobotAnimationRegistry {
+
 
   private static instance: GSAPRobotAnimationRegistry;
   private patterns: Map<string, IRobotAnimationPattern> = new Map();
@@ -1895,6 +2844,12 @@ export class GSAPRobotAnimationRegistry {
     new YayRejoiceAnimation(),
     new MissileBarrageAnimation(),
     new TwinBeamShootAnimation(),
+    new SwordSlashAnimation(),
+    new ShieldBlockAnimation(),
+    new MissileFireAnimation(),
+      new FlameBladeCycloneAnimation(),
+      new FlameBladeThrustAnimation(),
+      new FireSlashAnimation(),
     ];
 
     defaultPatterns.forEach(pattern => this.patterns.set(pattern.id, pattern));

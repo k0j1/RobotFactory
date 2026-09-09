@@ -6,7 +6,9 @@ import { theme } from '../styles/theme';
 import { RobotVisual, PartVisual } from '../components/robot/RobotVisual';
 import { RobotGalleryCard } from '../components/robot/RobotGalleryCard';
 import { GSAPMotionStudioModal } from '../components/robot/GSAPMotionStudioModal';
+import { ArmJointCalibrationModal } from '../components/robot/ArmJointCalibrationModal';
 import { SVG_HEADS, SVG_BODIES, SVG_ARMS, SVG_LEGS } from '../components/robot/RobotSVGs';
+import { HandAnchorManager } from '../core/animations/HandAnchorManager';
 import { MATERIALS, getMaterialCraftableVisuals } from '../core/data';
 import * as Gi from 'react-icons/gi';
 import { MaterialIcon } from '../components/ui/MaterialIcon';
@@ -130,6 +132,9 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
   // GSAP モーションスタジオのモーダル状態
   const [isMotionStudioOpen, setIsMotionStudioOpen] = useState<boolean>(false);
   const [motionStudioRobot, setMotionStudioRobot] = useState<Robot | null>(null);
+
+  // 肩＆拳位置調整モーダルの状態
+  const [calibrationArmPart, setCalibrationArmPart] = useState<CatalogPartItem | null>(null);
 
   // ロボットギャラリー：クラフトされたユニークロボット一覧
   const uniqueCraftedRobots = useMemo(() => {
@@ -386,42 +391,6 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
 
       {tab === 'robots' && (
         <div className="space-y-4">
-          {/* GSAPモーションスタジオ起動バナー */}
-          <div className="bg-gradient-to-r from-amber-600 to-amber-700 text-white p-3 sm:p-4 rounded-xl shadow-md border-2 border-amber-500 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-stone-900/40 rounded-xl text-amber-300 border border-amber-400/30">
-                <Gi.GiFilmProjector size={28} />
-              </div>
-              <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-bold text-white text-base">
-                    GSAP ロボットモーションスタジオ
-                  </span>
-                  <span className="text-[10px] bg-amber-400 text-stone-950 px-2 py-0.5 rounded-full font-bold">
-                    GreenSock 搭載
-                  </span>
-                </div>
-                <p className="text-xs text-amber-100 mt-0.5 leading-relaxed">
-                  戦闘スラッシュ、ビーム砲撃、分解展開図、ブレイクダンス等、全24種類のアニメーションを部位別イージングで再生鑑賞！
-                </p>
-              </div>
-            </div>
-
-            <Button
-              id="open-studio-banner-btn"
-              size="sm"
-              variant="secondary"
-              onClick={() => {
-                setMotionStudioRobot(uniqueCraftedRobots[0] || null);
-                setIsMotionStudioOpen(true);
-              }}
-              className="bg-stone-900 text-amber-300 hover:bg-stone-800 border-amber-400 font-bold whitespace-nowrap text-xs flex items-center gap-1.5 shadow-sm py-2 px-3 self-stretch sm:self-auto justify-center cursor-pointer"
-            >
-              <Gi.GiPlayButton size={14} className="text-amber-400" />
-              スタジオを開く
-            </Button>
-          </div>
-
           <div className="bg-amber-50/90 border border-amber-300 p-3 rounded-xl text-sm text-stone-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 shadow-2xs">
             <div className="flex items-center gap-2.5">
               <div className="p-2 bg-amber-100 rounded-lg text-amber-700">
@@ -517,6 +486,17 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
                   <p className="text-xs font-bold text-stone-800 text-center w-full truncate">
                     {item.name}
                   </p>
+                  
+                  {item.type === 'arms' && (
+                    <button
+                      type="button"
+                      onClick={() => setCalibrationArmPart(item)}
+                      className="mt-2 w-full text-[10px] bg-amber-600 hover:bg-amber-500 text-white py-1 rounded-sm font-bold flex items-center justify-center gap-1 cursor-pointer transition-colors"
+                    >
+                      <Gi.GiMechanicalArm size={12} />
+                      肩＆拳 位置調整
+                    </button>
+                  )}
                 </Card>
               );
             })}
@@ -648,6 +628,19 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
             setIsMotionStudioOpen(false);
             setMotionStudioRobot(null);
           }}
+        />
+      )}
+
+      {/* アームパーツ 肩＆拳 位置調整モーダル */}
+      {calibrationArmPart && (
+        <ArmJointCalibrationModal
+          initialArmPartKey={HandAnchorManager.generatePartKey(calibrationArmPart.rarity, calibrationArmPart.visualIndex)}
+          initialAttribute={activeColor === AttributeColors.Fire ? 'Fire' : 
+                            activeColor === AttributeColors.Water ? 'Water' : 
+                            activeColor === AttributeColors.Earth ? 'Earth' : 
+                            activeColor === AttributeColors.Wind ? 'Wind' : 
+                            activeColor === AttributeColors.Light ? 'Light' : 'Dark'}
+          onClose={() => setCalibrationArmPart(null)}
         />
       )}
     </div>

@@ -7,7 +7,10 @@ import {
   IRobotAnimationPattern,
   RobotDOMRefs
 } from '../../core/animations/GSAPRobotAnimator';
+import { HandAnchorManager, ArmHandConfig } from '../../core/animations/HandAnchorManager';
 import * as Gi from 'react-icons/gi';
+
+export type ArmJointType = 'rightShoulder' | 'leftShoulder' | 'rightHand' | 'leftHand';
 
 export interface GSAPRobotCanvasProps {
   robot: Robot | any;
@@ -17,7 +20,17 @@ export interface GSAPRobotCanvasProps {
   loop?: boolean;
   isPaused?: boolean;
   showJoints?: boolean;
+  showHandMarkers?: boolean;   // 拳（ハンドアンカー）位置マーカーの表示
+  showArmJointMarkers?: boolean; // 肩＆拳 位置調整モードマーカーの表示
+  isJointCalibrationActive?: boolean; // キャリブレーションモード統合フラグ
+  activeHand?: 'right' | 'left' | 'both'; // 調整フォーカス対象の手
+  activeJointFilter?: 'all' | 'shoulders' | 'hands' | 'right' | 'left'; // 調整フォーカス対象の関節
+  handConfig?: ArmHandConfig; // 直接注入される肩＆拳座標設定
+  onUpdateHandConfig?: (config: ArmHandConfig) => void;
+  onHandCoordChange?: (hand: 'right' | 'left', coord: { x: number; y: number }) => void;
+  onJointCoordChange?: (joint: ArmJointType, coord: { x: number; y: number }) => void;
   zoom?: number;
+  stageTheme?: 'dark' | 'light' | 'grid';
   onProgress?: (progress: number) => void;
   onComplete?: () => void;
   className?: string;
@@ -36,7 +49,17 @@ export const GSAPRobotCanvas: React.FC<GSAPRobotCanvasProps> = ({
   loop = true,
   isPaused = false,
   showJoints = false,
+  showHandMarkers = false,
+  showArmJointMarkers = false,
+  isJointCalibrationActive: isJointCalibrationActiveProp,
+  activeHand = 'both',
+  activeJointFilter = 'all',
+  handConfig: propHandConfig,
+  onUpdateHandConfig,
+  onHandCoordChange,
+  onJointCoordChange,
   zoom = 1.0,
+  stageTheme = 'dark',
   onProgress,
   onComplete,
   className = '',
@@ -59,6 +82,7 @@ export const GSAPRobotCanvas: React.FC<GSAPRobotCanvasProps> = ({
   const scanLineRef = useRef<HTMLDivElement>(null);
   const auraOverlayRef = useRef<HTMLDivElement>(null);
   const sparklesRef = useRef<HTMLDivElement>(null);
+  const fxContainerRef = useRef<HTMLDivElement>(null);
 
   const controllerRef = useRef<GSAPRobotAnimationController | null>(null);
 
@@ -66,12 +90,59 @@ export const GSAPRobotCanvas: React.FC<GSAPRobotCanvasProps> = ({
     controllerRef.current = new GSAPRobotAnimationController();
   }
 
+  // マーカー表示の統合フラグ
+  const isJointCalibrationActive = isJointCalibrationActiveProp || showArmJointMarkers || showHandMarkers;
+
   // パーツ情報の安全な抽出とフォールバック
   const parts = robot?.parts || {};
   const head = parts.head || { rarity: 1, visualIndex: 0, attribute: 'Water' };
   const body = parts.body || { rarity: 1, visualIndex: 0, attribute: 'Water' };
   const arms = parts.arms || { rarity: 1, visualIndex: 0, attribute: 'Water' };
   const legs = parts.legs || { rarity: 1, visualIndex: 0, attribute: 'Water' };
+
+  // アームパーツ識別キー (例: arm_r1_v0)
+  const armPartKey = useMemo(() => {
+    return HandAnchorManager.generatePartKey(arms.rarity, arms.visualIndex);
+  }, [arms.rarity, arms.visualIndex]);
+
+  // 肩＆拳位置設定の監視とローカル状態
+  const [localHandConfig, setLocalHandConfig] = useState<ArmHandConfig>(() => {
+    return propHandConfig || HandAnchorManager.getInstance().getHandConfig(armPartKey);
+  });
+
+  // 設定マネージャーの変更通知およびprop同期
+  useEffect(() => {
+    if (propHandConfig) {
+      setLocalHandConfig(propHandConfig);
+    } else {
+      setLocalHandConfig(HandAnchorManager.getInstance().getHandConfig(armPartKey));
+    }
+  }, [propHandConfig, armPartKey]);
+
+  useEffect(() => {
+    const unsubscribe = HandAnchorManager.getInstance().subscribe(() => {
+      if (!propHandConfig) {
+        setLocalHandConfig(HandAnchorManager.getInstance().getHandConfig(armPartKey));
+      }
+    });
+    return unsubscribe;
+  }, [armPartKey, propHandConfig]);
+
+  // 安全な肩・拳座標の抽出（各プロパティ欠落や初期化遅延への完全防御的フォールバック）
+  const safeHandConfig = useMemo(() => {
+    const raw = propHandConfig || localHandConfig || HandAnchorManager.getInstance().getHandConfig(armPartKey);
+    return {
+      partKey: raw?.partKey || armPartKey,
+      partName: raw?.partName || `アームパーツ (${armPartKey})`,
+      leftShoulder: raw?.leftShoulder || { x: 25.0, y: 46.0 },
+      rightShoulder: raw?.rightShoulder || { x: 75.0, y: 46.0 },
+      leftHand: raw?.leftHand || { x: 24.0, y: 62.0 },
+      rightHand: raw?.rightHand || { x: 76.0, y: 62.0 },
+    };
+  }, [propHandConfig, localHandConfig, armPartKey]);
+
+  // ドラッグ操作中ステート（右肩・左肩・右拳・左拳）
+  const [draggingJoint, setDraggingJoint] = useState<ArmJointType | null>(null);
 
   const headR = (head.rarity && head.rarity in SVG_HEADS) ? head.rarity : 1;
   const bodyR = (body.rarity && body.rarity in SVG_BODIES) ? body.rarity : 1;
@@ -116,6 +187,8 @@ export const GSAPRobotCanvas: React.FC<GSAPRobotCanvasProps> = ({
           scanLine: scanLineRef.current,
           auraOverlay: auraOverlayRef.current,
           sparkles: sparklesRef.current,
+          fxContainer: fxContainerRef.current,
+          armPartKey,
         };
 
         controller.playPattern(pattern, domRefs, {
@@ -171,6 +244,62 @@ export const GSAPRobotCanvas: React.FC<GSAPRobotCanvasProps> = ({
       controllerRef.current.seek(p);
     }
   };
+
+  // 関節座標のドラッグ移動計算ハンドラー
+  const updateJointFromPointer = (clientX: number, clientY: number, joint: ArmJointType) => {
+    if (!robotRootRef.current) return;
+    const rect = robotRootRef.current.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return;
+
+    const rawX = ((clientX - rect.left) / rect.width) * 100;
+    const rawY = ((clientY - rect.top) / rect.height) * 100;
+    const clampedX = Math.max(0, Math.min(100, Math.round(rawX * 10) / 10));
+    const clampedY = Math.max(0, Math.min(100, Math.round(rawY * 10) / 10));
+
+    const updated = HandAnchorManager.getInstance().updateJointPosition(
+      armPartKey,
+      joint,
+      { x: clampedX, y: clampedY }
+    );
+    setLocalHandConfig(updated);
+    if (onUpdateHandConfig) {
+      onUpdateHandConfig(updated);
+    }
+
+    if (onJointCoordChange) {
+      onJointCoordChange(joint, { x: clampedX, y: clampedY });
+    }
+    if (onHandCoordChange && (joint === 'rightHand' || joint === 'leftHand')) {
+      onHandCoordChange(joint === 'rightHand' ? 'right' : 'left', { x: clampedX, y: clampedY });
+    }
+  };
+
+  // ポインタードラッグイベントのグローバルリッスン
+  useEffect(() => {
+    if (!draggingJoint) return;
+
+    const handlePointerMove = (e: MouseEvent | TouchEvent) => {
+      const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+      const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+      updateJointFromPointer(clientX, clientY, draggingJoint);
+    };
+
+    const handlePointerUp = () => {
+      setDraggingJoint(null);
+    };
+
+    window.addEventListener('mousemove', handlePointerMove);
+    window.addEventListener('mouseup', handlePointerUp);
+    window.addEventListener('touchmove', handlePointerMove, { passive: false });
+    window.addEventListener('touchend', handlePointerUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handlePointerMove);
+      window.removeEventListener('mouseup', handlePointerUp);
+      window.removeEventListener('touchmove', handlePointerMove);
+      window.removeEventListener('touchend', handlePointerUp);
+    };
+  }, [draggingJoint, armPartKey]);
 
   const canvasWidth = size;
   const canvasHeight = size;
@@ -238,6 +367,12 @@ export const GSAPRobotCanvas: React.FC<GSAPRobotCanvasProps> = ({
           transformOrigin: '50% 80%',
         }}
       >
+        {/* 武器や手持ちアイテム・動的エフェクトを表示する前面レイヤー (z: 10) */}
+        <div
+          ref={fxContainerRef}
+          id="gsap-rig-fx"
+          className="absolute inset-0 w-full h-full z-10 pointer-events-none"
+        />
         {/* 脚部 (Legs) - 左脚 & 右脚 を独立分割制御 */}
         {LegsComp && (
           <>
@@ -319,7 +454,7 @@ export const GSAPRobotCanvas: React.FC<GSAPRobotCanvasProps> = ({
               id="gsap-rig-arm-left"
               className="absolute inset-0 w-full h-full z-[3] will-change-transform flex items-center justify-center pointer-events-none"
               style={{
-                transformOrigin: '25% 46%',
+                transformOrigin: `${safeHandConfig.leftShoulder.x}% ${safeHandConfig.leftShoulder.y}%`,
                 clipPath: 'polygon(0% 0%, 50% 0%, 50% 100%, 0% 100%)',
               }}
             >
@@ -328,7 +463,11 @@ export const GSAPRobotCanvas: React.FC<GSAPRobotCanvasProps> = ({
                 <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
                   <span
                     className="w-2.5 h-2.5 rounded-full bg-amber-400 border border-black absolute shadow-[0_0_6px_#f59e0b]"
-                    style={{ top: '46%', left: '25%', transform: 'translate(-50%, -50%)' }}
+                    style={{
+                      top: `${safeHandConfig.leftShoulder.y}%`,
+                      left: `${safeHandConfig.leftShoulder.x}%`,
+                      transform: 'translate(-50%, -50%)',
+                    }}
                   />
                 </div>
               )}
@@ -340,7 +479,7 @@ export const GSAPRobotCanvas: React.FC<GSAPRobotCanvasProps> = ({
               id="gsap-rig-arm-right"
               className="absolute inset-0 w-full h-full z-[3] will-change-transform flex items-center justify-center pointer-events-none"
               style={{
-                transformOrigin: '75% 46%',
+                transformOrigin: `${safeHandConfig.rightShoulder.x}% ${safeHandConfig.rightShoulder.y}%`,
                 clipPath: 'polygon(50% 0%, 100% 0%, 100% 100%, 50% 100%)',
               }}
             >
@@ -349,7 +488,11 @@ export const GSAPRobotCanvas: React.FC<GSAPRobotCanvasProps> = ({
                 <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
                   <span
                     className="w-2.5 h-2.5 rounded-full bg-amber-400 border border-black absolute shadow-[0_0_6px_#f59e0b]"
-                    style={{ top: '46%', left: '75%', transform: 'translate(-50%, -50%)' }}
+                    style={{
+                      top: `${safeHandConfig.rightShoulder.y}%`,
+                      left: `${safeHandConfig.rightShoulder.x}%`,
+                      transform: 'translate(-50%, -50%)',
+                    }}
                   />
                 </div>
               )}
@@ -379,10 +522,196 @@ export const GSAPRobotCanvas: React.FC<GSAPRobotCanvasProps> = ({
             )}
           </div>
         )}
+
+        {/* 肩＆拳 インタラクティブ・キャリブレーションマーカー - レイヤー z: 30 */}
+        {isJointCalibrationActive && (
+          <div className="absolute inset-0 w-full h-full z-[30] pointer-events-none">
+            {/* SVG ボーンコネクタライン (左肩→左拳, 右肩→右拳) */}
+            <svg className="absolute inset-0 w-full h-full pointer-events-none overflow-visible">
+              {/* 左腕ボーンライン */}
+              {(activeJointFilter === 'all' || activeJointFilter === 'left' || activeJointFilter === 'shoulders' || activeJointFilter === 'hands' || activeHand === 'both' || activeHand === 'left') && (
+                <line
+                  x1={`${safeHandConfig.leftShoulder.x}%`}
+                  y1={`${safeHandConfig.leftShoulder.y}%`}
+                  x2={`${safeHandConfig.leftHand.x}%`}
+                  y2={`${safeHandConfig.leftHand.y}%`}
+                  stroke="#06b6d4"
+                  strokeWidth="2"
+                  strokeDasharray="4 3"
+                  strokeOpacity="0.75"
+                />
+              )}
+              {/* 右腕ボーンライン */}
+              {(activeJointFilter === 'all' || activeJointFilter === 'right' || activeJointFilter === 'shoulders' || activeJointFilter === 'hands' || activeHand === 'both' || activeHand === 'right') && (
+                <line
+                  x1={`${safeHandConfig.rightShoulder.x}%`}
+                  y1={`${safeHandConfig.rightShoulder.y}%`}
+                  x2={`${safeHandConfig.rightHand.x}%`}
+                  y2={`${safeHandConfig.rightHand.y}%`}
+                  stroke="#f59e0b"
+                  strokeWidth="2"
+                  strokeDasharray="4 3"
+                  strokeOpacity="0.75"
+                />
+              )}
+            </svg>
+
+            {/* ① 左肩マーカー (向かって左肩) */}
+            {(activeJointFilter === 'all' || activeJointFilter === 'shoulders' || activeJointFilter === 'left') && (
+              <div
+                className="absolute transform -translate-x-1/2 -translate-y-1/2 pointer-events-auto cursor-grab active:cursor-grabbing group/leftShoulder z-20"
+                style={{
+                  left: `${safeHandConfig.leftShoulder.x}%`,
+                  top: `${safeHandConfig.leftShoulder.y}%`,
+                }}
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                  setDraggingJoint('leftShoulder');
+                }}
+                onTouchStart={(e) => {
+                  e.stopPropagation();
+                  setDraggingJoint('leftShoulder');
+                }}
+                title={`左肩アンカー (${safeHandConfig.leftShoulder.x.toFixed(1)}%, ${safeHandConfig.leftShoulder.y.toFixed(1)}%) - ドラッグで位置調整`}
+              >
+                <div className="absolute w-[160px] h-[1px] -left-[80px] top-1/2 -translate-y-1/2 border-t border-dashed border-teal-400/50 pointer-events-none" />
+                <div className="absolute h-[160px] w-[1px] left-1/2 -translate-x-1/2 -top-[80px] border-l border-dashed border-teal-400/50 pointer-events-none" />
+                <div className="absolute -inset-1 rounded-full bg-teal-400/30 animate-ping pointer-events-none" />
+                
+                <div className="relative w-6 h-6 rounded-full bg-teal-600 border-2 border-white text-white shadow-[0_0_10px_#0d9488] flex items-center justify-center text-[10px] font-bold transition-transform hover:scale-125 group-active/leftShoulder:scale-110">
+                  <span>🦾</span>
+                </div>
+
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 bg-stone-900/95 text-teal-300 font-mono text-[9px] px-1.5 py-0.5 rounded border border-teal-500/50 shadow-md whitespace-nowrap pointer-events-none flex items-center gap-1">
+                  <span className="font-bold text-white">L-SHLD</span>
+                  <span>{safeHandConfig.leftShoulder.x.toFixed(1)}%, {safeHandConfig.leftShoulder.y.toFixed(1)}%</span>
+                </div>
+              </div>
+            )}
+
+            {/* ② 右肩マーカー (向かって右肩) */}
+            {(activeJointFilter === 'all' || activeJointFilter === 'shoulders' || activeJointFilter === 'right') && (
+              <div
+                className="absolute transform -translate-x-1/2 -translate-y-1/2 pointer-events-auto cursor-grab active:cursor-grabbing group/rightShoulder z-20"
+                style={{
+                  left: `${safeHandConfig.rightShoulder.x}%`,
+                  top: `${safeHandConfig.rightShoulder.y}%`,
+                }}
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                  setDraggingJoint('rightShoulder');
+                }}
+                onTouchStart={(e) => {
+                  e.stopPropagation();
+                  setDraggingJoint('rightShoulder');
+                }}
+                title={`右肩アンカー (${safeHandConfig.rightShoulder.x.toFixed(1)}%, ${safeHandConfig.rightShoulder.y.toFixed(1)}%) - ドラッグで位置調整`}
+              >
+                <div className="absolute w-[160px] h-[1px] -left-[80px] top-1/2 -translate-y-1/2 border-t border-dashed border-orange-400/50 pointer-events-none" />
+                <div className="absolute h-[160px] w-[1px] left-1/2 -translate-x-1/2 -top-[80px] border-l border-dashed border-orange-400/50 pointer-events-none" />
+                <div className="absolute -inset-1 rounded-full bg-orange-400/30 animate-ping pointer-events-none" />
+                
+                <div className="relative w-6 h-6 rounded-full bg-orange-600 border-2 border-white text-white shadow-[0_0_10px_#ea580c] flex items-center justify-center text-[10px] font-bold transition-transform hover:scale-125 group-active/rightShoulder:scale-110">
+                  <span>🦾</span>
+                </div>
+
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 bg-stone-900/95 text-orange-300 font-mono text-[9px] px-1.5 py-0.5 rounded border border-orange-500/50 shadow-md whitespace-nowrap pointer-events-none flex items-center gap-1">
+                  <span className="font-bold text-white">R-SHLD</span>
+                  <span>{safeHandConfig.rightShoulder.x.toFixed(1)}%, {safeHandConfig.rightShoulder.y.toFixed(1)}%</span>
+                </div>
+              </div>
+            )}
+
+            {/* ③ 左拳マーカー (向かって左側) */}
+            {(activeJointFilter === 'all' || activeJointFilter === 'hands' || activeJointFilter === 'left' || activeHand === 'both' || activeHand === 'left') && (
+              <div
+                className="absolute transform -translate-x-1/2 -translate-y-1/2 pointer-events-auto cursor-grab active:cursor-grabbing group/leftHand z-20"
+                style={{
+                  left: `${safeHandConfig.leftHand.x}%`,
+                  top: `${safeHandConfig.leftHand.y}%`,
+                }}
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                  setDraggingJoint('leftHand');
+                }}
+                onTouchStart={(e) => {
+                  e.stopPropagation();
+                  setDraggingJoint('leftHand');
+                }}
+                title={`左手 拳アンカー (${safeHandConfig.leftHand.x.toFixed(1)}%, ${safeHandConfig.leftHand.y.toFixed(1)}%) - ドラッグで位置調整`}
+              >
+                {/* 縦横のクロスヘアガイドライン */}
+                <div className="absolute w-[200px] h-[1px] -left-[100px] top-1/2 -translate-y-1/2 border-t border-dashed border-cyan-400/50 pointer-events-none" />
+                <div className="absolute h-[200px] w-[1px] left-1/2 -translate-x-1/2 -top-[100px] border-l border-dashed border-cyan-400/50 pointer-events-none" />
+
+                {/* パルス外輪 */}
+                <div className="absolute -inset-1.5 rounded-full bg-cyan-400/30 animate-ping pointer-events-none" />
+                
+                {/* ターゲットピン本体 */}
+                <div className="relative w-6 h-6 rounded-full bg-cyan-500 border-2 border-white text-white shadow-[0_0_10px_#06b6d4] flex items-center justify-center text-[10px] font-bold transition-transform hover:scale-125 group-active/leftHand:scale-110">
+                  <span>✊</span>
+                </div>
+
+                {/* 座標ラベルチップ */}
+                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 bg-stone-900/95 text-cyan-300 font-mono text-[9px] px-1.5 py-0.5 rounded border border-cyan-500/50 shadow-md whitespace-nowrap pointer-events-none flex items-center gap-1">
+                  <span className="font-bold text-white">L-FIST</span>
+                  <span>{safeHandConfig.leftHand.x.toFixed(1)}%, {safeHandConfig.leftHand.y.toFixed(1)}%</span>
+                </div>
+              </div>
+            )}
+
+            {/* ④ 右拳マーカー (向かって右側) */}
+            {(activeJointFilter === 'all' || activeJointFilter === 'hands' || activeJointFilter === 'right' || activeHand === 'both' || activeHand === 'right') && (
+              <div
+                className="absolute transform -translate-x-1/2 -translate-y-1/2 pointer-events-auto cursor-grab active:cursor-grabbing group/rightHand z-20"
+                style={{
+                  left: `${safeHandConfig.rightHand.x}%`,
+                  top: `${safeHandConfig.rightHand.y}%`,
+                }}
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                  setDraggingJoint('rightHand');
+                }}
+                onTouchStart={(e) => {
+                  e.stopPropagation();
+                  setDraggingJoint('rightHand');
+                }}
+                title={`右手 拳アンカー (${safeHandConfig.rightHand.x.toFixed(1)}%, ${safeHandConfig.rightHand.y.toFixed(1)}%) - ドラッグで位置調整`}
+              >
+                {/* 縦横のクロスヘアガイドライン */}
+                <div className="absolute w-[200px] h-[1px] -left-[100px] top-1/2 -translate-y-1/2 border-t border-dashed border-amber-400/50 pointer-events-none" />
+                <div className="absolute h-[200px] w-[1px] left-1/2 -translate-x-1/2 -top-[100px] border-l border-dashed border-amber-400/50 pointer-events-none" />
+
+                {/* パルス外輪 */}
+                <div className="absolute -inset-1.5 rounded-full bg-amber-400/30 animate-ping pointer-events-none" />
+                
+                {/* ターゲットピン本体 */}
+                <div className="relative w-6 h-6 rounded-full bg-amber-500 border-2 border-white text-white shadow-[0_0_10px_#f59e0b] flex items-center justify-center text-[10px] font-bold transition-transform hover:scale-125 group-active/rightHand:scale-110">
+                  <span>✊</span>
+                </div>
+
+                {/* 座標ラベルチップ */}
+                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 bg-stone-900/95 text-amber-300 font-mono text-[9px] px-1.5 py-0.5 rounded border border-amber-500/50 shadow-md whitespace-nowrap pointer-events-none flex items-center gap-1">
+                  <span className="font-bold text-white">R-FIST</span>
+                  <span>{safeHandConfig.rightHand.x.toFixed(1)}%, {safeHandConfig.rightHand.y.toFixed(1)}%</span>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* ボーン・ジョイントHUD情報 */}
-      {showJoints && (
+      {/* 肩＆拳 位置調整モード中：ロボット描画を遮らない非侵入型ミニマルバッジ */}
+      {isJointCalibrationActive && (
+        <div className="absolute bottom-2 right-2 bg-stone-900/85 text-[10px] font-mono text-amber-300 px-2 py-1 rounded-md border border-amber-500/50 pointer-events-none z-30 backdrop-blur-xs shadow-md flex items-center gap-1.5">
+          <span>🦾</span>
+          <span className="font-bold text-white">調整中</span>
+          <span className="text-[9px] text-stone-300">ピンをドラッグして微調整</span>
+        </div>
+      )}
+
+      {/* ボーン・ジョイントHUD情報 (通常時のみ表示し、肩＆拳調整中は邪魔にならないよう非表示) */}
+      {!isJointCalibrationActive && showJoints && (
         <div className="absolute top-2 right-2 bg-stone-900/90 text-[9px] font-mono text-cyan-300 px-2 py-1 rounded border border-cyan-500/40 pointer-events-none z-40 backdrop-blur-xs space-y-0.5 shadow-lg">
           <div className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-rose-400" />HEAD: 50% 32%</div>
           <div className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />CORE: 50% 55%</div>

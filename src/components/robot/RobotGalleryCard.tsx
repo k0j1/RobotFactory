@@ -205,7 +205,7 @@ export const RobotGalleryCard: React.FC<RobotGalleryCardProps> = ({
                 className="text-xs flex items-center gap-1.5 py-1 px-3 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 shadow-2xs font-bold"
               >
                 <Gi.GiFilmProjector size={15} />
-                GSAP モーションスタジオ (全24種)
+                GSAP モーションスタジオ
               </Button>
             )}
 
