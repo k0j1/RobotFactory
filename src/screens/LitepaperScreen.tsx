@@ -12,9 +12,27 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
       </div>
 
       <Card className="bg-stone-50 border-2 border-stone-200">
-        <h3 className={`${theme.typography.h3} mb-4 text-stone-700`}>ポンコツロボット工房 v1.0.252 仕様まとめ</h3>
+        <h3 className={`${theme.typography.h3} mb-4 text-stone-700`}>ポンコツロボット工房 v1.0.253 仕様まとめ</h3>
         
         <div className="space-y-6 text-sm text-stone-800">
+          <section>
+            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">肩＆拳位置調整モード：確定ボタンの常時可視化＆スライダー誤操作防止ロック機能 (v1.0.253)</h4>
+            <ul className="list-disc list-inside space-y-2">
+              <li><strong>下部メニューに隠れない最前面固定確定ボタン＆ヘッダー確定導線:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li>モーダルのZインデックスを最高階層（z-[150]）に引き上げ、下部余白を最適化（pb-24/pb-6）。画面下部の固定ナビゲーションメニューやブラウザ下端にフッターが隠れる現象を完全解消しました。</li>
+                  <li>モーダル下部にスティッキー固定された「✔ 調整を確定して図鑑に戻る」ボタンに加え、モーダルヘッダーおよび調整パネル下部にも確定・完了ボタンを常設し、スクロール位置に関わらずワンタップで快適に確定できるよう導線を強化しました。</li>
+                </ul>
+              </li>
+              <li><strong>スクロール時の誤操作を防ぐ「編集状態のみ操作可能」スライダー保護機能:</strong>
+                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
+                  <li>画面上下のタッチスクロールやスワイプ中に意図せずスライダーに触れて値が変わってしまうのを防ぐため、各関節（左肩・右肩・左拳・右拳）に「🔒 ロック中 / ✏️ 調整中」ステータス管理を導入しました。</li>
+                  <li>通常時はスライダー操作が無効化（ロック）されており、スクロール操作を誤爆しません。「✏️ 調整する」ボタンを押すか、調整したいカード/スライダー領域をタップすることでその関節がアクティブになり、スライダーや微調整操作が解禁されます。</li>
+                  <li>ツールバーに「全スライダー操作／誤操作防止ロック」一括トグルも搭載し、素早くまとめて調整したい場合にも柔軟に対応可能です。</li>
+                </ul>
+              </li>
+            </ul>
+          </section>
           <section>
             <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">モーションスタジオ：ソードSVGアニメーションの拳位置＆腕回転完全連動 (v1.0.252)</h4>
             <ul className="list-disc list-inside space-y-2">

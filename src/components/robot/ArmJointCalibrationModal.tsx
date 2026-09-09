@@ -45,6 +45,8 @@ export const ArmJointCalibrationModal: React.FC<ArmJointCalibrationModalProps> =
 
   // 表示関節フィルター
   const [activeJointFilter, setActiveJointFilter] = useState<'all' | 'shoulders' | 'hands' | 'right' | 'left'>('all');
+  // 現在調整中の関節（スライダー保護連動）
+  const [activeEditJoint, setActiveEditJoint] = useState<ArmJointType | 'all' | null>('leftShoulder');
 
   // 現在のアームパーツメタ情報
   const currentPartMeta = useMemo<ArmPartOption>(() => {
@@ -239,9 +241,9 @@ export const ArmJointCalibrationModal: React.FC<ArmJointCalibrationModalProps> =
   return (
     <div 
       id="arm-joint-calibration-modal"
-      className="fixed inset-0 z-[120] flex flex-col items-center justify-start sm:justify-center p-2 sm:p-4 pt-3 sm:pt-4 bg-black/85 backdrop-blur-xs overflow-y-auto"
+      className="fixed inset-0 z-[150] flex flex-col items-center justify-start sm:justify-center p-2 sm:p-4 pt-3 pb-24 sm:pb-6 bg-black/90 backdrop-blur-xs overflow-y-auto"
     >
-      <div className="bg-[#faf5ee] border-2 border-[#c29b77] rounded-2xl shadow-2xl max-w-6xl w-full my-auto max-h-[92vh] sm:max-h-[94vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div className="bg-[#faf5ee] border-2 border-[#c29b77] rounded-2xl shadow-2xl max-w-6xl w-full my-auto max-h-[calc(100dvh-6.5rem)] sm:max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         
         {/* モーダルヘッダー */}
         <div className="bg-[#292524] text-white px-4 py-3 flex items-center justify-between border-b-2 border-amber-500 shrink-0 sticky top-0 z-20">
@@ -264,15 +266,26 @@ export const ArmJointCalibrationModal: React.FC<ArmJointCalibrationModalProps> =
             </div>
           </div>
 
-          <button
-            id="close-arm-calibration-modal-btn"
-            type="button"
-            onClick={onClose}
-            className="p-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-300 hover:text-white transition-colors cursor-pointer text-sm font-bold flex items-center gap-1"
-            title="キャリブレーターを閉じる"
-          >
-            <span>✕ 閉じる</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="primary"
+              onClick={onClose}
+              className="px-3.5 py-1.5 font-bold cursor-pointer text-xs flex items-center gap-1 shadow-xs"
+              title="調整内容を確定してパーツ図鑑に戻ります"
+            >
+              <span>✔ 確定して戻る</span>
+            </Button>
+            <button
+              id="close-arm-calibration-modal-btn"
+              type="button"
+              onClick={onClose}
+              className="p-1.5 px-2.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-300 hover:text-white transition-colors cursor-pointer text-xs font-bold flex items-center gap-1"
+              title="キャリブレーターを閉じる"
+            >
+              <span>✕</span>
+            </button>
+          </div>
         </div>
 
         {/* 通知バー */}
@@ -418,6 +431,7 @@ export const ArmJointCalibrationModal: React.FC<ArmJointCalibrationModalProps> =
                   handConfig={handConfig}
                   onUpdateHandConfig={setHandConfig}
                   onJointCoordChange={(joint, coord) => {
+                    setActiveEditJoint(joint);
                     handleUpdateJointCoord(joint, 'x', coord.x);
                     handleUpdateJointCoord(joint, 'y', coord.y);
                   }}
@@ -478,7 +492,9 @@ export const ArmJointCalibrationModal: React.FC<ArmJointCalibrationModalProps> =
                 handConfig={handConfig}
                 config={handConfig}
                 activeJointFilter={activeJointFilter}
+                activeEditJoint={activeEditJoint}
                 onJointFilterChange={setActiveJointFilter}
+                onActiveEditJointChange={setActiveEditJoint}
                 onUpdateCoord={handleUpdateJointCoord}
                 onCopySinglePartJSON={handleCopySinglePartJSON}
                 onCopyAllJSON={handleCopyAllJSON}
@@ -493,20 +509,20 @@ export const ArmJointCalibrationModal: React.FC<ArmJointCalibrationModalProps> =
           </div>
         </div>
 
-        {/* フッター */}
-        <div className="bg-stone-200/90 border-t border-stone-300 px-4 py-2.5 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2 text-xs text-stone-600">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        {/* フッター (下部メニューに隠れない最前面固定フッター) */}
+        <div className="bg-stone-200 border-t-2 border-stone-300 px-4 py-3 flex items-center justify-between shrink-0 sticky bottom-0 z-30 shadow-lg">
+          <div className="flex items-center gap-2 text-xs text-stone-700 font-bold">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
             <span>設定はパーツ単位で自動保存されています</span>
           </div>
 
           <Button
-            size="sm"
+            size="md"
             variant="primary"
             onClick={onClose}
-            className="px-5 font-bold cursor-pointer"
+            className="px-6 py-2 font-black cursor-pointer shadow-md text-sm flex items-center gap-1.5"
           >
-            完了して図鑑に戻る
+            <span>✔ 調整を確定して図鑑に戻る</span>
           </Button>
         </div>
 

@@ -9,8 +9,10 @@ export interface ArmJointCalibratorPanelProps {
   config?: HandAnchorConfig;
   activeJointFilter?: 'all' | 'shoulders' | 'hands' | 'right' | 'left';
   activeFilter?: 'all' | 'shoulders' | 'hands' | 'right' | 'left';
+  activeEditJoint?: ArmJointType | 'all' | null;
   onJointFilterChange?: (filter: 'all' | 'shoulders' | 'hands' | 'right' | 'left') => void;
   onFilterChange?: (filter: 'all' | 'shoulders' | 'hands' | 'right' | 'left') => void;
+  onActiveEditJointChange?: (joint: ArmJointType | 'all' | null) => void;
   onUpdateCoord: (joint: ArmJointType, axis: 'x' | 'y', value: number) => void;
   onCopySinglePartJSON: () => void;
   onCopyAllJSON: () => void;
@@ -31,8 +33,10 @@ export const ArmJointCalibratorPanel: React.FC<ArmJointCalibratorPanelProps> = (
   config,
   activeJointFilter,
   activeFilter,
+  activeEditJoint: externalActiveEditJoint,
   onJointFilterChange,
   onFilterChange,
+  onActiveEditJointChange,
   onUpdateCoord,
   onCopySinglePartJSON,
   onCopyAllJSON,
@@ -48,6 +52,18 @@ export const ArmJointCalibratorPanel: React.FC<ArmJointCalibratorPanelProps> = (
   const handleFilterChange = (filter: 'all' | 'shoulders' | 'hands' | 'right' | 'left') => {
     if (onJointFilterChange) onJointFilterChange(filter);
     if (onFilterChange) onFilterChange(filter);
+  };
+
+  // スクロール中の誤操作を防ぐための「アクティブ編集対象関節」管理
+  // 編集状態の関節のみスライダーのドラッグ操作が可能（非アクティブ時は安全にロック）
+  const [internalActiveEditJoint, setInternalActiveEditJoint] = useState<ArmJointType | 'all' | null>('leftShoulder');
+  const activeEditJoint = externalActiveEditJoint !== undefined ? externalActiveEditJoint : internalActiveEditJoint;
+
+  const handleSetEditJoint = (joint: ArmJointType | 'all' | null) => {
+    setInternalActiveEditJoint(joint);
+    if (onActiveEditJointChange) {
+      onActiveEditJointChange(joint);
+    }
   };
 
   // handConfig の安全なフォールバック
@@ -213,7 +229,7 @@ export const ArmJointCalibratorPanel: React.FC<ArmJointCalibratorPanelProps> = (
       {/* ツールバー：部位フィルター ＆ JSONクリップボード操作 ＆ 他パーツ貼り付け */}
       <div className="flex flex-wrap items-center justify-between gap-2 bg-stone-100/80 p-2 rounded-lg border border-stone-200">
         {/* 部位絞り込みタブ */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 flex-wrap">
           <span className="text-[11px] font-bold text-stone-600 mr-1">表示:</span>
           {[
             { id: 'all', label: '全4箇所' },
@@ -237,8 +253,22 @@ export const ArmJointCalibratorPanel: React.FC<ArmJointCalibratorPanelProps> = (
           ))}
         </div>
 
-        {/* クリップボードJSON操作ボタン群 */}
+        {/* スクロール誤操作防止：ロック制御 ＆ クリップボードJSON操作ボタン群 */}
         <div className="flex items-center gap-1.5 flex-wrap">
+          {/* スライダー一括ロック／全解除トグル */}
+          <button
+            type="button"
+            onClick={() => handleSetEditJoint(activeEditJoint === 'all' ? null : 'all')}
+            className={`px-2 py-1 text-xs font-bold rounded cursor-pointer border flex items-center gap-1 transition-colors ${
+              activeEditJoint === 'all'
+                ? 'bg-amber-700 text-white border-amber-800'
+                : 'bg-white text-stone-700 hover:bg-stone-100 border-stone-300'
+            }`}
+            title="スクロール誤動作防止ロックを一括解除／有効化します"
+          >
+            <span>{activeEditJoint === 'all' ? '🔓 全スライダー操作中' : '🔒 誤操作防止ロック中'}</span>
+          </button>
+
           {/* 現在パーツをJSONコピー */}
           <button
             type="button"
@@ -365,138 +395,240 @@ export const ArmJointCalibratorPanel: React.FC<ArmJointCalibratorPanelProps> = (
 
       {/* 各関節の座標数値入力 ＆ スライダー ＆ ステップ調整カードグリッド */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {filteredJoints.map((joint) => (
-          <div
-            key={joint.id}
-            className={`${joint.colorBg} border ${joint.colorBorder} rounded-lg p-2.5 space-y-2 shadow-xs`}
-          >
-            {/* 関節ヘッダー */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <span className="text-sm">{joint.icon}</span>
-                <div>
-                  <span className={`text-xs font-bold ${joint.colorText}`}>{joint.label}</span>
-                  <span className="text-[10px] text-stone-500 block leading-tight">{joint.subLabel}</span>
+        {filteredJoints.map((joint) => {
+          const isEditing = activeEditJoint === 'all' || activeEditJoint === joint.id;
+          return (
+            <div
+              key={joint.id}
+              className={`${joint.colorBg} border-2 ${
+                isEditing ? `${joint.colorBorder} ring-2 ring-amber-500/30 shadow-md` : 'border-stone-200/80 opacity-90'
+              } rounded-xl p-3 space-y-2.5 transition-all`}
+            >
+              {/* 関節ヘッダー：アイコン・ラベル・ステータストグル（ロック/調整中） */}
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="text-base">{joint.icon}</span>
+                  <div className="truncate">
+                    <span className={`text-xs font-black ${joint.colorText} block truncate`}>{joint.label}</span>
+                    <span className="text-[10px] text-stone-500 block leading-tight truncate">{joint.subLabel}</span>
+                  </div>
+                </div>
+
+                {/* 編集ロック切り替えトグル ＆ 現在値バッジ */}
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => handleSetEditJoint(isEditing && activeEditJoint !== 'all' ? null : joint.id)}
+                    className={`px-2 py-0.5 text-[11px] font-bold rounded-md cursor-pointer transition-all flex items-center gap-1 shadow-2xs ${
+                      isEditing
+                        ? 'bg-amber-600 text-white hover:bg-amber-700 ring-1 ring-amber-700'
+                        : 'bg-stone-200 hover:bg-stone-300 text-stone-700 border border-stone-300'
+                    }`}
+                    title={isEditing ? 'この関節のスライダーをロックします' : 'この関節のスライダー操作を有効化します'}
+                  >
+                    <span>{isEditing ? '✏️ 調整中' : '🔒 ロック中'}</span>
+                  </button>
+
+                  <div className={`font-mono text-[10px] font-bold px-1.5 py-0.5 rounded border ${joint.badgeBg}`}>
+                    X:{joint.coord.x.toFixed(1)} / Y:{joint.coord.y.toFixed(1)}
+                  </div>
                 </div>
               </div>
 
-              {/* 現在値サマリーバッジ */}
-              <div className={`font-mono text-[11px] font-bold px-2 py-0.5 rounded border ${joint.badgeBg}`}>
-                X: {joint.coord.x.toFixed(1)}% / Y: {joint.coord.y.toFixed(1)}%
-              </div>
-            </div>
+              {/* X座標コントロール（数値入力 + スライダー + 微調整ボタン） */}
+              <div 
+                className={`space-y-1 p-2 rounded-lg border transition-all ${
+                  isEditing 
+                    ? 'bg-white border-amber-300/80 shadow-2xs' 
+                    : 'bg-white/50 border-stone-200 cursor-pointer hover:bg-white/80'
+                }`}
+                onClick={() => {
+                  if (!isEditing) handleSetEditJoint(joint.id);
+                }}
+              >
+                <div className="flex items-center justify-between text-[11px]">
+                  <div className="flex items-center gap-1">
+                    <span className="font-bold text-stone-700">X座標 (左右):</span>
+                    {!isEditing && (
+                      <span className="text-[9px] text-stone-400 font-bold bg-stone-100 px-1 rounded">
+                        タップで調整
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                      value={joint.coord.x}
+                      onFocus={() => handleSetEditJoint(joint.id)}
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value);
+                        if (!isNaN(val)) {
+                          handleSetEditJoint(joint.id);
+                          onUpdateCoord(joint.id, 'x', val);
+                        }
+                      }}
+                      className="w-16 px-1.5 py-0.5 text-xs font-mono font-bold text-right bg-white border border-stone-300 rounded focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
+                    />
+                    <span className="font-mono text-xs text-stone-600">%</span>
+                  </div>
+                </div>
 
-            {/* X座標コントロール（数値入力 + スライダー + 微調整ボタン） */}
-            <div className="space-y-1 bg-white/70 p-2 rounded border border-stone-200/80">
-              <div className="flex items-center justify-between text-[11px]">
-                <span className="font-bold text-stone-700">X座標 (左右):</span>
-                <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-stone-500">数値入力:</span>
+                <div className="flex items-center gap-2">
                   <input
-                    type="number"
+                    type="range"
                     min="0"
                     max="100"
                     step="0.1"
+                    disabled={!isEditing}
                     value={joint.coord.x}
-                    onChange={(e) => {
-                      const val = parseFloat(e.target.value);
-                      if (!isNaN(val)) onUpdateCoord(joint.id, 'x', val);
-                    }}
-                    className="w-16 px-1.5 py-0.5 text-xs font-mono font-bold text-right bg-white border border-stone-300 rounded focus:ring-1 focus:ring-amber-500 focus:outline-hidden"
+                    onMouseDown={() => handleSetEditJoint(joint.id)}
+                    onTouchStart={() => handleSetEditJoint(joint.id)}
+                    onChange={(e) => onUpdateCoord(joint.id, 'x', parseFloat(e.target.value))}
+                    className={`w-full h-2.5 rounded-lg transition-all ${
+                      isEditing 
+                        ? 'accent-amber-600 cursor-pointer bg-amber-100 ring-1 ring-amber-400/50' 
+                        : 'opacity-35 cursor-not-allowed bg-stone-300'
+                    }`}
                   />
-                  <span className="font-mono text-xs text-stone-600">%</span>
+                  <div className="flex items-center gap-0.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSetEditJoint(joint.id);
+                        onUpdateCoord(joint.id, 'x', joint.coord.x - 0.5);
+                      }}
+                      className="px-1.5 py-0.5 text-[10px] font-bold bg-white border border-stone-300 rounded hover:bg-stone-100 text-stone-700 cursor-pointer shadow-2xs"
+                      title="-0.5% 減算"
+                    >
+                      -0.5
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSetEditJoint(joint.id);
+                        onUpdateCoord(joint.id, 'x', joint.coord.x + 0.5);
+                      }}
+                      className="px-1.5 py-0.5 text-[10px] font-bold bg-white border border-stone-300 rounded hover:bg-stone-100 text-stone-700 cursor-pointer shadow-2xs"
+                      title="+0.5% 加算"
+                    >
+                      +0.5
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  value={joint.coord.x}
-                  onChange={(e) => onUpdateCoord(joint.id, 'x', parseFloat(e.target.value))}
-                  className="w-full accent-amber-600 cursor-pointer h-2 bg-stone-200 rounded-lg"
-                />
-                <div className="flex items-center gap-0.5 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => onUpdateCoord(joint.id, 'x', joint.coord.x - 0.5)}
-                    className="px-1.5 py-0.5 text-[10px] font-bold bg-white border border-stone-300 rounded hover:bg-stone-100 text-stone-700 cursor-pointer"
-                    title="-0.5% 減算"
-                  >
-                    -0.5
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onUpdateCoord(joint.id, 'x', joint.coord.x + 0.5)}
-                    className="px-1.5 py-0.5 text-[10px] font-bold bg-white border border-stone-300 rounded hover:bg-stone-100 text-stone-700 cursor-pointer"
-                    title="+0.5% 加算"
-                  >
-                    +0.5
-                  </button>
+              {/* Y座標コントロール（数値入力 + スライダー + 微調整ボタン） */}
+              <div 
+                className={`space-y-1 p-2 rounded-lg border transition-all ${
+                  isEditing 
+                    ? 'bg-white border-amber-300/80 shadow-2xs' 
+                    : 'bg-white/50 border-stone-200 cursor-pointer hover:bg-white/80'
+                }`}
+                onClick={() => {
+                  if (!isEditing) handleSetEditJoint(joint.id);
+                }}
+              >
+                <div className="flex items-center justify-between text-[11px]">
+                  <div className="flex items-center gap-1">
+                    <span className="font-bold text-stone-700">Y座標 (上下):</span>
+                    {!isEditing && (
+                      <span className="text-[9px] text-stone-400 font-bold bg-stone-100 px-1 rounded">
+                        タップで調整
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                      value={joint.coord.y}
+                      onFocus={() => handleSetEditJoint(joint.id)}
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value);
+                        if (!isNaN(val)) {
+                          handleSetEditJoint(joint.id);
+                          onUpdateCoord(joint.id, 'y', val);
+                        }
+                      }}
+                      className="w-16 px-1.5 py-0.5 text-xs font-mono font-bold text-right bg-white border border-stone-300 rounded focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
+                    />
+                    <span className="font-mono text-xs text-stone-600">%</span>
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            {/* Y座標コントロール（数値入力 + スライダー + 微調整ボタン） */}
-            <div className="space-y-1 bg-white/70 p-2 rounded border border-stone-200/80">
-              <div className="flex items-center justify-between text-[11px]">
-                <span className="font-bold text-stone-700">Y座標 (上下):</span>
-                <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-stone-500">数値入力:</span>
+                <div className="flex items-center gap-2">
                   <input
-                    type="number"
+                    type="range"
                     min="0"
                     max="100"
                     step="0.1"
+                    disabled={!isEditing}
                     value={joint.coord.y}
-                    onChange={(e) => {
-                      const val = parseFloat(e.target.value);
-                      if (!isNaN(val)) onUpdateCoord(joint.id, 'y', val);
-                    }}
-                    className="w-16 px-1.5 py-0.5 text-xs font-mono font-bold text-right bg-white border border-stone-300 rounded focus:ring-1 focus:ring-amber-500 focus:outline-hidden"
+                    onMouseDown={() => handleSetEditJoint(joint.id)}
+                    onTouchStart={() => handleSetEditJoint(joint.id)}
+                    onChange={(e) => onUpdateCoord(joint.id, 'y', parseFloat(e.target.value))}
+                    className={`w-full h-2.5 rounded-lg transition-all ${
+                      isEditing 
+                        ? 'accent-amber-600 cursor-pointer bg-amber-100 ring-1 ring-amber-400/50' 
+                        : 'opacity-35 cursor-not-allowed bg-stone-300'
+                    }`}
                   />
-                  <span className="font-mono text-xs text-stone-600">%</span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  value={joint.coord.y}
-                  onChange={(e) => onUpdateCoord(joint.id, 'y', parseFloat(e.target.value))}
-                  className="w-full accent-amber-600 cursor-pointer h-2 bg-stone-200 rounded-lg"
-                />
-                <div className="flex items-center gap-0.5 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => onUpdateCoord(joint.id, 'y', joint.coord.y - 0.5)}
-                    className="px-1.5 py-0.5 text-[10px] font-bold bg-white border border-stone-300 rounded hover:bg-stone-100 text-stone-700 cursor-pointer"
-                    title="-0.5% 減算"
-                  >
-                    -0.5
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onUpdateCoord(joint.id, 'y', joint.coord.y + 0.5)}
-                    className="px-1.5 py-0.5 text-[10px] font-bold bg-white border border-stone-300 rounded hover:bg-stone-100 text-stone-700 cursor-pointer"
-                    title="+0.5% 加算"
-                  >
-                    +0.5
-                  </button>
+                  <div className="flex items-center gap-0.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSetEditJoint(joint.id);
+                        onUpdateCoord(joint.id, 'y', joint.coord.y - 0.5);
+                      }}
+                      className="px-1.5 py-0.5 text-[10px] font-bold bg-white border border-stone-300 rounded hover:bg-stone-100 text-stone-700 cursor-pointer shadow-2xs"
+                      title="-0.5% 減算"
+                    >
+                      -0.5
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSetEditJoint(joint.id);
+                        onUpdateCoord(joint.id, 'y', joint.coord.y + 0.5);
+                      }}
+                      className="px-1.5 py-0.5 text-[10px] font-bold bg-white border border-stone-300 rounded hover:bg-stone-100 text-stone-700 cursor-pointer shadow-2xs"
+                      title="+0.5% 加算"
+                    >
+                      +0.5
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
-      <div className="text-[10px] text-stone-500 text-center font-mono pt-1 border-t border-stone-200">
-        💡 画面上のロボットキャンバスに表示されているピン（🦾肩 / ✊拳）を直接ドラッグしても座標がリアルタイム同期されます。
+      {/* ガイド ＆ 確定完了ボタン */}
+      <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-stone-200">
+        <div className="text-[11px] text-stone-600 font-bold flex items-center gap-1">
+          <span>🛡️</span>
+          <span>スクロール時の誤操作防止のため、スライダーは「✏️ 調整中」の関節のみ操作可能です。</span>
+        </div>
+
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-1.5 text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-lg shadow-sm transition-all cursor-pointer flex items-center gap-1.5 ml-auto"
+          >
+            <span>✔ 調整を確定して閉じる</span>
+          </button>
+        )}
       </div>
     </div>
   );
