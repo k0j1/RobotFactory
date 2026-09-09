@@ -422,10 +422,10 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                           }}
                           className={`block bg-stone-50 p-1.5 rounded-lg border-2 transition text-left cursor-pointer group relative ${
                             activeTooltipRobotId === r.id 
-                              ? 'border-amber-500 shadow-md ring-2 ring-amber-200' 
+                              ? 'border-sky-500 shadow-md ring-2 ring-sky-200' 
                               : 'border-stone-200 hover:border-amber-400 hover:shadow-sm'
                           }`}
-                          title="タップして構成パーツと属性を確認"
+                          title="タップして構成パーツと分解展開図を確認"
                         >
                           <RobotVisual robot={r} size={84} />
                           <div className="absolute bottom-1 right-1 bg-stone-900/80 text-[9px] text-white px-1.5 py-0.5 rounded-full font-bold flex items-center gap-0.5 shadow-xs group-hover:bg-amber-600 transition-colors">
@@ -437,15 +437,16 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                         {/* 構成パーツ & 属性ツールチップ (Bright Theme) */}
                         {activeTooltipRobotId === r.id && (
                           <div 
-                            className="absolute right-0 top-full mt-2 w-72 sm:w-80 bg-white text-stone-800 p-3 rounded-xl shadow-2xl border-2 border-stone-300 z-30 animate-in fade-in zoom-in-95 duration-150"
+                            className="absolute right-0 top-full mt-2 w-76 sm:w-88 bg-white text-stone-800 p-3 rounded-xl shadow-2xl border-2 border-sky-300 z-30 animate-in fade-in zoom-in-95 duration-150"
                             onClick={(e) => e.stopPropagation()}
                           >
                             {/* 吹き出しの三角矢印 */}
-                            <div className="absolute -top-2 right-6 w-3 h-3 bg-white border-t-2 border-l-2 border-stone-300 transform rotate-45" />
+                            <div className="absolute -top-2 right-6 w-3 h-3 bg-white border-t-2 border-l-2 border-sky-300 transform rotate-45" />
 
                             <div className="flex justify-between items-center border-b border-stone-200 pb-1.5 mb-2 relative z-10">
-                              <span className="font-bold text-xs text-amber-900 flex items-center gap-1">
-                                🧩 構成パーツと属性
+                              <span className="font-bold text-xs text-sky-950 flex items-center gap-1">
+                                <Gi.GiPuzzle className="text-sky-600 inline" />
+                                <span>構成パーツ分解展開図</span>
                               </span>
                               <button 
                                 onClick={() => setActiveTooltipRobotId(null)}
@@ -453,6 +454,18 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                               >
                                 ✕
                               </button>
+                            </div>
+
+                            {/* 分解展開図プレビュー (大きく見切れずにゆったり表示) */}
+                            <div className="flex justify-center items-center py-4 mb-2.5 bg-gradient-to-b from-sky-50/90 to-blue-50/50 rounded-xl border-2 border-sky-200 shadow-inner relative overflow-visible">
+                              <RobotVisual 
+                                robot={r} 
+                                size={135} 
+                                containerWidth={240} 
+                                containerHeight={175} 
+                                isExplodedView={true} 
+                                hideBubble={true} 
+                              />
                             </div>
 
                             <div className="space-y-2 relative z-10">

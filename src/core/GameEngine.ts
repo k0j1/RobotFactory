@@ -5,6 +5,7 @@ import { getDefenseDailyResetInfo, DefenseResetInfo } from '../components/miniga
 
 const INITIAL_STATE: GameState = {
   gold: 0,
+  fame: 0,
   storageSize: 5,
   materials: {},
   parts: [],
@@ -156,7 +157,25 @@ export class GameEngine {
             }
           });
         }
-        parsed.craftedRobots = existingGallery;
+        if (parsed.craftedRobots) {
+          parsed.craftedRobots = existingGallery;
+        }
+
+        // Migrate fame if not present
+        if (parsed.fame === undefined) {
+          let calculatedFame = 0;
+          if (parsed.deliveredRobotsCount) {
+            calculatedFame += parsed.deliveredRobotsCount * 20;
+          }
+          if (parsed.minigameRecords) {
+            Object.values(parsed.minigameRecords).forEach((rec: any) => {
+              if (rec && typeof rec.wins === 'number') {
+                calculatedFame += rec.wins * 5;
+              }
+            });
+          }
+          parsed.fame = calculatedFame;
+        }
 
         return { ...INITIAL_STATE, ...parsed };
       } catch (e) {
@@ -570,6 +589,20 @@ export class GameEngine {
   public addGold(amount: number) {
     this.state.gold += amount;
     this.saveState();
+  }
+
+  /**
+   * 工房の名声（Fame）を加算
+   */
+  public addFame(amount: number, reason?: string): { oldFame: number; newFame: number; gained: number } {
+    if (amount <= 0) {
+      return { oldFame: this.state.fame || 0, newFame: this.state.fame || 0, gained: 0 };
+    }
+    const oldFame = this.state.fame || 0;
+    const newFame = oldFame + amount;
+    this.state.fame = newFame;
+    this.saveState();
+    return { oldFame, newFame, gained: amount };
   }
   
   public forceSave() {
@@ -1216,14 +1249,18 @@ export class GameEngine {
     }
 
     // Success
-    
     let rewardG = req.rewardG;
+    let baseFame = req.rank === 'King' ? 50 : req.rank === 'Noble' ? 25 : 10;
+    let bonusFame = 0;
+
     if (this.state.clientAffection) {
         this.state.clientAffection[req.rank] = Math.min(10, (this.state.clientAffection[req.rank] || 1) + 1);
         if (this.state.clientAffection[req.rank] === 10) {
             rewardG = Math.floor(rewardG * 1.5);
+            bonusFame = req.rank === 'King' ? 10 : req.rank === 'Noble' ? 5 : 3;
         }
     }
+    const totalFame = baseFame + bonusFame;
     
     if (!this.state.completedRequestDeadlines) {
         this.state.completedRequestDeadlines = {};
@@ -1231,6 +1268,7 @@ export class GameEngine {
     this.state.completedRequestDeadlines[req.rank] = req.deadline;
 
     this.state.gold += rewardG;
+    this.state.fame = (this.state.fame || 0) + totalFame;
 
     this.state.deliveredLogs.push({
       id: robot.id,
@@ -1245,6 +1283,12 @@ export class GameEngine {
     if (this.state.tutorialStep === 4) this.advanceTutorial();
     this.generateRequestsIfNeeded(); // Instantly replenish the board
     this.saveState();
+    return {
+      rewardG,
+      rewardFame: totalFame,
+      clientName: req.clientName,
+      rank: req.rank
+    };
   }
 
   public useRepairKit(robotId: string) {

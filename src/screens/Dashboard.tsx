@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import * as Gi from 'react-icons/gi';
-import { GameState, Robot } from '../core/models';
+import { GameState, Robot, getFameRank } from '../core/models';
 import { GameEngine } from '../core/GameEngine';
 import { Card, Button, Badge } from '../components/ui/core';
 import { RobotVisual } from '../components/robot/RobotVisual';
@@ -225,6 +225,89 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
           </div>
         </div>
 
+        {/* 工房名声・ランクバナー (Fame & Workshop Rank Banner) */}
+        {(() => {
+          const currentFame = state.fame || 0;
+          const fameRank = getFameRank(currentFame);
+          const nextRankFame = fameRank.nextFame;
+          const prevRankFame = fameRank.minFame;
+          const progressPercent = nextRankFame
+            ? Math.min(100, Math.max(0, Math.round(((currentFame - prevRankFame) / (nextRankFame - prevRankFame)) * 100)))
+            : 100;
+
+          return (
+            <div className={`${theme.workshop.fameCard} mb-3.5`}>
+              <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-amber-100/90 border border-amber-300 flex items-center justify-center text-amber-700 shadow-2xs shrink-0">
+                    <Gi.GiTrophyCup size={20} />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-amber-950 tracking-wider">工房名声</span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full border font-bold ${fameRank.badgeBg} ${fameRank.badgeBorder} ${fameRank.textColor} shadow-2xs`}>
+                        Rank {fameRank.level} : {fameRank.title}
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-stone-500 mt-0.5">
+                      {fameRank.desc}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-right ml-auto sm:ml-0">
+                  <div className="text-base sm:text-lg font-black font-mono text-amber-800 leading-none">
+                    {currentFame.toLocaleString()} <span className="text-xs font-sans text-stone-500 font-normal">名声</span>
+                  </div>
+                  <div className="text-[10px] font-mono text-stone-500 mt-0.5">
+                    {nextRankFame ? (
+                      <span>次ランクまで <span className="font-bold text-amber-900 font-mono">{(nextRankFame - currentFame).toLocaleString()}</span></span>
+                    ) : (
+                      <span className="text-amber-800 font-bold">★最高名声ランク到達！</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* 名声進行度プログレスバー */}
+              <div className="space-y-1">
+                <div className={theme.workshop.fameProgressBg}>
+                  <div 
+                    className={theme.workshop.fameProgressFill}
+                    style={{ width: `${progressPercent}%` }}
+                  />
+                </div>
+                <div className="flex justify-between items-center text-[9px] text-stone-500 font-mono">
+                  <span>Rank {fameRank.level} ({prevRankFame} 名声)</span>
+                  <span className="font-bold text-amber-900">{progressPercent}%</span>
+                  <span>{nextRankFame ? `Rank ${fameRank.level + 1} (${nextRankFame} 名声)` : 'MAX'}</span>
+                </div>
+              </div>
+
+              <div className="mt-2 pt-1.5 border-t border-[#f0d8bd] flex items-center justify-between text-[10px] text-stone-600 flex-wrap gap-1">
+                <div className="flex items-center gap-1">
+                  <Gi.GiLaurelCrown className="text-amber-600" />
+                  <span>依頼板の依頼納品やバトル演習・拠点防衛戦で名声が上昇します</span>
+                </div>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => onNavigate('request')}
+                    className="text-amber-800 font-bold hover:underline cursor-pointer"
+                  >
+                    依頼板へ →
+                  </button>
+                  <button 
+                    onClick={() => onNavigate('minigame')}
+                    className="text-amber-800 font-bold hover:underline cursor-pointer"
+                  >
+                    バトル演習へ →
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* まとめて回収バー (遠征の上に配置) */}
         {totalAutoPendingDrops > 0 && (
           <div className="border-t-2 border-[#d9c4b1] pt-3 pb-1 flex items-center justify-between bg-amber-50/95 border-2 border-amber-400/90 p-2.5 rounded-xl mb-3 shadow-2xs">
@@ -260,7 +343,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                 <div className="flex items-center gap-2.5 min-w-0">
                   <div className="p-1 bg-[#f7eee3] rounded-lg border border-[#dcc5b0] shrink-0">
                     {questRobot ? (
-                      <RobotVisual robot={questRobot} size={36} hasPendingDrops={questDone} />
+                      <RobotVisual robot={questRobot} size={36} hasPendingDrops={questDone} happyVariant="banzai" />
                     ) : (
                       <div className="w-9 h-9 flex items-center justify-center text-amber-800">
                         <Gi.GiKnapsack size={22} />
@@ -377,6 +460,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                         containerHeight={90}
                         animateExploration={!isResting && pending === 0} 
                         emotion={selectedEmotion}
+                        happyVariant="banzai"
                         hasPendingDrops={pending > 0 && !isResting}
                         locationId={d.locationId}
                         weatherType={weather?.type}
@@ -797,6 +881,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                     robot={questRobot || state.robots[0]}
                     size={68}
                     emotion="happy"
+                    happyVariant="banzai"
                     hasPendingDrops={true}
                     hideBackground={true}
                   />

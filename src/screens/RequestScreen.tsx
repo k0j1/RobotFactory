@@ -63,8 +63,9 @@ export const RequestScreen: React.FC<{ state: GameState; engine: GameEngine }> =
   const handleDeliver = () => {
     if (!selectedRobotId) return;
     try {
-      engine.deliverRobot(selectedRobotId);
-      alert('納品完了！ 報酬を獲得しました。');
+      const res = engine.deliverRobot(selectedRobotId);
+      const fameText = res && res.rewardFame ? `\n工房名声: +${res.rewardFame} 獲得！` : '';
+      alert(`納品完了！ 報酬 ${res?.rewardG || ''}G を獲得しました。${fameText}`);
       setSelectedRobotId('');
     } catch (e: any) {
       alert(e.message || '納品に失敗しました');
@@ -217,8 +218,8 @@ export const RequestScreen: React.FC<{ state: GameState; engine: GameEngine }> =
                 「{state.currentRequest.description}」
               </p>
 
-              <div className="flex flex-wrap justify-between items-center text-sm pt-1">
-                <div className="flex items-center gap-2">
+              <div className="flex flex-wrap justify-between items-center text-sm pt-1 gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-bold text-amber-600 text-base">
                     報酬: {state.currentRequest.rewardG} G
                   </span>
@@ -227,6 +228,10 @@ export const RequestScreen: React.FC<{ state: GameState; engine: GameEngine }> =
                       (納品時 1.5倍: {Math.floor(state.currentRequest.rewardG * 1.5)} G)
                     </span>
                   )}
+                  <span className="text-xs text-amber-900 font-bold bg-amber-100/90 border border-amber-300 px-2 py-0.5 rounded flex items-center gap-1">
+                    <Gi.GiTrophyCup className="text-amber-600" />
+                    <span>名声 +{state.currentRequest.rank === 'King' ? 50 : state.currentRequest.rank === 'Noble' ? 25 : 10}{(state.clientAffection?.[state.currentRequest.rank] || 1) >= 10 ? ` (+${state.currentRequest.rank === 'King' ? 10 : state.currentRequest.rank === 'Noble' ? 5 : 3})` : ''}</span>
+                  </span>
                 </div>
                 <span className="text-red-600 font-bold text-xs sm:text-sm font-mono">
                   期限まで: {formatTimeRemaining(state.currentRequest.deadline - now)} ({formatClockTime(state.currentRequest.deadline)}更新)
@@ -436,10 +441,16 @@ export const RequestScreen: React.FC<{ state: GameState; engine: GameEngine }> =
                         <div className="p-3 bg-blue-50/70 border border-blue-200 rounded text-sm text-blue-900">
                           <p className="font-bold mb-1">【現在受注中です】</p>
                           <p>「{state.currentRequest?.description}」</p>
-                          <p className="text-xs text-amber-700 font-bold mt-2">
-                            報酬: {state.currentRequest?.rewardG} G
-                            {affection >= 10 && ` (MAXボーナス適用時: ${Math.floor((state.currentRequest?.rewardG || 0) * 1.5)} G)`}
-                          </p>
+                          <div className="flex flex-wrap items-center gap-2 text-xs font-bold mt-2">
+                            <span className="text-amber-700">
+                              報酬: {state.currentRequest?.rewardG} G
+                              {affection >= 10 && ` (MAXボーナス時: ${Math.floor((state.currentRequest?.rewardG || 0) * 1.5)} G)`}
+                            </span>
+                            <span className="text-amber-900 bg-amber-100/90 border border-amber-300 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                              <Gi.GiTrophyCup className="text-amber-600" />
+                              <span>名声 +{rank === 'King' ? 50 : rank === 'Noble' ? 25 : 10}{affection >= 10 ? ` (+${rank === 'King' ? 10 : rank === 'Noble' ? 5 : 3})` : ''}</span>
+                            </span>
+                          </div>
                         </div>
                       ) : isCompletedThisSlot ? (
                         <div className="p-3 bg-emerald-50 border border-emerald-200 rounded text-sm text-emerald-900">
@@ -451,14 +462,18 @@ export const RequestScreen: React.FC<{ state: GameState; engine: GameEngine }> =
                       ) : availableReq ? (
                         <div className="p-3 bg-stone-50 border border-stone-200 rounded text-sm">
                           <p className="font-medium text-stone-800 mb-2">「{availableReq.description}」</p>
-                          <div className="flex justify-between items-center text-xs">
+                          <div className="flex flex-wrap justify-between items-center text-xs gap-1">
                             <span className="font-bold text-amber-600 text-sm">
                               報酬: {availableReq.rewardG} G
                               {affection >= 10 && (
-                                <span className="text-amber-800 font-bold ml-1">
+                                <span className="text-amber-800 font-bold ml-1 text-xs">
                                   (好感度MAX時: {Math.floor(availableReq.rewardG * 1.5)} G)
                                 </span>
                               )}
+                            </span>
+                            <span className="text-xs text-amber-900 font-bold bg-amber-100/90 border border-amber-300 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                              <Gi.GiTrophyCup className="text-amber-600" />
+                              <span>名声 +{rank === 'King' ? 50 : rank === 'Noble' ? 25 : 10}{affection >= 10 ? ` (+${rank === 'King' ? 10 : rank === 'Noble' ? 5 : 3})` : ''}</span>
                             </span>
                           </div>
                         </div>

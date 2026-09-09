@@ -180,16 +180,28 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
     if (result === 'win') {
       if (requiresOpponent && activeOpponent) {
         (engine as any).addRepairKits(activeOpponent.rewardKits);
+        if (activeOpponent.rewardFame > 0) {
+          (engine as any).addFame(activeOpponent.rewardFame, `演習勝利: ${activeOpponent.name}`);
+        }
         if (selectedGame === "combat" && activeOpponent.rewardElements) {
           (engine as any).addBattleElements(activeOpponent.rewardElements);
         }
       } else if (selectedGame === 'danmaku') {
-        // Difficulty-based reward for danmaku survival (repair kits only)
+        // Difficulty-based reward for danmaku survival
         (engine as any).addRepairKits(activeDanmakuDiff.rewardKits);
+        if (activeDanmakuDiff.rewardFame > 0) {
+          (engine as any).addFame(activeDanmakuDiff.rewardFame, `弾幕サバイバルクリア: ${activeDanmakuDiff.name}`);
+        }
       } else if (selectedGame === 'piano') {
         (engine as any).addRepairKits(Math.max(1, Math.ceil(activePianoSong.level / 2)));
+        if (activePianoSong.rewardFame > 0) {
+          (engine as any).addFame(activePianoSong.rewardFame, `ピアノ演奏クリア: ${activePianoSong.title}`);
+        }
       } else if (selectedGame === 'defense') {
         (engine as any).addRepairKits(activeDefenseStage.rewardKits);
+        if (activeDefenseStage.rewardFame > 0) {
+          (engine as any).addFame(activeDefenseStage.rewardFame, `拠点防衛成功: ${activeDefenseStage.name}`);
+        }
         const selectedDefenseRobots = selectedDefenseRobotIds.map(id => state.robots.find(r => r.id === id)!).filter(Boolean);
         const regenHours = activeDefenseStage.rewardRegenHours || 12;
         for (const robot of selectedDefenseRobots) {
@@ -515,6 +527,11 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                             <span className="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-300 px-1.5 py-0.5 rounded flex items-center gap-0.5 font-bold">
                               <Gi.GiSpanner className="inline" /> 報酬: x{stage.rewardKits}
                             </span>
+                            {stage.rewardFame > 0 && (
+                              <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300 px-1.5 py-0.5 rounded flex items-center gap-0.5 font-bold">
+                                <Gi.GiTrophyCup className="inline text-amber-600" /> 名声 +{stage.rewardFame}
+                              </span>
+                            )}
                             <span className="text-[10px] bg-teal-100 text-teal-800 border border-teal-300 px-1.5 py-0.5 rounded flex items-center gap-0.5 font-bold">
                               <Gi.GiHealing className="inline text-teal-600" /> {stage.rewardRegenHours || 12}hリジェネ
                             </span>
@@ -688,8 +705,11 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                                 {diff.subLabel}
                               </span>
                             </div>
-                            <div className="text-right font-mono text-xs text-amber-800 font-bold bg-amber-100/80 px-2 py-0.5 rounded border border-amber-300">
-                              <Gi.GiSpanner className="inline text-stone-500" /> キット×{diff.rewardKits}
+                            <div className="text-right font-mono text-xs text-amber-800 font-bold bg-amber-100/80 px-2 py-0.5 rounded border border-amber-300 flex flex-col items-end gap-0.5">
+                              <span><Gi.GiSpanner className="inline text-stone-500" /> キット×{diff.rewardKits}</span>
+                              {diff.rewardFame > 0 && (
+                                <span className="text-[10px] text-amber-900 font-bold">名声 +{diff.rewardFame}</span>
+                              )}
                             </div>
                           </div>
                           <div className="text-[11px] text-stone-500 leading-tight">
@@ -744,6 +764,11 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                               {best?.cleared && (
                                 <span className="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold font-mono px-1.5 py-0.2 rounded shrink-0">
                                   CLEAR済
+                                </span>
+                              )}
+                              {song.rewardFame > 0 && (
+                                <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300 font-bold font-mono px-1.5 py-0.2 rounded shrink-0">
+                                  名声 +{song.rewardFame}
                                 </span>
                               )}
                             </div>
@@ -834,10 +859,15 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                             )}
                             <div className="text-[10px] text-stone-400 mt-0.5">{o.org}</div>
                           </div>
-                          <div className="text-right">
+                          <div className="text-right flex flex-col items-end gap-0.5">
                             <span className="text-xs text-amber-800 font-bold bg-amber-100/80 px-2 py-1 rounded-lg border border-amber-300 block shadow-2xs font-mono">
                               <Gi.GiSpanner className="inline text-stone-500" />×{o.rewardKits}
                             </span>
+                            {o.rewardFame > 0 && (
+                              <span className="text-[10px] text-amber-900 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                                名声 +{o.rewardFame}
+                              </span>
+                            )}
                           </div>
                         </button>
                       );
@@ -1158,11 +1188,17 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                 </div>
 
                 {battleResult === 'win' && requiresOpponent && (
-                  <div className="bg-amber-50 border-2 border-amber-300 px-6 py-2.5 rounded-xl shadow-xs">
+                  <div className="bg-amber-50 border-2 border-amber-300 px-6 py-2.5 rounded-xl shadow-xs space-y-1">
                     <p className="text-amber-900 font-bold text-base sm:text-lg flex items-center justify-center gap-2">
                       <span className="text-xl"><Gi.GiSpanner className="inline text-stone-500" /></span>
                       <span>獲得報酬: 修理キット +{activeOpponent?.rewardKits}個</span>
                     </p>
+                    {activeOpponent && activeOpponent.rewardFame > 0 && (
+                      <p className="text-amber-800 font-bold text-sm sm:text-base flex items-center justify-center gap-1.5">
+                        <Gi.GiTrophyCup className="text-amber-600 text-lg" />
+                        <span>工房名声: +{activeOpponent.rewardFame} 獲得！</span>
+                      </p>
+                    )}
                     {selectedGame === "combat" && activeOpponent?.rewardElements && (
                       <p className="text-blue-900 font-bold text-sm sm:text-base flex items-center justify-center gap-2 mt-1">
                         <span className="text-xl"><Gi.GiCrystalBars className="inline text-blue-500" /></span>
@@ -1172,11 +1208,17 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                   </div>
                 )}
                 {battleResult === 'win' && !requiresOpponent && selectedGame === 'danmaku' && (
-                  <div className="bg-amber-50 border-2 border-amber-300 px-6 py-2.5 rounded-xl shadow-xs text-center">
+                  <div className="bg-amber-50 border-2 border-amber-300 px-6 py-2.5 rounded-xl shadow-xs text-center space-y-1">
                     <p className="text-amber-900 font-bold text-base sm:text-lg flex items-center justify-center gap-2">
                       <span className="text-xl"><Gi.GiSpanner className="inline text-stone-500" /></span>
                       <span>クリア報酬 ({activeDanmakuDiff.label}): 修理キット +{activeDanmakuDiff.rewardKits}個</span>
                     </p>
+                    {activeDanmakuDiff.rewardFame > 0 && (
+                      <p className="text-amber-800 font-bold text-sm sm:text-base flex items-center justify-center gap-1.5">
+                        <Gi.GiTrophyCup className="text-amber-600 text-lg" />
+                        <span>工房名声: +{activeDanmakuDiff.rewardFame} 獲得！</span>
+                      </p>
+                    )}
                   </div>
                 )}
                 {battleResult === 'win' && selectedGame === 'defense' && (
@@ -1185,10 +1227,28 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                       <span className="text-xl"><Gi.GiSpanner className="inline text-stone-500" /></span>
                       <span>防衛成功報酬 ({activeDefenseStage.name}): 修理キット +{activeDefenseStage.rewardKits}個</span>
                     </p>
+                    {activeDefenseStage.rewardFame > 0 && (
+                      <p className="text-amber-800 font-bold text-sm sm:text-base flex items-center justify-center gap-1.5">
+                        <Gi.GiTrophyCup className="text-amber-600 text-lg" />
+                        <span>工房名声: +{activeDefenseStage.rewardFame} 獲得！</span>
+                      </p>
+                    )}
                     <div className="flex items-center justify-center gap-2 text-xs sm:text-sm font-bold text-emerald-800 bg-emerald-100/80 border border-emerald-300 py-1.5 px-3 rounded-lg">
                       <Gi.GiHealing className="inline text-emerald-600 animate-pulse text-base" />
                       <span>防衛リジェネ効果付与！ 出撃機体全員が12時間の間、1時間毎にHP1回復</span>
                     </div>
+                  </div>
+                )}
+                {battleResult === 'win' && selectedGame === 'piano' && activePianoSong.rewardFame > 0 && (
+                  <div className="bg-amber-50 border-2 border-amber-300 px-6 py-2.5 rounded-xl shadow-xs text-center space-y-1">
+                    <p className="text-amber-900 font-bold text-base sm:text-lg flex items-center justify-center gap-2">
+                      <span className="text-xl"><Gi.GiSpanner className="inline text-stone-500" /></span>
+                      <span>クリア報酬: 修理キット +{Math.max(1, Math.ceil(activePianoSong.level / 2))}個</span>
+                    </p>
+                    <p className="text-amber-800 font-bold text-sm sm:text-base flex items-center justify-center gap-1.5">
+                      <Gi.GiTrophyCup className="text-amber-600 text-lg" />
+                      <span>工房名声: +{activePianoSong.rewardFame} 獲得！</span>
+                    </p>
                   </div>
                 )}
                 {battleResult === 'win' && !requiresOpponent && selectedGame !== 'danmaku' && selectedGame !== 'piano' && (

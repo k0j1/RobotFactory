@@ -13,6 +13,7 @@ export interface Opponent {
   defense: number;
   rewardKits: number;
   rewardElements: number;
+  rewardFame: number;
 }
 
 export type DanmakuDifficulty = 'easy' | 'normal' | 'hard';
@@ -29,6 +30,7 @@ export interface DefenseStage {
   enemyStatsMult: number;
   rewardKits: number;
   rewardRegenHours: number;
+  rewardFame: number;
   bossInfo: string;
 }
 
@@ -45,6 +47,7 @@ export const DEFENSE_STAGES: DefenseStage[] = [
     enemyStatsMult: 1.0,
     rewardKits: 1,
     rewardRegenHours: 3,
+    rewardFame: 5,
     bossInfo: 'ボスなし (通常敵のみ 100体)',
   },
   {
@@ -59,6 +62,7 @@ export const DEFENSE_STAGES: DefenseStage[] = [
     enemyStatsMult: 1.0,
     rewardKits: 2,
     rewardRegenHours: 6,
+    rewardFame: 15,
     bossInfo: '100体ごとに小ボス(HP50,000)出現',
   },
   {
@@ -73,6 +77,7 @@ export const DEFENSE_STAGES: DefenseStage[] = [
     enemyStatsMult: 1.0,
     rewardKits: 3,
     rewardRegenHours: 9,
+    rewardFame: 30,
     bossInfo: '100体毎に中ボス(HP10万)、最後に大ボス(HP15万)出現',
   },
   {
@@ -87,6 +92,7 @@ export const DEFENSE_STAGES: DefenseStage[] = [
     enemyStatsMult: 1.0,
     rewardKits: 4,
     rewardRegenHours: 12,
+    rewardFame: 45,
     bossInfo: '最後の99体は小ボス、ラストに巨大ボス(HP25万)',
   },
   {
@@ -101,6 +107,7 @@ export const DEFENSE_STAGES: DefenseStage[] = [
     enemyStatsMult: 1.0,
     rewardKits: 5,
     rewardRegenHours: 24,
+    rewardFame: 70,
     bossInfo: '全波ボス級ラッシュ＆最後は超巨大ボス(HP100万)',
   },
 ];
@@ -114,6 +121,7 @@ export interface DanmakuDifficultyConfig {
   bulletSpeedMult: number;
   ringCount: number;
   rewardKits: number;
+  rewardFame: number;
   badgeClass: string;
 }
 
@@ -138,6 +146,7 @@ export interface PianoSong {
   songSpeed: number;
   bgmUrl?: string;
   desc: string;
+  rewardFame: number;
   notes: PianoNoteData[];
 }
 
@@ -209,6 +218,7 @@ export const PIANO_SONGS: PianoSong[] = [
     level: 10, 
     songSpeed: 1.0,
     desc: 'パガニーニ大練習曲 第3番 嬰ト短調。pianoclassics.net (ID 110) 準拠。特徴的な跳躍と高音の鐘の音を再現したテーマ部。', 
+    rewardFame: 30,
     notes: LA_CAMPANELLA_NOTES
   },
 
@@ -219,6 +229,7 @@ export const PIANO_SONGS: PianoSong[] = [
     level: 5, 
     songSpeed: 1.0,
     desc: 'バガテル「エリーゼのために」WoO 59 (イ短調 3/8拍子)。pianoclassics.net (ID 47) 準拠。主部と全エピソードを網羅した全曲完全収録版。', 
+    rewardFame: 5,
     notes: FUR_ELISE_NOTES
   },
   { 
@@ -228,6 +239,7 @@ export const PIANO_SONGS: PianoSong[] = [
     level: 8, 
     songSpeed: 1.0,
     desc: 'ピアノソナタ第11番 イ長調 K. 331 第3楽章「トルコ行進曲」(Allegretto 2/4拍子)。pianoclassics.net (ID 55) / Mutopia 準拠。主部・中間部・コーダを網羅した全曲完全収録版。', 
+    rewardFame: 15,
     notes: TURKISH_MARCH_NOTES
   }
 ];
@@ -242,6 +254,7 @@ export const DANMAKU_DIFFICULTIES: DanmakuDifficultyConfig[] = [
     bulletSpeedMult: 0.75,
     ringCount: 6,
     rewardKits: 1,
+    rewardFame: 0,
     badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-300',
   },
   {
@@ -253,6 +266,7 @@ export const DANMAKU_DIFFICULTIES: DanmakuDifficultyConfig[] = [
     bulletSpeedMult: 1.0,
     ringCount: 8,
     rewardKits: 1,
+    rewardFame: 5,
     badgeClass: 'bg-blue-100 text-blue-800 border-blue-300',
   },
   {
@@ -264,21 +278,22 @@ export const DANMAKU_DIFFICULTIES: DanmakuDifficultyConfig[] = [
     bulletSpeedMult: 1.25,
     ringCount: 10,
     rewardKits: 2,
+    rewardFame: 15,
     badgeClass: 'bg-purple-100 text-purple-800 border-purple-300',
   },
 ];
 
 export const OPPONENTS: Opponent[] = [
-  { id: 'op1', level: 1, name: 'ポンコツ試作機', org: '町の発明家', int: 4, agi: 8, dex: 6, hp: 10, power: 10, defense: 4, rewardKits: 1, rewardElements: 10 },
-  { id: 'op2', level: 2, name: 'ジャンク・スカベンジャー', org: '廃品回収ギルド', int: 8, agi: 12, dex: 10, hp: 16, power: 16, defense: 8, rewardKits: 1, rewardElements: 15 },
-  { id: 'op3', level: 3, name: '汎用作業ボット', org: 'アポロ重工', int: 14, agi: 16, dex: 14, hp: 25, power: 24, defense: 14, rewardKits: 1, rewardElements: 20 },
-  { id: 'op4', level: 4, name: '警邏パトロールボット', org: 'シティ警察機構', int: 20, agi: 22, dex: 18, hp: 35, power: 32, defense: 20, rewardKits: 1, rewardElements: 25 },
-  { id: 'op5', level: 5, name: '戦術演算ユニット', org: 'ゼニス・コーポレーション', int: 28, agi: 28, dex: 24, hp: 48, power: 42, defense: 28, rewardKits: 1, rewardElements: 35 },
-  { id: 'op6', level: 6, name: '重装機甲ストライカー', org: 'ネオ・ミリタリー', int: 36, agi: 34, dex: 30, hp: 62, power: 54, defense: 38, rewardKits: 1, rewardElements: 50 },
-  { id: 'op7', level: 7, name: '高機動ファントム', org: 'シャドウ・ラボラトリー', int: 46, agi: 52, dex: 40, hp: 78, power: 68, defense: 46, rewardKits: 1, rewardElements: 65 },
-  { id: 'op8', level: 8, name: '要塞ガーディアン', org: '古代防衛システム', int: 56, agi: 44, dex: 48, hp: 98, power: 84, defense: 62, rewardKits: 1, rewardElements: 80 },
-  { id: 'op9', level: 9, name: 'サイバネティクス・カイザー', org: '帝国兵器工廠', int: 72, agi: 64, dex: 60, hp: 125, power: 106, defense: 78, rewardKits: 1, rewardElements: 100 },
-  { id: 'op10', level: 10, name: 'オメガ・マスター', org: '世界AI協会', int: 92, agi: 86, dex: 80, hp: 160, power: 135, defense: 98, rewardKits: 1, rewardElements: 150 },
+  { id: 'op1', level: 1, name: 'ポンコツ試作機', org: '町の発明家', int: 4, agi: 8, dex: 6, hp: 10, power: 10, defense: 4, rewardKits: 1, rewardElements: 10, rewardFame: 0 },
+  { id: 'op2', level: 2, name: 'ジャンク・スカベンジャー', org: '廃品回収ギルド', int: 8, agi: 12, dex: 10, hp: 16, power: 16, defense: 8, rewardKits: 1, rewardElements: 15, rewardFame: 0 },
+  { id: 'op3', level: 3, name: '汎用作業ボット', org: 'アポロ重工', int: 14, agi: 16, dex: 14, hp: 25, power: 24, defense: 14, rewardKits: 1, rewardElements: 20, rewardFame: 5 },
+  { id: 'op4', level: 4, name: '警邏パトロールボット', org: 'シティ警察機構', int: 20, agi: 22, dex: 18, hp: 35, power: 32, defense: 20, rewardKits: 1, rewardElements: 25, rewardFame: 8 },
+  { id: 'op5', level: 5, name: '戦術演算ユニット', org: 'ゼニス・コーポレーション', int: 28, agi: 28, dex: 24, hp: 48, power: 42, defense: 28, rewardKits: 1, rewardElements: 35, rewardFame: 15 },
+  { id: 'op6', level: 6, name: '重装機甲ストライカー', org: 'ネオ・ミリタリー', int: 36, agi: 34, dex: 30, hp: 62, power: 54, defense: 38, rewardKits: 1, rewardElements: 50, rewardFame: 20 },
+  { id: 'op7', level: 7, name: '高機動ファントム', org: 'シャドウ・ラボラトリー', int: 46, agi: 52, dex: 40, hp: 78, power: 68, defense: 46, rewardKits: 1, rewardElements: 65, rewardFame: 28 },
+  { id: 'op8', level: 8, name: '要塞ガーディアン', org: '古代防衛システム', int: 56, agi: 44, dex: 48, hp: 98, power: 84, defense: 62, rewardKits: 1, rewardElements: 80, rewardFame: 38 },
+  { id: 'op9', level: 9, name: 'サイバネティクス・カイザー', org: '帝国兵器工廠', int: 72, agi: 64, dex: 60, hp: 125, power: 106, defense: 78, rewardKits: 1, rewardElements: 100, rewardFame: 50 },
+  { id: 'op10', level: 10, name: 'オメガ・マスター', org: '世界AI協会', int: 92, agi: 86, dex: 80, hp: 160, power: 135, defense: 98, rewardKits: 1, rewardElements: 150, rewardFame: 70 },
 ];
 
 export interface MinigameProps {

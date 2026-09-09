@@ -1,705 +1,397 @@
 import * as Gi from 'react-icons/gi';
-import React from 'react';
-import { Card, Button } from '../components/ui/core';
+import React, { useState } from 'react';
+import { Card, Button, Badge } from '../components/ui/core';
 import { theme } from '../styles/theme';
 
 export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+  const [activeTab, setActiveTab] = useState<'all' | 'overview' | 'fame' | 'craft' | 'quest' | 'request' | 'minigame' | 'shop'>('all');
+
+  const categories = [
+    { id: 'all', label: '全体を表示', icon: Gi.GiScrollUnfurled },
+    { id: 'overview', label: '基本サイクル', icon: Gi.GiGears },
+    { id: 'fame', label: '工房名声', icon: Gi.GiTrophyCup },
+    { id: 'craft', label: 'クラフト・機体', icon: Gi.GiRobotAntennas },
+    { id: 'quest', label: '探索・遠征', icon: Gi.GiCompass },
+    { id: 'request', label: '依頼板', icon: Gi.GiWoodenSign },
+    { id: 'minigame', label: 'バトル演習', icon: Gi.GiCrossedSwords },
+    { id: 'shop', label: '施設・ショップ', icon: Gi.GiAnvil },
+  ];
+
   return (
-    <div className="space-y-6 pb-12">
-      <div className="flex justify-between items-center border-b-2 border-stone-300 pb-2">
-        <h2 className={theme.typography.h2}>ライトペーパー (仕様書)</h2>
-        <Button size="sm" variant="secondary" onClick={onBack}>戻る</Button>
+    <div className="space-y-6 pb-16 max-w-4xl mx-auto">
+      {/* ヘッダーバー */}
+      <div className="flex justify-between items-center border-b-2 border-stone-300 pb-3">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-xl bg-stone-800 text-amber-400 flex items-center justify-center shadow-xs">
+            <Gi.GiScrollUnfurled size={22} />
+          </div>
+          <div>
+            <h2 className={theme.typography.h2}>ポンコツロボット工房 公式仕様書</h2>
+            <p className="text-xs text-stone-500 font-medium">現在採用されている最新ゲームシステムの完全ガイド (v1.0.273)</p>
+          </div>
+        </div>
+        <Button size="sm" variant="secondary" onClick={onBack}>
+          ← 工房へ戻る
+        </Button>
       </div>
 
-      <Card className="bg-stone-50 border-2 border-stone-200">
-        <h3 className={`${theme.typography.h3} mb-4 text-stone-700`}>ポンコツロボット工房 v1.0.266 仕様まとめ</h3>
-        
-        <div className="space-y-6 text-sm text-stone-800">
-          <section>
-            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">演習・ミニゲーム総合ダッシュボードの追加 (v1.0.266)</h4>
-            <ul className="list-disc list-inside space-y-2">
-              <li><strong>戦績トラッキング:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li>各ミニゲーム（バトル演習、リバーシ、チェス、弾幕、ピアノ、防衛戦）ごとの「プレイ回数」「勝利数」を自動記録するようになりました。</li>
-                </ul>
-              </li>
-              <li><strong>ゲーム風ダッシュボードUI:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li>演習アリーナ画面の上部に、全体および各ゲームごとの戦績をひと目で確認できる専用ダッシュボードパネルを設置しました。</li>
-                  <li>戦績に応じて「S, A, B, C, D, E, F, G」の評価（伝説、達人、初心者など）がアイコンとともに楽しく表示されます。</li>
-                </ul>
-              </li>
-            </ul>
-          </section>
+      {/* カテゴリ切り替えタブ */}
+      <div className="flex flex-wrap gap-1.5 p-1.5 bg-stone-200/80 rounded-xl border border-stone-300">
+        {categories.map(cat => {
+          const Icon = cat.icon;
+          const isActive = activeTab === cat.id;
+          return (
+            <button
+              key={cat.id}
+              onClick={() => setActiveTab(cat.id as any)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                isActive
+                  ? 'bg-amber-600 text-white shadow-xs'
+                  : 'bg-white/80 text-stone-700 hover:bg-white hover:text-stone-900 border border-stone-300/60'
+              }`}
+            >
+              <Icon size={14} className={isActive ? 'text-amber-200' : 'text-stone-500'} />
+              <span>{cat.label}</span>
+            </button>
+          );
+        })}
+      </div>
 
-          <section>
-            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">戦闘専用装備の専用技発動システム (v1.0.266)</h4>
-            <ul className="list-disc list-inside space-y-2">
-              <li><strong>【必殺奥義】星断オメガクロス:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li>ビームサーベル装備時にのみ発動可能になる超高火力の剣技です。</li>
-                  <li>通常の2.5倍もの威力を誇り、発動すれば戦局を一気に決定づけることができます。</li>
-                </ul>
-              </li>
-              <li><strong>エネルギーシールド防御:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li>ビームシールド装備時にのみ発動可能になる特殊防御技です。</li>
-                  <li>発動から約10秒間、敵からのあらゆる攻撃ダメージをさらに半減する強固な光波防壁を展開します。</li>
-                </ul>
-              </li>
-              <li><strong>技図鑑（スキルモーダル）のUI改修:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li>各技の詳細画面で、その技を習得・発動するために特定の専用装備（ビームサーベル・ビームシールド）が必要かどうかを視覚的に確認できるよう改修しました。</li>
-                  <li><strong>防衛戦への適用:</strong> ビームサーベル装備時は防衛戦の出撃機体にPower+35が適用され、攻撃技が「【必殺奥義】星断オメガクロス」に変化します。ビームシールド装備時は拠点が受けるダメージが30%軽減され、さらに攻撃技が「エネルギーシールド防御(プラズマ波攻撃)」に変化します（両方装備時は交互に適用）。</li>
-                </ul>
-              </li>
-            </ul>
-          </section>
+      <div className="space-y-5 text-stone-800 text-sm">
+        {/* 1. 基本ゲームサイクル */}
+        {(activeTab === 'all' || activeTab === 'overview') && (
+          <Card className="bg-stone-50/90 border-2 border-stone-300 shadow-xs">
+            <div className="flex items-center gap-2 border-b border-stone-200 pb-2 mb-3">
+              <Gi.GiGears className="text-amber-700 text-xl" />
+              <h3 className="font-bold text-base text-stone-900">1. 基本ゲームサイクル</h3>
+            </div>
+            <div className="space-y-3 leading-relaxed">
+              <p className="text-stone-700">
+                『ポンコツロボット工房』は、集めたジャンクパーツから個性豊かなロボットを組み立て、遠征や依頼、バトルを通じて工房を発展させていくクラフト＆育成シミュレーションです。
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5 pt-1 font-mono text-xs">
+                <div className="bg-amber-100/70 border border-amber-300 p-2.5 rounded-lg">
+                  <div className="font-bold text-amber-900 flex items-center gap-1 mb-1">
+                    <Gi.GiCompass /> ① 探索・遠征
+                  </div>
+                  <div className="text-[11px] text-amber-800 font-sans">
+                    各地へロボットを派遣し、素材やレアパーツ、ジャンクを収集。
+                  </div>
+                </div>
+                <div className="bg-blue-100/70 border border-blue-300 p-2.5 rounded-lg">
+                  <div className="font-bold text-blue-900 flex items-center gap-1 mb-1">
+                    <Gi.GiHammerNails /> ② ロボット製作
+                  </div>
+                  <div className="text-[11px] text-blue-800 font-sans">
+                    4部位のパーツを組み合わせ、独自の性能・外見の機体を製造。
+                  </div>
+                </div>
+                <div className="bg-emerald-100/70 border border-emerald-300 p-2.5 rounded-lg">
+                  <div className="font-bold text-emerald-900 flex items-center gap-1 mb-1">
+                    <Gi.GiWoodenSign /> ③ 依頼・納品
+                  </div>
+                  <div className="text-[11px] text-emerald-800 font-sans">
+                    街の住人や王室の依頼に応え、ゴールドと名声を獲得。
+                  </div>
+                </div>
+                <div className="bg-purple-100/70 border border-purple-300 p-2.5 rounded-lg">
+                  <div className="font-bold text-purple-900 flex items-center gap-1 mb-1">
+                    <Gi.GiCrossedSwords /> ④ バトル・発展
+                  </div>
+                  <div className="text-[11px] text-purple-800 font-sans">
+                    演習や拠点防衛で名を上げ、工房設備や名声ランクを高める。
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Card>
+        )}
 
-          <section>
-            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">バトル演習UI刷新とエレメント・専用武装システム (v1.0.266)</h4>
-            <ul className="list-disc list-inside space-y-2">
-              <li><strong>バトル演習セットアップUIの1カード化:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li>出撃ロボットと対戦相手の選択を1つの専用カードコンポーネント（CombatSetupCard）に統合。横スクロールの画像リストから直感的に自機と相手を選べるように改良しました。</li>
-                  <li>選択された自機および対戦相手のステータス情報だけが、選択リスト直下の専用領域にスッキリと表示される設計に変更しました。</li>
-                </ul>
-              </li>
-              <li><strong>対戦相手10段階とエレメント報酬の実装:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li>対戦相手を難易度レベル1から10まで拡充し、各レベルごとに個別のパーツ構成とステータスを定義しました。</li>
-                  <li>勝利時の報酬として、従来の「修理キット1個」に加え、新たなリソース「エレメント」を獲得可能に。レベルが高い相手ほど多くのエレメントが獲得できます。</li>
-                </ul>
-              </li>
-              <li><strong>戦闘専用装備（ビームサーベル・ビームシールド）の実装:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li>貯めたエレメント（各100個）を消費して、バトル演習でのみ使用可能な強力な専用装備を交換・着脱可能にしました。</li>
-                  <li><strong>ビームサーベル:</strong> 装備中は自機のPower(攻撃力)が+35され、強力な斬撃で戦局を有利にします。</li>
-                  <li><strong>ビームシールド:</strong> 装備中は自機のDefense(防御力)が+30されます。</li>
-                </ul>
-              </li>
-            </ul>
-          </section>
+        {/* 2. 工房名声システム */}
+        {(activeTab === 'all' || activeTab === 'fame') && (
+          <Card className="bg-[#fffdf9] border-2 border-amber-300/80 shadow-xs">
+            <div className="flex items-center justify-between border-b border-amber-200 pb-2 mb-3 flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <Gi.GiTrophyCup className="text-amber-600 text-xl" />
+                <h3 className="font-bold text-base text-amber-950">2. 工房名声（Fame）＆名声ランクシステム</h3>
+              </div>
+              <span className="text-xs bg-amber-100 text-amber-900 font-bold px-2 py-0.5 rounded-full border border-amber-300">
+                全6段階の工房称号
+              </span>
+            </div>
+            <div className="space-y-3">
+              <p className="text-stone-700">
+                工房の認知度と職人としての名誉を表すステータスです。ダッシュボード上部に現在の名声・ランク称号・次のランクまでのプログレスバーが表示されます。
+              </p>
 
-          <section>
-            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">ゲーム中アニメーション：アーム・レッグ左右独立リグ制御＆肩・拳調整値の完全統合 (v1.0.266)</h4>
-            <ul className="list-disc list-inside space-y-2">
-              <li><strong>ゲーム内全画面でのアーム・レッグ左右別々リグ制御:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li>ミニゲーム、バトル演習、探索歩行、ダッシュボード待機、素材発見歓喜（バンザイ＆ホップ）、工房クラフト組み立てなど、ゲーム中にロボットを描画するすべての箇所（`RobotVisual`）において、<strong>アーム（左腕・右腕）およびレッグ（左脚・右脚）を左右独立した別々のパーツとして分割・描画</strong>する構造へアップグレード。</li>
-                  <li>左腕・右腕および左脚・右脚がそれぞれ独立した位相・角度・スケールで動作するため、二足歩行での腕と脚の交互スイング（左腕前＋右脚前 / 右腕前＋左脚前）、大歓喜での左右対称バンザイ、ウキウキホップでの翼のようなパタパタ羽ばたきなど、ダイナミックで豊かな表現力を実現。</li>
-                </ul>
-              </li>
-              <li><strong>HandAnchorManager（肩＆拳位置設定）の値との完全同期:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li>モーションスタジオの「肩＆拳位置調整モード」で設定・保存された左右肩座標（`leftShoulder` / `rightShoulder`）および拳座標を、ゲーム内描画コンポーネント（`RobotVisual`）が自動的に取得し、腕の回転中心軸（`transformOrigin`）として常時適用。</li>
-                  <li>パーツのレアリティやヴィジュアルインデックスごとに最適化・微調整した関節座標が、スタジオ内だけでなく実際のゲームプレイ中（探索・戦闘・勝利演出）にも正確に反映されます。</li>
-                  <li>リアルタイム購読（`subscribe`）を実装しているため、スタジオで関節座標を変更・保存した瞬間、ゲーム内のロボット表示にも即座に反映されます。</li>
-                </ul>
-              </li>
-            </ul>
-          </section>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs text-left border-collapse border border-stone-200 rounded-lg overflow-hidden">
+                  <thead className="bg-stone-100 text-stone-700 font-bold">
+                    <tr>
+                      <th className="p-2 border-b border-stone-200">ランク</th>
+                      <th className="p-2 border-b border-stone-200">工房称号</th>
+                      <th className="p-2 border-b border-stone-200">必要名声</th>
+                      <th className="p-2 border-b border-stone-200">説明</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-stone-200">
+                    <tr className="bg-white">
+                      <td className="p-2 font-mono font-bold text-stone-600">Rank 1</td>
+                      <td className="p-2 font-bold text-stone-800">路地裏の無名工房</td>
+                      <td className="p-2 font-mono">0 〜 49</td>
+                      <td className="p-2 text-stone-600">町外れでひっそりと営業する小さな修理小屋。</td>
+                    </tr>
+                    <tr className="bg-emerald-50/40">
+                      <td className="p-2 font-mono font-bold text-emerald-700">Rank 2</td>
+                      <td className="p-2 font-bold text-emerald-900">街の評判工房</td>
+                      <td className="p-2 font-mono">50 〜 149</td>
+                      <td className="p-2 text-stone-600">近隣住民から信頼され、日常的な依頼が集まる。</td>
+                    </tr>
+                    <tr className="bg-sky-50/40">
+                      <td className="p-2 font-mono font-bold text-sky-700">Rank 3</td>
+                      <td className="p-2 font-bold text-sky-900">地方の有名工房</td>
+                      <td className="p-2 font-mono">150 〜 349</td>
+                      <td className="p-2 text-stone-600">近隣の街や旅人たちにも名が知られた実力派工房。</td>
+                    </tr>
+                    <tr className="bg-purple-50/40">
+                      <td className="p-2 font-mono font-bold text-purple-700">Rank 4</td>
+                      <td className="p-2 font-bold text-purple-900">名門メカニック工房</td>
+                      <td className="p-2 font-mono">350 〜 699</td>
+                      <td className="p-2 text-stone-600">貴族や名士たちが特注機を求めて訪れる一流工房。</td>
+                    </tr>
+                    <tr className="bg-amber-50/60">
+                      <td className="p-2 font-mono font-bold text-amber-800">Rank 5</td>
+                      <td className="p-2 font-bold text-amber-950">王国御用達工房</td>
+                      <td className="p-2 font-mono">700 〜 1199</td>
+                      <td className="p-2 text-stone-600">王室直々の特命依頼を受ける最高峰の工房。</td>
+                    </tr>
+                    <tr className="bg-amber-100/60">
+                      <td className="p-2 font-mono font-bold text-rose-700">Rank 6</td>
+                      <td className="p-2 font-bold text-amber-950 flex items-center gap-1">
+                        <Gi.GiLaurelCrown className="text-amber-600" /> 伝説の神話工房
+                      </td>
+                      <td className="p-2 font-mono font-bold">1200+ (MAX)</td>
+                      <td className="p-2 text-stone-700 font-medium">歴史に名を刻む至高のポンコツロボット工房！</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
 
-          <section>
-            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">バトル演習新スキル・探索素材発見歓喜・ジェットパック飛行モーション追加 (v1.0.262)</h4>
-            <ul className="list-disc list-inside space-y-2">
-              <li><strong>バトル演習：新規繰り出し技4種の追加＆専用ヴィジュアル演出:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li><strong>【必殺奥義】星断オメガクロス (Omega Cross):</strong> 宇宙空間カットイン背景とともに、縦横2連撃の極光十文字スラッシュがアリーナ全体を切り裂く超絶必殺技。</li>
-                  <li><strong>ロケットパンチ (Rocket Punch):</strong> 背部バーニアのフルブースト音とともに高推力ロケットマニピュレーターが飛び出し、敵陣を直撃粉砕するロマン砲。</li>
-                  <li><strong>エネルギーシールド防御 (Energy Shield):</strong> 六角形ハニカムの青色ホログラムエネルギー障壁を展開し、敵の打撃を完璧に防ぎ切る防御アクション。</li>
-                  <li><strong>炎刃・旋風回転斬り (Flame Cyclone Slash):</strong> 灼熱のプラズマ火炎ブレードを展開し、360度フルスピンの火炎旋風とともに敵を巻き込む連続回転斬り。</li>
+              <div className="bg-stone-100/80 p-3 rounded-lg border border-stone-300 text-xs space-y-1.5">
+                <div className="font-bold text-stone-900">【名声の主な獲得方法】</div>
+                <ul className="list-disc list-inside space-y-1 text-stone-700">
+                  <li><strong>依頼掲示板での納品:</strong> 王様の依頼 (+50)、貴族の依頼 (+25)、おじさんの依頼 (+10)。好感度MAX時はさらに追加ボーナス付与。</li>
+                  <li><strong>高難度バトル演習勝利:</strong> Lv.3〜10の強敵戦術ボット撃破 (+5〜+70 名声)。</li>
+                  <li><strong>拠点防衛戦の制覇:</strong> ウェーブ防衛成功 (+5〜+70 名声)。</li>
+                  <li><strong>弾幕サバイバル・ピアノ演奏会:</strong> 高難度クリア (+5〜+30 名声)。</li>
                 </ul>
-              </li>
-              <li><strong>遠征・自動探索：素材発見時の自動歓喜アニメーション（バンザイ大歓喜 / ウキウキ・バウンスホップ）:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li>素材を発見して未回収ドロップがある際、ロボットの個体値に応じて<strong>「バンザイ大歓喜」</strong>または<strong>「ウキウキ・バウンスホップ」</strong>が自動的に発動。</li>
-                  <li>「素材発見！バンザイ！」「素材発見！るんるん♪」のフキダシとともに、跳ね回る全身モーションとキラキラパーティクルで探索成果をお祝い。</li>
-                  <li>自動探索カードに存在していたデバッグ用の感情切替バー（発見/困り）を削除し、ゲーム進行状況に応じた自然な自動リアクションへと統合・洗練。</li>
-                  <li>素材獲得受取モーダル内にも大歓喜するロボット演出を追加。</li>
-                </ul>
-              </li>
-              <li><strong>モーションスタジオ：ジェットパック飛行アニメーション2種の追加:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li><strong>ジェット飛行・垂直上昇 (Jetpack Ascent Flight):</strong> 背部ツインバーニアを最大点火して垂直急上昇（Y: -72px）！翼のように腕を広げて姿勢制御しながら上空ホバリングし、エアクッションでふんわりと大地に着地。</li>
-                  <li><strong>ジェット飛行・高速前進 (Jetpack Forward Flight):</strong> 機体を水平に倒して前空へ音速急加速（SkewX: -24deg, Rotation: 16deg, X: +75px, Y: -36px）！風圧を切り裂いて高速巡航し、身体を起こしてエアブレーキをかけながら滑らかに着地。</li>
-                  <li><strong>ツインバーニア噴射炎エフェクト (mountJetpackPlumeEffect):</strong> シアンの高熱プラズマコアとオレンジの外炎が吹き出すジェットバーニア噴射炎を新規実装。</li>
-                </ul>
-              </li>
-            </ul>
-          </section>
+              </div>
+            </div>
+          </Card>
+        )}
 
-          <section>
-            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">モーションスタジオ：多彩なエモーションアニメーション8種の完全新規追加 (v1.0.261)</h4>
-            <ul className="list-disc list-inside space-y-2">
-              <li><strong>がっかり・落胆モーション（2種）:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li><strong>がっかり・脱力ため息 (Disappointed Sigh):</strong> 両肩がガクッと落ち、首（頭部）がだらりと前に垂れて全身が脱力して沈み込み、口元から青白いため息スモーク（`mountSighEffect`）と青ざめ縦線を吐き出す切ないモーション。</li>
-                  <li><strong>絶望のガックリ膝落ち (Despair Slump):</strong> 膝からガクンと腰を落として床に崩れ落ち（ORZポーズ）、両手をだらりと地面へ垂らして項垂れ、悔しさにプルプル震えながら床をペシッと叩くコミカルな絶望モーション。</li>
-                </ul>
-              </li>
-              <li><strong>怒り・プンプンモーション（2種）:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li><strong>激怒の地団駄・プンプン (Angry Stomp):</strong> 両拳を強く握りしめて全身を怒りで震わせ、頭上にピキピキ怒りマーク（💢）と蒸気（`mountAngryMarksEffect`）を吹き出しながら、左右の足でダン！ダン！ダン！と激しく地団駄を踏む大迫力アクション。</li>
-                  <li><strong>ぷんぷん・そっぽ腕組み (Fuming Pout):</strong> 「フンッ！」とぷいっと頭を横へ背けてそっぽを向き、両腕を胸の前で交差（腕組み）させ、不満そうにつま先をトントンと刻んで湯気を吐き出す強がりポーズ。</li>
-                </ul>
-              </li>
-              <li><strong>泣き・号泣モーション（2種）:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li><strong>しくしく大泣き・涙拭い (Sobbing Tears):</strong> 両手で顔を覆うように腕を引き上げ、肩をヒックヒックと上下に震わせながら大粒の涙（`mountTearsEffect` dropsモード）をポロポロこぼし、片手で涙をぬぐう愛らしく切ないモーション。</li>
-                  <li><strong>大号泣・じたばたパタパタ (Tantrum Cry):</strong> 天を仰いで首を後ろに反らし、「うわ〜〜ん！」と大粒の涙を左右に大噴水のように吹き出しながら、両腕をじたばた激しくパタパタ羽ばたかせる駄々っ子風の大号泣。</li>
-                </ul>
-              </li>
-              <li><strong>スキップ・ホップモーション（2種）:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li><strong>ご機嫌るんるんスキップ (Joyful Skipping):</strong> 左右交互に軽快にピョンッピョンッと弾むステップ。腕を前後に大きくリズミカルに振り、頭上にふわふわと音符（♪ ♫）（`mountMusicNotesEffect`）を浮かべてご機嫌にスキップ。</li>
-                  <li><strong>ウキウキ・バウンスホップ (Bouncing Hop):</strong> 左右両足を揃えてつま先でポン！ポン！ポン！とリズミカルに3連続ジャンプ。着地時にポヨンと伸縮しながら両腕を広げてバランスをとる愛らしいホッピング。</li>
-                </ul>
-              </li>
-            </ul>
-          </section>
-          <section>
-            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">モーションスタジオ：旧銃撃アニメーション全削除＆両手持ちスコープ接眼精密狙撃の完全新規追加 (v1.0.260)</h4>
-            <ul className="list-disc list-inside space-y-2">
-              <li><strong>旧銃撃・射撃アニメーション9種の完全削除:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li>片手持ちが含まれていた銃撃モーション（『収束ビーム砲撃』『ガトリング連射』『精密スナイパー照準』『二丁拳銃ガンマン』『ツインビーム・シュート』『ヘビースナイパー・精密狙撃』『しゃがみ狙撃・徹甲バースト』『空中アクロバットスナイプ』『【必殺奥義】極光オメガバスター』）を全てシステムから削除しました。</li>
-                </ul>
-              </li>
-              <li><strong>新アニメーション『両手持ちスコープ精密狙撃 (Scope Snipe)』の実装:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li><strong>スコープ接眼・顔密着エイミング:</strong> 頭部を前傾させスコープアイピースへ顔（目）を密着させながら、ホログラフィックHUDレティクル（`mountSniperScopeHUDEffect`）と前方への超微細レーザー照準光線を展開。</li>
-                  <li><strong>左手グリップ把持＆右手トリガー引きの完全両手持ちスタンス:</strong> 左腕が前胸部へ伸びてピストルグリップをがっちり包み込み、右腕がトリガー位置へ引きつけて指を掛けるリアルな射撃姿勢。</li>
-                  <li><strong>トリガー引き込み・超電導弾発射・反動キックバック:</strong> 右手がトリガーを引き絞る微動アクション直後、ドォォンと超電導レール弾を撃ち放ち、顔をあてたまま全身が後方へ押される重厚なリコイル、排莢、着弾確認（残心）を滑らかに表現。</li>
-                </ul>
-              </li>
-            </ul>
-          </section>
-          <section>
-            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">モーションスタジオ：スナイパーライフル全モーション「左手グリップ把持＆右手トリガー引き」両手持ち化 (v1.0.259)</h4>
-            <ul className="list-disc list-inside space-y-2">
-              <li><strong>スナイパーライフル全アニメーションの左手グリップ・右手トリガー両手持ち化:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li>『精密スナイパー照準』『ヘビースナイパー・精密狙撃』『しゃがみ狙撃・徹甲バースト』『空中アクロバットスナイプ』『【必殺奥義】極光オメガバスター』の全スナイパーライフルモーションにおいて、<strong>左手でピストルグリップを握り、右手でトリガーを引く</strong>本格的な両手持ちスタンスへ姿勢・アニメーション軌道を完全調整。</li>
-                  <li>射撃・バースト発射時には右手がトリガーを引き絞るキックバック反動と、左手がグリップを力強く抑えてブレを抑制するリアリスティックな反動制御モーションを反映。</li>
-                </ul>
-              </li>
-              <li><strong>両手持ちマニピュレーター武器マウント機構 (`mountSniperRifle`) の刷新:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li>左手マニピュレーター（メインピストルグリップを包み込む指関節スリット・装甲プレート・LED）と、右手マニピュレーター（トリガーガードに指を掛けトリガーを引く人差し指フィンガー・装甲プレート・LED）が精緻に描画される専用デュアルマニピュレーターSVGを構築。</li>
-                  <li>右手アンカーがトリガー位置（X: 22.0%, Y: 58.0%）、左手アンカーがグリップ位置（X: 14.0%, Y: 62.0%）と完全に重なり合うよう吸着座標を最適化。</li>
-                </ul>
-              </li>
-            </ul>
-          </section>
-          <section>
-            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">モーションスタジオ：スナイパーライフル全両手持ち化＆複合武器モーション削除 (v1.0.258)</h4>
-            <ul className="list-disc list-inside space-y-2">
-              <li><strong>スナイパーライフル全モーションの両手持ち（左手・右手保持）化:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li>『精密スナイパー照準』『ヘビースナイパー・精密狙撃』『しゃがみ狙撃・徹甲バースト』『空中アクロバットスナイプ』『【必殺奥義】極光オメガバスター』等のスナイパーライフルを使用する全アニメーションについて、右手（グリップ＆トリガー）と左手（フォアグリップ支持）の両手で構える重厚かつ本格的なスナイパースタンスへと動作を統一補正しました。</li>
-                </ul>
-              </li>
-              <li><strong>剣＆スナイパーライフル複合アニメーションの削除:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li>ユーザー指定に基づき、剣とスナイパーライフルを同時に使用する複合アニメーション（『ガン＆ブレード・タクティカル』および『【必殺奥義】神威ジェネシス・アサルト』）をモーションスタジオおよびアニメーションレジストリから完全に削除しました。</li>
-                </ul>
-              </li>
-            </ul>
-          </section>
-          <section>
-            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">モーションスタジオ：ソード＆スナイパーライフル必殺奥義専用カットイン＆極大エフェクト演出 (v1.0.257)</h4>
-            <ul className="list-disc list-inside space-y-2">
-              <li><strong>必殺技専用カットイン＆特殊エフェクト演出システムの実装:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li><strong>ドラマチックカットイン演出バナー (`mountDramaticCutinEffect`):</strong> 画面暗転・高輝度白光フラッシュとともに、奥義名・サブタイトル・眼光照準HUD・スラッシュアクセントを伴うダイナミックなバナー演出を実装。</li>
-                  <li><strong>極大エネルギー充填オーラ (`mountEnergyChargeAuraEffect`):</strong> 16本の超高密度集中スピードライン、渦巻く粒子リング、中心パルスコアによる限界オーバーチャージ演出。</li>
-                  <li><strong>超極大X字クロス両断光線 (`mountOmegaCrossSlashEffect`):</strong> 画面全域を斜めに切り裂くシアン＆紅蓮の極大光刃と星型インパクト衝撃波。</li>
-                  <li><strong>極太超電導ハイパービーム・オメガバスター (`mountOmegaBeamBusterEffect`):</strong> 4連螺旋電磁プラズマリング、超極太貫通ビームシリンダー、マズル超新星フラッシュエフェクト。</li>
-                </ul>
-              </li>
-              <li><strong>長刀ビームサーベル＆ヘビースナイパーライフルを駆使する終極奥義3種を追加:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li><strong>【必殺奥義】星断オメガクロス (Omega Slash):</strong> 双刀長刀ビームサーベルを構え、ドラマチックカットインから極限オーラを充填。超神速踏み込みで空間ごと両断する極大X字クロス一閃＆爆砕シェイク。</li>
-                  <li><strong>【必殺奥義】極光オメガバスター (Hyper Buster):</strong> ヘビースナイパーライフルを両手で完全固定し、照準ロックオンカットインから限界オーバーチャージ。極太超電導ハイパービームを放射して標的を消滅させる終極狙撃奥義。</li>
-                  <li><strong>【必殺奥義】神威ジェネシス・アサルト (Genesis Assault):</strong> 右手スナイパーライフル＋左手長刀ビームサーベルの全兵装リミッター解除！覚醒カットインから貫通バスター連射→神速ワープ踏み込み→終焉ビームサーベル両断へと繋ぐ究極コンボ。</li>
-                </ul>
-              </li>
-              <li><strong>Web Audio API音源エンジンの拡張（4種の必殺技専用SE合成）:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li>カットイン専用高周波アルペジオ（`cutin`）、エネルギー充填レゾナンススイープ（`charge`）、高エネルギー極太レーザー放電（`laser`）、重低音サブベース終極爆砕音（`hyper`）をWeb Audio APIでリアルタイム合成。タイムラインSEマーカーと完全同期しました。</li>
-                </ul>
-              </li>
-            </ul>
-          </section>
-          <section>
-            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">モーションスタジオ：超長尺ヘビースナイパーライフルSVG＆ソード・ライフル新規戦闘アクション8種追加 (v1.0.256)</h4>
-            <ul className="list-disc list-inside space-y-2">
-              <li><strong>超長尺ヘビースナイパーライフルSVG（長銃身・放熱スリット・シアン照準スコープ）の実装:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li>ユーザー指定の精密仕様に基づき、超長尺放熱スリットノズル（16本スリット）、シアン発光照準スコープ、フォアグリップ、マガジン、バイポッド、ショルダーストックを備えたヘビースナイパーライフルSVGを新規追加しました。</li>
-                  <li>ピストルグリップ位置（X: 17.0%, Y: 62.0%）を拳アンカーと正確に同期させ、ロボットの手甲マニピュレーターがトリガーを握り込むリアルなマウント機構（`mountSniperRifle`）を構築。</li>
-                  <li>超高エネルギー貫通ビームレール、二重プラズマ放電リング、星型マズルフラッシュを含む専用射撃エフェクト（`mountSniperShotEffect`）を実装しました。</li>
-                </ul>
-              </li>
-              <li><strong>ソード＆スナイパーライフルを駆使する多彩な新戦闘モーション8種の拡充:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li><strong>ビームサーベル・断空斬 (Saber Judgement):</strong> 天高く跳躍し、ビームサーベルを極限プラズマ増幅して頭上に構え、超高速急降下で地面を切り裂く必殺の一刀両断奥義。</li>
-                  <li><strong>双剣・幻影乱舞 (Mirage Saber Dance):</strong> 左右両腕に長刀ビームサーベルを構え、左袈裟・右逆袈裟・水平薙ぎ払いの神速4連撃から同時X字クロスフィニッシュを叩き込む高速乱舞。</li>
-                  <li><strong>サーベル・受け流し反撃 (Parry & Riposte):</strong> 敵の攻撃をビームサーベルで斜めに弾き（火花・リコイル）、姿勢を低く沈めて懐へ潜り込み、下段から豪快に切り上げる電光石火のカウンター。</li>
-                  <li><strong>神速・ビーム居合抜刀 (Iaido Quick Draw):</strong> 腰を低く落とし、左手で鞘を押さえ右手を柄に掛けた静寂の構えから、0.08秒の超神速踏み込みで一閃！残心の後に美しく納刀。</li>
-                  <li><strong>ヘビースナイパー・精密狙撃 (Heavy Sniper):</strong> 超長尺ヘビースナイパーライフルを両手で構え、左手フォアグリップ支持＆スコープ青色ロックオンから超電導貫通ビームを発射。重厚なマズルショックと排莢。</li>
-                  <li><strong>しゃがみ狙撃・徹甲バースト (Crouch AP Burst):</strong> 完全しゃがみスタンスでバイポッドを地面に固定し、低姿勢から3連続の徹甲電磁弾を高速バースト射撃。</li>
-                  <li><strong>空中アクロバットスナイプ (Jump Snipe):</strong> 後方へサマーソルト回転跳躍しながら、空中頂点でスナイパーライフルを水平に構えて撃ち抜き、華麗に着地スライディング。</li>
-                  <li><strong>ガン＆ブレード・タクティカル (Gun & Blade):</strong> 右手にスナイパーライフル、左手に長刀ビームサーベルを同時装備！左サーベルの近接袈裟斬りで敵を崩し、ゼロ距離貫通射撃を叩き込む複合戦術コンボ。</li>
-                </ul>
-              </li>
-            </ul>
-          </section>
-          <section>
-            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">モーションスタジオ：長刀ビームサーベルSVG（刃長2倍延長仕様）への更新 (v1.0.255)</h4>
-            <ul className="list-disc list-inside space-y-2">
-              <li><strong>長刀ビームサーベルSVG（刀身2倍延長・ロングブレード仕様）:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li>ユーザー指定の長刀仕様に基づき、ビームプラズマ外周オーラおよび白光コア光線の長さを2倍に延長した迫力の超長刀ビームサーベルSVGを実装しました。</li>
-                  <li>刀身の延長に合わせてエミッター噴出口ノズル、ヒルトグリップ（放熱スリット構造・出力スイッチ）、エンドキャップの幾何配置を最適化。</li>
-                  <li>新柄の握り手中心位置（X: 50.0%、Y: 89.33%）に合わせて肩ピボット・拳アンカーマウントの連動位置を精密同期し、アームパーツの肩・拳調整値および手甲マニピュレーターが自然に重なるよう調整しました。</li>
-                </ul>
-              </li>
-            </ul>
-          </section>
-          <section>
-            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">モーションスタジオ：新世代ビームサーベルSVGへの刷新＆連動最適化 (v1.0.254)</h4>
-            <ul className="list-disc list-inside space-y-2">
-              <li><strong>白光コア＆シアンオーラを放つビームサーベルSVG:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li>モーションスタジオ内のスラッシュ・抜刀系アニメーションで使用される武器SVGを、高密度プラズマビームサーベルへ刷新しました。</li>
-                  <li>ビーム核心部（白光コア）、外周プラズマオーラ（シアン）、メカニカルフィン放熱構造を持つメタリック柄、起動スイッチ、エンドキャップおよびストラップリングを備えた美麗かつ高精細なSVGレンダリングを実現。</li>
-                  <li>新柄の握り位置（Y: 77.8%）に合わせて肩ピボット・拳アンカーマウントの連動位置を精密同期し、アームパーツの肩・拳調整値と手甲マニピュレーターが自然に重なるよう調整しました。</li>
-                </ul>
-              </li>
-            </ul>
-          </section>
-          <section>
-            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">肩＆拳位置調整モード：確定ボタンの常時可視化＆スライダー誤操作防止ロック機能 (v1.0.253)</h4>
-            <ul className="list-disc list-inside space-y-2">
-              <li><strong>下部メニューに隠れない最前面固定確定ボタン＆ヘッダー確定導線:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li>モーダルのZインデックスを最高階層（z-[150]）に引き上げ、下部余白を最適化（pb-24/pb-6）。画面下部の固定ナビゲーションメニューやブラウザ下端にフッターが隠れる現象を完全解消しました。</li>
-                  <li>モーダル下部にスティッキー固定された「✔ 調整を確定して図鑑に戻る」ボタンに加え、モーダルヘッダーおよび調整パネル下部にも確定・完了ボタンを常設し、スクロール位置に関わらずワンタップで快適に確定できるよう導線を強化しました。</li>
-                </ul>
-              </li>
-              <li><strong>スクロール時の誤操作を防ぐ「編集状態のみ操作可能」スライダー保護機能:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li>画面上下のタッチスクロールやスワイプ中に意図せずスライダーに触れて値が変わってしまうのを防ぐため、各関節（左肩・右肩・左拳・右拳）に「🔒 ロック中 / ✏️ 調整中」ステータス管理を導入しました。</li>
-                  <li>通常時はスライダー操作が無効化（ロック）されており、スクロール操作を誤爆しません。「✏️ 調整する」ボタンを押すか、調整したいカード/スライダー領域をタップすることでその関節がアクティブになり、スライダーや微調整操作が解禁されます。</li>
-                  <li>ツールバーに「全スライダー操作／誤操作防止ロック」一括トグルも搭載し、素早くまとめて調整したい場合にも柔軟に対応可能です。</li>
-                </ul>
-              </li>
-            </ul>
-          </section>
-          <section>
-            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">モーションスタジオ：ソードSVGアニメーションの拳位置＆腕回転完全連動 (v1.0.252)</h4>
-            <ul className="list-disc list-inside space-y-2">
-              <li><strong>拳位置・肩ピボットに連動した2層階層マウント構造:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li>ソード（紅蓮の曲刀SVG）のマウント方式を刷新し、肩座標（回転軸）をピボットとする`wrapper`階層と、拳座標（グリップ位置）に配置される`el`（刀身本体）階層の2段階構造を導入しました。</li>
-                  <li>肩＆拳位置調整モードで設定・保存された各パーツ固有の座標（`HandAnchorManager`）がそのままソードのマウント位置・回転軸として動的に反映されます。</li>
-                </ul>
-              </li>
-              <li><strong>全ソード系GSAPアニメーションの同期アップデート:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li><strong>スラッシュコンボ（Slash Combo）:</strong> 腕の振り下ろし・引き戻しの肩回転に`wrapper`が完全追従し、手首のスナップに合わせて刀身が滑らかに連動。</li>
-                  <li><strong>二刀流クロススラッシュ（Dual Slash Combo）:</strong> 左右両腕それぞれの肩・拳アンカー位置に合わせて左右の刀身が独立同期し、美しいX字クロス軌道を描くよう改善。</li>
-                  <li><strong>紅蓮ブレード・一刀両断（Sword Slash）:</strong> 抜刀・タメ・一閃・納刀シークエンスで腕の可動と拳のグリップ位置が精密に一致。</li>
-                  <li><strong>炎刃・旋風回転斬り（Flame Cyclone） / 紅蓮・突進突き（Flame Blade Thrust）:</strong> 水平薙ぎ・水平突き出しポーズにおいて拳位置を起点としたダイナミックな突進・スピンを実現。</li>
-                  <li><strong>必殺奥義・ファイア・スラッシュ（Fire Slash）:</strong> 大上段の構えから天を切り裂く振り下ろしまで、腕と拳の角度・位置に完全同期した迫力のシネマティック演出を実現。</li>
-                </ul>
-              </li>
-            </ul>
-          </section>
-          <section>
-            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">肩＆拳位置調整モード：視界クリア化・ヘッダー表示修正・全パーツコピー＆アニメーション連動 (v1.0.251)</h4>
-            <ul className="list-disc list-inside space-y-2">
-              <li><strong>ロボット描画を遮らないクリアなキャリブレーション視界:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li>調整モード起動時にロボット中央を覆っていた不要なボーンHUD情報ボックスや汎用関節ドットを抑止し、調整対象である4つのカラーピン（左肩・右肩・左拳・右拳）とガイドラインのみを明瞭かつ高コントラストに描画。</li>
-                  <li>ピンのドラッグ操作時にロボット全身・腕・拳の動きを遮ることなく直感的に位置調整を行えるように改善しました。</li>
-                </ul>
-              </li>
-              <li><strong>モーダルヘッダーの重なり解消:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li>モーダルのZインデックス階層（z-[120]）および上部余白・スクロールレイアウトを最適化し、アプリのタイトルバーにモーダルヘッダーが隠れることなく常時快適に操作できるように調整しました。</li>
-                </ul>
-              </li>
-              <li><strong>パーツごとの永続保存＆GSAPアニメーションへの即時反映:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li>調整した肩・拳座標はパーツ単位（★1〜★5各アーム）で自動保存され、GSAPアニメーションエンジン（`GSAPRobotAnimator`）の各モーション再生時にもパーツごとの肩回転軸（transformOrigin）および拳起端が正しく適用されるように連動強化しました。</li>
-                </ul>
-              </li>
-              <li><strong>全パーツ分の一括JSONコピー＆一括同期:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li>「全パーツコピー (JSON)」ボタンにより、登録されている全アームパーツの肩・拳座標設定をワンクリックでまとめてクリップボードへコピー可能にしました。</li>
-                  <li>「全パーツに一括適用」機能により、調整したお気に入りの位置バランスを全パーツへ瞬時に同期できます。</li>
-                </ul>
-              </li>
-            </ul>
-          </section>
-          <section>
-            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">肩＆拳位置調整モードの独立・パーツ図鑑統合 (v1.0.250)</h4>
-            <ul className="list-disc list-inside space-y-2">
-              <li><strong>パーツ図鑑からパーツごとに直接調整:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li>これまでは個別のロボットのGSAPモーションスタジオから肩＆拳の位置調整を行っていましたが、設定は「アームパーツ単位」で保存されるため、アームパーツそのものを一覧できる<strong>「パーツ図鑑（アーム）」の各カードから直接調整モードを起動できる</strong>ように設計を見直しました。</li>
-                  <li>GSAPモーションスタジオからは調整モードのUIを削除し、ロボット本来のモーション確認機能に純化しました。</li>
-                  <li>パーツ図鑑でアームの「肩＆拳 位置調整」ボタンを押すと、専用の調整用リグロボットが表示されたキャリブレーターモーダルが起動し、アームパーツごとに効率よくドラッグ調整やJSON保存が可能です。</li>
-                </ul>
-              </li>
-            </ul>
-          </section>
-          <section>
-            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">モーションスタジオ：肩＆拳位置調整モードのレイアウト最適化＆視界クリア化 (v1.0.249)</h4>
-            <ul className="list-disc list-inside space-y-2">
-              <li><strong>作業視界を妨げないサイド・バイ・サイド (並列) UIレイアウト:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li><strong>右カラムへのキャリブレータパネル配置:</strong> 調整モード起動時、これまでビューポートの下に積み重なり画面スクロールを強いられていたキャリブレータパネルを右カラム（モーション一覧エリア）へ移動配置。左側のロボットキャンバス（全身・腕・関節）を常時フルビューで見渡しつつ、右側のスライダーや数値入力、JSON操作を並列操作できるよう改善。</li>
-                  <li><strong>右カラムの「肩＆拳調整 / モーション選択」シームレス切替タブ:</strong> 調整中でも右上のタブからモーション一覧や再生パターンの切り替えが可能。「✕ 閉じる」ボタンで素早く通常レイアウトへ復帰。</li>
-                </ul>
-              </li>
-              <li><strong>キャンバス描画の非侵入型ミニマルバッジ化:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li><strong>左肩・腕を遮っていた巨大HUDボックスの撤去:</strong> 以前キャンバス左上に常時覆いかぶさっていた幅280pxの固定情報ボックスを撤去。ピン直近の座標チップおよび右カラムのコントローラーに情報を集約し、右下にコンパクトな微小バッジのみを表示することで、ロボット全身・腕・拳を一切遮ることなく快適にピンの直接ドラッグ調整を行えるようブラッシュアップ。</li>
-                </ul>
-              </li>
-            </ul>
-          </section>
-          <section>
-            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">モーションスタジオ：肩＆拳位置調整モードの安定性・互換性強化 (v1.0.248)</h4>
-            <ul className="list-disc list-inside space-y-2">
-              <li><strong>肩・拳座標の防御的フォールバック＆型安全化:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li><strong>旧ストレージデータ互換＆安全なデフォルトマージ:</strong> 以前のバージョンで保存された古いlocalStorage設定（肩座標プロパティ未定義状態）やパーツ切り替え時の初期化遅延が発生した場合でも、エラーなくデフォルト肩座標（左肩: 25%, 46% / 右肩: 75%, 46%）へ安全に自動マージ・補完する防衛処理を実装。</li>
-                  <li><strong>GSAPRobotCanvasレンダリングガード:</strong> 腕の回転中心軸（transform-origin）、ジョイントマーカー、HUDオーバーレイ描画において`safeHandConfig`を導入し、`Cannot read properties of undefined`を完全抑止。</li>
-                  <li><strong>キャリブレータパネルのプロパティ互換性向上:</strong> `ArmJointCalibratorPanel`のプロパティ（currentArmPartKey / currentPartKey、handConfig / config等）双方に完全対応し、閉じる（✕）ボタンを追加してUI操作性を向上。</li>
-                </ul>
-              </li>
-            </ul>
-          </section>
-          <section>
-            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">モーションスタジオ：左右アームの「肩と拳の位置調整モード」＆JSON共有・パーツ間複製 (v1.0.247)</h4>
-            <ul className="list-disc list-inside space-y-2">
-              <li><strong>左右アームの肩＆拳 位置調整モード (4点独立キャリブレーション):</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li><strong>肩（回転ピボット）と拳（武器グリップ）の独立制御:</strong> 腕の根本である「右肩」「左肩」の回転中心軸（transform-origin）と、武装を握る「右手」「左手」のアンカー位置をそれぞれ0〜100%座標でパーツごとに精密調整可能にしました。</li>
-                  <li><strong>数値入力・スライダー・ステップ微調整:</strong> 各ジョイントのX/Y座標を数値直接入力、スライダー、±0.5%ステップボタンで即座に変更可能。現在のパーツで定義されている座標を明瞭に数値表示します。</li>
-                  <li><strong>キャンバス上での直感的ドラッグ操作:</strong> モーションスタジオ画面上のロボットアーム上でピン（肩: 円形ドット、拳: 照準レティクル）を直接ドラッグしてリアルタイムに動かすことも可能です。肩と拳を繋ぐアライメントガイド線も描画されます。</li>
-                  <li><strong>表示フィルター切り替え:</strong> 「全表示」「肩のみ」「拳のみ」「右腕」「左腕」を切り替えて作業対象をフォーカスできます。</li>
-                </ul>
-              </li>
-              <li><strong>JSONクリップボードコピー＆他パーツへの貼り付け・一括同期:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li><strong>単一パーツ/全パーツJSONコピー:</strong> 現在調整中のパーツの肩・拳位置設定、あるいは全登録パーツの設定をワンクリックでJSON形式でクリップボードにコピーできます。</li>
-                  <li><strong>他パーツへの貼り付け（複製）:</strong> 調整した設定をドロップダウンから選択した別の腕パーツへ瞬時にコピー・保存できます。</li>
-                  <li><strong>全腕パーツへの一括適用:</strong> 調整したベストな位置バランスを、すべての腕パーツ（★1〜★5の全バリエーション）へワンクリックで一括同期できます。</li>
-                  <li><strong>JSONインポート・ペースト:</strong> 外部で共有された設定JSONを貼り付けて即時インポートできます。</li>
-                </ul>
-              </li>
-            </ul>
-          </section>
-          <section>
-            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">モーションスタジオ：拳位置キャリブレータ＆JSON設定共有 (v1.0.246)</h4>
-            <ul className="list-disc list-inside space-y-2">
-              <li><strong>拳アンカーマーカー＆リアルタイム位置調整:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li><strong>視覚的マーカー表示＆ドラッグ調整:</strong> モーションスタジオに「🎯 拳マーカー」トグルを追加。ロボットの拳（手）の位置にレティクル（十字照準）とドラッグ可能なピンマーカーを表示し、画面上で直感的に武器の保持位置を調整可能にしました。</li>
-                  <li><strong>スライダー＆微調整ボタン:</strong> 右手・左手のX座標・Y座標を0.1%単位で微調整できるスライダーおよび±0.5%ステップボタンを搭載しました。</li>
-                  <li><strong>パーツ別拳位置の永続化管理:</strong> <code>HandAnchorManager</code> により、各アームパーツ（★1〜★5、ビジュアルバリエーション）ごとに個別の拳アンカー座標をローカルストレージに自動保存・管理します。</li>
-                </ul>
-              </li>
-              <li><strong>設定のJSONコピー＆ペースト機能:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li><strong>ワンクリック設定コピー:</strong> 「📋 設定をコピー」ボタンを押すことで、現在選択中のアームパーツおよび全アームパーツの拳位置設定をまとめたJSONデータをクリップボードにコピーできます。チャットやメモ帳にそのまま貼り付けて共有可能です。</li>
-                  <li><strong>設定ペースト・インポート:</strong> 「📥 ペースト」ボタンを押すことで、コピーした設定JSONを貼り付けて一括反映。外部から提供されたパーツごとの拳位置設定をワンタッチで取り込むことができます。</li>
-                </ul>
-              </li>
-              <li><strong>炎の神剣「ファイア・スラッシュ」アニメーション:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li>指定された炎のソードSVGを組み込み、紅蓮の炎を纏った刀身での居合・構え・大上段袈裟斬り・残心モーションをGSAPで完全アニメーション化。</li>
-                  <li>タイムライン上に剣を振る瞬間や炎の爆炎、着弾衝撃を示すSE発生タイミングマーカーを実装し、視覚的なインジケーターおよび自動SE再生と個別試聴に対応しました。</li>
-                </ul>
-              </li>
-            </ul>
-          </section>
-          <section>
-            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">モーションスタジオ：武器・アイテム装備 (v1.0.243)</h4>
-            <ul className="list-disc list-inside space-y-2">
-              <li><strong>武器やアイテムを用いた特殊アニメーションの追加:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li><strong>ブレード・スラッシュ:</strong> プラズマブレードを動的に生成し、腕の振りに合わせて強烈な袈裟斬りを放ちます。斬撃軌跡の残像エフェクト付きです。</li>
-                  <li><strong>エネルギーシールド防御:</strong> 左腕から六角形のハニカム光子シールドを展開し、被弾時の衝撃波（弾性反動）とともに敵の攻撃をガードします。</li>
-                  <li><strong>スマートミサイル発射:</strong> ロボットの肩部・背面からスマートミサイルオブジェクトを射出。GSAPを用いた曲線軌道アニメーションと白煙エフェクトでミサイルの飛翔を表現しました。</li>
-                </ul>
-              </li>
-            </ul>
-          </section>
-          <section>
-            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">UI・表示改善 (v1.0.242)</h4>
-            <ul className="list-disc list-inside space-y-2">
-              <li><strong>図鑑のレイアウト改善:</strong> 図鑑画面上部に表示されていたモーションスタジオのバナーを削除し、各ロボットのカードから個別にモーションスタジオを開くUIに一本化しました。</li>
-              <li><strong>モーションスタジオの表示修正:</strong> モーダル表示時にスマホ等のタイトルバーにヘッダーが被って隠れてしまう問題を修正するため、上部に十分なパディング（セーフエリア確保）を追加しました。</li>
-            </ul>
-          </section>
-          <section>
-            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">モーションスタジオ (v1.0.241)</h4>
-            <ul className="list-disc list-inside space-y-2">
-              <li><strong>独立リム（手足）アニメーションの完全対応:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li>従来は左右の腕・脚が連動して動いていた一部のアニメーションを修正し、<strong>全アニメーション</strong>で右腕・左腕、右脚・左脚が独立したパーツとして精密に動くように対応しました。</li>
-                  <li><strong>新規アニメーションの追加:</strong> バンザイ大歓喜、やった～！大はしゃぎ、ツインビーム・シュート、フルバースト・ミサイルの4つの新しいアニメーションを実装。左右の手足がバラバラに動く躍動感あるモーションを楽しめます。</li>
-                </ul>
-              </li>
-            </ul>
-          </section>
-          <section>
-            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">演習・ミニゲーム (v1.0.240)</h4>
-            <ul className="list-disc list-inside space-y-2">
-              <li><strong>ピアノ鍵盤の88鍵フルスケール対応:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li><strong>A0〜C8の全音域への拡張:</strong> ラ・カンパネラをはじめとする高難度楽曲の全音域をカバーするため、従来の40鍵（A1〜E7）から標準的なグランドピアノと同じ88鍵（白鍵52鍵、黒鍵36鍵）のフルスケールへと拡張しました。</li>
-                  <li><strong>正確な打鍵アニメーション:</strong> より広大な鍵盤幅に対してロボットの腕が左右へダイナミックに交差・跳躍するようになり、超絶技巧の視覚的迫力が大幅に向上しました。</li>
-                </ul>
-              </li>
-            </ul>
-          </section>
-          <section>
-            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">演習・ミニゲーム (v1.0.239)</h4>
-            <ul className="list-disc list-inside space-y-2">
-              <li><strong>ラ・カンパネラ 楽譜10ページ分の完全フル演奏対応:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li><strong>全140小節・5分間に及ぶ完全版データへの刷新:</strong> これまで展開部（23小節）までにとどまっていた演奏データを抜本的に刷新し、公開されている標準的なMIDIデータを独自パーサーにより抽出。楽譜全10ページ分、約5分間に及ぶリストの超絶技巧すべてを完全再現する演奏エンジンを実装しました。</li>
-                  <li><strong>正確な運指と和声の完全サポート:</strong> 最序盤からフィナーレに至るまで、跳躍・トリル・重音・急速なアルペジオなどの超絶技巧がロボットの腕のアニメーションと共に息つく暇もなく展開されるようになりました。</li>
-                </ul>
-              </li>
-            </ul>
-          </section>
-          <section>
-            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">演習・ミニゲーム (v1.0.238)</h4>
-            <ul className="list-disc list-inside space-y-2">
-              <li><strong>ラ・カンパネラ 演奏譜面の原典完全準拠・フルコーラス対応:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li><strong>演奏時間が短かった問題の解消:</strong> これまでイントロとメロディの入り口のみで終わっていた譜面データを大幅に拡張。第23小節の展開部まで長く演奏を楽しめるように修正しました。</li>
-                  <li><strong>左右の手（伴奏と旋律）の正確な和音再現:</strong> 右手の跳躍（D#6, B5等）に加え、左手のバス・和音（G#2や和音コード）も原曲（ID:110）通りに採譜してMIDI化。より豊かで圧倒的な重厚感を持つ本格的なピアノ演奏を再現しました。</li>
-                </ul>
-              </li>
-            </ul>
-          </section>
-          <section>
-            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">演習・ミニゲーム (v1.0.237)</h4>
-            <ul className="list-disc list-inside space-y-2">
-              <li><strong>ラ・カンパネラ 演奏譜面の原典完全準拠対応:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li><strong>原典楽譜通りの譜面へ修正:</strong> ミニゲーム「ピアノ演奏」における「ラ・カンパネラ」の譜面が不正確だった問題を修正。指定楽譜(pianoclassics.net ID 110)に完全準拠し、嬰ト短調の主旋律（D#6から始まる鐘の音色、B5やG#5への跳躍など）を正確なMIDIノートとして再構成。</li>
-                  <li><strong>演奏フィードバックの向上:</strong> メロディラインが正確になったことで、GSAPロボットアニメーションと打鍵の連動がより直感的に楽しめるようになりました。</li>
-                </ul>
-              </li>
-            </ul>
-          </section>
-          <section>
-            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">GSAP モーションスタジオ＆左右四肢完全独立リグエンジン (v1.0.236)</h4>
-            <ul className="list-disc list-inside space-y-2">
-              <li><strong>左右四肢独立リグエンジン (Independent Left/Right Limb Kinematics):</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li><strong>左右アーム・左右レッグの完全独立パーツ分割:</strong> 従来のモノリシックな両腕・両脚一体描画から、左腕 (ArmLeft)、右腕 (ArmRight)、左脚 (LegLeft)、右脚 (LegRight) を完全独立コンポーネント＆個別DOM参照へ進化。左右で全く異なるポージング・軌道・回転軸をリアルタイムに制御可能。</li>
-                  <li><strong>パーツ消失防止と確実なSVG重層描画:</strong> 各パーツ（Head, Body, ArmLeft, ArmRight, LegLeft, LegRight）のSVGコンポーネントを独立した高精度レイヤーとして保持し、全パーツ・全レアリティ・全属性で100%確実に表示。初期ロード時やアニメーション切替時にもパーツが消えないセーフティ機構を確立。</li>
-                  <li><strong>独立関節ボーン＆ジョイントHUD (Rig Joints Overlay):</strong> トグルボタンにより、首（50% 32%）、炉心コア（50% 55%）、左肩（25% 46%）、右肩（75% 46%）、左股関節（38% 72%）、右股関節（62% 72%）の回転ピボットと関節マーカーをホログラム状に可視化。</li>
-                  <li><strong>4カテゴリー・全28種の独立四肢モーション完全網羅:</strong> 戦闘（二刀流、二丁拳銃、スラッシュ、ビームキャノン、連射、シールドガード等）、特殊（手足交互疾走、跳び回し蹴り、開脚ブレイクダンス、空中宙返り、6方向分解展開図等）、点検（個別サーボ診断、生体アイドル、浮遊、急速充電等）、感情（片手ガッツポーズ、正面クラップ、パニック等）の多彩なアニメーションをシームレスに鑑賞可能。</li>
-                  <li><strong>GSAP タイムライン＆リアクティブ同期:</strong> タイムライン進行度（0%〜100%）をリアルタイムに視覚化。一時停止・再生、ループ切替、再生速度変更（0.5x〜2.0x）を遅延なくシームレスに操作可能。</li>
-                </ul>
-              </li>
-            </ul>
-          </section>
-          <section>
-            <h4 className="font-bold text-stone-900 border-b border-stone-300 pb-1 mb-2">演習・ミニゲーム (拠点防衛戦・ボス被ダメ倍率＆耐久力調整)</h4>
-            <ul className="list-disc list-inside space-y-2">
-              <li><strong>拠点防衛戦 (1日1回成功限定 &amp; 毎朝09:00デイリーリセット):</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li><strong>防衛成功時の当日挑戦ロック:</strong> 拠点防衛戦で勝利（防衛成功）した場合、当日はその後の防衛戦出撃がロックされます（※防衛失敗・敗北時は再挑戦可能）。</li>
-                  <li><strong>毎朝 09:00 デイリーリセット:</strong> 毎日午前09:00（朝9時）を迎えると防衛任務が自動リセットされ、再び出撃可能となります。リセットまでの残り時間（時間・分）は画面上でリアルタイムにカウントダウン表示されます。（※【隠し機能】「本日防衛完了」ボタンを15秒間長押しすることで、制限を強制リセットし再出撃が可能になります）</li>
-                  <li><strong>難易度調整＆耐久力調整:</strong> 防衛戦の総敵数はそのままに、敵機の耐久力(HP)を半減。さらに敵の出現間隔（スポーンレート）を従来の半分に下げることで、マップ上の敵密度をさらに低減しました。また、内部的な敵生成ロジックのデータ構造を大幅にリファクタリングし、余計な処理を削減することで極めて軽量で快適な動作を実現しました。</li>
-                  <li><strong>ボスの拠点への与ダメージ設定:</strong> 小ボス(10ダメ)、中ボス(30ダメ)、大ボス(60ダメ)、巨大ボス(100ダメ)、超巨大ボス(200ダメ)として拠点への被ダメペナルティを再定義しました。</li>
-                  <li><strong>ステージ先行選択フロー (STEP 1 → STEP 2):</strong> 出撃準備画面において、まず「STEP 1: 防衛ステージ選択」を行った後に、選択ステージの最大配備枠に応じた「STEP 2: 防衛ロボット配備」を行う明確かつ直感的な編成フロー。</li>
-                  <li><strong>ステージ毎の防衛リジェネ時間 (3h〜24h):</strong> 勝利時に付与される拠点防衛リジェネ（1時間毎にHP+1自動修復）の効果時間が難易度に応じて変動（初級防衛戦: 3時間、中級哨戒戦: 6時間、上級迎撃戦: 9時間、要塞防衛戦: 12時間、最終決戦: 24時間）。</li>
-                  <li><strong>ロボットの能力値本格活用:</strong> Power（攻撃力・工房至近優先配置）、Agility（行動値・連射速度）、Intelligence/Dexterity（極滅ノヴァ、集束粒子砲など広域スプラッシュ技発動）。</li>
-                </ul>
-              </li>
-            </ul>
-          </section>
-          <section>
-            <h4 className="font-bold text-lg text-amber-700 border-b border-stone-300 mb-2">1. ゲームの目的</h4>
-            <p>
-              プレイヤーはロボット工房の職人となり、「遠征」や「自動探索」で全72種類の素材を集め、「製造」でパーツとロボットを組み立てます。<br/>
-              完成したロボットを「依頼」で納品することでG（ゴールド）を稼ぎ、倉庫の拡張や新たな工房内装の獲得を行いながら工房を発展させます。所持金（G）は画面上部ヘッダー右側に常時表示され、現在の資金状況をいつでも把握できます。
-            </p>
-          </section>
-          <section>
-            <h4 className="font-bold text-lg text-amber-700 border-b border-stone-300 mb-2">2. 遠征と自動探索（環境演出・敏捷性短縮・感情アニメーション・レーダーチャート）</h4>
-            <ul className="list-disc list-inside space-y-1 ml-2">
-              <li><strong>通常遠征:</strong> リアルタイムの時間経過によって遠征が完了し、ランダムな種類の素材をまとまった数（スタック）で獲得できます。遠征完了時にはロボットが「🎁 素材発見！」と吹き出しを表示して大喜びします。</li>
-              <li><strong>成功率:</strong> 失敗はありません。常に100%成功し、素材を持ち帰ります。</li>
-              <li><strong>ロボット派遣ボーナス・UI:</strong> 任意のロボットを同行させると、獲得できる素材の「抽選回数（ドロップ枠）」が基本値から大幅に増加します。同行ロボ選択画面は工房・ガレージ風のコンパクトな横スライドUIとなっており、スワイプや横スクロールで直感的にロボットを選択できます。</li>
-              <li><strong>ステータス・レーダーチャート可視化:</strong> ロボット選択時に「<Gi.GiChart className="inline text-stone-500" /> レーダー」ボタンをタップすることで、耐久力(HP)・攻撃力(Power)・防御力(Defense)・速度(Agility)・探索力(Dexterity)・解析力(Intelligence)の6角形レーダーチャートを展開。機体の特徴が一目で把握できます。</li>
-              <li><strong>画面上部右側に固定表示される追従HUD:</strong> 遠征先一覧をスクロール閲覧中、上部の機体選択部を通り過ぎると自動的に画面右上へ選択中ロボットのHUDカードがフロート固定表示されます。HUD上から直接ロボットの前後切り替え（◀ / ▶）、ドロップダウンロード、および上部機体一覧へのワンタップスクロール（▲）が可能です。</li>
-              <li><strong>敏捷性（Agility）による時間短縮:</strong> 派遣するロボットの<strong>「敏捷 (Agility)」</strong>1につき所要時間が1秒短縮されます（最大80%短縮）。自動探索でも<strong>Agility 1につき発見周期が1秒短縮</strong>され、よりハイペースで素材を蓄積できます。</li>
-              <li><strong>探索地の環境・天候演出（CSSアニメーション）:</strong> 探索場所に応じて背景グラフィックと天候演出（砂漠の砂塵、火山の熱気と火の粉、廃工場の酸性雨、渓谷の磁気嵐と突風、雪原の猛吹雪、水晶洞窟の星雲粒子、電脳遺跡のデジタルグリッド）がダイナミックに変化します。また、ランダムで発生する天候（酸性雨・磁気嵐など）に応じた専用の雨や稲妻などのパーティクルエフェクトも重なって表示されます。</li>
-              <li><strong>敏捷性による歩行・探索スピードの高速化:</strong> ロボットのAgilityが高いほど、探索中の足踏み歩行や首振り、背景のスクロール速度がキビキビと高速化します。</li>
-              <li><strong>ステータス補正（パワー）:</strong> 派遣するロボットの<strong>「パワー」</strong>が高いほど、さらにドロップ枠が追加されます。</li>
-              <li><strong>属性相性:</strong> 派遣先と有利な属性を持つロボット（例：火の地域に水属性）を派遣すると、さらにドロップ枠が追加されます。</li>
-              <li><strong>ランダム天候システム:</strong> 探索地では時間帯ごとに「晴天」「酸性雨」「磁気嵐」「熱波」などの天候がランダムで発生します。天候によって素材のドロップ傾向（水属性や風属性が出やすくなる等）が変化し、通常遠征および自動探索の<strong>探索所要時間（発見周期）</strong>も変動（1.5倍～2倍など）します。各探索地カードやダッシュボードのバッジには、現在の天候が時間に与える具体的な倍率（例: x1.5）が明記され、プレイヤーが直感的に判断できるようになっています。</li>
-              <li><strong>自動探索（放置探索）:</strong> ロボットを自動探索へ派遣（余計な確認ダイアログなしでスムーズに出撃）しておくと、1周期毎にHPを1消費しながら定期的に素材を自動発見・蓄積します（工房画面から随時回収可能）。残りHPが残っている間は「<Gi.GiMagnifyingGlass className="inline text-stone-500" /> 探索中」と表示され、HPが1以下になると安全のため探索を中断して「💔 HP切れ」と明確にステータスが表示されます。</li>
-              <li><strong>帰還時の自動素材回収 &amp; 結果画面表示:</strong> 未回収の素材がある状態で「帰還」させた場合でも素材は失われず自動的に全回収され、華やかな紙ふぶきと共に素材獲得結果画面（獲得モーダル）が表示されます。</li>
-              <li><strong>素材発見時の大喜びアニメーション:</strong> 素材を発見したロボットは、本来のパーツデザインの美しさをそのまま活かしつつ、両手を上に掲げて「やったー！」とバンザイ＆ガッツポーズをしながらぴょんぴょん飛び跳ね、音符やキラキラエフェクトを放ちます。</li>
-              <li><strong>探索難航・失敗時の困り顔アニメーション:</strong> 探索中に素材が見つからない時やバトル敗北時には、頭を抱えてオロオロ震えながら冷や汗（💦）を流すアニメーションが再生されます。</li>
-              <li><strong>回収演出（紙ふぶき）:</strong> 遠征完了や自動探索の回収時・帰還回収時には、お祝いの紙ふぶき（Confetti）が途切れることなく画面いっぱいに舞い散る持続エフェクトが発生します。</li>
-            </ul>
-          </section>
+        {/* 3. クラフト＆機体システム */}
+        {(activeTab === 'all' || activeTab === 'craft') && (
+          <Card className="bg-stone-50/90 border-2 border-stone-300 shadow-xs">
+            <div className="flex items-center gap-2 border-b border-stone-200 pb-2 mb-3">
+              <Gi.GiRobotAntennas className="text-amber-700 text-xl" />
+              <h3 className="font-bold text-base text-stone-900">3. ロボットクラフト＆パーツ仕様</h3>
+            </div>
+            <div className="space-y-3">
+              <p className="text-stone-700">
+                ロボットは<strong>「頭部」「胴体」「腕部」「脚部」</strong>の4つのパーツから構成されます。
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div className="bg-white p-3 rounded-lg border border-stone-200 space-y-1.5">
+                  <div className="font-bold text-stone-900 text-sm flex items-center gap-1.5">
+                    <Gi.GiAnvil className="text-amber-600" /> パラメータ構成
+                  </div>
+                  <ul className="list-disc list-inside space-y-1 text-stone-600">
+                    <li><strong>INT (知力):</strong> 探索成功率や頭脳戦演習での思考補正に影響。</li>
+                    <li><strong>AGI (敏捷性):</strong> 回避率や攻撃速度、機動演習での運動性に影響。</li>
+                    <li><strong>DEX (器用さ):</strong> 命中率、クリティカル、採集効率に影響。</li>
+                    <li><strong>HP (耐久度):</strong> 機体の生命力。0になると稼働停止し修理が必要。</li>
+                    <li><strong>ATK / DEF:</strong> 戦闘演習や防衛戦での与ダメージ・被ダメージに直結。</li>
+                  </ul>
+                </div>
 
-          <section>
-            <h4 className="font-bold text-lg text-amber-700 border-b border-stone-300 mb-2">3. 製造（クラフト）</h4>
-            <ul className="list-disc list-inside space-y-1 ml-2">
-              <li><strong>パーツ製造:</strong> 手持ちの素材から<strong>「メイン素材(3個)」</strong>と<strong>「サブ素材(2個)」</strong>を選んでパーツを合成します。アイコン主体で直感的なUI（コンパクトグリッド表示）でスムーズに選択できます。</li>
-              <li><strong>クラフト（工房UI）:</strong> 画面全体を職人のガレージ・工房風の明るいテーマ（木・石・作業具）に統一。パーツの部位別製造状況を横スクロールバーでコンパクトかつ直感的に把握できるよう改善しました。また素材選択時には、背景色とラベルだけでなく、**アイコン自体の色も属性色**になり、属性が視覚的にわかりやすくなっています。</li>
-              <li>メイン素材はパーツの「属性」と「基礎ステータス」および「出現パーツの形状候補」を決定し、サブ素材は「追加ステータスボーナス」を付与します。</li>
-              <li><strong>素材ごとの固定出現パーツ（レシピ仕様）:</strong>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li><strong>属性別 素材☆1 (各属性4種類):</strong> 各素材ごとに各パーツ部位で☆1パーツ2種類（計8種類）が出現候補となります（1番目の素材: 1列目、2番目の素材: 2列目、3番目の素材: 3列目、4番目の素材: 4列目）。</li>
-                  <li><strong>属性別 素材☆2 (各属性4種類):</strong> 各素材ごとに各部位で☆1パーツ2種類と☆2パーツが出現候補となります。レッグ（脚部）には「サイバーツインレッグ」「サイバーレッグ」「スプリングガード」「シリンダーレッグ」の計4種類が☆2ランクとして配備され、ボディ部位にも高精細な青系グラデーション装甲・インナーパネル・中央モニター発光画面・発光コアレンズを備えた☆2ランクボディが追加されています。</li>
-                  <li><strong>属性別 素材☆3 (各属性4種類):</strong> 各素材ごとに各部位で☆2パーツ2種類と☆3パーツ1種類（計12種類）が出現候補となります。</li>
-                  <li><strong>ロボット合成時のパーツ接続・サイズ最適化:</strong> ☆2のヘッド・ボディ・アーム・レッグ各パーツにおいて、☆1パーツとの互換性を保ちながらロボット合成時にバランス良く一体化するよう、描画領域（viewBox）および接続座標を最適化。頭部パーツがボディから浮いて見えないよう首元に密着させ、ボディパーツの縦伸び・アームパーツの付け根位置のズレを解消しました。</li>
-                </ul>
-              </li>
-              <li><strong>パーツ製造時間（約10秒〜素材レア度変動）:</strong> 基本時間は10秒です。メイン素材のレア度（★1: 10秒、★2: 14秒、★3: 18秒）およびサブ素材レア度に応じて、高品質な素材ほどより精密な加工時間を要します。</li>
-              <li><strong>リアルタイム秒数カウントダウンタイマー &amp; 自動ジャンプ:</strong> 各パーツ製造項目（ヘッド・ボディ・アーム・レッグの各部位、タブバッジ、製造中カード）に<strong>「あと○秒で完成」</strong>のリアルタイムタイマーが常時表示されます。「パーツ製造開始」ボタンを押すと即座に製造中タイマー位置へスムーズスクロールしてジャンプします。</li>
-              <li><strong>ロボット組立時間（約1分〜パーツ性能変動）:</strong> 製造した4パーツ（ヘッド・ボディ・アーム・レッグ）を組み合わせてロボットを組み立てます。基本時間は1分（60秒）で、パーツの合計レア度やステータス合計値が高くなるほど、より高度なアセンブリ作業時間を要します。</li>
-              <li><strong>バックグラウンド進行 &amp; 受取通知:</strong> 製造・組立の進行中はプログレスバーと残り時間がリアルタイムにカウントダウン表示されます。他の画面（工房や遠征など）に移動してもバックグラウンドで製造が進行し、完了時にはナビゲーションや工房画面に受取バッジが表示されます。</li>
-              <li><strong>拡大・縮小ズームスライダー機能（ロボット完成画面・組立プレビュー・動作テスト完了時）:</strong> ロボット合成画面において、完成後のロボットプレビュー（およびパーツ選択中のアセンブリプレビュー、接合・動作テスト完了時）に拡大・縮小ズームスライダーを導入しました。高さを抑えたコンパクトな単一行コントロール設計（60%〜220%のスライダー、拡大・縮小ボタン、100%リセット、4段階プリセット）により、画面縦幅を圧迫せずスムーズにパーツ選択と機体点検を行えます。</li>
-              <li><strong>電気パーツセット時の光彩エフェクト抑制:</strong> ロボット組立時に電気属性パーツをセットした際のエフェクトについて、画面全体が眩しくなりすぎないよう過度な光彩・発光オーバーレイを控えめなソフトスパーク・細線放電へと調整。機体のシルエットやディテールがくっきりと見えやすくなりました。</li>
-              <li><strong>画面下部メニュー上の固定開始アクションバー（製造・組立・バトル）:</strong> 製造画面（パーツ選択完了時・ロボット4部位選択完了時）およびバトル演習画面（出撃ロボ選択完了時）において、下までスクロールしなくても画面下部メニューのすぐ上に専用の<strong>固定開始アクションバー</strong>が浮遊表示されます。選択完了後、即座に「パーツ製造開始」「組立開始」「バトル開始」をワンタップで実行できるよう操作性を大幅に向上させました。</li>
-              <li><strong>倉庫上限・満杯検知 &amp; クイック倉庫拡張:</strong> ロボット組立画面の上部に「倉庫ロボット保管枠（〇/〇体）」を常時明示。上限に達している場合は赤色の警告バッジおよび詳細メッセージが表示され、組立開始ボタンが安全に無効化されます。さらに警告欄から所持ゴールドを使ってその場で直接「倉庫拡張（+5体）」を行えるクイック拡張ボタンを配備しました。</li>
-              <li><strong>完成画面ボタンの「閉じる」統一:</strong> パーツ製造完了画面およびロボット組立完了画面のボタン表記を、従来の「続けて製造する」「続けて組み立てる」から「閉じる」へと変更し、直感的なUI動線へ整理しました。</li>
-              <li><strong>★2脚部パーツのスケール＆接続バランス修正:</strong> 組立時に★2の脚部パーツがボディ内に過剰に隠れてしまう（半分ほど埋まる）問題を修正。SVG座標系を調整し、脚の長さをしっかりと見せつつボディと自然にジョイント接続するプロポーションへ改善しました。</li>
-              <li><strong>倉庫画面のツールチップ表示修正:</strong> 倉庫画面でロボット画像をタップした際に表示される「構成パーツと属性ツールチップ」が、親要素のクリッピング（overflow-hidden）によって枠外で隠れてしまう不具合を修正。どの位置のロボットをタップしても全体が正常に浮き出て表示されるようにしました。</li>
-            </ul>
-          </section>
+                <div className="bg-white p-3 rounded-lg border border-stone-200 space-y-1.5">
+                  <div className="font-bold text-stone-900 text-sm flex items-center gap-1.5">
+                    <Gi.GiSpanner className="text-amber-600" /> 機体管理・メンテナンス
+                  </div>
+                  <ul className="list-disc list-inside space-y-1 text-stone-600">
+                    <li><strong>修理キット:</strong> 破損した機体を即座に全回復。ミニゲーム勝利等で獲得。</li>
+                    <li><strong>機体命名＆愛着度:</strong> 製造したロボットには自由に名前を付けられます。</li>
+                    <li><strong>分解リサイクル:</strong> 不要になった機体やパーツを素材へと還元。</li>
+                    <li><strong>図鑑登録:</strong> 完成した新機体は自動的に工房図鑑へ記録されます。</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </Card>
+        )}
 
-          <section>
-            <h4 className="font-bold text-lg text-amber-700 border-b border-stone-300 mb-2">4. 依頼掲示板（納品と好感度システム）</h4>
-            <ul className="list-disc list-inside space-y-1 ml-2">
-              <li>3人の依頼主（王様・貴族・おじさん）から独立した更新周期で依頼が出されます。</li>
-              <li><strong>王様:</strong> 24時間更新（毎日 朝9:00）。基本報酬500G。ステータスと属性の要求が厳しい。</li>
-              <li><strong>貴族:</strong> 12時間更新（毎日 9:00 / 21:00）。基本報酬300G。中程度の要求。</li>
-              <li><strong>おじさん:</strong> 6時間更新（毎日 3:00 / 9:00 / 15:00 / 21:00）。基本報酬100G。属性不問で要求が緩い。</li>
-              <li><strong>好感度システム（親密度 &amp; 報酬ボーナス）:</strong> 納品成功で好感度+1、依頼破棄で好感度-1となります。好感度は❤️ハートアイコンおよび好感度ゲージ（1〜10）でわかりやすく可視化され、<strong>好感度10(MAX)</strong>に達すると常時<strong>納品報酬ゴールドが1.5倍</strong>に跳ね上がります。</li>
-              <li>要求を満たしたロボットを納品するとGを獲得し、ロボットはインベントリから失われます。</li>
-            </ul>
-          </section>
+        {/* 4. 探索・遠征システム */}
+        {(activeTab === 'all' || activeTab === 'quest') && (
+          <Card className="bg-stone-50/90 border-2 border-stone-300 shadow-xs">
+            <div className="flex items-center gap-2 border-b border-stone-200 pb-2 mb-3">
+              <Gi.GiCompass className="text-amber-700 text-xl" />
+              <h3 className="font-bold text-base text-stone-900">4. 探索・遠征（クエスト）システム</h3>
+            </div>
+            <div className="space-y-3">
+              <p className="text-stone-700">
+                機体を派遣して素材を収集するモードです。エリアごとに必要な時間・推奨能力値・ドロップ素材が異なります。
+              </p>
+              <div className="space-y-2 text-xs">
+                <div className="bg-white p-2.5 rounded-lg border border-stone-200">
+                  <strong className="text-stone-900">主要遠征エリア:</strong>
+                  <div className="text-stone-600 mt-1">
+                    「近所のスクラップ場 (初級)」から「廃墟工場」「電脳樹海」「古代遺跡」「終末の宇宙ステーション (最上級)」まで多彩なロケーションが存在します。
+                  </div>
+                </div>
+                <div className="bg-white p-2.5 rounded-lg border border-stone-200">
+                  <strong className="text-stone-900">放置自動採集＆まとめて回収機能:</strong>
+                  <div className="text-stone-600 mt-1">
+                    遠征完了後、保管箱に素材が自動蓄積されます。工房ダッシュボードの「まとめて回収」ボタンで全遠征の成果を一括でインベントリに収納できます。
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Card>
+        )}
 
-          <section>
-            <h4 className="font-bold text-lg text-amber-700 border-b border-stone-300 mb-2">5. ミニゲーム（ロボット・バトル / 工房演習アリーナ）</h4>
-            <ul className="list-disc list-inside space-y-1 ml-2">
-              <li><strong>工房演習アリーナ（ガレージ風UI統一）:</strong> バトル画面全体を他の画面（工房、製造、倉庫、遠征）と同様の温かみのあるガレージ・工房風デザイン（ストーン・アンバー調のカード、演習ボード、各種計器風フレーム）に完全刷新。種目選択や出撃ロボット一覧、対戦相手カルテなどをより直感的に操作できるように整理しました。</li>
-              <li>自作のロボットを出撃させ、<strong>戦闘（バトル演習）</strong>、パズル、射撃、音楽の各カテゴリで演習に挑戦できます。</li>
-              <li><strong>戦闘カテゴリ（バトル演習）:</strong> 時間経過とともに攻撃を繰り返す本格的なリアルタイム自動戦闘演習です。ロボットの全ステータスが緻密に戦闘へ連動し、機体の性能差や知性による技の閃きが勝敗を左右します。
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li><strong>Vitality（耐久力）:</strong> ロボットの最大耐久力。<strong>値 × 1000</strong> を戦闘中の実耐久値（HP）とし、相手のHPを0に削り切れば勝利となります。</li>
-                  <li><strong>Power（攻撃力）:</strong> ロボットの基礎攻撃力。1回の通常攻撃ダメージは <strong>自分Pow × 80〜120 − 相手Def × 50</strong> で計算されます（最低保証ダメージ10）。</li>
-                  <li><strong>Defense（防御力）:</strong> ロボットの頑丈さ。相手から受ける通常攻撃や技ダメージを減算相殺し、耐久値の消耗を抑えます。</li>
-                  <li><strong>Agility（敏捷性）:</strong> 0.1秒ごとに行動値（AP）が機体のAgility分蓄積され、<strong>1000を超えると攻撃行動</strong>を起こして行動値がゼロにリセットされます。Agiが高い機体ほど手数が多くなります。</li>
-                  <li><strong>Dexterity（回避力）:</strong> 相手の攻撃を避ける確率。<strong>相手とのDex差</strong>がある分だけ回避率（Dodge）が上昇し（基礎5%＋Dex差×1.5%）、相手の攻撃を完全無効化します。</li>
-                  <li><strong>Intelligence（攻撃パターン・繰り出す技）:</strong> ロボットの思考・戦術パターン。この値と他能力値を総合的に考慮して、戦闘中に<strong>多彩な攻撃技を自律的に「繰り出し（習得）」</strong>します。一度繰り出した技は戦術ルーチンに組み込まれ、以後の行動時に状況に応じて戦略的に選択・発動されます。技には「重撃スマッシュ（高倍率ダメージ）」「ガトリングバースト（複数回乱舞攻撃）」「精密スナイプ（必中・高クリティカル）」「ナノバリア展開（被ダメージ大幅軽減シールド）」「自己リペア（耐久値回復）」「EMPショック（相手行動値・敏捷妨害）」「戦術最適化（攻撃力・知性バフ）」「オーバードライブ（敏捷・攻撃力超加速）」「プラズマカノン（防御力貫通攻撃）」など多彩な戦術効果が付与されています。</li>
-                  <li><strong>繰り出した技の説明・戦術図鑑確認機能:</strong> 戦闘中および戦闘終了時に、ロボットたちが繰り出した技の詳細効果をいつでも確認可能。各ファイターカード上の技バッジをタップしてその場で効果やCTをインライン展開できるほか、バトルアリーナ上部HUDの「技説明」ボタン、戦闘中に出現する技名コールバナーやピコーン演出、カード上部の「技の解説・図鑑」ボタン、および終了結果画面の「繰り出した技 (Int)」スタッツをタップすることで、全技の性能や現在どちらの機体が繰り出しているかを一覧できる専用モーダルを閲覧できます。</li>
-                  <li><strong>遠征ステージ背景 &amp; 対峙アニメーションバトル:</strong> 遠征のステージ（裏山のスクラップ場、迷いの森、灼熱の火山、風の谷、光の塔、最果てのクレーター、古代文明の中枢）を舞台背景に、自分のロボットと相手のロボットが向かい合ってリアルタイムに交戦。行動値（AP）が1000に到達した攻撃タイミングで、機体が相手に向かって勢いよくステップイン・ダッシュ突進し、スラッシュやビーム、技固有のエフェクトが炸裂。被弾側はノックバック・シェイク・被弾フラッシュが発生し、回避時は上空への軽快なバックステップ跳躍（DODGE）、技発動時は「繰り出した技！」カットイン演出が発生します。アリーナ上部にはステージ切替ドロップダウン、および一時停止/再開・速度倍速（1x/2x/3x）ボタンが集約配置され、視界を遮ることなく快適に戦闘を操作・観戦できます。</li>
-                  <li><strong>リアルタイム戦闘ログ &amp; アニメーション:</strong> 行動ゲージ、耐久力バー、リアルタイムの攻撃・被弾・回避・技発動エフェクト、および行動ログが刻々と展開され、アリーナ上部の一時停止や倍速（1x/2x/3x）ボタンで手軽に観戦が可能です。決着時には両機の最終残り耐久値（勝者は生存残量、敗者は0）が維持されたまま結果スタッツ・報酬が表示されます。</li>
-                </ul>
-              </li>
-              <li><strong>音楽（ピアノ演奏）:</strong> 演奏曲にベートーヴェンの<strong>「エリーゼのために」</strong>に加え、超難関曲であるモーツァルトの<strong>「トルコ行進曲」</strong>（イ長調 K. 331 第3楽章）を追加。ロボットの<strong>「賢さ (Int)」</strong>（楽曲・譜面理解・リズム把握）と<strong>「器用さ (Dex)」</strong>（運指・正確な鍵盤打鍵）の値が高いほど正確なタイミングで鍵盤が叩かれます。
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li><strong>トルコ行進曲の原典楽譜・完全収録（pianoclassics.net ID 55準拠）:</strong> トルコ行進曲（モーツァルト ピアノソナタ第11番 イ長調 K. 331 第3楽章）の演奏譜面を、指定楽譜（pianoclassics.net ID 55 / Mutopia Project）の全127小節・全音符・和音・装飾音（グレースノート）に完全準拠して抜本的に再構築。弱起のアウフタクトから、イ短調の主題A、華やかなオクターブと分散和音によるイ長調のトルコ軍楽行進曲主題、アルペジオやトリル、そして圧倒的なフィナーレ・コーダに至る全900ノーツを漏れなく完全収録。正確な打鍵時間・デュレーションで原典通りの名曲を完璧に弾き切ることが可能となりました。</li>
-                  <li><strong>クリア条件（演奏精度90.0%以上）:</strong> 演奏終了時の<strong>演奏精度（Accuracy）が90.0%以上</strong>に達することで「演習クリア（MISSION CLEAR）」となり、工房の貴重な「修理キット」を獲得できます。90.0%未満の場合は「演習失敗（CLEAR FAILED）」となります。</li>
-                  <li><strong>各演奏曲ごとのベストスコア永続保存 &amp; 選択画面確認:</strong> 各楽曲ごとに獲得した「ハイスコア」「最高演奏精度（%）」「最高ランク」「クリア実績（CLEAR済バッジ）」がローカルストレージに自動保存されます。演奏曲選択画面にて各楽曲の自己ベスト記録および機体ステータスに基づく予想クリア率を常時確認できます。</li>
-                  <li><strong>一曲すべてを弾き切る総合演奏成績カルテ:</strong> 演奏終了時には画面構成を見直し、重複を排除した洗練された専用カルテUIを表示。楽曲情報・担当機体・クリア合否・総合スコア・演奏精度・最大コンボ・5種判定別内訳（EXCELLENT・GOOD・SOSO・NOT GOOD・BAD）・自己ベスト更新表示・特別称号・獲得報酬・ワンタップで演習を終了できる復帰ボタンなど、すべての情報がひと目で確認可能です。</li>
-                  <li><strong>原典楽譜・音源通りの完全再現 &amp; 高音圧オーディオシステム:</strong> 「Soundfont-Player」のアコースティックグランドピアノ音源とWeb Audio APIによるリアルタイムシンセサイザーを連携。同時発音時の歪みを防ぎつつ迫力ある音圧と豊かなサステインを引き出す<strong>専用マスターコンプレッサー（DynamicsCompressor）およびマスターゲインシステム</strong>を導入。打弦ハンマーアタックや初期ディケイゲイン、基音オシレーターを強化し、実際の生ピアノと同等の迫力ある芳醇な響きを実現しました。すべてのノーツを「EXCELLENT」で完璧に弾き切った場合、pianoclassics.netの楽譜や本物のピアノ音源通りの完全なクオリティと響きで「エリーゼのために」や「トルコ行進曲」が余すことなく再現され、特別称号が授与されます。</li>
-                  <li><strong>音量調整コントローラー &amp; 手動鍵盤打鍵対応:</strong> 演奏画面上部HUDに<strong>音量スライダー（0%〜150%、デフォルト100%）およびワンタップミュート切替ボタン</strong>を設置。ユーザーの端末環境やお好みに応じた音量調整がいつでも可能で、設定値はローカルストレージに自動永続化されます。また、下部の40鍵盤（白鍵・黒鍵）を直接タップすることでも対応する音階を即座に試聴・演奏可能です。</li>
-                  <li><strong>40鍵盤（A1〜E7）フルビジュアル:</strong> 楽曲の音域（MIDI 33〜100）をすべてカバーする40白鍵＋各半音位置の黒鍵を実装。打鍵時には鍵盤および黒鍵が美しく光彩発光し、ロボットが演奏位置に合わせて滑らかに移動しながら演奏します。</li>
-                  <li><strong>背景ロボット演奏アニメーション（ウォーターマーク演出）:</strong> ピアノのプレイエリア（落下ノーツ背景）に、現在演奏中のロボットが巨大な透かし（ウォーターマーク）としてアニメーション表示される演出を追加。ノーツの打鍵に合わせてロボットがリズムを取り、演奏の臨場感を高めます。</li>
-                </ul>
-              </li>
-              <li><strong>パズル（オセロ・チェス）:</strong> ロボットの<strong>「賢さ (Int)」</strong>が高いほど、より精度の高い次の一手を選択します。企業のAIと対決します。</li>
-              <li><strong>射撃（弾幕よけ）:</strong> 縦スクロールのステージで巨大宇宙船から<strong>隙間なく連続で放たれ続ける高密度弾幕</strong>（常時回転スパイラル、連続スイープカーテン、多重リングバースト、交差ストリーム等）を回避するサバイバルモードです。<strong>毎回ゲームを開始するたびに、弾幕の出現順序（パターン）や回転方向がランダムに変化</strong>し、プレイごとに異なる展開が楽しめます。リアルタイム回避アクションとしての緊張感を維持するため、<strong>一時停止や倍速機能は無効化（常時等倍・ノンストップ）</strong>されています。また、弾幕には必ずくぐり抜け可能なスリット（安全ルート）が設計されており、機体AIが未来の弾道を先読みして安全な隙間へと自律的にステップ回避します。この際、<strong>「敏捷 (Agi)」が高いほど移動速度が上昇</strong>し、<strong>「器用さ (Dex)」が高いほど計算された安全ルートを正確にトレースして回避</strong>しますが、逆に低いとルートからドリフトしてズレが生じ被弾しやすくなります。被弾時には<strong>機体が一瞬白熱・点滅する視覚エフェクトと同時に画面全体が激しく揺れる（スクリーンシェイク）演出</strong>が発生し、また弾をギリギリで回避（Graze）した際にも<strong>小刻みな画面揺れ</strong>でフィードバックが行われます。10秒間生き残ればクリアです。</li>
-              <li><strong>難易度選択と予想成功確率:</strong> 弾幕よけでは、出撃ロボット選択時に3つの難易度（<strong>初級 EASY</strong>: 弾速0.75倍/拡散WAY縮小/リング6弾、<strong>中級 NORMAL</strong>: 弾速1.0倍/標準密度/リング8弾、<strong>上級 HARD</strong>: 弾速1.25倍/4-Way拡散/リング10弾）を自由に選択可能です。ロボットのステータス（敏捷・器用さ）に基づいた<strong>「予想成功確率 (約〇〇%)」</strong>が難易度ごとに表示されるため、機体の実力に合わせた選択が可能です。</li>
-              <li><strong>バトル報酬（修理キット特化）:</strong> バトル勝利時の報酬は<strong>「修理キット」</strong>に特化されており、ゴールド（G）の獲得は行われません。各難易度や対戦相手に応じて、<strong>初級・町の発明家: 修理キット1個</strong>、<strong>中級・アポロ工業: 修理キット1〜2個</strong>、<strong>上級・ゼニス社: 修理キット2〜3個</strong>、<strong>オメガマスター: 修理キット5個</strong>を獲得できます。</li>
-              <li><strong>バトル演出:</strong> 対戦に勝利、またはミッションをクリアすると、ロボットの上に<strong>「🏆 勝利！」</strong>の吹き出しが表示され、両腕を突き上げて飛び跳ねる<strong>「ガッツポーズアニメーション」</strong>とキラキラエフェクトで勝利を祝います。敗北時は通常または困り顔（オロオロ）表示となります。</li>
-            </ul>
-          </section>
+        {/* 5. 依頼掲示板 */}
+        {(activeTab === 'all' || activeTab === 'request') && (
+          <Card className="bg-stone-50/90 border-2 border-stone-300 shadow-xs">
+            <div className="flex items-center gap-2 border-b border-stone-200 pb-2 mb-3">
+              <Gi.GiWoodenSign className="text-amber-700 text-xl" />
+              <h3 className="font-bold text-base text-stone-900">5. 依頼掲示板（リクエスト）システム</h3>
+            </div>
+            <div className="space-y-3 text-xs">
+              <p className="text-stone-700 text-sm">
+                街の住人やVIPクライアントから提示される条件に合うロボットを納品して、報酬ゴールドと名声を獲得します。
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <div className="bg-amber-50 p-2.5 rounded-lg border border-amber-200">
+                  <div className="font-bold text-amber-950">👑 王様の特命依頼 (King)</div>
+                  <div className="text-stone-600 mt-1">
+                    最高難度の要求スペック。成功で大量のゴールドと<strong>名声 +50</strong>を獲得。
+                  </div>
+                </div>
+                <div className="bg-purple-50 p-2.5 rounded-lg border border-purple-200">
+                  <div className="font-bold text-purple-950">🎩 貴族の注文 (Noble)</div>
+                  <div className="text-stone-600 mt-1">
+                    高水準の特注機要求。成功で高額ゴールドと<strong>名声 +25</strong>を獲得。
+                  </div>
+                </div>
+                <div className="bg-stone-100 p-2.5 rounded-lg border border-stone-300">
+                  <div className="font-bold text-stone-950">🔧 おじさんの依頼 (Common)</div>
+                  <div className="text-stone-600 mt-1">
+                    日常的な作業機要求。成功で手頃なゴールドと<strong>名声 +10</strong>を獲得。
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white p-2.5 rounded-lg border border-stone-200">
+                <strong className="text-stone-900">クライアント好感度システム:</strong>
+                <span className="text-stone-600 ml-1">
+                  同じクライアントの依頼を納品するごとに好感度が上昇（最大Lv.10）。Lv.10に達すると納品ゴールドが<strong>1.5倍</strong>になり、獲得名声にも追加ボーナスが発生します。
+                </span>
+              </div>
+            </div>
+          </Card>
+        )}
 
-          <section>
-            <h4 className="font-bold text-lg text-amber-700 border-b border-stone-300 mb-2">6. 倉庫・商店・図鑑</h4>
-            <ul className="list-disc list-inside space-y-1 ml-2">
-              <li><strong>倉庫（元パーツ &amp; 属性ツールチップ）:</strong> 所有ロボットの画像をタップすると、構成している4部位（頭部・胴体・腕部・脚部）の元パーツ名、属性バッジ、ビジュアルプレビュー、およびステータスを確認できる詳細ツールチップがポップアップ表示されます。</li>
-              <li><strong>全画面・工房Game-Icons化とUI統一:</strong> アプリケーション内のすべてのアイコン（素材、メニュー、装飾、工房・製造クラフト画面のステータスやタイマー、演習ミニゲームなど）を <strong>Game-Icons.net</strong> に統一し、世界観の没入感を向上させました。</li>
-              <li><strong>ガレージ風UIへの刷新:</strong> 工房（ダッシュボード）、遠征、製造、倉庫、バトルの全画面において、ハンマーや歯車が転がる**「ガレージ・工場風」**の明るいストーン・アンバーを基調としたインダストリアルデザインに完全統一しました。</li>
-              <li><strong>素材一覧の可視化:</strong> 製造したロボット、所持パーツ、および素材を管理します。素材一覧は<strong>アイコン主体（Game-Icons.net）のコンパクトグリッド表示</strong>にリニューアルされ、レアリティ（★1、★2、★3）に応じた背景色・枠線とともにひと目で素材ごとの種類やステータス増加値を判別できます。レア度や属性、名前による絞り込み検索も可能です。</li>
-              <li><strong>解体とリサイクル:</strong> 不要なロボットは「解体」して4つのパーツに戻すことができます。パーツは「還元する」ことで、メイン素材2個に還元されます。解体および還元には製造時と同様に時間が経過し、進捗アニメーションが表示されます。解体実行時には進行中カードへ自動スムーズスクロールし、完了時には獲得した各部位のパーツ名（頭部・胴体・腕部・脚部）および属性・ビジュアルが省略なく完全表示され、回収ボタンで安全に受け取れます。また、実行前の確認画面にて解体・還元内容や所要時間に関する警告文が表示されます。</li>
-              <li><strong>ロボットの修理 &amp; 修理演出アニメーション:</strong> 探索や遠征でHPが減った・HP切れ（0〜1）になったロボットに「修理キット」を使用すると、専用の<strong>修理演出アニメーション</strong>が再生されます。回転するレンチやハンマー、飛び散るスパーク（<Gi.GiLightningTrio className="inline text-yellow-500" />）、グリーンの回復光パルス（Healing Wave）と舞い散るハート＆スターエフェクト（<Gi.GiHeartPlus className="inline text-pink-500" />✨）とともに、HPゲージがスムーズに100%まで全快し、ロボットが両手をあげて喜ぶ演出が表示されます（不要なテキスト表示は削除され、洗練されたアニメーション演出となります）。また倉庫カードおよびダッシュボードの自動探索カードからもワンタップでクイック修理＆探索再開が可能です。</li>
-              <li><strong>素材商店・交換所（コンパクトグリッド）:</strong> 工房画面上で直感的にタップして商店を開くことができます。素材の購入や「修理キット」への交換を、<strong>アイコンとボタンが一体化した直感的なグリッドパネル</strong>から1タップで素早く行えます。</li>
-              <li><strong>図鑑・仕様書（ロボット図鑑 &amp; パーツ図鑑 &amp; 素材別出現一覧 &amp; 納品履歴）:</strong> 商店カードと分離し、上部のコンパクトな情報ナビゲーションとして配置。新設された<strong>「ロボット図鑑（Robot Gallery）」タブ</strong>では、これまでにクラフトしたすべてのユニークロボットを美麗なグラフィックスやクラフト日時、属性比率、総合ステータスとともにアーカイブ。さらに各機体の<strong>「構成パーツ詳細 (Component Stats)」</strong>を展開することで、ヘッド・ボディ・アーム・レッグ各パーツの個別ステータス（HP・攻撃・防御・素早さ・器用・知力）や属性、レアリティ内訳を詳細に確認・比較できるようになりました。また、全パーツ形状を部位別・レア度別に一覧できる<strong>「パーツ図鑑」</strong>、素材ごとの出現候補がわかる<strong>「素材別出現一覧」</strong>、過去の納品履歴も完備しています。</li>
-              <li><strong>GSAP (GreenSock Animation Platform) ロボットモーションスタジオ &amp; 多彩なアクション演習:</strong> ロボット図鑑（Robot Gallery）に、業界標準の高性能アニメーションライブラリ「GSAP」を全面統合した専用の<strong>モーションスタジオ（GSAP Motion Studio）</strong>を新設しました。各ロボットカードの「GSAP モーションスタジオ」ボタンから直接起動可能です。
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-1">
-                  <li><strong>厳格なOOPアーキテクチャ設計:</strong> <code>BaseRobotAnimation</code>基底クラス、シングルトンパターンの<code>GSAPRobotAnimationRegistry</code>、およびライフサイクル・タイムライン解放を完全管理する<code>GSAPRobotAnimationController</code>により、メモリリークのない堅牢で拡張性の高いアニメーションエンジンを構築。</li>
-                  <li><strong>新武装レイヤー（fxContainer）と炎の曲刀SVGの統合:</strong> ロボット前面に動的ウェポン・エフェクト専用レイヤー（<code>fxContainer</code>）を新設。精緻な炎の刀身グラデーション・赤銅鍔・宝珠コアを持つ<strong>「炎の曲刀 (Flame Curved Blade)」SVG</strong>を実装し、ロボットの腕・関節のピボット座標に完全同期した抜刀・スラッシュ・残心モーションを実現。さらに手甲マニピュレーターによる柄の前面サンドイッチマウントにより、「ロボットの拳が物理的に剣の柄を握り締めている」自然なグリップ表現を達成しました。</li>
-                  <li><strong>必殺斬撃モーション「ファイア・スラッシュ (Fire Slash)」:</strong> 炎の曲刀を右腕に構え、紅蓮のオーラを全身にチャージ。大上段から地面を切り裂く巨大な三日月型炎の斬撃波（Fire Slash Burst）と火炎爆砕を放つ必殺の火炎撃を実装。</li>
-                  <li><strong>Web Audio API リアルタイムSEシンセサイザー &amp; タイムラインSEマーカー:</strong>
-                    <ul className="list-disc list-inside space-y-0.5 ml-4 mt-0.5 text-xs text-stone-600">
-                      <li><strong>リアルタイム効果音合成 (<code>RobotSEAudioEngine</code>):</strong> 外部音声ファイルへの依存をゼロにし、ブラウザ標準のWeb Audio APIで抜刀金属音、風切りスイング音、鋭い火炎斬撃音、紅蓮チャージ音、重低音爆砕ヒット音をプログラム合成してリアルタイム出力（ミュート切替ボタン付き）。</li>
-                      <li><strong>視覚的SEマーカー:</strong> タイムライン進行度バー上に抜刀（🗡️）、チャージ（🔥）、一閃（⚔️）、着弾（💥）の発生タイミングピンを表示。再生バー通過時に完全同期で自動発音するほか、マーカーをクリックして個別試聴も可能です。</li>
-                    </ul>
-                  </li>
-                  <li><strong>多彩なアニメーションパターン:</strong>
-                    <ul className="list-disc list-inside space-y-0.5 ml-4 mt-0.5 text-xs text-stone-600">
-                      <li><strong>⚔️ Combat (戦闘・武装アクション):</strong> ファイア・スラッシュ (Fire Slash)、紅蓮ブレード・一刀両断、連撃スラッシュ、二刀流クロススラッシュ（左右両手に曲刀を装備）、炎刃・旋風回転斬り（720度空中スピン）、紅蓮・突進突き（ロケットブースト急襲）、ミサイル発射、エネルギーシールド防御、集束ビーム砲撃、ガトリング斉射、ロケットパンチ、EMPショックパルス、ハイパーオーバードライブ。</li>
-                      <li><strong>🤸 Acrobatic (曲芸・機動):</strong> スプリングジャンプ、ジェットダッシュ突進、ブレイクダンス、高速スピン回転、ダイナミック前進スプリント、フライングキック、分解展開図。</li>
-                      <li><strong>⚙️ Mechanical (機構・メンテナンス):</strong> 精密スキャン診断、生体ブリージング、ホバー浮遊、急速充電、スリープ待機、キャリブレーション点検。</li>
-                      <li><strong>✨ Emotion (感情・ポーズ):</strong> 勝利のガッツポーズ、万歳歓喜、オロオロ困惑、敬礼・お辞儀、拍手喝采、小首かしげ、同意のうなずき。</li>
-                    </ul>
-                  </li>
-                  <li><strong>部位別独立制御 (Head・Body・Arms・Legs):</strong> ロボットの各パーツDOMノードを個別ターゲットとして認識し、独自の回転軸（<code>transformOrigin</code>）、反動、イージング（<code>back.out</code>, <code>elastic.out</code>, <code>power2.inOut</code>等）を組み合わせた有機的で立体感のあるメカニカルモーションを実現。</li>
-                  <li><strong>スタジオ操作パネル:</strong> 再生/一時停止、再生速度変更（0.5x 〜 2.0x）、ループ/単発切り替え、タイムライン進行度シークバー、SEマーカーピン表示＆試聴、SEミュートボタン、ズーム（80%〜160%）、および機体切替セレクターを完備。</li>
-                  <li><strong>図鑑カードでの即時プレビュー切替:</strong> 図鑑一覧のカード上でも「🎬 GSAPプレビュー」スイッチにより、標準アニメーションとGSAPモーションをシームレスに切り替えて鑑賞可能です。</li>
-                </ul>
-              </li>
-              <li><strong>☆2ボディの幾何学的スケーリング＆各部位接合の最適化:</strong> ロボット合成時に☆2ボディ（ハイテクコアボディ、バイザーコアボディ）が縦に大きくなり脚部やすねを覆い隠してしまっていたバランスを抜本的に再設計。100×100の親空間グリッドに合わせてボディ描画領域（幅34、高さ32）にスマートスケール化することで、ヘッドの首元との密着、レッグの太もも・膝・足底の完璧な露出、およびアームの肩アーマー・関節の露出バランスを調和させ、どのパーツと組み合わせても力強く引き締まったプロポーションを実現しました。</li>
-              <li><strong>☆2ナックルアームのサイズ最適化＆肩関節固定スケーリング:</strong> ロボット合成時に巨大化していた☆2腕部「ナックルアーム」について、肩の付け根（接合ジョイント）座標を正確に固定したままサイズを1/2（50%）に最適化。各ボディパーツの肩口との自然な接続を維持しつつ、腕の長さが腰・大腿部付近で美しく収まるようプロポーションを再設計しました。また、パーツ図鑑等の単体表示においても中央にバランスよくプレビュー表示されるよう画角を自動調整しています。</li>
-            </ul>
-          </section>
+        {/* 6. バトル演習＆ミニゲーム */}
+        {(activeTab === 'all' || activeTab === 'minigame') && (
+          <Card className="bg-stone-50/90 border-2 border-stone-300 shadow-xs">
+            <div className="flex items-center gap-2 border-b border-stone-200 pb-2 mb-3">
+              <Gi.GiCrossedSwords className="text-amber-700 text-xl" />
+              <h3 className="font-bold text-base text-stone-900">6. バトル演習＆ミニゲームシステム (全6種)</h3>
+            </div>
+            <div className="space-y-3 text-xs">
+              <div className="bg-stone-900 text-amber-300 p-2.5 rounded-lg font-mono text-[11px] border border-stone-700 flex items-center justify-between">
+                <span>[CRT-MONITOR ENGINE] レトロ走査線＆ブラウン管ビジュアル搭載</span>
+                <span className="text-stone-400">遊んだ数＆勝利数で総合階級（S〜G）を査定</span>
+              </div>
 
-          <section>
-            <h4 className="font-bold text-lg text-amber-700 border-b border-stone-300 mb-2">7. UI・工房ダッシュボードの統合設計</h4>
-            <ul className="list-disc list-inside space-y-1 ml-2">
-              <li><strong>全画面統一の工房背景＆透過度最適化（濃く上品な表示）:</strong> 画面を切り替えても違和感なく工房の世界観に浸れるよう、<strong>「待機ロボットたちが並ぶ工房イラスト」をダッシュボード・遠征・製造・依頼・倉庫・バトル・図鑑・工房記録・ライトペーパー・タイトル画面に至るすべての画面で完全統一して常時表示</strong>。また、透過を抑えて濃く調整（画像透過度opacity 0.38、適度な乳白色グラデーションオーバーレイ）を施すことで、作業台や充電ドックに並ぶ愛らしいロボットたちの姿が美しくくっきりと浮かび上がりつつ、前面カードの数値や文字の可読性（WCAG AA）も完璧に両立しました。画面切り替え時のDOM再マウントやチラつき、画像再フェッチも一切生じません。</li>
-              <li><strong>浮遊微粒子＆光のスパーク演出（WorkshopParticles）:</strong> 工房ダッシュボードおよび製造（クラフト）画面において、木漏れ日や作業光に舞う柔らかな光の塵（floating dust motes）や小さな光のスパーク（light sparks）が優しく漂うアニメーションパーティクルエフェクトを実装。厳格なOOPに基づく軽量Canvas描画エンジン（<code>WorkshopParticleEngine</code>）により、CPUやバッテリーに負荷をかけず画面に生き生きとした空気感と職人魂の息吹を与えています。タブ非アクティブ時は自動で描画ループを停止します。</li>
-              <li><strong>背景画像インメモリキャッシュ＆起動時プリロード（画面切り替え高速化）:</strong> 画面の切り替え時に背景画像が再読み込みされ表示が遅延したりチラつく現象を防ぐため、OOPに基づく<code>AssetCacheService</code>を導入。アプリ起動時に工房背景を先行プリロードしてインメモリキャッシュに永続化。タブ切り替え時はDOMを破棄せず透過度（opacity）と表示状態の切り替えのみで制御することで、一切の再通信・再デコード待ちのないミリ秒単位の超高速・シームレスな画面遷移を実現しました。</li>
-              <li><strong>タブ内画面の全体背景化（カード内背景の廃止と画面全体の統合レイアウト）:</strong> これまでカード内の一部に限定されていた背景画像をカードの枠内から解放し、<strong>それぞれのタブ内画面全体の背景（タブ背景レイヤー）</strong>として展開。ダッシュボードのステータスカードや遠征の同行ロボ選択カードは、背景画像の上に自然に浮かび上がるカードデザインとなり、UIの視覚的ヒエラルキーと文字の可読性が格段に向上しました。</li>
-              <li><strong>アイコン配置と視覚バランスの最適化:</strong> 工房内ステータスカード（所持金・機体保管・納品数・修理キット）や各機能ボタンのアイコン配置を見直し。不均等だったマージンを排除し、専用のアイコンフレーム内で完全な上下左右センタリングを徹底。木製銘板調のカードデザインと調和させ、視認性と美しさを両立しました。</li>
-              <li><strong>統合ダッシュボードカード:</strong> 先頭の所持金・ロボット倉庫・納品実績・修理キットの基本メトリクスと、出撃・自動探索アクティビティパネルを<strong>1つの統合カード</strong>に集約。文字を削ぎ落とし、アイコン・バッジ・ビジュアル・タイマーによる直感的で洗練されたデザインを実現しました。</li>
-              <li><strong>自動探索のHP低下と休息表現:</strong> 自動探索でロボットのHPが残り1になり自動帰還（待機状態）となった場合、ダッシュボードの背景アニメーションが停止しますが、現在地の背景環境（静止画）は維持された状態でロボットが休息する演出が追加されました。</li>              <li><strong>遠征カードのUI拡張:</strong> 遠征先の選択カードの背景に、そのエリア特有の環境背景（自動探索時の流れる背景）が全面に表示され、各ステージの雰囲気がより直感的に伝わるようになりました。</li>
-              <li><strong>遠征出発アニメーション:</strong> 遠征開始時（「ここへ遠征する」ボタン押下時）に、選択したロボットが空へ飛んでいく出発アニメーション（ロボットの背景なしの透過表示）が表示され、完了後に自動的に工房ダッシュボードへ遷移する没入感のある演出を追加しました。ロボットを選択していない場合はアニメーションをスキップしてシームレスに遷移します。</li>
-              <li><strong>獲得可能素材の表示（ステージ属性ボタン）:</strong> 遠征先のカード右上に配置されている「ステージ属性（天気・気候）タグ」がボタン化され、タップすることでそのステージで獲得可能な素材とレアリティが一覧で表示・非表示されるようになりました。</li>
-              <li><strong>ワンタップ一括回収:</strong> 自動探索中の全ロボットの未回収素材がある場合、ダッシュボードヘッダーに「📦 全回収」ボタンが表示され、ワンアクションで素材をまとめて回収できます。</li>
-              <li><strong>バッジ・ボタンサイズの安定化:</strong> 未回収素材数や所持アイテム数、タイマーの秒数等の文字数が増加した場合でも、2行に改行されて高さや幅が不揃いになるのを防止する折り返し防止（nowrap）および文字サイズ・マージンの自動調整を実装。</li>
-              <li><strong>ナビゲーション通知バッジ:</strong> 下部ナビや各タブのバッジは固定高さ・コンパクトなピル形状を維持し、端末サイズや件数増加に関わらず快適に閲覧・操作できます。</li>
-            </ul>
-          </section>
-        </div>
-      </Card>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div className="bg-white p-2.5 rounded-lg border border-stone-200">
+                  <strong className="text-stone-900 block font-bold mb-1">⚔️ 戦闘シミュレータ (1on1 Combat)</strong>
+                  <p className="text-stone-600">
+                    自作機体とAI戦術ボット（Lv.1〜10）によるターン制バトル。ビームサーベル（攻撃力+50%）やビームシールド（被ダメ-40%）を武装可能。
+                  </p>
+                </div>
+
+                <div className="bg-white p-2.5 rounded-lg border border-stone-200">
+                  <strong className="text-stone-900 block font-bold mb-1">🛡️ 拠点防衛戦 (Base Defense)</strong>
+                  <p className="text-stone-600">
+                    最大3機のロボットをタレットとして配備するリアルタイム防衛戦。勝利で修理キットと<strong>12時間HP自然回復リジェネ</strong>を付与。
+                  </p>
+                </div>
+
+                <div className="bg-white p-2.5 rounded-lg border border-stone-200">
+                  <strong className="text-stone-900 block font-bold mb-1">🚀 弾幕サバイバル (Danmaku Survival)</strong>
+                  <p className="text-stone-600">
+                    敵機から放たれる幾何学的な弾幕を回避するアクションシューティング。Easy / Normal / Hard の3段階難易度。
+                  </p>
+                </div>
+
+                <div className="bg-white p-2.5 rounded-lg border border-stone-200">
+                  <strong className="text-stone-900 block font-bold mb-1">🎹 ピアノ演奏会 (Piano Rhythm)</strong>
+                  <p className="text-stone-600">
+                    「エリーゼのために」「トルコ行進曲」「ラ・カンパネラ」など名曲を完全演奏する鍵盤リズムゲーム。
+                  </p>
+                </div>
+
+                <div className="bg-white p-2.5 rounded-lg border border-stone-200 sm:col-span-2">
+                  <strong className="text-stone-900 block font-bold mb-1">♟️ クラシック頭脳対戦 (五目並べ / オセロ / 三目並べ / チェス)</strong>
+                  <p className="text-stone-600">
+                    ロボットの知力(INT)や思考ロジックを試すボードゲーム集。勝利で修理キットを獲得できます。
+                  </p>
+                </div>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* 7. 工房施設＆ショップ */}
+        {(activeTab === 'all' || activeTab === 'shop') && (
+          <Card className="bg-stone-50/90 border-2 border-stone-300 shadow-xs">
+            <div className="flex items-center gap-2 border-b border-stone-200 pb-2 mb-3">
+              <Gi.GiAnvil className="text-amber-700 text-xl" />
+              <h3 className="font-bold text-base text-stone-900">7. 工房施設・保管庫・ショップ仕様</h3>
+            </div>
+            <div className="space-y-3 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <div className="bg-white p-2.5 rounded-lg border border-stone-200">
+                  <strong className="text-stone-900 block font-bold mb-1">📦 倉庫・保管庫拡張</strong>
+                  <p className="text-stone-600">
+                    ゴールドを消費してロボット所持枠・素材保管枠を拡張。大量の機体運用が可能になります。
+                  </p>
+                </div>
+                <div className="bg-white p-2.5 rounded-lg border border-stone-200">
+                  <strong className="text-stone-900 block font-bold mb-1">🏪 ジャンクショップ</strong>
+                  <p className="text-stone-600">
+                    不足している基本素材の購入や、余剰となった素材・パーツの換金売却が行えます。
+                  </p>
+                </div>
+                <div className="bg-white p-2.5 rounded-lg border border-stone-200">
+                  <strong className="text-stone-900 block font-bold mb-1">🎨 工房内装・設備</strong>
+                  <p className="text-stone-600">
+                    工房の内装テーマ（町工場、ヴィンテージ、サイバー等）の切り替えや作業台の強化が可能です。
+                  </p>
+                </div>
+              </div>
+            </div>
+          </Card>
+        )}
+      </div>
+
+      <div className="text-center pt-4 border-t border-stone-300">
+        <Button size="md" variant="primary" onClick={onBack}>
+          工房へ戻る
+        </Button>
+      </div>
     </div>
   );
 };

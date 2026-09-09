@@ -18,10 +18,12 @@ interface RobotVisualProps {
   animateCrafting?: boolean;
   animateVictory?: boolean;
   animateExploration?: boolean;
-  emotion?: 'auto' | 'normal' | 'happy' | 'troubled' | 'searching';
+  emotion?: 'auto' | 'normal' | 'happy' | 'troubled' | 'searching' | 'skipping' | 'exploded';
   happyVariant?: 'banzai' | 'bounce' | 'auto';
   hasPendingDrops?: boolean;
   isTroubled?: boolean;
+  isExplodedView?: boolean;
+  isSkipping?: boolean;
   locationId?: string; // 探索地に応じた背景・天気
   weatherType?: WeatherType;
   agility?: number; // ロボットの素早さ（歩行・アニメーション速度に反映）
@@ -82,6 +84,8 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
   happyVariant = 'auto',
   hasPendingDrops = false,
   isTroubled = false,
+  isExplodedView = false,
+  isSkipping = false,
   locationId,
   weatherType,
   agility,
@@ -154,9 +158,13 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
   const bgScrollDuration = Math.max(0.5, 1.5 / speedMultiplier);
 
   // Determine current emotion state
-  const currentEmotion: 'happy' | 'troubled' | 'searching' | 'normal' = 
-    emotion && emotion !== 'auto'
-      ? (emotion as 'happy' | 'troubled' | 'searching' | 'normal')
+  const currentEmotion: 'happy' | 'troubled' | 'searching' | 'skipping' | 'exploded' | 'normal' = 
+    isExplodedView || emotion === 'exploded'
+      ? 'exploded'
+      : isSkipping || emotion === 'skipping'
+      ? 'skipping'
+      : emotion && emotion !== 'auto'
+      ? (emotion as any)
       : animateVictory || hasPendingDrops
       ? 'happy'
       : isTroubled
@@ -165,13 +173,14 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
       ? 'searching'
       : 'normal';
 
-  // 素材発見・歓喜アニメーション（バンザイ大歓喜 or ウキウキ・バウンスホップ）の種別決定
+  // 素材発見・歓喜アニメーション（素材発見時・通常遠征完了時は確実にバンザイ！）
   const activeHappyVariant = React.useMemo<'banzai' | 'bounce'>(() => {
     if (happyVariant && happyVariant !== 'auto') return happyVariant;
+    if (hasPendingDrops || animateVictory) return 'banzai';
     const str = `${robot?.id || ''}_${robot?.name || 'r'}`;
     const code = str.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
     return code % 2 === 0 ? 'banzai' : 'bounce';
-  }, [happyVariant, robot?.id, robot?.name]);
+  }, [happyVariant, hasPendingDrops, animateVictory, robot?.id, robot?.name]);
 
   const bgGridSize = Math.max(10, size / 8);
   const defaultBgStyle = {
@@ -180,7 +189,13 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
     backgroundImage: `linear-gradient(#d6d3d1 2px, transparent 2px), linear-gradient(90deg, #d6d3d1 2px, transparent 2px)`,
     backgroundSize: `${bgGridSize}px ${bgGridSize}px`,
     backgroundPosition: 'center center',
-    boxShadow: (currentEmotion === 'happy' || animateVictory) ? '0 0 25px rgba(234, 179, 8, 0.4), inset 0 0 20px rgba(254, 240, 138, 0.3)' : 'inset 0 0 20px rgba(0,0,0,0.05)'
+    boxShadow: (currentEmotion === 'happy' || animateVictory) 
+      ? '0 0 25px rgba(234, 179, 8, 0.4), inset 0 0 20px rgba(254, 240, 138, 0.3)' 
+      : currentEmotion === 'exploded'
+      ? '0 0 25px rgba(14, 165, 233, 0.45), inset 0 0 20px rgba(186, 230, 253, 0.35)'
+      : currentEmotion === 'skipping'
+      ? '0 0 20px rgba(245, 158, 11, 0.35), inset 0 0 15px rgba(254, 243, 199, 0.3)'
+      : 'inset 0 0 20px rgba(0,0,0,0.05)'
   };
 
   const explorationBgStyle = {
@@ -207,14 +222,34 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
   // === ANIMATION DEFINITIONS (左右完全独立リグモーション) ===
 
   // 1. Body motion
-  const bodyMotion = currentEmotion === 'happy'
+  const bodyMotion = currentEmotion === 'exploded'
+    ? {
+        // 【パーツ分解展開図】中央でゆっくり設計図ホバー浮遊
+        animate: {
+          y: [0, -4, 0, -4, 0],
+          scale: [1, 1.04, 1, 1.04, 1],
+          rotate: [0, -0.5, 0.5, 0]
+        },
+        transition: { duration: 2.5, repeat: Infinity, ease: "easeInOut" }
+      }
+    : currentEmotion === 'skipping'
+    ? {
+        // 【ご機嫌るんるんスキップ】軽快に弾んで左右にリズム良くスキップ
+        animate: {
+          y: [0, -7, -1, -11, 0, -5, 0],
+          rotate: [-4, 4, -7, 7, -4, 4, -4],
+          scale: [1, 1.05, 0.96, 1.08, 0.95, 1.04, 1]
+        },
+        transition: { duration: 0.85, repeat: Infinity, ease: "easeInOut" }
+      }
+    : currentEmotion === 'happy'
     ? activeHappyVariant === 'banzai'
       ? {
-          // 【バンザイ大歓喜】大きく伸び上がって全身で喜びを爆発
+          // 【バンザイ大歓喜】大きく天へ伸び上がって全身で喜びを爆発！
           animate: { 
-            y: [0, -15, 0, -8, 0],
-            scale: [1, 1.09, 0.95, 1.04, 1],
-            rotate: [0, -4, 4, -2, 0]
+            y: [0, -18, 0, -10, 0],
+            scale: [1, 1.12, 0.94, 1.06, 1],
+            rotate: [0, -5, 5, -3, 0]
           },
           transition: { duration: 0.75, repeat: Infinity, ease: "easeInOut" }
         }
@@ -255,15 +290,36 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
 
   // 2. Arms motion (左腕・右腕を左右独立分割＆設定された肩位置を中心軸として駆動)
   // 左腕 (Left Arm)
-  const armLeftMotion = currentEmotion === 'happy'
+  const armLeftMotion = currentEmotion === 'exploded'
+    ? {
+        // 【パーツ分解展開図】左外側・上方へ大きく美しく展開
+        animate: { 
+          x: [-2, -24, -20, -24, -2],
+          y: [0, -8, -6, -8, 0],
+          rotate: [0, -28, -22, -28, 0],
+          scale: [1, 1.08, 1.04, 1.08, 1]
+        },
+        transition: { duration: 2.5, repeat: Infinity, ease: "easeInOut" }
+      }
+    : currentEmotion === 'skipping'
+    ? {
+        // 【ご機嫌るんるんスキップ】前後に楽しそうに大きく腕振りスイング
+        animate: { 
+          rotate: [-32, 24, -38, 32, -24, 18, -32],
+          y: [-5, 3, -7, 5, -3, 2, -5],
+          scale: [1, 1.12, 1, 1.15, 1]
+        },
+        transition: { duration: 0.85, repeat: Infinity, ease: "easeInOut" }
+      }
+    : currentEmotion === 'happy'
     ? activeHappyVariant === 'banzai'
       ? {
-          // 【バンザイ大歓喜】左肩を軸に左上方へ大きく万歳！
+          // 【バンザイ大歓喜】左肩を軸に左上方へ高々と万歳！
           animate: { 
-            rotate: [-20, -56, -26, -56, -20],
-            y: [-2, -14, -5, -14, -2],
-            x: [0, -3, -1, -3, 0],
-            scaleY: [1, 1.16, 1, 1.16, 1]
+            rotate: [-25, -68, -32, -68, -25],
+            y: [-3, -18, -7, -18, -3],
+            x: [0, -4, -1, -4, 0],
+            scaleY: [1, 1.22, 1, 1.22, 1]
           },
           transition: { duration: 0.75, repeat: Infinity, ease: "easeInOut" }
         }
@@ -305,15 +361,36 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
       };
 
   // 右腕 (Right Arm)
-  const armRightMotion = currentEmotion === 'happy'
+  const armRightMotion = currentEmotion === 'exploded'
+    ? {
+        // 【パーツ分解展開図】右外側・上方へ大きく美しく展開
+        animate: { 
+          x: [2, 24, 20, 24, 2],
+          y: [0, -8, -6, -8, 0],
+          rotate: [0, 28, 22, 28, 0],
+          scale: [1, 1.08, 1.04, 1.08, 1]
+        },
+        transition: { duration: 2.5, repeat: Infinity, ease: "easeInOut" }
+      }
+    : currentEmotion === 'skipping'
+    ? {
+        // 【ご機嫌るんるんスキップ】前後に楽しそうに大きく腕振りスイング
+        animate: { 
+          rotate: [24, -32, 32, -38, 18, -24, 24],
+          y: [3, -5, 5, -7, 2, -3, 3],
+          scale: [1, 1.12, 1, 1.15, 1]
+        },
+        transition: { duration: 0.85, repeat: Infinity, ease: "easeInOut" }
+      }
+    : currentEmotion === 'happy'
     ? activeHappyVariant === 'banzai'
       ? {
-          // 【バンザイ大歓喜】右肩を軸に右上方へ大きく万歳！
+          // 【バンザイ大歓喜】右肩を軸に右上方へ高々と万歳！
           animate: { 
-            rotate: [20, 56, 26, 56, 20],
-            y: [-2, -14, -5, -14, -2],
-            x: [0, 3, 1, 3, 0],
-            scaleY: [1, 1.16, 1, 1.16, 1]
+            rotate: [25, 68, 32, 68, 25],
+            y: [-3, -18, -7, -18, -3],
+            x: [0, 4, 1, 4, 0],
+            scaleY: [1, 1.22, 1, 1.22, 1]
           },
           transition: { duration: 0.75, repeat: Infinity, ease: "easeInOut" }
         }
@@ -355,14 +432,34 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
       };
 
   // 3. Head motion
-  const headMotion = currentEmotion === 'happy'
+  const headMotion = currentEmotion === 'exploded'
+    ? {
+        // 【パーツ分解展開図】上方に大きくフワッと浮き上がる
+        animate: { 
+          y: [-2, -28, -24, -28, -2],
+          scale: [1, 1.1, 1.06, 1.1, 1],
+          rotate: [0, -2, 2, -1, 0]
+        },
+        transition: { duration: 2.5, repeat: Infinity, ease: "easeInOut" }
+      }
+    : currentEmotion === 'skipping'
+    ? {
+        // 【ご機嫌るんるんスキップ】首をピョコピョコ傾げてリズムに乗る
+        animate: {
+          y: [-2, -8, -1, -10, -2],
+          rotate: [-10, 10, -14, 14, -10],
+          scale: [1, 1.08, 0.98, 1.1, 1]
+        },
+        transition: { duration: 0.85, repeat: Infinity, ease: "easeInOut" }
+      }
+    : currentEmotion === 'happy'
     ? activeHappyVariant === 'banzai'
       ? {
-          // 【バンザイ大歓喜】頭を天に仰いで満面の笑顔で左右に頷く
+          // 【バンザイ大歓喜】頭を天に仰いで満面の笑顔で左右に歓喜
           animate: { 
-            rotate: [-10, 10, -10],
-            y: [-5, 1, -5],
-            scale: [1, 1.08, 1]
+            rotate: [-12, 12, -12],
+            y: [-8, 2, -8],
+            scale: [1, 1.12, 1]
           },
           transition: { duration: 0.75, repeat: Infinity, ease: "easeInOut" }
         }
@@ -405,15 +502,37 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
 
   // 4. Legs motion (左脚・右脚を左右独立分割制御)
   // 左脚 (Left Leg)
-  const legLeftMotion = currentEmotion === 'happy'
+  const legLeftMotion = currentEmotion === 'exploded'
+    ? {
+        // 【パーツ分解展開図】左斜め下方へ展開
+        animate: {
+          x: [-1, -14, -11, -14, -1],
+          y: [2, 24, 20, 24, 2],
+          rotate: [0, -12, -7, -12, 0],
+          scale: [1, 1.05, 1.02, 1.05, 1]
+        },
+        transition: { duration: 2.5, repeat: Infinity, ease: "easeInOut" }
+      }
+    : currentEmotion === 'skipping'
+    ? {
+        // 【ご機嫌るんるんスキップ】軽やかに大地を蹴るスキップステップ
+        animate: {
+          y: [0, -8, 2, -12, 0, -5, 0],
+          rotate: [-16, 14, -20, 18, -12, 10, -16],
+          skewX: [-8, 8, -10, 10, -6, 6, -8],
+          scaleY: [1, 0.88, 1.04, 0.84, 1]
+        },
+        transition: { duration: 0.85, repeat: Infinity, ease: "easeInOut" }
+      }
+    : currentEmotion === 'happy'
     ? activeHappyVariant === 'banzai'
       ? {
           // 【バンザイ大歓喜】大地を蹴ってピョンピョン歓喜ジャンプ
           animate: {
-            y: [0, -8, 0, -4, 0],
-            skewX: [-5, 5, -5, 5, -5],
-            scaleY: [1, 0.88, 1, 0.94, 1],
-            rotate: [0, -4, 0, -2, 0]
+            y: [0, -10, 0, -5, 0],
+            skewX: [-6, 6, -6, 6, -6],
+            scaleY: [1, 0.85, 1, 0.92, 1],
+            rotate: [0, -5, 0, -3, 0]
           },
           transition: { duration: 0.75, repeat: Infinity, ease: "easeInOut" }
         }
@@ -458,15 +577,37 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
       };
 
   // 右脚 (Right Leg)
-  const legRightMotion = currentEmotion === 'happy'
+  const legRightMotion = currentEmotion === 'exploded'
+    ? {
+        // 【パーツ分解展開図】右斜め下方へ展開
+        animate: {
+          x: [1, 14, 11, 14, 1],
+          y: [2, 24, 20, 24, 2],
+          rotate: [0, 12, 7, 12, 0],
+          scale: [1, 1.05, 1.02, 1.05, 1]
+        },
+        transition: { duration: 2.5, repeat: Infinity, ease: "easeInOut" }
+      }
+    : currentEmotion === 'skipping'
+    ? {
+        // 【ご機嫌るんるんスキップ】軽やかに大地を蹴るスキップステップ
+        animate: {
+          y: [2, -12, 0, -8, 2, -5, 2],
+          rotate: [14, -16, 18, -20, 10, -12, 14],
+          skewX: [8, -8, 10, -10, 6, -6, 8],
+          scaleY: [1.04, 0.84, 1, 0.88, 1]
+        },
+        transition: { duration: 0.85, repeat: Infinity, ease: "easeInOut" }
+      }
+    : currentEmotion === 'happy'
     ? activeHappyVariant === 'banzai'
       ? {
           // 【バンザイ大歓喜】大地を蹴ってピョンピョン歓喜ジャンプ
           animate: {
-            y: [0, -8, 0, -4, 0],
-            skewX: [5, -5, 5, -5, 5],
-            scaleY: [1, 0.88, 1, 0.94, 1],
-            rotate: [0, 4, 0, 2, 0]
+            y: [0, -10, 0, -5, 0],
+            skewX: [6, -6, 6, -6, 6],
+            scaleY: [1, 0.85, 1, 0.92, 1],
+            rotate: [0, 5, 0, 3, 0]
           },
           transition: { duration: 0.75, repeat: Infinity, ease: "easeInOut" }
         }
@@ -512,9 +653,15 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
 
   return (
     <motion.div 
-      className={hideBackground ? "isolate relative flex justify-center items-center" : `isolate relative flex justify-center items-center ${theme.radius.md} overflow-hidden border-2 ${
+      className={hideBackground ? "isolate relative flex justify-center items-center" : `isolate relative flex justify-center items-center ${theme.radius.md} ${
+        currentEmotion === 'exploded' ? 'overflow-visible' : 'overflow-hidden'
+      } border-2 ${
         currentEmotion === 'happy'
           ? 'border-amber-400 ring-2 ring-amber-300' 
+          : currentEmotion === 'exploded'
+          ? 'border-sky-400 ring-2 ring-sky-300/80 shadow-inner'
+          : currentEmotion === 'skipping'
+          ? 'border-amber-500 ring-2 ring-amber-300/80 shadow-inner'
           : currentEmotion === 'troubled'
           ? 'border-blue-400 ring-2 ring-blue-300/60'
           : 'border-stone-300'
@@ -530,6 +677,71 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
           weatherType={weatherType}
         />
       )}
+
+      {/* 0. Exploded View (分解展開図) Particles & Hologram Overlay */}
+      {currentEmotion === 'exploded' && (
+        <>
+          {/* 設計図風の青いグリッド・パルスガイド */}
+          <div className="absolute inset-0 bg-sky-500/10 pointer-events-none z-10 border border-sky-400/40 rounded-xl" />
+          <motion.div 
+            className="absolute inset-2 border border-dashed border-sky-400/60 rounded-lg pointer-events-none z-10"
+            animate={{ opacity: [0.3, 0.8, 0.3], scale: [0.98, 1.01, 0.98] }}
+            transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+          />
+          <motion.div 
+            className="absolute top-2 left-2 text-sky-500 text-xs z-20 pointer-events-none select-none font-bold"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 6.0, repeat: Infinity, ease: "linear" }}
+          >
+            <Gi.GiCog className="inline text-sky-500" />
+          </motion.div>
+          <motion.div 
+            className="absolute bottom-2 right-2 text-sky-500 text-xs z-20 pointer-events-none select-none font-bold"
+            animate={{ rotate: -360 }}
+            transition={{ duration: 7.0, repeat: Infinity, ease: "linear" }}
+          >
+            <Gi.GiSpanner className="inline text-sky-500" />
+          </motion.div>
+          {!hideBubble && (
+            <motion.div 
+              className="absolute top-1 left-1/2 -translate-x-1/2 bg-sky-600/95 text-white text-[10px] px-2.5 py-0.5 rounded-full font-bold shadow-md z-30 pointer-events-none whitespace-nowrap border border-sky-300 flex items-center gap-1"
+              animate={{ y: [-1, -3, -1], scale: [0.95, 1.05, 0.95] }}
+              transition={{ duration: 1.6, repeat: Infinity }}
+            >
+              <Gi.GiPuzzle className="text-sky-200 inline text-[11px]" />
+              <span>パーツ展開図</span>
+            </motion.div>
+          )}
+        </>
+      )}
+
+      {/* 0.5 Skipping (ご機嫌るんるんスキップ) Particles & Notes (文字表示は削除) */}
+      {currentEmotion === 'skipping' && (
+        <>
+          <motion.div 
+            className="absolute top-2 left-2 text-amber-500 text-xs sm:text-sm z-20 pointer-events-none select-none font-bold"
+            animate={{ scale: [0.8, 1.3, 0.8], y: [0, -6, 0], rotate: [-15, 15, -15] }}
+            transition={{ duration: 0.85, repeat: Infinity }}
+          >
+            <Gi.GiMusicalNotes className="inline text-amber-500" />
+          </motion.div>
+          <motion.div 
+            className="absolute top-2 right-2 text-yellow-500 text-xs sm:text-sm z-20 pointer-events-none select-none font-bold"
+            animate={{ scale: [1.2, 0.8, 1.2], y: [-4, 2, -4], rotate: [15, -15, 15] }}
+            transition={{ duration: 0.95, repeat: Infinity }}
+          >
+            <Gi.GiSparkles className="inline text-yellow-500" />
+          </motion.div>
+          <motion.div 
+            className="absolute bottom-2 left-3 text-rose-400 text-xs z-20 pointer-events-none select-none"
+            animate={{ scale: [0.7, 1.2, 0.7], opacity: [0.5, 1, 0.5] }}
+            transition={{ duration: 1.1, repeat: Infinity }}
+          >
+            <Gi.GiHearts className="inline text-rose-400" />
+          </motion.div>
+        </>
+      )}
+
       {/* 1. Happy Particles & Effects */}
       {currentEmotion === 'happy' && (
         <>

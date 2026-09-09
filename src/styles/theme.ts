@@ -68,6 +68,9 @@ export const theme = {
     sectionDivider: "border-t-2 border-[#d9c4b1]",
     sectionHeader: "font-bold text-[#5c3e28] text-sm tracking-wider flex items-center gap-2",
     innerCard: "bg-[#fffdfa] rounded-xl border-2 border-[#dcc5b0] p-3 shadow-2xs",
+    fameCard: "bg-gradient-to-r from-[#fff9ef] via-[#fff5e6] to-[#fffae8] border-2 border-[#e6b980] rounded-xl p-3 shadow-xs relative overflow-hidden",
+    fameProgressBg: "h-2.5 rounded-full bg-stone-200/90 overflow-hidden border border-[#d6beaa] p-0.5",
+    fameProgressFill: "h-full bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 rounded-full transition-all duration-500 shadow-xs",
   },
   studio: {
     viewportBg: "bg-stone-900 border-2 border-stone-700 shadow-inner rounded-2xl relative overflow-hidden",
@@ -80,6 +83,17 @@ export const theme = {
     speedBtnActive: "bg-amber-600 text-white font-bold border border-amber-700 shadow-xs",
     speedBtnInactive: "bg-stone-200 text-stone-700 hover:bg-stone-300 border border-stone-300",
     infoCard: "bg-stone-800/90 border border-stone-600 rounded-lg p-2.5 text-stone-200 text-xs shadow-inner",
+  },
+  retroMonitor: {
+    outerBezel: "bg-[#2b2621] border-4 border-[#524439] rounded-2xl shadow-[0_12px_30px_rgba(0,0,0,0.8),inset_0_2px_4px_rgba(255,255,255,0.1),inset_0_-3px_6px_rgba(0,0,0,0.9)] relative p-2.5 sm:p-3.5",
+    innerBezel: "bg-[#141210] border-2 border-[#3d332a] rounded-xl p-2 sm:p-3 relative overflow-hidden shadow-[inset_0_4px_12px_rgba(0,0,0,0.95)]",
+    screenGlow: "shadow-[inset_0_0_25px_rgba(245,158,11,0.08)]",
+    screw: "w-3 h-3 rounded-full bg-gradient-to-br from-[#806f5f] via-[#4d4034] to-[#241c16] border border-[#261d16] flex items-center justify-center shadow-xs",
+    screwSlot: "w-2 h-0.5 bg-[#140e0a] rounded-xs",
+    labelPlate: "bg-[#1c1815] border border-[#4a3e33] text-[#d6c5b2] px-2.5 py-0.5 rounded text-[10px] font-mono tracking-widest shadow-inner",
+    ledAmber: "w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_#f59e0b]",
+    ledGreen: "w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]",
+    ledRed: "w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_#f43f5e]",
   },
   spacing: {
     xs: "p-2",

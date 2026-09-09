@@ -158,6 +158,7 @@ export interface ActivePartRecycle {
 
 export interface GameState {
   gold: number;
+  fame?: number; // 工房の名声値 (依頼達成や高難度バトル勝利で増加)
   storageSize: number;
   materials: Record<string, number>;
   parts: RobotPart[];
@@ -188,3 +189,34 @@ export interface GameState {
   activeCombatEquipments?: { beamSaber?: boolean; beamShield?: boolean }; // 戦闘出撃時に有効化する装備
   minigameRecords?: Record<string, { plays: number; wins: number; losses: number; draws: number }>;
 }
+
+export interface FameRankInfo {
+  level: number;
+  title: string;
+  minFame: number;
+  nextFame: number | null;
+  desc: string;
+  badgeBg: string;
+  badgeBorder: string;
+  textColor: string;
+}
+
+export const FAME_RANKS: FameRankInfo[] = [
+  { level: 1, title: '路地裏の無名工房', minFame: 0, nextFame: 50, desc: '町外れでひっそりと営業する小さな修理小屋。', badgeBg: 'bg-stone-100', badgeBorder: 'border-stone-300', textColor: 'text-stone-700' },
+  { level: 2, title: '街の評判工房', minFame: 50, nextFame: 150, desc: '近隣住民から信頼され、日常的な依頼が集まる。', badgeBg: 'bg-emerald-50', badgeBorder: 'border-emerald-300', textColor: 'text-emerald-800' },
+  { level: 3, title: '地方の有名工房', minFame: 150, nextFame: 350, desc: '近隣の街や旅人たちにも名が知られた実力派工房。', badgeBg: 'bg-sky-50', badgeBorder: 'border-sky-300', textColor: 'text-sky-800' },
+  { level: 4, title: '名門メカニック工房', minFame: 350, nextFame: 700, desc: '貴族や名士たちが特注機を求めて訪れる一流工房。', badgeBg: 'bg-purple-50', badgeBorder: 'border-purple-300', textColor: 'text-purple-800' },
+  { level: 5, title: '王国御用達工房', minFame: 700, nextFame: 1200, desc: '王室直々の特命依頼を受ける最高峰の工房。', badgeBg: 'bg-amber-100', badgeBorder: 'border-amber-400', textColor: 'text-amber-900' },
+  { level: 6, title: '伝説の神話工房', minFame: 1200, nextFame: null, desc: '歴史に名を刻む至高のポンコツロボット工房！', badgeBg: 'bg-gradient-to-r from-amber-100 via-rose-100 to-purple-100', badgeBorder: 'border-amber-500', textColor: 'text-amber-950' },
+];
+
+export function getFameRank(fame: number = 0): FameRankInfo {
+  let currentRank = FAME_RANKS[0];
+  for (const rank of FAME_RANKS) {
+    if (fame >= rank.minFame) {
+      currentRank = rank;
+    }
+  }
+  return currentRank;
+}
+

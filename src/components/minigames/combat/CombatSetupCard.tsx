@@ -192,7 +192,7 @@ export const CombatSetupCard: React.FC<CombatSetupCardProps> = ({
                 </div>
                 <div className="text-right">
                   <div className="text-[9px] text-blue-600 font-bold bg-blue-50 px-1 rounded border border-blue-200">
-                    報酬: E x{activeOpponent.rewardElements} / Kit x{activeOpponent.rewardKits}
+                    報酬: E x{activeOpponent.rewardElements} / Kit x{activeOpponent.rewardKits}{activeOpponent.rewardFame > 0 ? ` / 名声 +${activeOpponent.rewardFame}` : ''}
                   </div>
                 </div>
               </div>
