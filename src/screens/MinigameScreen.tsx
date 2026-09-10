@@ -11,6 +11,7 @@ import { DanmakuSurvivalGame } from '../components/minigames/DanmakuSurvivalGame
 import { PianoGame } from '../components/minigames/PianoGame';
 import { CombatGame } from '../components/minigames/CombatGame';
 import { CombatSetupCard } from '../components/minigames/combat/CombatSetupCard';
+import { CombatVictoryRewardEffect } from '../components/minigames/combat/CombatVictoryRewardEffect';
 import { DefenseGame } from '../components/minigames/DefenseGame';
 import { MinigameDashboard } from '../components/minigames/MinigameDashboard';
 import { RobotVisual } from '../components/robot/RobotVisual';
@@ -1124,7 +1125,17 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                 <span>{selectedGame === 'danmaku' ? '演習シミュレーション進行中...' : selectedGame === 'piano' ? 'ピアノ演奏演習進行中...' : '演習バトル進行中...'}</span>
               </p>
             ) : selectedGame === 'piano' ? null : (
-              <div className="space-y-4 flex flex-col items-center">
+              <div className="space-y-4 flex flex-col items-center relative overflow-visible w-full">
+                {/* バトル演習勝利時の名声・エレメント報酬フライングエフェクト */}
+                {battleResult === 'win' && selectedGame === 'combat' && activeOpponent && (
+                  <CombatVictoryRewardEffect
+                    isActive={true}
+                    rewardFame={activeOpponent.rewardFame}
+                    rewardElements={activeOpponent.rewardElements}
+                    rewardKits={activeOpponent.rewardKits}
+                    mode="result"
+                  />
+                )}
                 {battleResult === 'win' && activeRobot && (
                   <motion.div 
                     className="relative flex flex-col items-center"

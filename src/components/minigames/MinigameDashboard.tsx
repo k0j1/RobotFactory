@@ -78,9 +78,14 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
   }
 ];
 
+export type BattleRank = 'SSS' | 'SS' | 'S' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G';
+
 export interface RankInfo {
-  rank: 'S' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G';
+  rank: BattleRank;
   title: string;
+  conditionText: string;
+  nextThreshold?: number;
+  remainingWins?: number;
   color: string;
   textColor: string;
   borderColor: string;
@@ -88,57 +93,112 @@ export interface RankInfo {
   bgGradient: string;
   auraClass: string;
   badgeClass: string;
-  effectType: 'legend' | 'flame' | 'lightning' | 'crystal' | 'cyber' | 'mild' | 'scanline' | 'standby';
+  effectType: 'mythic' | 'supreme' | 'legend' | 'flame' | 'lightning' | 'crystal' | 'cyber' | 'mild' | 'scanline' | 'standby';
 }
 
+export const BATTLE_RANK_TIERS: {
+  rank: BattleRank;
+  conditionText: string;
+  rangeText: string;
+  title: string;
+  badgeClass: string;
+  color: string;
+}[] = [
+  { rank: 'SSS', conditionText: '4000勝以上', rangeText: '4000勝〜', title: '神話超越 (MYTHIC)', badgeClass: 'bg-gradient-to-r from-fuchsia-600 via-purple-600 to-amber-400 text-white border-fuchsia-300 shadow-[0_0_12px_rgba(217,70,239,0.8)]', color: 'text-fuchsia-300' },
+  { rank: 'SS', conditionText: '4000勝以下', rangeText: '2001〜4000勝', title: '覇王至高 (SUPREME)', badgeClass: 'bg-gradient-to-r from-yellow-400 via-amber-300 to-yellow-500 text-stone-950 border-amber-100 font-black shadow-[0_0_12px_rgba(251,191,36,0.8)]', color: 'text-amber-200' },
+  { rank: 'S', conditionText: '2000勝以下', rangeText: '1001〜2000勝', title: '伝説 (LEGEND)', badgeClass: 'bg-gradient-to-r from-yellow-500 to-amber-400 text-stone-950 border-yellow-200 shadow-[0_0_10px_rgba(234,179,8,0.6)]', color: 'text-yellow-300' },
+  { rank: 'A', conditionText: '1000勝以下', rangeText: '501〜1000勝', title: '達人 (MASTER)', badgeClass: 'bg-gradient-to-r from-rose-600 to-red-500 text-white border-rose-300 shadow-[0_0_8px_rgba(244,63,94,0.5)]', color: 'text-rose-400' },
+  { rank: 'B', conditionText: '500勝以下', rangeText: '251〜500勝', title: '熟練 (EXPERT)', badgeClass: 'bg-gradient-to-r from-amber-600 to-orange-500 text-white border-amber-300', color: 'text-amber-400' },
+  { rank: 'C', conditionText: '250勝以下', rangeText: '101〜250勝', title: '一人前 (VETERAN)', badgeClass: 'bg-emerald-600 text-white border-emerald-300', color: 'text-emerald-400' },
+  { rank: 'D', conditionText: '100勝以下', rangeText: '51〜100勝', title: '中堅 (ADEPT)', badgeClass: 'bg-sky-600 text-white border-sky-300', color: 'text-sky-400' },
+  { rank: 'E', conditionText: '50勝以下', rangeText: '31〜50勝', title: '見習い (NOVICE)', badgeClass: 'bg-teal-700 text-teal-100 border-teal-400', color: 'text-teal-400' },
+  { rank: 'F', conditionText: '30勝以下', rangeText: '11〜30勝', title: '初心 (CHALLENGER)', badgeClass: 'bg-stone-700 text-stone-200 border-stone-500', color: 'text-stone-300' },
+  { rank: 'G', conditionText: '10勝以下', rangeText: '0〜10勝', title: '駆け出し (BEGINNER)', badgeClass: 'bg-stone-800 text-stone-400 border-stone-600', color: 'text-stone-400' },
+];
+
 export const getRankInfo = (wins: number, plays: number): RankInfo => {
-  if (plays === 0) {
+  // 4000勝以上 -> SSS
+  if (wins >= 4000) {
     return {
-      rank: 'G',
-      title: '未プレイ',
-      color: 'text-stone-400',
-      textColor: 'text-stone-300',
-      borderColor: 'border-stone-700',
-      glowColor: 'rgba(120, 113, 108, 0.2)',
-      bgGradient: 'from-stone-900 via-stone-850 to-stone-900',
-      auraClass: 'border-stone-700/60',
-      badgeClass: 'bg-stone-800 text-stone-400 border-stone-600',
-      effectType: 'standby'
+      rank: 'SSS',
+      title: '神話超越 (MYTHIC)',
+      conditionText: '4000勝以上',
+      color: 'text-fuchsia-300',
+      textColor: 'text-fuchsia-100',
+      borderColor: 'border-fuchsia-400',
+      glowColor: 'rgba(217, 70, 239, 0.75)',
+      bgGradient: 'from-purple-950/90 via-fuchsia-950/60 to-stone-900',
+      auraClass: 'border-fuchsia-400/90 shadow-[0_0_30px_rgba(217,70,239,0.7)]',
+      badgeClass: 'bg-gradient-to-r from-fuchsia-500 via-purple-500 to-amber-400 text-white border-fuchsia-300 shadow-[0_0_15px_rgba(217,70,239,0.8)]',
+      effectType: 'mythic'
     };
   }
 
-  if (wins >= 50) {
+  // 4000勝以下 (2001〜4000勝) -> SS
+  if (wins > 2000) {
+    return {
+      rank: 'SS',
+      title: '覇王至高 (SUPREME)',
+      conditionText: '4000勝以下',
+      nextThreshold: 4000,
+      remainingWins: Math.max(1, 4000 - wins),
+      color: 'text-amber-200',
+      textColor: 'text-amber-50',
+      borderColor: 'border-amber-300',
+      glowColor: 'rgba(251, 191, 36, 0.7)',
+      bgGradient: 'from-amber-950/90 via-yellow-900/60 to-stone-900',
+      auraClass: 'border-amber-300/90 shadow-[0_0_25px_rgba(251,191,36,0.6)]',
+      badgeClass: 'bg-gradient-to-r from-yellow-400 via-amber-300 to-yellow-500 text-stone-950 border-amber-100 font-black shadow-[0_0_12px_rgba(251,191,36,0.8)]',
+      effectType: 'supreme'
+    };
+  }
+
+  // 2000勝以下 (1001〜2000勝) -> S
+  if (wins > 1000) {
     return {
       rank: 'S',
       title: '伝説 (LEGEND)',
+      conditionText: '2000勝以下',
+      nextThreshold: 2000,
+      remainingWins: Math.max(1, 2001 - wins),
       color: 'text-yellow-300',
       textColor: 'text-yellow-100',
       borderColor: 'border-yellow-400',
       glowColor: 'rgba(234, 179, 8, 0.65)',
       bgGradient: 'from-amber-950/80 via-yellow-900/50 to-stone-900',
-      auraClass: 'border-yellow-400/80 shadow-[0_0_25px_rgba(234,179,8,0.5)]',
-      badgeClass: 'bg-gradient-to-r from-yellow-500 to-amber-400 text-stone-950 border-yellow-200 shadow-[0_0_12px_rgba(234,179,8,0.7)]',
+      auraClass: 'border-yellow-400/80 shadow-[0_0_20px_rgba(234,179,8,0.5)]',
+      badgeClass: 'bg-gradient-to-r from-yellow-500 to-amber-400 text-stone-950 border-yellow-200 shadow-[0_0_10px_rgba(234,179,8,0.6)]',
       effectType: 'legend'
     };
   }
-  if (wins >= 30) {
+
+  // 1000勝以下 (501〜1000勝) -> A
+  if (wins > 500) {
     return {
       rank: 'A',
       title: '達人 (MASTER)',
+      conditionText: '1000勝以下',
+      nextThreshold: 1000,
+      remainingWins: Math.max(1, 1001 - wins),
       color: 'text-rose-400',
       textColor: 'text-rose-100',
       borderColor: 'border-rose-500',
       glowColor: 'rgba(244, 63, 94, 0.55)',
       bgGradient: 'from-rose-950/80 via-red-900/40 to-stone-900',
-      auraClass: 'border-rose-500/80 shadow-[0_0_20px_rgba(244,63,94,0.45)]',
-      badgeClass: 'bg-gradient-to-r from-rose-600 to-red-500 text-white border-rose-300 shadow-[0_0_10px_rgba(244,63,94,0.6)]',
+      auraClass: 'border-rose-500/80 shadow-[0_0_18px_rgba(244,63,94,0.45)]',
+      badgeClass: 'bg-gradient-to-r from-rose-600 to-red-500 text-white border-rose-300 shadow-[0_0_8px_rgba(244,63,94,0.5)]',
       effectType: 'flame'
     };
   }
-  if (wins >= 15) {
+
+  // 500勝以下 (251〜500勝) -> B
+  if (wins > 250) {
     return {
       rank: 'B',
       title: '熟練 (EXPERT)',
+      conditionText: '500勝以下',
+      nextThreshold: 500,
+      remainingWins: Math.max(1, 501 - wins),
       color: 'text-amber-400',
       textColor: 'text-amber-100',
       borderColor: 'border-amber-500',
@@ -149,24 +209,34 @@ export const getRankInfo = (wins: number, plays: number): RankInfo => {
       effectType: 'lightning'
     };
   }
-  if (wins >= 10) {
+
+  // 250勝以下 (101〜250勝) -> C
+  if (wins > 100) {
     return {
       rank: 'C',
       title: '一人前 (VETERAN)',
+      conditionText: '250勝以下',
+      nextThreshold: 250,
+      remainingWins: Math.max(1, 251 - wins),
       color: 'text-emerald-400',
       textColor: 'text-emerald-100',
       borderColor: 'border-emerald-500',
       glowColor: 'rgba(16, 185, 129, 0.45)',
       bgGradient: 'from-emerald-950/60 via-teal-950/30 to-stone-900',
-      auraClass: 'border-emerald-500/70 shadow-[0_0_15px_rgba(16,185,129,0.35)]',
+      auraClass: 'border-emerald-500/70 shadow-[0_0_12px_rgba(16,185,129,0.35)]',
       badgeClass: 'bg-emerald-600 text-white border-emerald-300',
       effectType: 'crystal'
     };
   }
-  if (wins >= 5) {
+
+  // 100勝以下 (51〜100勝) -> D
+  if (wins > 50) {
     return {
       rank: 'D',
       title: '中堅 (ADEPT)',
+      conditionText: '100勝以下',
+      nextThreshold: 100,
+      remainingWins: Math.max(1, 101 - wins),
       color: 'text-sky-400',
       textColor: 'text-sky-100',
       borderColor: 'border-sky-500',
@@ -177,10 +247,15 @@ export const getRankInfo = (wins: number, plays: number): RankInfo => {
       effectType: 'cyber'
     };
   }
-  if (wins >= 1) {
+
+  // 50勝以下 (31〜50勝) -> E
+  if (wins > 30) {
     return {
       rank: 'E',
       title: '見習い (NOVICE)',
+      conditionText: '50勝以下',
+      nextThreshold: 50,
+      remainingWins: Math.max(1, 51 - wins),
       color: 'text-teal-400',
       textColor: 'text-teal-100',
       borderColor: 'border-teal-600',
@@ -191,17 +266,41 @@ export const getRankInfo = (wins: number, plays: number): RankInfo => {
       effectType: 'mild'
     };
   }
+
+  // 30勝以下 (11〜30勝) -> F
+  if (wins > 10) {
+    return {
+      rank: 'F',
+      title: '初心 (CHALLENGER)',
+      conditionText: '30勝以下',
+      nextThreshold: 30,
+      remainingWins: Math.max(1, 31 - wins),
+      color: 'text-stone-300',
+      textColor: 'text-stone-200',
+      borderColor: 'border-stone-600',
+      glowColor: 'rgba(168, 162, 158, 0.3)',
+      bgGradient: 'from-stone-850 to-stone-900',
+      auraClass: 'border-stone-600/60',
+      badgeClass: 'bg-stone-700 text-stone-200 border-stone-500',
+      effectType: 'scanline'
+    };
+  }
+
+  // 10勝以下 (0〜10勝) -> G
   return {
-    rank: 'F',
-    title: '挑戦中 (CHALLENGER)',
+    rank: 'G',
+    title: plays === 0 ? '未プレイ (STANDBY)' : '駆け出し (BEGINNER)',
+    conditionText: '10勝以下',
+    nextThreshold: 10,
+    remainingWins: Math.max(1, 11 - wins),
     color: 'text-stone-400',
     textColor: 'text-stone-300',
-    borderColor: 'border-stone-600',
-    glowColor: 'rgba(120, 113, 108, 0.25)',
-    bgGradient: 'from-stone-850 to-stone-900',
-    auraClass: 'border-stone-600/50',
-    badgeClass: 'bg-stone-700 text-stone-300 border-stone-500',
-    effectType: 'scanline'
+    borderColor: 'border-stone-700',
+    glowColor: 'rgba(120, 113, 108, 0.2)',
+    bgGradient: 'from-stone-900 via-stone-850 to-stone-900',
+    auraClass: 'border-stone-700/60',
+    badgeClass: 'bg-stone-800 text-stone-400 border-stone-600',
+    effectType: 'standby'
   };
 };
 
@@ -209,6 +308,7 @@ export const MinigameDashboard: React.FC<MinigameDashboardProps> = ({ records = 
   // 初期状態はコンパクトモード
   const [isDetailed, setIsDetailed] = useState<boolean>(false);
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<string>('all');
+  const [showRankGuide, setShowRankGuide] = useState<boolean>(false);
 
   // 全体集計
   const totalRecord: RecordData = { plays: 0, wins: 0, losses: 0, draws: 0 };
@@ -336,8 +436,21 @@ export const MinigameDashboard: React.FC<MinigameDashboardProps> = ({ records = 
             </div>
           </div>
 
-          {/* 右側：コンパクト / 詳細モード 切り替えトグルボタン */}
-          <div className="flex items-center gap-1.5 bg-[#1f1a16] p-1 rounded-xl border border-[#4d3e31] shadow-inner">
+          {/* 右側：コンパクト / 詳細モード 切り替え ＆ 階級一覧トグルボタン */}
+          <div className="flex items-center gap-1.5 bg-[#1f1a16] p-1 rounded-xl border border-[#4d3e31] shadow-inner flex-wrap">
+            <button
+              onClick={() => setShowRankGuide(!showRankGuide)}
+              className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all flex items-center gap-1 cursor-pointer ${
+                showRankGuide
+                  ? 'bg-purple-600 text-white shadow-[0_0_8px_rgba(168,85,247,0.6)] border border-purple-400/50'
+                  : 'text-stone-400 hover:text-stone-200 hover:bg-stone-800'
+              }`}
+              title="バトル勝利数に応じた階級一覧ガイド"
+            >
+              <Gi.GiRank3 className="text-xs" />
+              <span>階級基準</span>
+            </button>
+            <div className="w-[1px] h-4 bg-[#3d332a]" />
             <button
               onClick={() => setIsDetailed(false)}
               className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all flex items-center gap-1 cursor-pointer ${
@@ -362,6 +475,69 @@ export const MinigameDashboard: React.FC<MinigameDashboardProps> = ({ records = 
             </button>
           </div>
         </div>
+
+        {/* 4.5 展開式：バトル勝利数・階級基準ガイド（G〜SSS） */}
+        <AnimatePresence>
+          {showRankGuide && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              className="overflow-hidden border-b border-[#3d332a] bg-[#16120f]/95 relative z-10"
+            >
+              <div className="p-3 sm:p-4 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Gi.GiStarsStack className="text-amber-400 text-sm" />
+                    <h3 className="text-xs sm:text-sm font-bold font-mono text-amber-200">
+                      ARENA RANK TIERS GUIDE // 勝利数別階級基準
+                    </h3>
+                  </div>
+                  <span className="text-[10px] text-stone-400 font-mono">
+                    各カテゴリーの勝利数に応じて判定
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                  {BATTLE_RANK_TIERS.map(tier => {
+                    const isTotalActive = totalRank.rank === tier.rank;
+                    return (
+                      <div
+                        key={tier.rank}
+                        className={`p-2 rounded-lg border text-center transition-all relative ${
+                          isTotalActive
+                            ? 'bg-amber-950/60 border-amber-400/80 shadow-[0_0_10px_rgba(251,191,36,0.3)]'
+                            : 'bg-[#1e1814] border-[#382d24]'
+                        }`}
+                      >
+                        {isTotalActive && (
+                          <div className="absolute -top-1.5 -right-1.5 bg-amber-400 text-stone-950 text-[8px] font-black px-1 rounded-full shadow-xs">
+                            現在
+                          </div>
+                        )}
+                        <div className="flex items-center justify-center gap-1 mb-1">
+                          <span className={`px-1.5 py-0.2 rounded text-xs font-black font-mono border ${tier.badgeClass}`}>
+                            {tier.rank}
+                          </span>
+                        </div>
+                        <div className="text-[11px] font-bold text-stone-200 font-mono">
+                          {tier.conditionText}
+                        </div>
+                        <div className="text-[9px] text-stone-400 font-mono mt-0.5">
+                          {tier.rangeText}
+                        </div>
+                        <div className="text-[9px] text-stone-500 truncate mt-0.5">
+                          {tier.title.split(' ')[0]}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* ＝＝＝＝＝ 1. コンパクトモード表示 ＝＝＝＝＝ */}
         {!isDetailed && (
@@ -454,6 +630,9 @@ export const MinigameDashboard: React.FC<MinigameDashboardProps> = ({ records = 
                     <span className={`text-xs font-black font-mono px-1.5 py-0.2 rounded border ${cat.rank.badgeClass}`}>
                       {cat.rank.rank}
                     </span>
+                    <span className="text-[8px] font-mono text-[#b09e8c] mt-0.5 whitespace-nowrap">
+                      {cat.rank.rank === 'SSS' ? 'MAX' : `あと${cat.rank.remainingWins}勝`}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -468,6 +647,59 @@ export const MinigameDashboard: React.FC<MinigameDashboardProps> = ({ records = 
             <div className="p-3 sm:p-4 relative z-10">
               <div className={`relative rounded-2xl p-3.5 sm:p-4 border-2 transition-all overflow-hidden ${totalRank.borderColor} bg-gradient-to-br ${totalRank.bgGradient} shadow-xl`}>
                 
+                {/* SSSランク・神話超越のコズミックプリズムオーラ＆スター */}
+                {totalRank.effectType === 'mythic' && (
+                  <>
+                    <motion.div 
+                      className="absolute inset-0 bg-radial from-fuchsia-500/25 via-purple-600/10 to-transparent pointer-events-none"
+                      animate={{ opacity: [0.5, 0.9, 0.5], scale: [0.97, 1.03, 0.97] }}
+                      transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                    />
+                    <motion.div 
+                      className="absolute -top-12 -right-12 w-48 h-48 bg-fuchsia-500/25 rounded-full blur-3xl pointer-events-none"
+                      animate={{ scale: [1, 1.35, 1], opacity: [0.4, 0.85, 0.4] }}
+                      transition={{ duration: 2.8, repeat: Infinity }}
+                    />
+                    <motion.div 
+                      className="absolute top-2 left-4 text-fuchsia-300 text-xl pointer-events-none"
+                      animate={{ rotate: 360, scale: [0.9, 1.3, 0.9] }}
+                      transition={{ duration: 3.5, repeat: Infinity, ease: 'linear' }}
+                    >
+                      <Gi.GiGalaxy />
+                    </motion.div>
+                    <motion.div 
+                      className="absolute bottom-2 right-4 text-amber-300 text-xl pointer-events-none"
+                      animate={{ rotate: -360, scale: [1.2, 0.85, 1.2] }}
+                      transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
+                    >
+                      <Gi.GiHolyGrail />
+                    </motion.div>
+                  </>
+                )}
+
+                {/* SSランク・覇王至高のプレステージゴールドオーラ */}
+                {totalRank.effectType === 'supreme' && (
+                  <>
+                    <motion.div 
+                      className="absolute inset-0 bg-radial from-amber-400/25 via-yellow-500/10 to-transparent pointer-events-none"
+                      animate={{ opacity: [0.4, 0.85, 0.4], scale: [0.98, 1.02, 0.98] }}
+                      transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
+                    />
+                    <motion.div 
+                      className="absolute -top-10 -right-10 w-44 h-44 bg-yellow-400/25 rounded-full blur-2xl pointer-events-none"
+                      animate={{ scale: [1, 1.25, 1], opacity: [0.4, 0.8, 0.4] }}
+                      transition={{ duration: 2.5, repeat: Infinity }}
+                    />
+                    <motion.div 
+                      className="absolute top-2 right-4 text-amber-200 text-xl pointer-events-none"
+                      animate={{ y: [-2, 2, -2], rotate: [0, 5, 0] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                    >
+                      <Gi.GiImperialCrown />
+                    </motion.div>
+                  </>
+                )}
+
                 {/* Sランク・伝説のゴールドオーラ＆キラキラパーティクル */}
                 {totalRank.effectType === 'legend' && (
                   <>
@@ -546,7 +778,9 @@ export const MinigameDashboard: React.FC<MinigameDashboardProps> = ({ records = 
                       <motion.div 
                         className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl border-2 flex flex-col items-center justify-center relative overflow-hidden shadow-2xl ${totalRank.auraClass} bg-[#18130f]`}
                         animate={
-                          totalRank.rank === 'S' 
+                          totalRank.rank === 'SSS'
+                            ? { rotate: [0, -1.5, 1.5, 0], scale: [1, 1.05, 1] }
+                            : totalRank.rank === 'SS' || totalRank.rank === 'S'
                             ? { rotate: [0, -1, 1, 0], scale: [1, 1.03, 1] } 
                             : totalRank.rank === 'A'
                             ? { y: [0, -2, 0] }
@@ -561,6 +795,24 @@ export const MinigameDashboard: React.FC<MinigameDashboardProps> = ({ records = 
                         <div className="text-[8px] font-mono font-bold text-stone-400">CLASS</div>
                       </motion.div>
                       
+                      {totalRank.rank === 'SSS' && (
+                        <motion.div 
+                          className="absolute -top-2.5 -right-2 bg-gradient-to-r from-fuchsia-500 to-purple-600 text-white p-1 rounded-full shadow-lg border border-fuchsia-200"
+                          animate={{ y: [-2, 2, -2], rotate: [0, 10, 0] }}
+                          transition={{ duration: 1.8, repeat: Infinity }}
+                        >
+                          <Gi.GiHolyGrail size={13} />
+                        </motion.div>
+                      )}
+                      {totalRank.rank === 'SS' && (
+                        <motion.div 
+                          className="absolute -top-2.5 -right-2 bg-gradient-to-r from-amber-400 to-yellow-300 text-stone-950 p-1 rounded-full shadow-lg border border-yellow-100"
+                          animate={{ y: [-2, 2, -2], rotate: [0, 8, 0] }}
+                          transition={{ duration: 2, repeat: Infinity }}
+                        >
+                          <Gi.GiCrown size={12} />
+                        </motion.div>
+                      )}
                       {totalRank.rank === 'S' && (
                         <motion.div 
                           className="absolute -top-2.5 -right-2 bg-yellow-400 text-stone-950 p-1 rounded-full shadow-lg border border-yellow-100"
@@ -590,14 +842,16 @@ export const MinigameDashboard: React.FC<MinigameDashboardProps> = ({ records = 
                         総合演習戦績マスター
                       </h3>
                       <p className="text-xs text-stone-300 mt-0.5 max-w-md">
+                        {totalRank.rank === 'SSS' && '神話を超越した究極のロボット工房！幾千の激闘を制覇した無敗の頂点。'}
+                        {totalRank.rank === 'SS' && '全カテゴリーを制覇する覇王工房！至高の領域へ到達した証。'}
                         {totalRank.rank === 'S' && '全競技を極めし伝説のロボット工房！卓越した性能と戦術の証。'}
                         {totalRank.rank === 'A' && '多数の演習で輝かしい戦績を誇る達人工房！頂点まであと少し。'}
                         {totalRank.rank === 'B' && '各演習で安定した実力を発揮する熟練工房！'}
                         {totalRank.rank === 'C' && '基本戦術をマスターした一人前の工房。更なる高みを目指せ！'}
                         {totalRank.rank === 'D' && '演習のコツを掴み始めた中堅工房。勝利数を重ねよう！'}
-                        {totalRank.rank === 'E' && '初勝利を記録！得意な演習を見つけて腕を磨こう。'}
-                        {totalRank.rank === 'F' && '演習に挑戦中！ロボットの強化や相性を見直してみよう。'}
-                        {totalRank.rank === 'G' && 'まだ演習が行われていません。ロボットを出撃させてみよう！'}
+                        {totalRank.rank === 'E' && '見習いから中堅へのステップ！得意な演習を見つけて腕を磨こう。'}
+                        {totalRank.rank === 'F' && '演習の手応えを掴み始めた初心工房！ロボットの強化を進めよう。'}
+                        {totalRank.rank === 'G' && '駆け出しの工房。10勝を目指してロボットを出撃させてみよう！'}
                       </p>
                     </div>
                   </div>
@@ -723,6 +977,13 @@ export const MinigameDashboard: React.FC<MinigameDashboardProps> = ({ records = 
                               <span className={`text-base font-black font-mono ${cat.rank.color} leading-none`}>
                                 {cat.rank.rank}
                               </span>
+                            </div>
+                            <div className="w-[1px] h-5 bg-[#362c24] hidden sm:block" />
+                            <div className="hidden sm:flex flex-col items-end text-right min-w-[70px]">
+                              <div className="text-[8px] font-mono text-stone-400">{cat.rank.title}</div>
+                              <div className="text-[10px] font-mono text-amber-300 font-bold">
+                                {cat.rank.rank === 'SSS' ? 'MAX' : `あと${cat.rank.remainingWins}勝`}
+                              </div>
                             </div>
                           </div>
                         </div>

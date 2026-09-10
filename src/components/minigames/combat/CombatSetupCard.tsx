@@ -1,10 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, Button, Badge } from '../../ui/core';
 import { theme } from '../../../styles/theme';
 import * as Gi from 'react-icons/gi';
 import { Robot, GameState } from '../../../core/models';
 import { RobotVisual } from '../../robot/RobotVisual';
 import { OPPONENTS, Opponent } from '../Shared';
+import {
+  createProfileFromRobot,
+  createProfileFromOpponent,
+  evaluateAllSkillsForProfile,
+} from './combatSkills';
+import { CombatRobotSkillsModal } from './CombatRobotSkillsModal';
 
 interface CombatSetupCardProps {
   state: GameState;
@@ -32,6 +38,37 @@ export const CombatSetupCard: React.FC<CombatSetupCardProps> = ({
   const elements = state.battleElements || 0;
   const eq = state.combatEquipments || {};
   const activeEq = state.activeCombatEquipments || {};
+
+  // スキル確認モーダルの状態管理
+  const [isSkillsModalOpen, setIsSkillsModalOpen] = useState(false);
+  const [skillsModalTarget, setSkillsModalTarget] = useState<'player' | 'opponent'>('player');
+  const [modalInitialSkillId, setModalInitialSkillId] = useState<string | undefined>(undefined);
+
+  // 選択中ロボットの技解放判定
+  const playerSkillEval = useMemo(() => {
+    if (!activeRobot) return null;
+    const profile = createProfileFromRobot(activeRobot, activeEq);
+    return {
+      profile,
+      ...evaluateAllSkillsForProfile(profile),
+    };
+  }, [activeRobot, activeEq]);
+
+  // 選択中対戦相手の技解放判定
+  const opponentSkillEval = useMemo(() => {
+    if (!activeOpponent) return null;
+    const profile = createProfileFromOpponent(activeOpponent);
+    return {
+      profile,
+      ...evaluateAllSkillsForProfile(profile),
+    };
+  }, [activeOpponent]);
+
+  const handleOpenSkillsModal = (target: 'player' | 'opponent', skillId?: string) => {
+    setSkillsModalTarget(target);
+    setModalInitialSkillId(skillId);
+    setIsSkillsModalOpen(true);
+  };
 
   return (
     <Card className="bg-stone-50 border-2 border-stone-300 p-4 shadow-sm flex flex-col gap-4">
@@ -135,20 +172,101 @@ export const CombatSetupCard: React.FC<CombatSetupCardProps> = ({
             })}
           </div>
           {activeRobot && (
-            <div className="bg-white p-2 rounded-lg border border-stone-200 shadow-2xs">
-              <div className="font-bold text-[12px] text-stone-900 mb-1">{activeRobot.name}</div>
+            <div className="bg-white p-2.5 rounded-xl border border-stone-200 shadow-2xs space-y-2">
+              <div className="flex items-center justify-between border-b border-stone-100 pb-1.5">
+                <div className="font-bold text-[13px] text-stone-900">{activeRobot.name}</div>
+                {playerSkillEval && (
+                  <button
+                    onClick={() => handleOpenSkillsModal('player')}
+                    className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 transition-colors flex items-center gap-1 cursor-pointer shadow-2xs"
+                  >
+                    <Gi.GiInspiration className="text-amber-600" />
+                    <span>繰出可能技: <strong className="font-mono text-amber-800">{playerSkillEval.unleasable.length}</strong>種</span>
+                  </button>
+                )}
+              </div>
+
               <div className="space-y-1">
-                <div className="flex gap-2 text-[10px] text-stone-600 font-mono">
-                  <span className="font-bold text-red-700 bg-red-50 px-1.5 py-0.5 rounded">Pow:{activeRobot.stats.power}</span>
-                  <span className="font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">Def:{activeRobot.stats.defense}</span>
-                  <span className="font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">Agi:{activeRobot.stats.agility}</span>
+                <div className="flex flex-wrap gap-1.5 text-[10px] text-stone-600 font-mono">
+                  <span className="font-bold text-red-700 bg-red-50 px-1.5 py-0.5 rounded border border-red-200">
+                    Pow:{activeRobot.stats.power}
+                    {activeEq.beamSaber && <span className="text-amber-600 font-bold ml-0.5">(+35)</span>}
+                  </span>
+                  <span className="font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
+                    Def:{activeRobot.stats.defense}
+                    {activeEq.beamShield && <span className="text-cyan-600 font-bold ml-0.5">(+30)</span>}
+                  </span>
+                  <span className="font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                    Agi:{activeRobot.stats.agility}
+                  </span>
                 </div>
-                <div className="flex gap-2 text-[10px] text-stone-600 font-mono">
-                  <span className="font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">Dex:{activeRobot.stats.dexterity}</span>
-                  <span className="font-bold text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded">Int:{activeRobot.stats.intelligence}</span>
-                  <span className="font-bold text-stone-700 bg-stone-100 px-1.5 py-0.5 rounded">HP:{activeRobot.currentHp}/{activeRobot.maxHp}</span>
+                <div className="flex flex-wrap gap-1.5 text-[10px] text-stone-600 font-mono">
+                  <span className="font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                    Dex:{activeRobot.stats.dexterity}
+                  </span>
+                  <span className="font-bold text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-200">
+                    Int:{activeRobot.stats.intelligence}
+                  </span>
+                  <span className="font-bold text-stone-700 bg-stone-100 px-1.5 py-0.5 rounded border border-stone-200">
+                    HP:{activeRobot.currentHp ?? 12}/{activeRobot.maxHp ?? 12}
+                  </span>
                 </div>
               </div>
+
+              {/* 繰り出せる技のクイック一覧セクション */}
+              {playerSkillEval && (
+                <div className="pt-2 border-t border-stone-100 space-y-1.5">
+                  <div className="flex items-center justify-between text-[11px] font-bold text-stone-700">
+                    <span className="flex items-center gap-1">
+                      <Gi.GiInspiration className="text-amber-600" />
+                      繰り出せる戦術技 ({playerSkillEval.unleasable.length}/{playerSkillEval.all.length})
+                    </span>
+                    <button
+                      onClick={() => handleOpenSkillsModal('player')}
+                      className="text-[10px] text-amber-700 hover:text-amber-900 font-bold cursor-pointer underline"
+                    >
+                      詳細・図鑑 ↗
+                    </button>
+                  </div>
+
+                  {playerSkillEval.unleasable.length === 0 ? (
+                    <div className="text-[10px] text-stone-500 bg-stone-50 p-2 rounded-lg border border-stone-200">
+                      知性やステータスが不足しているため、繰り出せる技がありません。知性UPやパーツ強化、装備を試してみましょう。
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-1">
+                      {playerSkillEval.unleasable.map(check => (
+                        <button
+                          key={check.skill.id}
+                          onClick={() => handleOpenSkillsModal('player', check.skill.id)}
+                          className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-stone-100 hover:bg-amber-100 text-stone-800 hover:text-amber-950 border border-stone-300 hover:border-amber-400 transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
+                          title="クリックして技の詳細を確認"
+                        >
+                          <span>{check.skill.name.replace(/【.*?】/, '')}</span>
+                          <span className="text-[8px] text-amber-700 font-mono">({check.flashChance}%)</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* 装備により解放できる技のヒント */}
+                  {!activeEq.beamSaber && (
+                    <div className="text-[9px] text-stone-500 bg-amber-50/70 p-1.5 rounded border border-amber-200/80 flex items-center gap-1">
+                      <Gi.GiBroadsword className="text-amber-600 shrink-0" />
+                      <span>ビームサーベルを装備すると専用奥義<strong>【星断オメガクロス】</strong>が解放されます</span>
+                    </div>
+                  )}
+
+                  {/* モーダル表示ボタン */}
+                  <button
+                    onClick={() => handleOpenSkillsModal('player')}
+                    className="w-full py-1.5 px-2 bg-gradient-to-r from-amber-50 to-amber-100/80 hover:from-amber-100 hover:to-amber-200 text-amber-950 border border-amber-300 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                  >
+                    <Gi.GiBookmarklet className="text-amber-700 text-sm" />
+                    <span>繰り出せる技の解説・解放条件を確認</span>
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -220,10 +338,37 @@ export const CombatSetupCard: React.FC<CombatSetupCardProps> = ({
                   <span className="font-bold text-stone-700 bg-stone-100 px-1.5 py-0.5 rounded">耐久:{(activeOpponent.hp || 10) * 1000}</span>
                 </div>
               </div>
+
+              {/* 敵機の技確認リンク */}
+              {opponentSkillEval && (
+                <div className="pt-2 border-t border-stone-100 flex items-center justify-between text-[10px]">
+                  <span className="text-stone-600 font-bold flex items-center gap-1">
+                    <Gi.GiRobotGolem className="text-stone-500" />
+                    敵機繰出可能技: <strong className="text-amber-700 font-mono">{opponentSkillEval.unleasable.length}</strong>種
+                  </span>
+                  <button
+                    onClick={() => handleOpenSkillsModal('opponent')}
+                    className="text-stone-700 hover:text-amber-800 font-bold underline cursor-pointer"
+                  >
+                    敵機の戦術技を確認 ↗
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
       </div>
+
+      {/* 戦術技確認モーダル */}
+      <CombatRobotSkillsModal
+        isOpen={isSkillsModalOpen}
+        onClose={() => setIsSkillsModalOpen(false)}
+        robot={activeRobot}
+        opponent={activeOpponent}
+        equipments={activeEq}
+        initialTarget={skillsModalTarget}
+        initialSkillId={modalInitialSkillId}
+      />
     </Card>
   );
 };

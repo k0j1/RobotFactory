@@ -27,7 +27,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
           </div>
           <div>
             <h2 className={theme.typography.h2}>ポンコツロボット工房 公式仕様書</h2>
-            <p className="text-xs text-stone-500 font-medium">現在採用されている最新ゲームシステムの完全ガイド (v1.0.288)</p>
+            <p className="text-xs text-stone-500 font-medium">現在採用されている最新ゲームシステムの完全ガイド (v1.0.291)</p>
           </div>
         </div>
         <Button size="sm" variant="secondary" onClick={onBack}>
@@ -309,16 +309,39 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
               <h3 className="font-bold text-base text-stone-900">6. バトル演習＆ミニゲームシステム (全6種)</h3>
             </div>
             <div className="space-y-3 text-xs">
-              <div className="bg-stone-900 text-amber-300 p-2.5 rounded-lg font-mono text-[11px] border border-stone-700 flex items-center justify-between">
+              <div className="bg-stone-900 text-amber-300 p-2.5 rounded-lg font-mono text-[11px] border border-stone-700 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                 <span>[CRT-MONITOR ENGINE] レトロ走査線＆ブラウン管ビジュアル搭載</span>
-                <span className="text-stone-400">遊んだ数＆勝利数で総合階級（S〜G）を査定</span>
+                <span className="text-stone-300">各カテゴリー勝利数に応じた全10段階階級（G〜SSS）査定</span>
+              </div>
+
+              {/* 階級制度表 */}
+              <div className="bg-stone-100 p-3 rounded-lg border border-stone-300 space-y-1.5">
+                <div className="font-bold text-stone-900 text-xs flex items-center justify-between">
+                  <span>🏆 バトル演習 階級基準一覧（カテゴリー別勝利数）</span>
+                  <span className="text-[10px] text-stone-500 font-mono">ARENA RANK TIERS</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 text-[11px] font-mono">
+                  <div className="bg-white p-1.5 rounded border border-stone-200"><span className="font-bold text-stone-600">G:</span> 10勝以下 (駆け出し)</div>
+                  <div className="bg-white p-1.5 rounded border border-stone-200"><span className="font-bold text-blue-600">F:</span> 30勝以下 (初心)</div>
+                  <div className="bg-white p-1.5 rounded border border-stone-200"><span className="font-bold text-cyan-600">E:</span> 50勝以下 (見習い)</div>
+                  <div className="bg-white p-1.5 rounded border border-stone-200"><span className="font-bold text-emerald-600">D:</span> 100勝以下 (中堅)</div>
+                  <div className="bg-white p-1.5 rounded border border-stone-200"><span className="font-bold text-teal-600">C:</span> 250勝以下 (一人前)</div>
+                  <div className="bg-white p-1.5 rounded border border-stone-200"><span className="font-bold text-amber-600">B:</span> 500勝以下 (熟練)</div>
+                  <div className="bg-white p-1.5 rounded border border-stone-200"><span className="font-bold text-rose-600">A:</span> 1000勝以下 (達人)</div>
+                  <div className="bg-white p-1.5 rounded border border-stone-200"><span className="font-bold text-yellow-600">S:</span> 2000勝以下 (伝説)</div>
+                  <div className="bg-white p-1.5 rounded border border-stone-200"><span className="font-bold text-amber-500">SS:</span> 4000勝以下 (覇王至高)</div>
+                  <div className="bg-white p-1.5 rounded border border-stone-200"><span className="font-bold text-fuchsia-600">SSS:</span> 4000勝以上 (神話超越)</div>
+                </div>
+                <p className="text-[10px] text-stone-500 font-sans">
+                  ※ モニターの「階級基準」ボタンからいつでも詳細基準を確認可能。各カテゴリーカードで次ランク昇格までの残り必要勝利数がリアルタイムに表示されます。
+                </p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <div className="bg-white p-2.5 rounded-lg border border-stone-200">
                   <strong className="text-stone-900 block font-bold mb-1">⚔️ 戦闘シミュレータ (1on1 Combat)</strong>
                   <p className="text-stone-600">
-                    自作機体とAI戦術ボット（Lv.1〜10）によるターン制バトル。ビームサーベルやシールドの武装に加え、技発動時にはモーションスタジオ連携の高品質なGSAPアニメーションが再生されます。
+                    自作機体とAI戦術ボット（Lv.1〜10）によるターン制バトル。出撃前のロボット選択画面で機体が繰り出せる戦術技・発動条件・発動率（知性Int補正）や、モーションスタジオ連携のGSAP技アニメーション演出をプレビュー確認できます。武装（ビームサーベル・シールド）の装備による奥義解放もリアルタイムに反映されます。演習勝利時には、獲得した工房名声やバトルエレメント、修理キットが画面手前へ弾け飛ぶダイナミックな報酬獲得エフェクト演出が発動します。
                   </p>
                 </div>
 

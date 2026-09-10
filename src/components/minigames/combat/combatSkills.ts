@@ -1,4 +1,6 @@
 import { CombatFighter, SkillDef, SkillResult } from './combatTypes';
+import { Robot } from '../../../core/models';
+import { Opponent } from '../Shared';
 
 // 通常攻撃ダメージ計算公式（ユーザー指定準拠）:
 // 1回のダメージ ＝ 自分Pow値 × (80〜120) - 相手Def値 × 50
@@ -514,3 +516,240 @@ export const chooseStrategicSkill = (attacker: CombatFighter, defender: CombatFi
 
   return readySkills[0];
 };
+
+// -------------------------------------------------------------
+// 戦術技とGSAPアニメーションの連携定義
+// -------------------------------------------------------------
+export const getGsapPatternIdForSkill = (skillId: string): string => {
+  switch (skillId) {
+    case 'omega_cross_slash': return 'ultimate_omega_cross_slash';
+    case 'rocket_punch': return 'rocket_punch';
+    case 'energy_shield_defense': return 'shield_barrier';
+    case 'flame_blade_cyclone': return 'flame_blade_cyclone';
+    case 'gatling_rush': return 'missile_barrage';
+    case 'precision_snipe': return 'two_handed_sniper_scope_shot';
+    case 'emergency_repair': return 'fast_recharge';
+    case 'emp_disruptor': return 'precision_scan';
+    case 'optimize_protocol': return 'calibration';
+    case 'overdrive': return 'overdrive';
+    case 'plasma_burst': return 'jet_dash';
+    case 'smash': return 'flying_kick';
+    case 'omega_cross': return 'ultimate_omega_cross_slash';
+    case 'energy_shield': return 'shield_barrier';
+    case 'nano_barrier': return 'shield_block_item';
+    default: return 'slash_combo';
+  }
+};
+
+export const getSkillAnimationLabel = (skillId: string): { label: string; tag: string } => {
+  switch (skillId) {
+    case 'omega_cross_slash':
+    case 'omega_cross':
+      return { label: '星断オメガクロス・光波十字斬撃', tag: '必殺奥義' };
+    case 'rocket_punch':
+      return { label: '推進ブースト・ロケットパンチ射出', tag: '強撃' };
+    case 'energy_shield_defense':
+    case 'energy_shield':
+      return { label: '光波防壁・エネルギーシールド展開', tag: '防壁' };
+    case 'flame_blade_cyclone':
+      return { label: '炎刃熱線・全方位旋風回転斬り', tag: '旋風' };
+    case 'gatling_rush':
+      return { label: '高速関節駆動・超速ガトリング猛撃', tag: '連撃' };
+    case 'precision_snipe':
+      return { label: '照準ロック・両手持ち精密スコープ狙撃', tag: '狙撃' };
+    case 'emergency_repair':
+      return { label: 'ナノマシン緊急修復・高速リチャージ', tag: '修復' };
+    case 'emp_disruptor':
+      return { label: '高周波電磁パルス・精密スキャン放射', tag: '妨害' };
+    case 'optimize_protocol':
+      return { label: '戦術キャリブレーション・自己最適化', tag: '演算' };
+    case 'overdrive':
+      return { label: 'リミッター全面解除・フルバースト覚醒', tag: '強化' };
+    case 'plasma_burst':
+      return { label: '零距離ジェットダッシュ・プラズマ撃', tag: '強撃' };
+    case 'smash':
+      return { label: '重量級フライング粉砕スマッシュ', tag: '強撃' };
+    case 'nano_barrier':
+      return { label: '装甲要塞化・ナノバリアシールドブロック', tag: '防壁' };
+    default:
+      return { label: '高機動スラッシュコンボ', tag: '通常' };
+  }
+};
+
+// -------------------------------------------------------------
+// 機体・対戦相手の能力値プロファイルと技の解放判定
+// -------------------------------------------------------------
+export interface FighterStatProfile {
+  name: string;
+  power: number;
+  defense: number;
+  agility: number;
+  dexterity: number;
+  intelligence: number;
+  vitality: number;
+  rawStats?: {
+    power: number;
+    defense: number;
+    agility: number;
+    dexterity: number;
+    intelligence: number;
+    hp?: number;
+  };
+  equipments?: {
+    beamSaber?: boolean;
+    beamShield?: boolean;
+  };
+  boosts?: {
+    saberPower: number;
+    shieldDefense: number;
+  };
+}
+
+export interface SkillRequirementCheck {
+  skill: SkillDef;
+  canUnleash: boolean;
+  flashChance: number;
+  intOk: boolean;
+  reqInt: number;
+  currentInt: number;
+  equipmentOk: boolean;
+  reqEquipment?: 'beamSaber' | 'beamShield';
+  hasEquipment: boolean;
+  statOk: boolean;
+  reqStatName?: string;
+  reqStatValue?: number;
+  currentStatValue?: number;
+  missingRequirements: string[];
+  animationInfo: { label: string; tag: string };
+}
+
+export const evaluateSkillRequirements = (
+  skill: SkillDef,
+  profile: FighterStatProfile
+): SkillRequirementCheck => {
+  const intOk = profile.intelligence >= skill.reqInt;
+  const equipmentOk = !skill.reqEquipment || Boolean(profile.equipments?.[skill.reqEquipment]);
+  
+  let statOk = true;
+  let reqStatName: string | undefined;
+  let reqStatValue: number | undefined;
+  let currentStatValue: number | undefined;
+
+  if (skill.reqStat) {
+    reqStatName = skill.reqStat.name;
+    reqStatValue = skill.reqStat.value;
+    switch (skill.reqStat.stat) {
+      case 'power': currentStatValue = profile.power; break;
+      case 'defense': currentStatValue = profile.defense; break;
+      case 'agility': currentStatValue = profile.agility; break;
+      case 'dexterity': currentStatValue = profile.dexterity; break;
+      case 'hp': currentStatValue = profile.vitality; break;
+    }
+    statOk = (currentStatValue ?? 0) >= skill.reqStat.value;
+  }
+
+  const canUnleash = intOk && equipmentOk && statOk;
+  // Intが高いほど閃き確率がアップ（Int 1につき +0.35%）
+  const flashChance = Math.min(85, Math.floor((skill.baseLearnChance + profile.intelligence * 0.35) * 10) / 10);
+
+  const missingRequirements: string[] = [];
+  if (!intOk) {
+    missingRequirements.push(`知性(Int)不足: 必要 ${skill.reqInt} (現在: ${profile.intelligence})`);
+  }
+  if (!equipmentOk && skill.reqEquipment) {
+    missingRequirements.push(`${skill.reqEquipment === 'beamSaber' ? 'ビームサーベル' : 'ビームシールド'}未装備`);
+  }
+  if (!statOk && skill.reqStat) {
+    missingRequirements.push(`${reqStatName}不足: 必要 ${reqStatValue} (現在: ${currentStatValue})`);
+  }
+
+  return {
+    skill,
+    canUnleash,
+    flashChance,
+    intOk,
+    reqInt: skill.reqInt,
+    currentInt: profile.intelligence,
+    equipmentOk,
+    reqEquipment: skill.reqEquipment,
+    hasEquipment: Boolean(skill.reqEquipment && profile.equipments?.[skill.reqEquipment]),
+    statOk,
+    reqStatName,
+    reqStatValue,
+    currentStatValue,
+    missingRequirements,
+    animationInfo: getSkillAnimationLabel(skill.id),
+  };
+};
+
+export const evaluateAllSkillsForProfile = (profile: FighterStatProfile): {
+  all: SkillRequirementCheck[];
+  unleasable: SkillRequirementCheck[];
+  locked: SkillRequirementCheck[];
+} => {
+  const all = ALL_COMBAT_SKILLS.map(skill => evaluateSkillRequirements(skill, profile));
+  const unleasable = all.filter(c => c.canUnleash);
+  const locked = all.filter(c => !c.canUnleash);
+  return { all, unleasable, locked };
+};
+
+export const createProfileFromRobot = (
+  robot: Robot,
+  equipments?: { beamSaber?: boolean; beamShield?: boolean }
+): FighterStatProfile => {
+  const rStats = robot.stats || { power: 10, defense: 5, agility: 10, dexterity: 10, intelligence: 10, hp: 10 };
+  const saberBoost = equipments?.beamSaber ? 35 : 0;
+  const shieldBoost = equipments?.beamShield ? 30 : 0;
+  const hpVal = robot.currentHp ?? (robot.parts ? Math.floor((robot.parts.head.stats.hp + robot.parts.body.stats.hp + robot.parts.arms.stats.hp + robot.parts.legs.stats.hp) / 4) : 10);
+
+  return {
+    name: robot.name,
+    power: Math.max(1, (rStats.power || 10) + saberBoost),
+    defense: Math.max(1, (rStats.defense || 5) + shieldBoost),
+    agility: Math.max(1, rStats.agility || 10),
+    dexterity: Math.max(1, rStats.dexterity || 10),
+    intelligence: Math.max(1, rStats.intelligence || 10),
+    vitality: Math.max(1, hpVal),
+    rawStats: {
+      power: rStats.power || 10,
+      defense: rStats.defense || 5,
+      agility: rStats.agility || 10,
+      dexterity: rStats.dexterity || 10,
+      intelligence: rStats.intelligence || 10,
+      hp: hpVal,
+    },
+    equipments,
+    boosts: {
+      saberPower: saberBoost,
+      shieldDefense: shieldBoost,
+    },
+  };
+};
+
+export const createProfileFromOpponent = (
+  opponent: Opponent
+): FighterStatProfile => {
+  return {
+    name: opponent.name,
+    power: Math.max(1, opponent.power || 15),
+    defense: Math.max(1, opponent.defense || 8),
+    agility: Math.max(1, opponent.agi || 10),
+    dexterity: Math.max(1, opponent.dex || 10),
+    intelligence: Math.max(1, opponent.int || 10),
+    vitality: Math.max(1, opponent.hp || 10),
+    rawStats: {
+      power: opponent.power || 15,
+      defense: opponent.defense || 8,
+      agility: opponent.agi || 10,
+      dexterity: opponent.dex || 10,
+      intelligence: opponent.int || 10,
+      hp: opponent.hp || 10,
+    },
+    equipments: undefined,
+    boosts: {
+      saberPower: 0,
+      shieldDefense: 0,
+    },
+  };
+};
+

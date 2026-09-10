@@ -6,29 +6,9 @@ import { LOCATIONS } from '../../../core/data';
 import { Opponent } from '../Shared';
 import { CombatFighter, CombatPopup, CombatActionEvent, SkillDef } from './combatTypes';
 import { getOpponentRobotModel, OPPONENT_DEFAULT_STAGES } from './opponentRobotData';
-import { ALL_COMBAT_SKILLS } from './combatSkills';
+import { ALL_COMBAT_SKILLS, getGsapPatternIdForSkill } from './combatSkills';
 import { GSAPRobotCanvas } from '../../robot/GSAPRobotCanvas';
-
-const getGsapPatternIdForSkill = (skillId: string): string => {
-  switch(skillId) {
-    case 'omega_cross_slash': return 'ultimate_omega_cross_slash';
-    case 'rocket_punch': return 'rocket_punch';
-    case 'energy_shield_defense': return 'shield_barrier';
-    case 'flame_blade_cyclone': return 'flame_blade_cyclone';
-    case 'gatling_rush': return 'missile_barrage';
-    case 'precision_snipe': return 'two_handed_sniper_scope_shot';
-    case 'emergency_repair': return 'fast_recharge';
-    case 'emp_disruptor': return 'precision_scan';
-    case 'optimize_protocol': return 'calibration';
-    case 'overdrive': return 'overdrive';
-    case 'plasma_burst': return 'jet_dash';
-    case 'smash': return 'flying_kick';
-    case 'omega_cross': return 'ultimate_omega_cross_slash';
-    case 'energy_shield': return 'shield_barrier';
-    case 'nano_barrier': return 'shield_block_item';
-    default: return 'slash_combo';
-  }
-};
+import { CombatVictoryRewardEffect } from './CombatVictoryRewardEffect';
 
 interface CombatArenaProps {
   player: CombatFighter;
@@ -907,6 +887,14 @@ export const CombatArena: React.FC<CombatArenaProps> = ({
         </div>
 
       </div>
+
+      {/* 勝利時の名声・エレメント・報酬飛来エフェクト */}
+      <CombatVictoryRewardEffect
+        isActive={Boolean(isFinished && winner === 'player')}
+        rewardFame={activeOpponent.rewardFame}
+        rewardElements={activeOpponent.rewardElements}
+        rewardKits={activeOpponent.rewardKits}
+      />
     </div>
   );
 };
