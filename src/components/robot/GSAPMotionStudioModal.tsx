@@ -354,11 +354,11 @@ export const GSAPMotionStudioModal: React.FC<GSAPMotionStudioModalProps> = ({
                   stageTheme === 'dark'
                     ? 'bg-gradient-to-b from-stone-950 via-stone-900 to-stone-950 border-2 border-stone-700'
                     : 'bg-stone-200/90 border-2 border-stone-300'
-                } rounded-2xl h-72 sm:h-80 flex flex-col items-center justify-center p-3 relative shadow-inner overflow-hidden`}
+                } rounded-2xl h-72 sm:h-80 flex flex-col items-center justify-center p-3 relative shadow-inner overflow-visible z-10`}
               >
                 {/* グリッド演出 */}
                 <div
-                  className="absolute inset-0 pointer-events-none opacity-20"
+                  className="absolute inset-0 pointer-events-none opacity-20 rounded-xl overflow-hidden"
                   style={{
                     backgroundImage: `linear-gradient(#f59e0b 1px, transparent 1px), linear-gradient(90deg, #f59e0b 1px, transparent 1px)`,
                     backgroundSize: '24px 24px',

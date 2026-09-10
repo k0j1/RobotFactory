@@ -1,13 +1,34 @@
 import * as Gi from 'react-icons/gi';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { RobotVisual } from '../../robot/RobotVisual';
 import { LocationEnvironment } from '../../robot/LocationEnvironment';
 import { LOCATIONS } from '../../../core/data';
 import { Opponent } from '../Shared';
 import { CombatFighter, CombatPopup, CombatActionEvent, SkillDef } from './combatTypes';
 import { getOpponentRobotModel, OPPONENT_DEFAULT_STAGES } from './opponentRobotData';
 import { ALL_COMBAT_SKILLS } from './combatSkills';
+import { GSAPRobotCanvas } from '../../robot/GSAPRobotCanvas';
+
+const getGsapPatternIdForSkill = (skillId: string): string => {
+  switch(skillId) {
+    case 'omega_cross_slash': return 'ultimate_omega_cross_slash';
+    case 'rocket_punch': return 'rocket_punch';
+    case 'energy_shield_defense': return 'shield_barrier';
+    case 'flame_blade_cyclone': return 'flame_blade_cyclone';
+    case 'gatling_rush': return 'missile_barrage';
+    case 'precision_snipe': return 'two_handed_sniper_scope_shot';
+    case 'emergency_repair': return 'fast_recharge';
+    case 'emp_disruptor': return 'precision_scan';
+    case 'optimize_protocol': return 'calibration';
+    case 'overdrive': return 'overdrive';
+    case 'plasma_burst': return 'jet_dash';
+    case 'smash': return 'flying_kick';
+    case 'omega_cross': return 'ultimate_omega_cross_slash';
+    case 'energy_shield': return 'shield_barrier';
+    case 'nano_barrier': return 'shield_block_item';
+    default: return 'slash_combo';
+  }
+};
 
 interface CombatArenaProps {
   player: CombatFighter;
@@ -53,6 +74,11 @@ export const CombatArena: React.FC<CombatArenaProps> = ({
   // アニメーション状態
   const [playerAnimState, setPlayerAnimState] = useState<'idle' | 'attack' | 'skill' | 'hit' | 'dodge' | 'victory' | 'defeat'>('idle');
   const [opponentAnimState, setOpponentAnimState] = useState<'idle' | 'attack' | 'skill' | 'hit' | 'dodge' | 'victory' | 'defeat'>('idle');
+
+  const [playerPatternId, setPlayerPatternId] = useState<string>('bio_breathing');
+  const [opponentPatternId, setOpponentPatternId] = useState<string>('bio_breathing');
+  const [playerAnimLoop, setPlayerAnimLoop] = useState<boolean>(true);
+  const [opponentAnimLoop, setOpponentAnimLoop] = useState<boolean>(true);
   
   // ヒットエフェクト
   const [hitEffect, setHitEffect] = useState<{
@@ -81,12 +107,24 @@ export const CombatArena: React.FC<CombatArenaProps> = ({
       if (winner === 'player') {
         setPlayerAnimState('victory');
         setOpponentAnimState('defeat');
+        setPlayerPatternId('victory_cheer');
+        setOpponentPatternId('despair_kneel');
+        setPlayerAnimLoop(true);
+        setOpponentAnimLoop(false);
       } else if (winner === 'opponent') {
         setPlayerAnimState('defeat');
         setOpponentAnimState('victory');
+        setPlayerPatternId('despair_kneel');
+        setOpponentPatternId('victory_cheer');
+        setPlayerAnimLoop(false);
+        setOpponentAnimLoop(true);
       } else {
         setPlayerAnimState('defeat');
         setOpponentAnimState('defeat');
+        setPlayerPatternId('disappointed_slump');
+        setOpponentPatternId('disappointed_slump');
+        setPlayerAnimLoop(false);
+        setOpponentAnimLoop(false);
       }
     }
   }, [isFinished, winner]);
@@ -123,8 +161,12 @@ export const CombatArena: React.FC<CombatArenaProps> = ({
     // 攻撃側のモーション発動
     if (isPlayerAttacking) {
       setPlayerAnimState(type === 'skill' ? 'skill' : 'attack');
+      setPlayerPatternId(skill ? getGsapPatternIdForSkill(skill.id) : 'slash_combo');
+      setPlayerAnimLoop(false);
     } else {
       setOpponentAnimState(type === 'skill' ? 'skill' : 'attack');
+      setOpponentPatternId(skill ? getGsapPatternIdForSkill(skill.id) : 'slash_combo');
+      setOpponentAnimLoop(false);
     }
 
     // 攻撃の到達タイミング（突進から約100〜140ms後）で被弾・回避・エフェクトを発火
@@ -172,8 +214,12 @@ export const CombatArena: React.FC<CombatArenaProps> = ({
         if (!isFinished) {
           setPlayerAnimState('idle');
           setOpponentAnimState('idle');
+          setPlayerPatternId('bio_breathing');
+          setOpponentPatternId('bio_breathing');
+          setPlayerAnimLoop(true);
+          setOpponentAnimLoop(true);
         }
-      }, 300);
+      }, 900);
     }, 120);
 
     return () => clearTimeout(hitTimer);
@@ -679,13 +725,13 @@ export const CombatArena: React.FC<CombatArenaProps> = ({
           >
             {/* ロボットビジュアル (右向き) */}
             <div className="relative">
-              <RobotVisual
+              <GSAPRobotCanvas
                 robot={player.robotRef}
                 size={110}
-                hideBackground={true}
-                hideBubble={true}
-                animateVictory={playerAnimState === 'victory'}
-                isTroubled={playerAnimState === 'defeat' || (playerHpPct < 25 && playerAnimState === 'idle')}
+                hideStageDecorations={true}
+                patternId={playerPatternId}
+                loop={playerAnimLoop}
+                className="bg-transparent"
               />
 
               {/* 攻撃時のスラッシュ光刃 / 突進エフェクト */}
@@ -812,13 +858,13 @@ export const CombatArena: React.FC<CombatArenaProps> = ({
           >
             {/* 相手ロボットビジュアル (左向きにするため水平反転 scale-x-[-1] を適用し、互いに向き合う！) */}
             <div className="relative transform scale-x-[-1]">
-              <RobotVisual
+              <GSAPRobotCanvas
                 robot={opponentRobotModel}
                 size={110}
-                hideBackground={true}
-                hideBubble={true}
-                animateVictory={opponentAnimState === 'victory'}
-                isTroubled={opponentAnimState === 'defeat' || (opponentHpPct < 25 && opponentAnimState === 'idle')}
+                hideStageDecorations={true}
+                patternId={opponentPatternId}
+                loop={opponentAnimLoop}
+                className="bg-transparent"
               />
 
               {/* 相手攻撃時のスラッシュ光刃 / 突進エフェクト */}

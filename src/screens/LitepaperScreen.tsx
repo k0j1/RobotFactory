@@ -27,7 +27,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
           </div>
           <div>
             <h2 className={theme.typography.h2}>ポンコツロボット工房 公式仕様書</h2>
-            <p className="text-xs text-stone-500 font-medium">現在採用されている最新ゲームシステムの完全ガイド (v1.0.286)</p>
+            <p className="text-xs text-stone-500 font-medium">現在採用されている最新ゲームシステムの完全ガイド (v1.0.288)</p>
           </div>
         </div>
         <Button size="sm" variant="secondary" onClick={onBack}>
@@ -318,7 +318,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                 <div className="bg-white p-2.5 rounded-lg border border-stone-200">
                   <strong className="text-stone-900 block font-bold mb-1">⚔️ 戦闘シミュレータ (1on1 Combat)</strong>
                   <p className="text-stone-600">
-                    自作機体とAI戦術ボット（Lv.1〜10）によるターン制バトル。ビームサーベル（攻撃力+50%）やビームシールド（被ダメ-40%）を武装可能。
+                    自作機体とAI戦術ボット（Lv.1〜10）によるターン制バトル。ビームサーベルやシールドの武装に加え、技発動時にはモーションスタジオ連携の高品質なGSAPアニメーションが再生されます。
                   </p>
                 </div>
 

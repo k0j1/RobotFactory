@@ -329,7 +329,7 @@ export const GSAPRobotCanvas: React.FC<GSAPRobotCanvasProps> = ({
   return (
     <div
       ref={containerRef}
-      className={`relative flex items-center justify-center select-none overflow-hidden isolate ${
+      className={`relative flex items-center justify-center select-none overflow-visible isolate ${
         isJointCalibrationActive ? 'touch-none' : ''
       } ${className}`}
       style={{
