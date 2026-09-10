@@ -27,7 +27,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
           </div>
           <div>
             <h2 className={theme.typography.h2}>ポンコツロボット工房 公式仕様書</h2>
-            <p className="text-xs text-stone-500 font-medium">現在採用されている最新ゲームシステムの完全ガイド (v1.0.273)</p>
+            <p className="text-xs text-stone-500 font-medium">現在採用されている最新ゲームシステムの完全ガイド (v1.0.277)</p>
           </div>
         </div>
         <Button size="sm" variant="secondary" onClick={onBack}>

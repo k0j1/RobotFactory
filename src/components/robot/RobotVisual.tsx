@@ -702,16 +702,6 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
           >
             <Gi.GiSpanner className="inline text-sky-500" />
           </motion.div>
-          {!hideBubble && (
-            <motion.div 
-              className="absolute top-1 left-1/2 -translate-x-1/2 bg-sky-600/95 text-white text-[10px] px-2.5 py-0.5 rounded-full font-bold shadow-md z-30 pointer-events-none whitespace-nowrap border border-sky-300 flex items-center gap-1"
-              animate={{ y: [-1, -3, -1], scale: [0.95, 1.05, 0.95] }}
-              transition={{ duration: 1.6, repeat: Infinity }}
-            >
-              <Gi.GiPuzzle className="text-sky-200 inline text-[11px]" />
-              <span>パーツ展開図</span>
-            </motion.div>
-          )}
         </>
       )}
 
@@ -759,32 +749,6 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
           >
             <Gi.GiStarFormation className="inline text-yellow-400" />
           </motion.div>
-          {!hideBubble && (
-            <motion.div 
-              className="absolute top-1 left-1/2 -translate-x-1/2 bg-amber-500/90 text-white text-[10px] px-2 py-0.5 rounded-full font-bold shadow-sm z-20 pointer-events-none whitespace-nowrap border border-amber-300 flex items-center gap-1"
-              animate={{ y: [-1, -4, -1], scale: [0.95, 1.05, 0.95] }}
-              transition={{ duration: 1.0, repeat: Infinity }}
-            >
-              <span className="flex items-center gap-1">
-                {animateVictory ? (
-                  <>
-                    <Gi.GiTrophyCup className="text-amber-200 inline" />
-                    <span>勝利！</span>
-                  </>
-                ) : hasPendingDrops ? (
-                  <>
-                    <Gi.GiPresent className="text-amber-200 inline" />
-                    <span>{activeHappyVariant === 'banzai' ? '素材発見！バンザイ！' : '素材発見！るんるん♪'}</span>
-                  </>
-                ) : (
-                  <>
-                    <Gi.GiSparkles className="text-amber-200 inline" />
-                    <span>{activeHappyVariant === 'banzai' ? 'バンザイ大歓喜！' : 'ウキウキホップ♪'}</span>
-                  </>
-                )}
-              </span>
-            </motion.div>
-          )}
           <motion.div 
             className="absolute bottom-2 right-3 text-amber-500 text-[10px] sm:text-xs z-10 pointer-events-none select-none font-bold"
             animate={{ scale: [0.8, 1.3, 0.7, 1.2, 0.8], opacity: [0.5, 1, 0.4, 1, 0.5] }}
@@ -819,18 +783,6 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
           >
             <Gi.GiWaterDrop className="inline text-cyan-300" />
           </motion.div>
-          {!hideBubble && (animateExploration || locationId) && (
-            <motion.div 
-              className="absolute top-1 left-1/2 -translate-x-1/2 bg-blue-900/90 text-blue-200 text-[10px] px-2 py-0.5 rounded-full font-bold shadow-sm z-20 pointer-events-none whitespace-nowrap border border-blue-400 flex items-center gap-1"
-              animate={{ y: [0, 2, 0] }}
-              transition={{ duration: 1.2, repeat: Infinity }}
-            >
-              <span className="flex items-center gap-1">
-                <Gi.GiSwirlRing className="inline text-blue-300" />
-                <span>見つからない…</span>
-              </span>
-            </motion.div>
-          )}
           <motion.div 
             className="absolute bottom-2 right-5 text-indigo-300 text-xs z-10 pointer-events-none select-none font-bold"
             animate={{ scale: [0.8, 1.2, 0.8], opacity: [0.4, 0.8, 0.4] }}

@@ -274,30 +274,50 @@ export const GSAPRobotCanvas: React.FC<GSAPRobotCanvasProps> = ({
     }
   };
 
-  // ポインタードラッグイベントのグローバルリッスン
+  // ポインター・タッチドラッグイベントのグローバルリッスン（スマホでのスクロール干渉防止と横移動の完全追従）
   useEffect(() => {
     if (!draggingJoint) return;
 
-    const handlePointerMove = (e: MouseEvent | TouchEvent) => {
-      const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-      const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    const handlePointerMove = (e: PointerEvent | MouseEvent | TouchEvent) => {
+      if ('cancelable' in e && e.cancelable) {
+        e.preventDefault();
+      }
+      let clientX = 0;
+      let clientY = 0;
+      if ('clientX' in e && typeof e.clientX === 'number') {
+        clientX = e.clientX;
+        clientY = e.clientY;
+      } else if ('touches' in e && e.touches.length > 0) {
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+      } else {
+        return;
+      }
       updateJointFromPointer(clientX, clientY, draggingJoint);
     };
 
-    const handlePointerUp = () => {
+    const handlePointerUp = (e?: any) => {
       setDraggingJoint(null);
     };
 
-    window.addEventListener('mousemove', handlePointerMove);
-    window.addEventListener('mouseup', handlePointerUp);
-    window.addEventListener('touchmove', handlePointerMove, { passive: false });
+    window.addEventListener('pointermove', handlePointerMove as EventListener, { passive: false });
+    window.addEventListener('pointerup', handlePointerUp);
+    window.addEventListener('pointercancel', handlePointerUp);
+    window.addEventListener('touchmove', handlePointerMove as EventListener, { passive: false });
     window.addEventListener('touchend', handlePointerUp);
+    window.addEventListener('touchcancel', handlePointerUp);
+    window.addEventListener('mousemove', handlePointerMove as EventListener);
+    window.addEventListener('mouseup', handlePointerUp);
 
     return () => {
-      window.removeEventListener('mousemove', handlePointerMove);
-      window.removeEventListener('mouseup', handlePointerUp);
-      window.removeEventListener('touchmove', handlePointerMove);
+      window.removeEventListener('pointermove', handlePointerMove as EventListener);
+      window.removeEventListener('pointerup', handlePointerUp);
+      window.removeEventListener('pointercancel', handlePointerUp);
+      window.removeEventListener('touchmove', handlePointerMove as EventListener);
       window.removeEventListener('touchend', handlePointerUp);
+      window.removeEventListener('touchcancel', handlePointerUp);
+      window.removeEventListener('mousemove', handlePointerMove as EventListener);
+      window.removeEventListener('mouseup', handlePointerUp);
     };
   }, [draggingJoint, armPartKey]);
 
@@ -307,12 +327,15 @@ export const GSAPRobotCanvas: React.FC<GSAPRobotCanvasProps> = ({
   return (
     <div
       ref={containerRef}
-      className={`relative flex items-center justify-center select-none overflow-hidden isolate ${className}`}
+      className={`relative flex items-center justify-center select-none overflow-hidden isolate ${
+        isJointCalibrationActive ? 'touch-none' : ''
+      } ${className}`}
       style={{
         width: canvasWidth,
         height: canvasHeight,
         minWidth: canvasWidth,
         minHeight: canvasHeight,
+        touchAction: isJointCalibrationActive ? 'none' : 'auto',
       }}
     >
       {/* ステージ背景グリッド・サークル */}
@@ -525,7 +548,7 @@ export const GSAPRobotCanvas: React.FC<GSAPRobotCanvasProps> = ({
 
         {/* 肩＆拳 インタラクティブ・キャリブレーションマーカー - レイヤー z: 30 */}
         {isJointCalibrationActive && (
-          <div className="absolute inset-0 w-full h-full z-[30] pointer-events-none">
+          <div className="absolute inset-0 w-full h-full z-[30] pointer-events-none touch-none">
             {/* SVG ボーンコネクタライン (左肩→左拳, 右肩→右拳) */}
             <svg className="absolute inset-0 w-full h-full pointer-events-none overflow-visible">
               {/* 左腕ボーンライン */}
@@ -559,26 +582,42 @@ export const GSAPRobotCanvas: React.FC<GSAPRobotCanvasProps> = ({
             {/* ① 左肩マーカー (向かって左肩) */}
             {(activeJointFilter === 'all' || activeJointFilter === 'shoulders' || activeJointFilter === 'left') && (
               <div
-                className="absolute transform -translate-x-1/2 -translate-y-1/2 pointer-events-auto cursor-grab active:cursor-grabbing group/leftShoulder z-20"
+                className="absolute transform -translate-x-1/2 -translate-y-1/2 pointer-events-auto cursor-grab active:cursor-grabbing group/leftShoulder z-20 touch-none select-none"
                 style={{
                   left: `${safeHandConfig.leftShoulder.x}%`,
                   top: `${safeHandConfig.leftShoulder.y}%`,
+                  touchAction: 'none',
+                }}
+                onPointerDown={(e) => {
+                  e.stopPropagation();
+                  if (e.cancelable) e.preventDefault();
+                  try {
+                    (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+                  } catch {}
+                  setDraggingJoint('leftShoulder');
+                  updateJointFromPointer(e.clientX, e.clientY, 'leftShoulder');
+                }}
+                onTouchStart={(e) => {
+                  e.stopPropagation();
+                  if (e.cancelable) e.preventDefault();
+                  if (e.touches && e.touches[0]) {
+                    updateJointFromPointer(e.touches[0].clientX, e.touches[0].clientY, 'leftShoulder');
+                  }
+                  setDraggingJoint('leftShoulder');
                 }}
                 onMouseDown={(e) => {
                   e.stopPropagation();
                   setDraggingJoint('leftShoulder');
                 }}
-                onTouchStart={(e) => {
-                  e.stopPropagation();
-                  setDraggingJoint('leftShoulder');
-                }}
                 title={`左肩アンカー (${safeHandConfig.leftShoulder.x.toFixed(1)}%, ${safeHandConfig.leftShoulder.y.toFixed(1)}%) - ドラッグで位置調整`}
               >
+                {/* スマホ用タッチターゲット拡張エリア (48px相当) */}
+                <div className="absolute -inset-3.5 rounded-full bg-transparent" />
                 <div className="absolute w-[160px] h-[1px] -left-[80px] top-1/2 -translate-y-1/2 border-t border-dashed border-teal-400/50 pointer-events-none" />
                 <div className="absolute h-[160px] w-[1px] left-1/2 -translate-x-1/2 -top-[80px] border-l border-dashed border-teal-400/50 pointer-events-none" />
                 <div className="absolute -inset-1 rounded-full bg-teal-400/30 animate-ping pointer-events-none" />
                 
-                <div className="relative w-6 h-6 rounded-full bg-teal-600 border-2 border-white text-white shadow-[0_0_10px_#0d9488] flex items-center justify-center text-[10px] font-bold transition-transform hover:scale-125 group-active/leftShoulder:scale-110">
+                <div className="relative w-7 h-7 rounded-full bg-teal-600 border-2 border-white text-white shadow-[0_0_10px_#0d9488] flex items-center justify-center text-xs font-bold transition-transform hover:scale-125 group-active/leftShoulder:scale-110 pointer-events-none">
                   <span>🦾</span>
                 </div>
 
@@ -592,26 +631,42 @@ export const GSAPRobotCanvas: React.FC<GSAPRobotCanvasProps> = ({
             {/* ② 右肩マーカー (向かって右肩) */}
             {(activeJointFilter === 'all' || activeJointFilter === 'shoulders' || activeJointFilter === 'right') && (
               <div
-                className="absolute transform -translate-x-1/2 -translate-y-1/2 pointer-events-auto cursor-grab active:cursor-grabbing group/rightShoulder z-20"
+                className="absolute transform -translate-x-1/2 -translate-y-1/2 pointer-events-auto cursor-grab active:cursor-grabbing group/rightShoulder z-20 touch-none select-none"
                 style={{
                   left: `${safeHandConfig.rightShoulder.x}%`,
                   top: `${safeHandConfig.rightShoulder.y}%`,
+                  touchAction: 'none',
+                }}
+                onPointerDown={(e) => {
+                  e.stopPropagation();
+                  if (e.cancelable) e.preventDefault();
+                  try {
+                    (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+                  } catch {}
+                  setDraggingJoint('rightShoulder');
+                  updateJointFromPointer(e.clientX, e.clientY, 'rightShoulder');
+                }}
+                onTouchStart={(e) => {
+                  e.stopPropagation();
+                  if (e.cancelable) e.preventDefault();
+                  if (e.touches && e.touches[0]) {
+                    updateJointFromPointer(e.touches[0].clientX, e.touches[0].clientY, 'rightShoulder');
+                  }
+                  setDraggingJoint('rightShoulder');
                 }}
                 onMouseDown={(e) => {
                   e.stopPropagation();
                   setDraggingJoint('rightShoulder');
                 }}
-                onTouchStart={(e) => {
-                  e.stopPropagation();
-                  setDraggingJoint('rightShoulder');
-                }}
                 title={`右肩アンカー (${safeHandConfig.rightShoulder.x.toFixed(1)}%, ${safeHandConfig.rightShoulder.y.toFixed(1)}%) - ドラッグで位置調整`}
               >
+                {/* スマホ用タッチターゲット拡張エリア (48px相当) */}
+                <div className="absolute -inset-3.5 rounded-full bg-transparent" />
                 <div className="absolute w-[160px] h-[1px] -left-[80px] top-1/2 -translate-y-1/2 border-t border-dashed border-orange-400/50 pointer-events-none" />
                 <div className="absolute h-[160px] w-[1px] left-1/2 -translate-x-1/2 -top-[80px] border-l border-dashed border-orange-400/50 pointer-events-none" />
                 <div className="absolute -inset-1 rounded-full bg-orange-400/30 animate-ping pointer-events-none" />
                 
-                <div className="relative w-6 h-6 rounded-full bg-orange-600 border-2 border-white text-white shadow-[0_0_10px_#ea580c] flex items-center justify-center text-[10px] font-bold transition-transform hover:scale-125 group-active/rightShoulder:scale-110">
+                <div className="relative w-7 h-7 rounded-full bg-orange-600 border-2 border-white text-white shadow-[0_0_10px_#ea580c] flex items-center justify-center text-xs font-bold transition-transform hover:scale-125 group-active/rightShoulder:scale-110 pointer-events-none">
                   <span>🦾</span>
                 </div>
 
@@ -625,21 +680,37 @@ export const GSAPRobotCanvas: React.FC<GSAPRobotCanvasProps> = ({
             {/* ③ 左拳マーカー (向かって左側) */}
             {(activeJointFilter === 'all' || activeJointFilter === 'hands' || activeJointFilter === 'left' || activeHand === 'both' || activeHand === 'left') && (
               <div
-                className="absolute transform -translate-x-1/2 -translate-y-1/2 pointer-events-auto cursor-grab active:cursor-grabbing group/leftHand z-20"
+                className="absolute transform -translate-x-1/2 -translate-y-1/2 pointer-events-auto cursor-grab active:cursor-grabbing group/leftHand z-20 touch-none select-none"
                 style={{
                   left: `${safeHandConfig.leftHand.x}%`,
                   top: `${safeHandConfig.leftHand.y}%`,
+                  touchAction: 'none',
+                }}
+                onPointerDown={(e) => {
+                  e.stopPropagation();
+                  if (e.cancelable) e.preventDefault();
+                  try {
+                    (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+                  } catch {}
+                  setDraggingJoint('leftHand');
+                  updateJointFromPointer(e.clientX, e.clientY, 'leftHand');
+                }}
+                onTouchStart={(e) => {
+                  e.stopPropagation();
+                  if (e.cancelable) e.preventDefault();
+                  if (e.touches && e.touches[0]) {
+                    updateJointFromPointer(e.touches[0].clientX, e.touches[0].clientY, 'leftHand');
+                  }
+                  setDraggingJoint('leftHand');
                 }}
                 onMouseDown={(e) => {
                   e.stopPropagation();
                   setDraggingJoint('leftHand');
                 }}
-                onTouchStart={(e) => {
-                  e.stopPropagation();
-                  setDraggingJoint('leftHand');
-                }}
                 title={`左手 拳アンカー (${safeHandConfig.leftHand.x.toFixed(1)}%, ${safeHandConfig.leftHand.y.toFixed(1)}%) - ドラッグで位置調整`}
               >
+                {/* スマホ用タッチターゲット拡張エリア (48px相当) */}
+                <div className="absolute -inset-3.5 rounded-full bg-transparent" />
                 {/* 縦横のクロスヘアガイドライン */}
                 <div className="absolute w-[200px] h-[1px] -left-[100px] top-1/2 -translate-y-1/2 border-t border-dashed border-cyan-400/50 pointer-events-none" />
                 <div className="absolute h-[200px] w-[1px] left-1/2 -translate-x-1/2 -top-[100px] border-l border-dashed border-cyan-400/50 pointer-events-none" />
@@ -648,7 +719,7 @@ export const GSAPRobotCanvas: React.FC<GSAPRobotCanvasProps> = ({
                 <div className="absolute -inset-1.5 rounded-full bg-cyan-400/30 animate-ping pointer-events-none" />
                 
                 {/* ターゲットピン本体 */}
-                <div className="relative w-6 h-6 rounded-full bg-cyan-500 border-2 border-white text-white shadow-[0_0_10px_#06b6d4] flex items-center justify-center text-[10px] font-bold transition-transform hover:scale-125 group-active/leftHand:scale-110">
+                <div className="relative w-7 h-7 rounded-full bg-cyan-500 border-2 border-white text-white shadow-[0_0_10px_#06b6d4] flex items-center justify-center text-xs font-bold transition-transform hover:scale-125 group-active/leftHand:scale-110 pointer-events-none">
                   <span>✊</span>
                 </div>
 
@@ -663,21 +734,37 @@ export const GSAPRobotCanvas: React.FC<GSAPRobotCanvasProps> = ({
             {/* ④ 右拳マーカー (向かって右側) */}
             {(activeJointFilter === 'all' || activeJointFilter === 'hands' || activeJointFilter === 'right' || activeHand === 'both' || activeHand === 'right') && (
               <div
-                className="absolute transform -translate-x-1/2 -translate-y-1/2 pointer-events-auto cursor-grab active:cursor-grabbing group/rightHand z-20"
+                className="absolute transform -translate-x-1/2 -translate-y-1/2 pointer-events-auto cursor-grab active:cursor-grabbing group/rightHand z-20 touch-none select-none"
                 style={{
                   left: `${safeHandConfig.rightHand.x}%`,
                   top: `${safeHandConfig.rightHand.y}%`,
+                  touchAction: 'none',
+                }}
+                onPointerDown={(e) => {
+                  e.stopPropagation();
+                  if (e.cancelable) e.preventDefault();
+                  try {
+                    (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+                  } catch {}
+                  setDraggingJoint('rightHand');
+                  updateJointFromPointer(e.clientX, e.clientY, 'rightHand');
+                }}
+                onTouchStart={(e) => {
+                  e.stopPropagation();
+                  if (e.cancelable) e.preventDefault();
+                  if (e.touches && e.touches[0]) {
+                    updateJointFromPointer(e.touches[0].clientX, e.touches[0].clientY, 'rightHand');
+                  }
+                  setDraggingJoint('rightHand');
                 }}
                 onMouseDown={(e) => {
                   e.stopPropagation();
                   setDraggingJoint('rightHand');
                 }}
-                onTouchStart={(e) => {
-                  e.stopPropagation();
-                  setDraggingJoint('rightHand');
-                }}
                 title={`右手 拳アンカー (${safeHandConfig.rightHand.x.toFixed(1)}%, ${safeHandConfig.rightHand.y.toFixed(1)}%) - ドラッグで位置調整`}
               >
+                {/* スマホ用タッチターゲット拡張エリア (48px相当) */}
+                <div className="absolute -inset-3.5 rounded-full bg-transparent" />
                 {/* 縦横のクロスヘアガイドライン */}
                 <div className="absolute w-[200px] h-[1px] -left-[100px] top-1/2 -translate-y-1/2 border-t border-dashed border-amber-400/50 pointer-events-none" />
                 <div className="absolute h-[200px] w-[1px] left-1/2 -translate-x-1/2 -top-[100px] border-l border-dashed border-amber-400/50 pointer-events-none" />
@@ -686,7 +773,7 @@ export const GSAPRobotCanvas: React.FC<GSAPRobotCanvasProps> = ({
                 <div className="absolute -inset-1.5 rounded-full bg-amber-400/30 animate-ping pointer-events-none" />
                 
                 {/* ターゲットピン本体 */}
-                <div className="relative w-6 h-6 rounded-full bg-amber-500 border-2 border-white text-white shadow-[0_0_10px_#f59e0b] flex items-center justify-center text-[10px] font-bold transition-transform hover:scale-125 group-active/rightHand:scale-110">
+                <div className="relative w-7 h-7 rounded-full bg-amber-500 border-2 border-white text-white shadow-[0_0_10px_#f59e0b] flex items-center justify-center text-xs font-bold transition-transform hover:scale-125 group-active/rightHand:scale-110 pointer-events-none">
                   <span>✊</span>
                 </div>
 

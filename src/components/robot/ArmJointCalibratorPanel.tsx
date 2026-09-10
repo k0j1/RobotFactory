@@ -487,7 +487,8 @@ export const ArmJointCalibratorPanel: React.FC<ArmJointCalibratorPanelProps> = (
                     onMouseDown={() => handleSetEditJoint(joint.id)}
                     onTouchStart={() => handleSetEditJoint(joint.id)}
                     onChange={(e) => onUpdateCoord(joint.id, 'x', parseFloat(e.target.value))}
-                    className={`w-full h-2.5 rounded-lg transition-all ${
+                    style={{ touchAction: 'none' }}
+                    className={`w-full h-2.5 rounded-lg transition-all touch-none ${
                       isEditing 
                         ? 'accent-amber-600 cursor-pointer bg-amber-100 ring-1 ring-amber-400/50' 
                         : 'opacity-35 cursor-not-allowed bg-stone-300'
@@ -574,7 +575,8 @@ export const ArmJointCalibratorPanel: React.FC<ArmJointCalibratorPanelProps> = (
                     onMouseDown={() => handleSetEditJoint(joint.id)}
                     onTouchStart={() => handleSetEditJoint(joint.id)}
                     onChange={(e) => onUpdateCoord(joint.id, 'y', parseFloat(e.target.value))}
-                    className={`w-full h-2.5 rounded-lg transition-all ${
+                    style={{ touchAction: 'none' }}
+                    className={`w-full h-2.5 rounded-lg transition-all touch-none ${
                       isEditing 
                         ? 'accent-amber-600 cursor-pointer bg-amber-100 ring-1 ring-amber-400/50' 
                         : 'opacity-35 cursor-not-allowed bg-stone-300'

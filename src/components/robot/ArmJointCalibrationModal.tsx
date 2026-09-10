@@ -414,7 +414,7 @@ export const ArmJointCalibrationModal: React.FC<ArmJointCalibrationModalProps> =
               </div>
 
               {/* キャンバス本体 (ピンのドラッグ操作に対応) */}
-              <div className="relative rounded-2xl overflow-hidden border-2 border-stone-300 shadow-md aspect-square bg-stone-900 flex items-center justify-center">
+              <div className="relative rounded-2xl overflow-hidden border-2 border-stone-300 shadow-md aspect-square bg-stone-900 flex items-center justify-center touch-none">
                 <GSAPRobotCanvas
                   robot={previewRobot}
                   size={360}

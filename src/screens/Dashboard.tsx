@@ -23,6 +23,23 @@ const formatTime = (ms: number) => {
 };
 
 export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavigate: (v: string) => void }> = ({ state, engine, onNavigate }) => {
+  const [displayMode, setDisplayMode] = useState<'detailed' | 'compact'>(() => {
+    try {
+      return (localStorage.getItem('workshop_dashboard_mode') as 'detailed' | 'compact') || 'detailed';
+    } catch {
+      return 'detailed';
+    }
+  });
+
+  const handleToggleMode = (mode: 'detailed' | 'compact') => {
+    setDisplayMode(mode);
+    try {
+      localStorage.setItem('workshop_dashboard_mode', mode);
+    } catch {
+      // ignore
+    }
+  };
+
   const [lootResult, setLootResult] = useState<{ title: string; subtitle?: string; drops: string[]; type: 'quest' | 'auto_dispatch' } | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
   const [isDispatchModalOpen, setIsDispatchModalOpen] = useState(false);
@@ -163,14 +180,407 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
   const selectedModalRobot = state.robots.find(r => r.id === selectedRobotId);
 
   const totalAutoPendingDrops = state.autoDispatches?.reduce((acc, d) => acc + (d.pendingDrops?.length || 0), 0) || 0;
-  const hasActiveMission = Boolean(state.activeQuest || (state.autoDispatches && state.autoDispatches.length > 0));
+  
+  // 各種作業の進捗状況
+  const isCraftPartActive = Boolean(state.activePartCraft);
+  const isCraftPartDone = state.activePartCraft ? state.activePartCraft.endTime <= Date.now() : false;
+  const isCraftRobotActive = Boolean(state.activeRobotAssembly);
+  const isCraftRobotDone = state.activeRobotAssembly ? state.activeRobotAssembly.endTime <= Date.now() : false;
+  const isDisassemblyActive = Boolean(state.activeRobotDisassembly);
+  const isDisassemblyDone = state.activeRobotDisassembly ? state.activeRobotDisassembly.endTime <= Date.now() : false;
+  const isRecycleActive = Boolean(state.activePartRecycle);
+  const isRecycleDone = state.activePartRecycle ? state.activePartRecycle.endTime <= Date.now() : false;
+
+  const hasAnyActiveWork = Boolean(
+    state.activeQuest || 
+    (state.autoDispatches && state.autoDispatches.length > 0) || 
+    isCraftPartActive || 
+    isCraftRobotActive || 
+    isDisassemblyActive || 
+    isRecycleActive || 
+    state.currentRequest ||
+    totalAutoPendingDrops > 0
+  );
 
   return (
     <div className="space-y-4">
-      {/* 統合ダッシュボードカード (Unified Workshop Dashboard - Warm Brick & Wood Theme) */}
-      <Card className={theme.workshop.mainCard + " p-3.5"}>
-        <div className="relative z-10">
-        {/* 上部ステータスバー (工房の木製・真鍮プレート銘板デザイン & アイコン中央配置) */}
+      {/* 表示モード切り替えスイッチバー */}
+      <div className="flex items-center justify-between gap-2 px-1">
+        <div className="flex items-center gap-1.5 text-xs text-stone-700 font-bold">
+          <Gi.GiFactory className="text-amber-800" size={16} />
+          <span>工房ダッシュボード</span>
+        </div>
+        <div className="flex items-center bg-[#eae0d5] p-0.5 rounded-lg border border-[#cbb197] shadow-2xs">
+          <button
+            onClick={() => handleToggleMode('detailed')}
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
+              displayMode === 'detailed'
+                ? 'bg-amber-700 text-white shadow-2xs'
+                : 'text-stone-700 hover:text-stone-900'
+            }`}
+          >
+            <Gi.GiEyeTarget size={13} />
+            <span>詳細</span>
+          </button>
+          <button
+            onClick={() => handleToggleMode('compact')}
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
+              displayMode === 'compact'
+                ? 'bg-amber-700 text-white shadow-2xs'
+                : 'text-stone-700 hover:text-stone-900'
+            }`}
+          >
+            <Gi.GiLightningBow size={13} />
+            <span>コンパクト</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 1. コンパクトモード (Compact Mode: Icons, Badges & Minimal Essential Stats) */}
+      {/* ========================================================================= */}
+      {displayMode === 'compact' ? (
+        <div className="space-y-3">
+          {/* コンパクトステータス・名声バー */}
+          {(() => {
+            const currentFame = state.fame || 0;
+            const fameRank = getFameRank(currentFame);
+            const nextRankFame = fameRank.nextFame;
+            const prevRankFame = fameRank.minFame;
+            const progressPercent = nextRankFame
+              ? Math.min(100, Math.max(0, Math.round(((currentFame - prevRankFame) / (nextRankFame - prevRankFame)) * 100)))
+              : 100;
+
+            return (
+              <Card className="bg-[#fcf8f2] border-2 border-[#c29b77] p-2.5 shadow-2xs">
+                {/* 1行目: 名声ランク & 所持金 */}
+                <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-6 h-6 rounded-md bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-800 shrink-0">
+                      <Gi.GiTrophyCup size={14} />
+                    </span>
+                    <span className={`text-[11px] px-2 py-0.5 rounded-full border font-bold ${fameRank.badgeBg} ${fameRank.badgeBorder} ${fameRank.textColor}`}>
+                      Rank {fameRank.level} : {fameRank.title}
+                    </span>
+                    <span className="text-[10px] font-mono text-stone-500 font-bold">
+                      ({currentFame} 名声)
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1 bg-amber-50 border border-amber-300 px-2 py-0.5 rounded-md">
+                    <Gi.GiCoins className="text-amber-600" size={14} />
+                    <span className="text-xs font-black font-mono text-amber-800">{state.gold} G</span>
+                  </div>
+                </div>
+
+                {/* 名声ミニプログレスバー */}
+                <div className="mb-2">
+                  <div className="w-full bg-stone-200/80 rounded-full h-1.5 overflow-hidden border border-stone-300/80">
+                    <div 
+                      className="bg-gradient-to-r from-amber-500 to-amber-600 h-full rounded-full transition-all duration-500"
+                      style={{ width: `${progressPercent}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between items-center text-[9px] text-stone-500 font-mono mt-0.5">
+                    <span>Rank {fameRank.level} ({prevRankFame})</span>
+                    <span className="font-bold text-amber-800">{progressPercent}%</span>
+                    <span>{nextRankFame ? `Rank ${fameRank.level + 1} (${nextRankFame})` : 'MAX'}</span>
+                  </div>
+                </div>
+
+                {/* 2行目: 機体数・納品・修理キットミニチップ */}
+                <div className="grid grid-cols-3 gap-1.5 pt-1.5 border-t border-[#e2cfbd] text-center">
+                  <div className="bg-[#fffdfa] border border-[#dcc5b0] rounded py-1 px-1.5 flex items-center justify-center gap-1">
+                    <Gi.GiRobotAntennas size={13} className="text-sky-700" />
+                    <span className="text-[10px] text-stone-600 font-bold">機体</span>
+                    <span className="text-[11px] font-black font-mono text-sky-800">{state.robots?.length}/{state.storageSize}</span>
+                  </div>
+                  <div className="bg-[#fffdfa] border border-[#dcc5b0] rounded py-1 px-1.5 flex items-center justify-center gap-1">
+                    <Gi.GiTrophy size={13} className="text-emerald-700" />
+                    <span className="text-[10px] text-stone-600 font-bold">納品</span>
+                    <span className="text-[11px] font-black font-mono text-emerald-800">{state.deliveredRobotsCount}件</span>
+                  </div>
+                  <div className="bg-[#fffdfa] border border-[#dcc5b0] rounded py-1 px-1.5 flex items-center justify-center gap-1">
+                    <Gi.GiSpanner size={13} className="text-purple-700" />
+                    <span className="text-[10px] text-stone-600 font-bold">修理</span>
+                    <span className="text-[11px] font-black font-mono text-purple-800">{state.repairKits ?? 0}個</span>
+                  </div>
+                </div>
+              </Card>
+            );
+          })()}
+
+          {/* 稼働状況クイックグリッド (4タイル) */}
+          <div className="grid grid-cols-2 gap-2">
+            {/* 1. 遠征 */}
+            <div 
+              onClick={() => onNavigate('quest')}
+              className={`p-2 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2 shadow-2xs ${
+                state.activeQuest 
+                  ? (questDone ? 'bg-emerald-50 border-emerald-400 ring-1 ring-emerald-300 animate-pulse' : 'bg-amber-50 border-amber-300') 
+                  : 'bg-[#fffdfa] border-[#dcc5b0] hover:border-amber-600'
+              }`}
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <div className={`w-7 h-7 rounded-lg border flex items-center justify-center shrink-0 ${
+                  state.activeQuest ? 'bg-amber-100 border-amber-300 text-amber-800' : 'bg-stone-100 border-stone-300 text-stone-500'
+                }`}>
+                  <Gi.GiWalkingScout size={16} />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[11px] font-bold text-stone-800 truncate">遠征</div>
+                  <div className="text-[10px] truncate">
+                    {state.activeQuest ? (
+                      questDone ? (
+                        <span className="text-emerald-700 font-bold">受取可！</span>
+                      ) : (
+                        <span className="text-amber-800 font-mono font-bold">{formatTime(timeRemaining)}</span>
+                      )
+                    ) : (
+                      <span className="text-stone-400">未出撃</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <span className="text-xs text-stone-400 font-bold">›</span>
+            </div>
+
+            {/* 2. 製造 */}
+            <div 
+              onClick={() => onNavigate('craft')}
+              className={`p-2 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2 shadow-2xs ${
+                (isCraftPartActive || isCraftRobotActive)
+                  ? ((isCraftPartDone || isCraftRobotDone) ? 'bg-emerald-50 border-emerald-400 ring-1 ring-emerald-300 animate-pulse' : 'bg-amber-50 border-amber-300')
+                  : 'bg-[#fffdfa] border-[#dcc5b0] hover:border-amber-600'
+              }`}
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <div className={`w-7 h-7 rounded-lg border flex items-center justify-center shrink-0 ${
+                  (isCraftPartActive || isCraftRobotActive) ? 'bg-amber-100 border-amber-300 text-amber-800' : 'bg-stone-100 border-stone-300 text-stone-500'
+                }`}>
+                  <Gi.GiAnvil size={16} />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[11px] font-bold text-stone-800 truncate">製造・組立</div>
+                  <div className="text-[10px] truncate">
+                    {(isCraftPartActive || isCraftRobotActive) ? (
+                      (isCraftPartDone || isCraftRobotDone) ? (
+                        <span className="text-emerald-700 font-bold">完成！</span>
+                      ) : (
+                        <span className="text-amber-800 font-mono font-bold">
+                          {formatTime(Math.max(0, (state.activePartCraft?.endTime || state.activeRobotAssembly?.endTime || 0) - Date.now()))}
+                        </span>
+                      )
+                    ) : (
+                      <span className="text-stone-400">空き</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <span className="text-xs text-stone-400 font-bold">›</span>
+            </div>
+
+            {/* 3. 倉庫 */}
+            <div 
+              onClick={() => onNavigate('storage')}
+              className={`p-2 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2 shadow-2xs ${
+                (isDisassemblyActive || isRecycleActive)
+                  ? ((isDisassemblyDone || isRecycleDone) ? 'bg-emerald-50 border-emerald-400 ring-1 ring-emerald-300 animate-pulse' : 'bg-amber-50 border-amber-300')
+                  : 'bg-[#fffdfa] border-[#dcc5b0] hover:border-amber-600'
+              }`}
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <div className={`w-7 h-7 rounded-lg border flex items-center justify-center shrink-0 ${
+                  (isDisassemblyActive || isRecycleActive) ? 'bg-amber-100 border-amber-300 text-amber-800' : 'bg-stone-100 border-stone-300 text-stone-500'
+                }`}>
+                  <Gi.GiRecycle size={16} />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[11px] font-bold text-stone-800 truncate">倉庫・解体</div>
+                  <div className="text-[10px] truncate">
+                    {(isDisassemblyActive || isRecycleActive) ? (
+                      (isDisassemblyDone || isRecycleDone) ? (
+                        <span className="text-emerald-700 font-bold">完了！</span>
+                      ) : (
+                        <span className="text-amber-800 font-mono font-bold">作業中</span>
+                      )
+                    ) : (
+                      <span className="text-stone-500">{state.robots?.length}機体 保管中</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <span className="text-xs text-stone-400 font-bold">›</span>
+            </div>
+
+            {/* 4. 依頼 */}
+            <div 
+              onClick={() => onNavigate('requests')}
+              className={`p-2 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2 shadow-2xs ${
+                state.currentRequest 
+                  ? 'bg-blue-50 border-blue-300' 
+                  : 'bg-[#fffdfa] border-[#dcc5b0] hover:border-amber-600'
+              }`}
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <div className={`w-7 h-7 rounded-lg border flex items-center justify-center shrink-0 ${
+                  state.currentRequest ? 'bg-blue-100 border-blue-300 text-blue-800' : 'bg-stone-100 border-stone-300 text-stone-500'
+                }`}>
+                  <Gi.GiChecklist size={16} />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[11px] font-bold text-stone-800 truncate">依頼案件</div>
+                  <div className="text-[10px] truncate">
+                    {state.currentRequest ? (
+                      <span className="text-blue-800 font-bold truncate">受諾中 (+{state.currentRequest.rewardG}G)</span>
+                    ) : (
+                      <span className="text-stone-400">依頼なし</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <span className="text-xs text-stone-400 font-bold">›</span>
+            </div>
+          </div>
+
+          {/* 自動探索コンパクトセクション */}
+          <Card className="bg-[#fcf8f2] border-2 border-[#c29b77] p-2.5 shadow-2xs">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <div className="flex items-center gap-1.5">
+                <Gi.GiFactory size={15} className="text-amber-800" />
+                <span className="text-xs font-bold text-amber-950">自動探索 ({state.autoDispatches?.length || 0})</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                {totalAutoPendingDrops > 0 && (
+                  <button
+                    onClick={handleClaimAllAutoDispatches}
+                    className="text-[10px] px-2 py-0.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded font-bold shadow-2xs flex items-center gap-1 animate-pulse cursor-pointer"
+                  >
+                    <Gi.GiCardboardBox size={12} />
+                    <span>一括回収 ({totalAutoPendingDrops})</span>
+                  </button>
+                )}
+                <Button size="sm" onClick={() => setIsDispatchModalOpen(true)} className="text-[10px] px-2 py-0.5 bg-[#8e5e3a] hover:bg-[#784d2e] text-white font-bold">
+                  + 派遣
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              {(!state.autoDispatches || state.autoDispatches.length === 0) ? (
+                <div className="p-2.5 bg-[#fffdfa] rounded-lg border border-dashed border-[#d2b89f] text-center text-[11px] text-stone-500 font-bold">
+                  自動探索中の機体はいません
+                </div>
+              ) : (
+                state.autoDispatches.map(d => {
+                  const dRobot = state.robots.find(r => r.id === d.robotId);
+                  const dLoc = LOCATIONS.find(l => l.id === d.locationId);
+                  const intervalMs = engine.getAutoDispatchIntervalMs(d.robotId, d.locationId);
+                  const nextTime = d.lastCollectedAt + intervalMs;
+                  const remain = Math.max(0, nextTime - Date.now());
+                  const pending = d.pendingDrops?.length || 0;
+                  const isResting = (dRobot?.currentHp ?? 12) <= 1;
+
+                  return (
+                    <div 
+                      key={d.id} 
+                      className={`p-2 rounded-lg border flex items-center justify-between gap-2 text-xs ${
+                        isResting ? 'bg-red-50 border-red-300' : pending > 0 ? 'bg-emerald-50 border-emerald-400' : 'bg-[#fffdfa] border-[#dcc5b0]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-5 h-5 rounded bg-stone-200 border border-stone-300 flex items-center justify-center shrink-0">
+                          <Gi.GiRobotAntennas size={13} className="text-stone-700" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1 truncate">
+                            <span className="font-bold text-stone-800 text-[11px] truncate">{dRobot?.name}</span>
+                            <span className="text-[10px] text-stone-500 truncate">({dLoc?.name})</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-[9px] font-mono text-stone-500">
+                            <span className="text-red-600 font-bold">HP {dRobot?.currentHp}/{dRobot?.maxHp}</span>
+                            <span>次回: {formatTime(remain)}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1 shrink-0">
+                        {pending > 0 ? (
+                          <button
+                            onClick={() => handleClaimAutoDispatch(d.id)}
+                            className="text-[10px] px-2 py-0.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded font-bold shadow-2xs flex items-center gap-1 animate-pulse cursor-pointer"
+                          >
+                            <Gi.GiCardboardBox size={11} />
+                            <span>回収 ({pending})</span>
+                          </button>
+                        ) : isResting ? (
+                          dRobot && state.repairKits && state.repairKits > 0 ? (
+                            <button
+                              onClick={() => handleRepairRobot(dRobot)}
+                              className="text-[10px] px-2 py-0.5 bg-emerald-600 text-white rounded font-bold flex items-center gap-1 cursor-pointer"
+                            >
+                              <Gi.GiSpanner size={11} />
+                              <span>修理</span>
+                            </button>
+                          ) : (
+                            <span className="text-[9px] px-1.5 py-0.5 bg-red-100 text-red-700 border border-red-300 rounded font-bold">
+                              HP切れ
+                            </span>
+                          )
+                        ) : (
+                          <span className="text-[9px] px-1.5 py-0.5 bg-stone-100 text-stone-600 border border-stone-300 rounded font-bold">
+                            探索中
+                          </span>
+                        )}
+                        <button
+                          onClick={() => handleCancelAutoDispatch(d.id)}
+                          className="text-[10px] px-1.5 py-0.5 bg-rose-100 hover:bg-rose-200 text-rose-800 border border-rose-300 rounded font-bold cursor-pointer"
+                        >
+                          帰還
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </Card>
+
+          {/* クイックリンクバー (商店・図鑑・仕様書) */}
+          <div className="grid grid-cols-3 gap-1.5">
+            <button
+              onClick={() => onNavigate('shop')}
+              className="flex items-center justify-center gap-1.5 p-2 bg-[#fffdfa] hover:bg-[#f5ede3] border border-[#dcc5b0] rounded-lg text-xs font-bold text-[#482b17] shadow-2xs cursor-pointer"
+            >
+              <Gi.GiShop size={15} className="text-amber-700" />
+              <span>素材商店</span>
+            </button>
+            <button
+              onClick={() => onNavigate('encyclopedia')}
+              className="flex items-center justify-center gap-1.5 p-2 bg-[#fffdfa] hover:bg-[#f5ede3] border border-[#dcc5b0] rounded-lg text-xs font-bold text-[#482b17] shadow-2xs cursor-pointer"
+            >
+              <Gi.GiBookCover size={15} className="text-amber-700" />
+              <span>図鑑・実績</span>
+            </button>
+            <button
+              onClick={() => onNavigate('litepaper')}
+              className="flex items-center justify-center gap-1.5 p-2 bg-[#fffdfa] hover:bg-[#f5ede3] border border-[#dcc5b0] rounded-lg text-xs font-bold text-[#482b17] shadow-2xs cursor-pointer"
+            >
+              <Gi.GiScrollUnfurled size={15} className="text-amber-700" />
+              <span>工房仕様書</span>
+            </button>
+          </div>
+        </div>
+      ) : (
+        /* ========================================================================= */
+        /* 2. 詳細モード (Detailed Mode: Rich Visuals, Progress Meters, & Full Info)   */
+        /* ========================================================================= */
+        <>
+          {/* 統合ダッシュボードカード (Unified Workshop Dashboard - Warm Brick & Wood Theme) */}
+          <Card className={theme.workshop.mainCard + " p-3.5"}>
+            <div className="relative z-10">
+        
+        {/* 上部ステータスバー (工房の木製・真鍮プレート銘板デザイン) */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-3.5">
           {/* GOLD */}
           <div className={theme.workshop.statCard}>
@@ -283,136 +693,165 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                   <span>{nextRankFame ? `Rank ${fameRank.level + 1} (${nextRankFame} 名声)` : 'MAX'}</span>
                 </div>
               </div>
-
-              <div className="mt-2 pt-1.5 border-t border-[#f0d8bd] flex items-center justify-between text-[10px] text-stone-600 flex-wrap gap-1">
-                <div className="flex items-center gap-1">
-                  <Gi.GiLaurelCrown className="text-amber-600" />
-                  <span>依頼板の依頼納品やバトル演習・拠点防衛戦で名声が上昇します</span>
-                </div>
-                <div className="flex gap-2">
-                  <button 
-                    onClick={() => onNavigate('request')}
-                    className="text-amber-800 font-bold hover:underline cursor-pointer"
-                  >
-                    依頼板へ →
-                  </button>
-                  <button 
-                    onClick={() => onNavigate('minigame')}
-                    className="text-amber-800 font-bold hover:underline cursor-pointer"
-                  >
-                    バトル演習へ →
-                  </button>
-                </div>
-              </div>
             </div>
           );
         })()}
 
-        {/* まとめて回収バー (遠征の上に配置) */}
-        {totalAutoPendingDrops > 0 && (
-          <div className="border-t-2 border-[#d9c4b1] pt-3 pb-1 flex items-center justify-between bg-amber-50/95 border-2 border-amber-400/90 p-2.5 rounded-xl mb-3 shadow-2xs">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-md bg-amber-200/80 border border-amber-400 flex items-center justify-center text-amber-800 shrink-0">
-                <Gi.GiCardboardBox size={18} />
+        {/* リアルタイム作業進捗ハブ (Active Operations Overview) */}
+        <div className="mb-3.5">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 rounded bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-800 text-xs">
+                <Gi.GiGears size={13} />
               </div>
-              <span className="text-xs font-bold text-amber-950">自動探索で獲得した素材があります</span>
+              <span className="text-xs font-bold text-amber-950">現在の作業・稼働状況</span>
             </div>
-            <Button size="sm" variant="success" onClick={handleClaimAllAutoDispatches} className="animate-bounce text-xs px-3 py-1 font-bold shadow-xs bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-1.5">
-              <Gi.GiCardboardBox size={16} />
-              <span>まとめて回収 ({totalAutoPendingDrops})</span>
-            </Button>
+            {totalAutoPendingDrops > 0 && (
+              <button
+                onClick={handleClaimAllAutoDispatches}
+                className="text-[11px] px-2.5 py-0.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-full font-bold shadow-2xs flex items-center gap-1 animate-bounce cursor-pointer"
+              >
+                <Gi.GiCardboardBox size={13} />
+                <span>素材一括回収 ({totalAutoPendingDrops})</span>
+              </button>
+            )}
           </div>
-        )}
 
-        {/* 通常遠征ヘッダー */}
-        <div className={`${theme.workshop.sectionDivider} pt-3 mb-2.5 flex items-center justify-between flex-wrap gap-2`}>
-          <div className="flex items-center gap-2">
-            <div className={theme.workshop.sectionHeader}>
-              <div className="w-6 h-6 rounded-md bg-[#eaddcf] border border-[#b89578] flex items-center justify-center text-[#734320]">
-                <Gi.GiWalkingScout size={16} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {/* 1. 通常遠征の状況 */}
+            <div 
+              onClick={() => onNavigate('quest')}
+              className={`p-2.5 rounded-xl border transition-all cursor-pointer group flex items-center justify-between gap-2 ${
+                state.activeQuest 
+                  ? (questDone ? 'bg-emerald-50/90 border-emerald-400 shadow-2xs ring-1 ring-emerald-300' : 'bg-amber-50/70 border-amber-300/80 hover:bg-amber-100/70') 
+                  : 'bg-[#fffdfa] border-[#dcc5b0] hover:border-[#b89578]'
+              }`}
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <div className={`w-7 h-7 rounded-lg border flex items-center justify-center shrink-0 ${
+                  state.activeQuest ? 'bg-amber-100 border-amber-300 text-amber-800' : 'bg-stone-100 border-stone-300 text-stone-500'
+                }`}>
+                  <Gi.GiWalkingScout size={16} />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[11px] font-bold text-stone-800 truncate flex items-center gap-1">
+                    <span>通常遠征</span>
+                    {questDone && <span className="text-[9px] bg-emerald-600 text-white px-1 rounded font-bold">完了</span>}
+                  </div>
+                  <div className="text-[10px] text-stone-500 truncate">
+                    {state.activeQuest 
+                      ? `${activeQuestLoc?.name || '遠征中'} (${questDone ? '素材受取可' : formatTime(timeRemaining)})` 
+                      : '未出撃 (素材探索へ)'}
+                  </div>
+                </div>
               </div>
-              <span>通常遠征</span>
+              <span className="text-xs text-stone-400 group-hover:text-amber-800 group-hover:translate-x-0.5 transition-all font-bold">›</span>
+            </div>
+
+            {/* 2. 製造（パーツ・ロボット組立）の状況 */}
+            <div 
+              onClick={() => onNavigate('craft')}
+              className={`p-2.5 rounded-xl border transition-all cursor-pointer group flex items-center justify-between gap-2 ${
+                (isCraftPartActive || isCraftRobotActive)
+                  ? ((isCraftPartDone || isCraftRobotDone) ? 'bg-emerald-50/90 border-emerald-400 shadow-2xs ring-1 ring-emerald-300' : 'bg-amber-50/70 border-amber-300/80 hover:bg-amber-100/70')
+                  : 'bg-[#fffdfa] border-[#dcc5b0] hover:border-[#b89578]'
+              }`}
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <div className={`w-7 h-7 rounded-lg border flex items-center justify-center shrink-0 ${
+                  (isCraftPartActive || isCraftRobotActive) ? 'bg-amber-100 border-amber-300 text-amber-800' : 'bg-stone-100 border-stone-300 text-stone-500'
+                }`}>
+                  <Gi.GiAnvil size={16} />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[11px] font-bold text-stone-800 truncate flex items-center gap-1">
+                    <span>製造・組立</span>
+                    {(isCraftPartDone || isCraftRobotDone) && <span className="text-[9px] bg-emerald-600 text-white px-1 rounded font-bold">完成！</span>}
+                  </div>
+                  <div className="text-[10px] text-stone-500 truncate">
+                    {isCraftPartActive && state.activePartCraft
+                      ? `パーツ製造中 (${isCraftPartDone ? '完成' : formatTime(Math.max(0, state.activePartCraft.endTime - Date.now()))})`
+                      : isCraftRobotActive && state.activeRobotAssembly
+                        ? `ロボット組立中 (${isCraftRobotDone ? '完成' : formatTime(Math.max(0, state.activeRobotAssembly.endTime - Date.now()))})`
+                        : '設備空き (パーツ製造/組立)'}
+                  </div>
+                </div>
+              </div>
+              <span className="text-xs text-stone-400 group-hover:text-amber-800 group-hover:translate-x-0.5 transition-all font-bold">›</span>
+            </div>
+
+            {/* 3. 倉庫作業（解体・リサイクル）の状況 */}
+            <div 
+              onClick={() => onNavigate('storage')}
+              className={`p-2.5 rounded-xl border transition-all cursor-pointer group flex items-center justify-between gap-2 ${
+                (isDisassemblyActive || isRecycleActive)
+                  ? ((isDisassemblyDone || isRecycleDone) ? 'bg-emerald-50/90 border-emerald-400 shadow-2xs ring-1 ring-emerald-300' : 'bg-amber-50/70 border-amber-300/80 hover:bg-amber-100/70')
+                  : 'bg-[#fffdfa] border-[#dcc5b0] hover:border-[#b89578]'
+              }`}
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <div className={`w-7 h-7 rounded-lg border flex items-center justify-center shrink-0 ${
+                  (isDisassemblyActive || isRecycleActive) ? 'bg-amber-100 border-amber-300 text-amber-800' : 'bg-stone-100 border-stone-300 text-stone-500'
+                }`}>
+                  <Gi.GiRecycle size={16} />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[11px] font-bold text-stone-800 truncate flex items-center gap-1">
+                    <span>倉庫・解体</span>
+                    {(isDisassemblyDone || isRecycleDone) && <span className="text-[9px] bg-emerald-600 text-white px-1 rounded font-bold">完了</span>}
+                  </div>
+                  <div className="text-[10px] text-stone-500 truncate">
+                    {isDisassemblyActive && state.activeRobotDisassembly
+                      ? `機体解体中 (${isDisassemblyDone ? '完了' : formatTime(Math.max(0, state.activeRobotDisassembly.endTime - Date.now()))})`
+                      : isRecycleActive && state.activePartRecycle
+                        ? `パーツリサイクル中 (${isRecycleDone ? '完了' : formatTime(Math.max(0, state.activePartRecycle.endTime - Date.now()))})`
+                        : `機体 ${state.robots?.length}/${state.storageSize} 体保管中`}
+                  </div>
+                </div>
+              </div>
+              <span className="text-xs text-stone-400 group-hover:text-amber-800 group-hover:translate-x-0.5 transition-all font-bold">›</span>
+            </div>
+
+            {/* 4. 受諾中の依頼 */}
+            <div 
+              onClick={() => onNavigate('requests')}
+              className={`p-2.5 rounded-xl border transition-all cursor-pointer group flex items-center justify-between gap-2 ${
+                state.currentRequest 
+                  ? 'bg-blue-50/80 border-blue-300 shadow-2xs hover:bg-blue-100/80' 
+                  : 'bg-[#fffdfa] border-[#dcc5b0] hover:border-[#b89578]'
+              }`}
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <div className={`w-7 h-7 rounded-lg border flex items-center justify-center shrink-0 ${
+                  state.currentRequest ? 'bg-blue-100 border-blue-300 text-blue-800' : 'bg-stone-100 border-stone-300 text-stone-500'
+                }`}>
+                  <Gi.GiChecklist size={16} />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[11px] font-bold text-stone-800 truncate flex items-center gap-1">
+                    <span>依頼案件</span>
+                    {state.currentRequest && <span className="text-[9px] bg-amber-500 text-white px-1 rounded font-bold">+{state.currentRequest.rewardG}G</span>}
+                  </div>
+                  <div className="text-[10px] text-stone-500 truncate">
+                    {state.currentRequest 
+                      ? `${state.currentRequest.clientName} (${state.currentRequest.description})`
+                      : '受諾中の依頼なし (依頼板へ)'}
+                  </div>
+                </div>
+              </div>
+              <span className="text-xs text-stone-400 group-hover:text-amber-800 group-hover:translate-x-0.5 transition-all font-bold">›</span>
             </div>
           </div>
         </div>
 
-        <div className="mb-4">
-          {state.activeQuest ? (
-            <div className={`p-3 rounded-xl border-2 transition-all shadow-2xs ${questDone ? 'bg-emerald-50/90 border-emerald-400 ring-2 ring-emerald-200' : 'bg-[#fffdfa] border-[#dcc5b0]'}`}>
-              <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="p-1 bg-[#f7eee3] rounded-lg border border-[#dcc5b0] shrink-0">
-                    {questRobot ? (
-                      <RobotVisual robot={questRobot} size={36} hasPendingDrops={questDone} happyVariant="banzai" />
-                    ) : (
-                      <div className="w-9 h-9 flex items-center justify-center text-amber-800">
-                        <Gi.GiKnapsack size={22} />
-                      </div>
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-[10px] bg-amber-200 text-amber-900 font-bold px-1.5 py-0.2 rounded shrink-0 border border-amber-300">通常遠征</span>
-                      <span className="font-bold text-xs sm:text-sm text-stone-800 truncate flex items-center gap-1">
-                        <Gi.GiPin size={13} className="text-red-500 shrink-0" />
-                        <span>{activeQuestLoc?.name}</span>
-                      </span>
-                      {questDone && (
-                        <span className="text-[10px] bg-amber-500 text-white font-bold px-1.5 py-0.2 rounded-full animate-bounce shrink-0">
-                          完了！
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-[11px] text-stone-600 truncate mt-0.5">
-                      同行: <span className="font-bold text-stone-800">{questRobot ? questRobot.name : 'なし'}</span>
-                    </p>
-                  </div>
-                </div>
-                <div className="shrink-0 flex items-center gap-2 ml-auto sm:ml-0">
-                  {questDone ? (
-                    <Button size="sm" variant="success" onClick={handleCompleteQuest} className="animate-bounce shadow-xs font-bold text-xs px-3 py-1.5 flex items-center gap-1.5">
-                      <Gi.GiPresent size={16} className="text-pink-300" />
-                      <span>素材を受取る</span>
-                    </Button>
-                  ) : (
-                    <div className="text-right">
-                      <span className="text-[10px] text-stone-500 block font-mono">残り時間</span>
-                      <span className="text-xs sm:text-sm font-bold font-mono text-amber-800 bg-amber-100 px-2 py-0.5 rounded border border-amber-300 flex items-center justify-end gap-1">
-                        <Gi.GiHourglass className="text-amber-700 text-xs" />
-                        <span>{formatTime(timeRemaining)}</span>
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="p-3 bg-[#fffdfa] rounded-xl border-2 border-[#dcc5b0] shadow-2xs flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-[#f0e4d7] border border-[#c4a485] flex items-center justify-center text-[#734320] shrink-0">
-                  <Gi.GiWalkingScout size={18} />
-                </div>
-                <div>
-                  <span className="text-xs text-[#5c3e28] font-bold block">通常遠征: 未出撃</span>
-                  <span className="text-[11px] text-stone-500">素材集めへ出撃させましょう</span>
-                </div>
-              </div>
-              <Button size="sm" onClick={() => onNavigate('quest')} className="text-xs px-3 py-1.5 bg-[#8e5e3a] hover:bg-[#784d2e] text-white font-bold shadow-xs border border-[#784d2e] flex items-center gap-1">
-                <span>遠征へ向かう</span>
-                <span>→</span>
-              </Button>
-            </div>
-          )}
-        </div>
-
-        {/* 自動探索ヘッダー */}
+        {/* 自動探索セクション */}
         <div className={`${theme.workshop.sectionDivider} pt-3 mb-2.5 flex items-center justify-between flex-wrap gap-2`}>
           <div className="flex items-center gap-2">
             <div className={theme.workshop.sectionHeader}>
               <div className="w-6 h-6 rounded-md bg-[#eaddcf] border border-[#b89578] flex items-center justify-center text-[#734320]">
                 <Gi.GiFactory size={16} />
               </div>
-              <span>自動探索</span>
+              <span>自動探索 稼働状況</span>
             </div>
             {(state.autoDispatches && state.autoDispatches.length > 0) && (
               <span className="flex h-2 w-2 relative">
@@ -424,7 +863,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
           <div className="flex items-center gap-1.5">
             <Button size="sm" onClick={() => setIsDispatchModalOpen(true)} className="text-xs px-2.5 py-1 bg-[#8e5e3a] hover:bg-[#784d2e] text-white border border-[#784d2e] font-bold shadow-xs flex items-center gap-1.5">
               <Gi.GiWalkingScout size={14} />
-              <span>派遣する</span>
+              <span>ロボットを派遣</span>
             </Button>
           </div>
         </div>
@@ -434,6 +873,9 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
             <div className="p-4 bg-[#fffdfa] rounded-xl border-2 border-dashed border-[#d2b89f] text-center flex flex-col items-center justify-center gap-2 shadow-2xs">
               <Gi.GiSleepy className="text-3xl text-[#b89578]" />
               <p className="text-xs text-[#6e4e37] font-bold">現在、自動探索中のロボットはいません</p>
+              <Button size="sm" onClick={() => setIsDispatchModalOpen(true)} className="text-xs px-3 py-1 bg-amber-700 hover:bg-amber-600 text-white font-bold">
+                機体を派遣する
+              </Button>
             </div>
           )}
           {/* 自動探索ロボット一覧 (Auto Dispatches) */}
@@ -450,7 +892,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
 
               return (
                 <div key={d.id} className={`p-3 rounded-xl border-2 shadow-2xs transition-all ${isResting ? 'bg-red-50/90 border-red-300 ring-1 ring-red-200' : pending > 0 ? 'bg-emerald-50/90 border-emerald-400 ring-1 ring-emerald-200' : 'bg-[#fffdfa] border-[#dcc5b0]'}`}>
-                  {/* ロボット探索アニメーション（コンパクト） */}
+                  {/* ロボット探索アニメーション */}
                   {dRobot && (
                     <div className="w-full bg-stone-900 rounded-lg overflow-hidden border-2 border-[#b89578] relative mb-2 shadow-2xs">
                       <RobotVisual 
@@ -578,9 +1020,9 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                 </div>
               );
             })}
-          </div>
         </div>
-      </Card>
+      </div>
+    </Card>
 
       {/* Tutorial Banner */}
       {state.tutorialStep < 5 && (
@@ -598,77 +1040,6 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
             {state.tutorialStep === 3 && '「依頼板」を見て、納品できそうな依頼を受けよう。'}
             {state.tutorialStep === 4 && '依頼詳細からロボットを「納品」しよう。'}
           </p>
-        </Card>
-      )}
-
-      {/* Crafting in Progress Banner (if any) */}
-      {(state.activePartCraft || state.activeRobotAssembly) && (
-        <Card className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 shadow-2xs p-3">
-          <div className="flex justify-between items-center flex-wrap gap-2">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-700 shrink-0">
-                <span className="animate-spin inline-flex" style={{ animationDuration: '4s' }}>
-                  <Gi.GiCog size={20} />
-                </span>
-              </div>
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <h4 className="font-bold text-amber-900 text-xs sm:text-sm">
-                    {state.activePartCraft && state.activeRobotAssembly 
-                      ? 'パーツ製造 & ロボット組立中' 
-                      : state.activePartCraft 
-                        ? 'パーツ製造中' 
-                        : 'ロボット組立中'}
-                  </h4>
-                  {(
-                    (state.activePartCraft && state.activePartCraft.endTime <= Date.now()) ||
-                    (state.activeRobotAssembly && state.activeRobotAssembly.endTime <= Date.now())
-                  ) && (
-                    <Badge className="bg-amber-500 text-white text-[10px] whitespace-nowrap animate-bounce leading-none flex items-center gap-1">
-                      <Gi.GiPartyPopper size={12} />
-                      <span>完成！</span>
-                    </Badge>
-                  )}
-                </div>
-                <div className="text-xs text-stone-600 flex gap-3 mt-0.5">
-                  {state.activePartCraft && (
-                    <span className="whitespace-nowrap">
-                      パーツ: {state.activePartCraft.endTime <= Date.now() ? <strong className="text-emerald-600">完成！</strong> : <span className="font-mono">{formatTime(Math.max(0, state.activePartCraft.endTime - Date.now()))}</span>}
-                    </span>
-                  )}
-                  {state.activeRobotAssembly && (
-                    <span className="whitespace-nowrap">
-                      ロボット: {state.activeRobotAssembly.endTime <= Date.now() ? <strong className="text-emerald-600">完成！</strong> : <span className="font-mono">{formatTime(Math.max(0, state.activeRobotAssembly.endTime - Date.now()))}</span>}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-            <Button size="sm" onClick={() => onNavigate('craft')} className="bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs">
-              製造画面へ →
-            </Button>
-          </div>
-        </Card>
-      )}
-
-      {/* Current Request Banner */}
-      {state.currentRequest && (
-        <Card className="border-2 border-blue-200 bg-blue-50/50 p-3 shadow-2xs">
-          <div className="flex justify-between items-center mb-1">
-            <h3 className="font-black text-xs sm:text-sm text-stone-800 flex items-center gap-1.5">
-              <div className="w-5 h-5 rounded bg-blue-100 flex items-center justify-center text-blue-700 shrink-0">
-                <Gi.GiChecklist size={14} />
-              </div>
-              <span>受諾中の依頼: {state.currentRequest.clientName}</span>
-            </h3>
-            <span className="text-xs font-mono font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded border border-amber-300">
-              +{state.currentRequest.rewardG} G
-            </span>
-          </div>
-          <p className="text-xs text-stone-600 line-clamp-1 mb-2">{state.currentRequest.description}</p>
-          <Button size="sm" className="w-full text-xs font-bold" onClick={() => onNavigate('requests')}>
-            納品へ進む →
-          </Button>
         </Card>
       )}
 
@@ -732,6 +1103,8 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
           </div>
         </button>
       </div>
+      </>
+    )}
 
       {/* Dispatch Modal */}
       {isDispatchModalOpen && (
