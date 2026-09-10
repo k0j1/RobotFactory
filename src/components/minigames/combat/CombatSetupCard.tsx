@@ -184,15 +184,27 @@ export const CombatSetupCard: React.FC<CombatSetupCardProps> = ({
             })}
           </div>
           {activeOpponent && (
-            <div className="bg-white p-2 rounded-lg border border-stone-200 shadow-2xs">
-              <div className="flex justify-between items-start mb-1">
+            <div className="bg-white p-2.5 rounded-xl border border-stone-200 shadow-2xs space-y-2">
+              <div className="flex justify-between items-start border-b border-stone-100 pb-1.5">
                 <div>
-                  <div className="font-bold text-[12px] text-stone-900">{activeOpponent.name}</div>
-                  <div className="text-[9px] text-stone-500">{activeOpponent.org}</div>
+                  <div className="font-bold text-[13px] text-stone-900">{activeOpponent.name}</div>
+                  <div className="text-[10px] text-stone-500">{activeOpponent.org}</div>
                 </div>
                 <div className="text-right">
-                  <div className="text-[9px] text-blue-600 font-bold bg-blue-50 px-1 rounded border border-blue-200">
-                    報酬: E x{activeOpponent.rewardElements} / Kit x{activeOpponent.rewardKits}{activeOpponent.rewardFame > 0 ? ` / 名声 +${activeOpponent.rewardFame}` : ''}
+                  <div className="text-[11px] font-bold bg-blue-50/80 p-1.5 rounded-lg border border-blue-200 flex flex-col gap-1 items-end">
+                    <span className="text-stone-700 flex items-center gap-1">
+                      <Gi.GiSpanner className="text-amber-600" /> 修理キット ×{activeOpponent.rewardKits}
+                    </span>
+                    {activeOpponent.rewardElements > 0 && (
+                      <span className="text-emerald-700 flex items-center gap-1">
+                        <Gi.GiEnergyArrow className="text-emerald-600" /> エレメント: +{activeOpponent.rewardElements}個
+                      </span>
+                    )}
+                    {activeOpponent.rewardFame > 0 && (
+                      <span className="text-amber-900 flex items-center gap-1">
+                        <Gi.GiTrophyCup className="text-amber-600" /> 工房名声: +{activeOpponent.rewardFame}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>

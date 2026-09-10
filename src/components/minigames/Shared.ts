@@ -284,16 +284,16 @@ export const DANMAKU_DIFFICULTIES: DanmakuDifficultyConfig[] = [
 ];
 
 export const OPPONENTS: Opponent[] = [
-  { id: 'op1', level: 1, name: 'ポンコツ試作機', org: '町の発明家', int: 4, agi: 8, dex: 6, hp: 10, power: 10, defense: 4, rewardKits: 1, rewardElements: 10, rewardFame: 0 },
-  { id: 'op2', level: 2, name: 'ジャンク・スカベンジャー', org: '廃品回収ギルド', int: 8, agi: 12, dex: 10, hp: 16, power: 16, defense: 8, rewardKits: 1, rewardElements: 15, rewardFame: 0 },
-  { id: 'op3', level: 3, name: '汎用作業ボット', org: 'アポロ重工', int: 14, agi: 16, dex: 14, hp: 25, power: 24, defense: 14, rewardKits: 1, rewardElements: 20, rewardFame: 5 },
-  { id: 'op4', level: 4, name: '警邏パトロールボット', org: 'シティ警察機構', int: 20, agi: 22, dex: 18, hp: 35, power: 32, defense: 20, rewardKits: 1, rewardElements: 25, rewardFame: 8 },
-  { id: 'op5', level: 5, name: '戦術演算ユニット', org: 'ゼニス・コーポレーション', int: 28, agi: 28, dex: 24, hp: 48, power: 42, defense: 28, rewardKits: 1, rewardElements: 35, rewardFame: 15 },
-  { id: 'op6', level: 6, name: '重装機甲ストライカー', org: 'ネオ・ミリタリー', int: 36, agi: 34, dex: 30, hp: 62, power: 54, defense: 38, rewardKits: 1, rewardElements: 50, rewardFame: 20 },
-  { id: 'op7', level: 7, name: '高機動ファントム', org: 'シャドウ・ラボラトリー', int: 46, agi: 52, dex: 40, hp: 78, power: 68, defense: 46, rewardKits: 1, rewardElements: 65, rewardFame: 28 },
-  { id: 'op8', level: 8, name: '要塞ガーディアン', org: '古代防衛システム', int: 56, agi: 44, dex: 48, hp: 98, power: 84, defense: 62, rewardKits: 1, rewardElements: 80, rewardFame: 38 },
-  { id: 'op9', level: 9, name: 'サイバネティクス・カイザー', org: '帝国兵器工廠', int: 72, agi: 64, dex: 60, hp: 125, power: 106, defense: 78, rewardKits: 1, rewardElements: 100, rewardFame: 50 },
-  { id: 'op10', level: 10, name: 'オメガ・マスター', org: '世界AI協会', int: 92, agi: 86, dex: 80, hp: 160, power: 135, defense: 98, rewardKits: 1, rewardElements: 150, rewardFame: 70 },
+  { id: 'op1', level: 1, name: 'ポンコツ試作機', org: '町の発明家', int: 16, agi: 14, dex: 16, hp: 25, power: 22, defense: 15, rewardKits: 1, rewardElements: 0, rewardFame: 0 },
+  { id: 'op2', level: 2, name: 'ジャンク・スカベンジャー', org: '廃品回収ギルド', int: 26, agi: 22, dex: 24, hp: 42, power: 36, defense: 26, rewardKits: 1, rewardElements: 0, rewardFame: 0 },
+  { id: 'op3', level: 3, name: '汎用作業ボット', org: 'アポロ重工', int: 38, agi: 31, dex: 34, hp: 65, power: 55, defense: 40, rewardKits: 1, rewardElements: 0, rewardFame: 0 },
+  { id: 'op4', level: 4, name: '警邏パトロールボット', org: 'シティ警察機構', int: 47, agi: 38, dex: 41, hp: 82, power: 70, defense: 51, rewardKits: 1, rewardElements: 0, rewardFame: 0 },
+  { id: 'op5', level: 5, name: '戦術演算ユニット', org: 'ゼニス・コーポレーション', int: 56, agi: 44, dex: 48, hp: 98, power: 84, defense: 62, rewardKits: 1, rewardElements: 5, rewardFame: 3 },
+  { id: 'op6', level: 6, name: '重装機甲ストライカー', org: 'ネオ・ミリタリー', int: 72, agi: 56, dex: 62, hp: 135, power: 115, defense: 85, rewardKits: 1, rewardElements: 10, rewardFame: 5 },
+  { id: 'op7', level: 7, name: '高機動ファントム', org: 'シャドウ・ラボラトリー', int: 92, agi: 70, dex: 78, hp: 180, power: 150, defense: 110, rewardKits: 1, rewardElements: 15, rewardFame: 8 },
+  { id: 'op8', level: 8, name: '要塞ガーディアン', org: '古代防衛システム', int: 140, agi: 115, dex: 120, hp: 280, power: 230, defense: 170, rewardKits: 1, rewardElements: 30, rewardFame: 30 },
+  { id: 'op9', level: 9, name: 'サイバネティクス・カイザー', org: '帝国兵器工廠', int: 190, agi: 160, dex: 165, hp: 400, power: 330, defense: 250, rewardKits: 1, rewardElements: 60, rewardFame: 60 },
+  { id: 'op10', level: 10, name: 'オメガ・マスター', org: '世界AI協会', int: 260, agi: 220, dex: 230, hp: 600, power: 480, defense: 360, rewardKits: 1, rewardElements: 120, rewardFame: 120 },
 ];
 
 export interface MinigameProps {

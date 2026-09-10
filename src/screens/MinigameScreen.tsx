@@ -859,13 +859,18 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                             )}
                             <div className="text-[10px] text-stone-400 mt-0.5">{o.org}</div>
                           </div>
-                          <div className="text-right flex flex-col items-end gap-0.5">
-                            <span className="text-xs text-amber-800 font-bold bg-amber-100/80 px-2 py-1 rounded-lg border border-amber-300 block shadow-2xs font-mono">
-                              <Gi.GiSpanner className="inline text-stone-500" />×{o.rewardKits}
+                          <div className="text-right flex flex-col items-end gap-1">
+                            <span className="text-[10px] text-stone-700 font-bold bg-amber-50 px-2 py-0.5 rounded border border-amber-300 block shadow-2xs font-mono flex items-center gap-1">
+                              <Gi.GiSpanner className="text-amber-600" /> キット×{o.rewardKits}
                             </span>
+                            {o.rewardElements > 0 && (
+                              <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 flex items-center gap-1">
+                                <Gi.GiEnergyArrow className="text-emerald-600" /> E +{o.rewardElements}
+                              </span>
+                            )}
                             {o.rewardFame > 0 && (
-                              <span className="text-[10px] text-amber-900 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
-                                名声 +{o.rewardFame}
+                              <span className="text-[10px] text-amber-900 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 flex items-center gap-1">
+                                <Gi.GiTrophyCup className="text-amber-600" /> 名声 +{o.rewardFame}
                               </span>
                             )}
                           </div>
