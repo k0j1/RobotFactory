@@ -176,7 +176,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
     ? state.robots.find(r => r.id === state.activeQuest?.dispatchedRobotId) 
     : null;
   const timeRemaining = state.activeQuest ? state.activeQuest.endTime - Date.now() : 0;
-  const questDone = timeRemaining <= 0;
+  const questDone = Boolean(state.activeQuest && timeRemaining <= 0);
   const selectedModalRobot = state.robots.find(r => r.id === selectedRobotId);
 
   const totalAutoPendingDrops = state.autoDispatches?.reduce((acc, d) => acc + (d.pendingDrops?.length || 0), 0) || 0;
@@ -314,7 +314,13 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
           <div className="grid grid-cols-2 gap-2">
             {/* 1. 遠征 */}
             <div 
-              onClick={() => onNavigate('quest')}
+              onClick={() => {
+                if (state.activeQuest && questDone) {
+                  handleCompleteQuest();
+                } else {
+                  onNavigate('quest');
+                }
+              }}
               className={`p-2 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2 shadow-2xs ${
                 state.activeQuest 
                   ? (questDone ? 'bg-emerald-50 border-emerald-400 ring-1 ring-emerald-300 animate-pulse' : 'bg-amber-50 border-amber-300') 
@@ -720,7 +726,13 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {/* 1. 通常遠征の状況 */}
             <div 
-              onClick={() => onNavigate('quest')}
+              onClick={() => {
+                if (state.activeQuest && questDone) {
+                  handleCompleteQuest();
+                } else {
+                  onNavigate('quest');
+                }
+              }}
               className={`p-2.5 rounded-xl border transition-all cursor-pointer group flex items-center justify-between gap-2 ${
                 state.activeQuest 
                   ? (questDone ? 'bg-emerald-50/90 border-emerald-400 shadow-2xs ring-1 ring-emerald-300' : 'bg-amber-50/70 border-amber-300/80 hover:bg-amber-100/70') 

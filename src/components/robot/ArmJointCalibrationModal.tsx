@@ -428,6 +428,7 @@ export const ArmJointCalibrationModal: React.FC<ArmJointCalibrationModalProps> =
                   showArmJointMarkers={true}
                   isJointCalibrationActive={true}
                   activeJointFilter={activeJointFilter}
+                  activeEditJoint={activeEditJoint}
                   handConfig={handConfig}
                   onUpdateHandConfig={setHandConfig}
                   onJointCoordChange={(joint, coord) => {

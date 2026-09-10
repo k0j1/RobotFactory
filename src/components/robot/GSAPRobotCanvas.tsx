@@ -35,6 +35,7 @@ export interface GSAPRobotCanvasProps {
   onComplete?: () => void;
   className?: string;
   hideStageDecorations?: boolean;
+  activeEditJoint?: ArmJointType | 'all' | null;
 }
 
 /**
@@ -54,6 +55,7 @@ export const GSAPRobotCanvas: React.FC<GSAPRobotCanvasProps> = ({
   isJointCalibrationActive: isJointCalibrationActiveProp,
   activeHand = 'both',
   activeJointFilter = 'all',
+  activeEditJoint = 'all',
   handConfig: propHandConfig,
   onUpdateHandConfig,
   onHandCoordChange,
@@ -247,8 +249,8 @@ export const GSAPRobotCanvas: React.FC<GSAPRobotCanvasProps> = ({
 
   // 関節座標のドラッグ移動計算ハンドラー
   const updateJointFromPointer = (clientX: number, clientY: number, joint: ArmJointType) => {
-    if (!robotRootRef.current) return;
-    const rect = robotRootRef.current.getBoundingClientRect();
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
     if (rect.width <= 0 || rect.height <= 0) return;
 
     const rawX = ((clientX - rect.left) / rect.width) * 100;
