@@ -1165,7 +1165,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                   <div>
                     <p className="font-bold text-xs text-amber-900">{selectedModalRobot.name}</p>
                     <p className="text-[11px] text-stone-600 mt-0.5">
-                      パワー: <span className="font-bold text-orange-600">{selectedModalRobot.stats.power}</span> / 速度: <span className="font-bold text-amber-600">{selectedModalRobot.stats.agility}</span>
+                      パワー: <span className="font-bold text-orange-600">{selectedModalRobot.stats.power}</span> / 速度: <span className="font-bold text-amber-600">{selectedModalRobot.stats.agility}</span> / 重量: <span className="font-bold text-stone-700">{selectedModalRobot.weight || 0}</span>
                     </p>
                     <p className="text-[10px] text-amber-700 font-mono mt-0.5">
                       <Gi.GiLightningTrio className="inline mr-1 text-yellow-400" /> 敏捷補正: -{selectedModalRobot.stats.agility}秒短縮 (周期: {Math.round(engine.getAutoDispatchIntervalMs(selectedModalRobot.id) / 60000 * 10) / 10}分)

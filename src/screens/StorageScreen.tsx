@@ -8,6 +8,8 @@ import { MATERIALS, STORAGE_UPGRADE_COST, MAX_STORAGE_LEVELS } from '../core/dat
 import { MaterialIcon } from '../components/ui/MaterialIcon';
 import { RobotRadarChart, STAT_CONFIGS } from '../components/robot/RobotRadarChart';
 import { RepairAnimationModal } from '../components/effects/RepairAnimationModal';
+import { PartBaselineModal } from '../components/part/PartBaselineModal';
+import { RobotPart } from '../core/models';
 import * as Gi from 'react-icons/gi';
 
 export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> = ({ state, engine }) => {
@@ -18,6 +20,7 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
   const [expandedRadarRobotId, setExpandedRadarRobotId] = useState<string | null>(null);
   const [repairingRobotState, setRepairingRobotState] = useState<{ robot: Robot; initialHp: number } | null>(null);
   const [recentlyRepairedRobotId, setRecentlyRepairedRobotId] = useState<string | null>(null);
+  const [selectedBaselinePart, setSelectedBaselinePart] = useState<RobotPart | null>(null);
   const [now, setNow] = useState(Date.now());
   
   const disassemblyRef = useRef<HTMLDivElement>(null);
@@ -379,6 +382,7 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                           <span>Agi: {r.stats.agility}</span>
                           <span>Dex: {r.stats.dexterity}</span>
                           <span>Int: {r.stats.intelligence}</span>
+                          <span className="font-bold text-stone-700 col-span-2 mt-0.5 border-t border-stone-200 pt-0.5">Wt: {r.weight || 0}</span>
                         </div>
                         {r.battleStats && r.battleStats.matches > 0 && (
                           <div className="mt-2 text-[10px] font-bold text-stone-600 bg-stone-100 p-1.5 rounded border border-stone-200">
@@ -501,10 +505,25 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                                       <div className="text-xs font-bold text-stone-800 truncate">
                                         {part.name}
                                       </div>
-                                      <div className="text-[10px] text-stone-500 font-mono mt-0.5 flex gap-2">
+                                      <div className="text-[10px] text-stone-500 font-mono mt-0.5 flex flex-wrap gap-x-2 gap-y-1">
                                         <span>HP:{part.stats.hp}</span>
                                         <span>Pow:{part.stats.power}</span>
                                         <span>Def:{part.stats.defense}</span>
+                                        <span>Agi:{part.stats.agility}</span>
+                                        <span>Dex:{part.stats.dexterity}</span>
+                                        <span>Int:{part.stats.intelligence}</span>
+                                      </div>
+                                      <div className="flex items-center justify-between mt-1 pt-1 border-t border-stone-200">
+                                        <span className="font-bold text-stone-700 text-[10px] font-mono">Wt: {part.weight || 0}</span>
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setSelectedBaselinePart(part);
+                                          }}
+                                          className="text-[9px] font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 px-1.5 py-0.5 rounded border border-amber-200 flex items-center gap-0.5 transition-colors cursor-pointer"
+                                        >
+                                          <Gi.GiChart className="text-amber-600" /> 差分グラフ
+                                        </button>
                                       </div>
                                     </div>
                                   </div>
@@ -560,6 +579,10 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                             <div className="bg-white p-1.5 rounded border border-stone-200">
                               <span className="text-purple-600 font-bold block"><Gi.GiCrystalBall className="inline text-purple-500" /> INT: {r.stats.intelligence}</span>
                               <span className="text-stone-500 text-[9px]">解析力(幸運値)</span>
+                            </div>
+                            <div className="bg-white p-1.5 rounded border border-stone-200 col-span-2 text-center">
+                              <span className="text-stone-700 font-bold block"><Gi.GiWeight className="inline text-stone-500" /> WT: {r.weight || 0}</span>
+                              <span className="text-stone-500 text-[9px]">総重量 (アジリティ低下要因)</span>
                             </div>
                           </div>
                         </div>
@@ -676,10 +699,14 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                   <div>
                     <p className="font-bold text-sm">{p.name}</p>
                     <p className="text-[10px] text-stone-500">属性: {p.attribute}</p>
-                    <div className="mt-1 text-[10px] text-stone-600">
-                      <p>HP: {p.stats.hp}</p>
-                      <p>Pow: {p.stats.power}</p>
-                      <p>Def: {p.stats.defense}</p>
+                    <div className="mt-1 text-[10px] text-stone-600 flex flex-wrap gap-x-2 gap-y-0.5">
+                      <span>HP: {p.stats.hp}</span>
+                      <span>Pow: {p.stats.power}</span>
+                      <span>Def: {p.stats.defense}</span>
+                      <span>Agi: {p.stats.agility}</span>
+                      <span>Dex: {p.stats.dexterity}</span>
+                      <span>Int: {p.stats.intelligence}</span>
+                      <span className="font-bold text-stone-700 w-full mt-0.5">Wt: {p.weight || 0}</span>
                     </div>
                   </div>
                   <div className="bg-stone-100 rounded-md p-1 border border-stone-200">
@@ -698,9 +725,17 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                       </div>
                     </>
                   ) : (
-                    <div className="flex justify-end">
+                    <div className="flex justify-between items-center gap-1.5 flex-wrap pt-1 border-t border-stone-200/80">
+                      <button
+                        onClick={() => setSelectedBaselinePart(p)}
+                        className="text-[11px] font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 px-2 py-1 rounded-md border border-amber-200 flex items-center gap-1 transition-colors shadow-2xs cursor-pointer"
+                        title="基準値との差分グラフを確認"
+                      >
+                        <Gi.GiChart className="text-amber-600 text-xs" />
+                        <span>基準値比較</span>
+                      </button>
                       <Button size="sm" variant="danger" disabled={!!activeRecycle} onClick={() => setConfirmPartId(p.id)}>
-                        {activeRecycle ? '還元進行中のため不可' : '素材に戻す'}
+                        {activeRecycle ? '還元中' : '素材に戻す'}
                       </Button>
                     </div>
                   )}
@@ -848,6 +883,13 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
           robot={repairingRobotState.robot}
           initialHp={repairingRobotState.initialHp}
           onClose={() => setRepairingRobotState(null)}
+        />
+      )}
+      {/* パーツ基準値比較グラフモーダル */}
+      {selectedBaselinePart && (
+        <PartBaselineModal
+          part={selectedBaselinePart}
+          onClose={() => setSelectedBaselinePart(null)}
         />
       )}
     </div>

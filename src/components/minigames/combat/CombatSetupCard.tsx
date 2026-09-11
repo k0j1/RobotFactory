@@ -309,18 +309,16 @@ export const CombatSetupCard: React.FC<CombatSetupCardProps> = ({
                   <div className="text-[10px] text-stone-500">{activeOpponent.org}</div>
                 </div>
                 <div className="text-right">
-                  <div className="text-[11px] font-bold bg-blue-50/80 p-1.5 rounded-lg border border-blue-200 flex flex-col gap-1 items-end">
-                    <span className="text-stone-700 flex items-center gap-1">
-                      <Gi.GiSpanner className="text-amber-600" /> 修理キット ×{activeOpponent.rewardKits}
+                  <div className="text-[11px] font-bold bg-amber-50/90 p-1.5 rounded-lg border border-amber-300 flex flex-col gap-1 items-end shadow-2xs">
+                    <span className="text-amber-950 flex items-center gap-1 font-mono font-bold">
+                      <Gi.GiLockedChest className="text-amber-600 text-sm" /> 勝利報酬: 宝箱ドロップ
                     </span>
-                    {activeOpponent.rewardElements > 0 && (
-                      <span className="text-emerald-700 flex items-center gap-1">
-                        <Gi.GiEnergyArrow className="text-emerald-600" /> エレメント: +{activeOpponent.rewardElements}個
-                      </span>
-                    )}
+                    <span className="text-[9px] text-stone-600 font-mono">
+                      修理キット / 素材 / G / E
+                    </span>
                     {activeOpponent.rewardFame > 0 && (
-                      <span className="text-amber-900 flex items-center gap-1">
-                        <Gi.GiTrophyCup className="text-amber-600" /> 工房名声: +{activeOpponent.rewardFame}
+                      <span className="text-amber-900 text-[10px] flex items-center gap-1">
+                        <Gi.GiTrophyCup className="text-amber-600" /> 名声: +{activeOpponent.rewardFame}
                       </span>
                     )}
                   </div>

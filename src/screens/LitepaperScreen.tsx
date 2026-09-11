@@ -27,7 +27,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
           </div>
           <div>
             <h2 className={theme.typography.h2}>ポンコツロボット工房 公式仕様書</h2>
-            <p className="text-xs text-stone-500 font-medium">現在採用されている最新ゲームシステムの完全ガイド (v1.0.291)</p>
+            <p className="text-xs text-stone-500 font-medium">現在採用されている最新ゲームシステムの完全ガイド (v1.0.298)</p>
           </div>
         </div>
         <Button size="sm" variant="secondary" onClick={onBack}>
@@ -204,14 +204,16 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div className="bg-white p-3 rounded-lg border border-stone-200 space-y-1.5">
                   <div className="font-bold text-stone-900 text-sm flex items-center gap-1.5">
-                    <Gi.GiAnvil className="text-amber-600" /> パラメータ構成
+                    <Gi.GiAnvil className="text-amber-600" /> パラメータ構成と重量(WT)
                   </div>
                   <ul className="list-disc list-inside space-y-1 text-stone-600">
-                    <li><strong>INT (知力):</strong> 探索成功率や頭脳戦演習での思考補正に影響。</li>
-                    <li><strong>AGI (敏捷性):</strong> 回避率や攻撃速度、機動演習での運動性に影響。</li>
-                    <li><strong>DEX (器用さ):</strong> 命中率、クリティカル、採集効率に影響。</li>
-                    <li><strong>HP (耐久度):</strong> 機体の生命力。0になると稼働停止し修理が必要。</li>
-                    <li><strong>ATK / DEF:</strong> 戦闘演習や防衛戦での与ダメージ・被ダメージに直結。</li>
+                    <li><strong>INT (知力):</strong> 探索成功率や頭脳戦演習での思考補正に影響。ヘッドパーツで高くなりやすい。</li>
+                    <li><strong>AGI (敏捷性):</strong> 速度や探索時間短縮に影響。レッグパーツで高くなりやすいが、<strong>重量が重いと低下</strong>する。</li>
+                    <li><strong>DEX (器用さ):</strong> 命中率、クリティカル、採集効率に影響。アームやレッグで高くなりやすい。</li>
+                    <li><strong>HP (耐久度) / DEF (防御力):</strong> 機体の生命力と硬さ。ボディパーツで高くなりやすい。</li>
+                    <li><strong>ATK (攻撃力):</strong> 攻撃力。アームパーツで高くなりやすい。</li>
+                    <li><strong>WT (重量):</strong> パーツの重さ。ATKやDEFが高いパーツほど重くなり、AGIの成長を阻害します。</li>
+                    <li><strong>基準値差分グラフ:</strong> 倉庫の各パーツで「基準値比較」ボタンを押すと、素材標準設計値に対するステータスの上振れ・下振れや軽量化ボーナスを双方向バー＆レーダーで詳細確認できます。</li>
                   </ul>
                 </div>
 
@@ -341,14 +343,14 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                 <div className="bg-white p-2.5 rounded-lg border border-stone-200">
                   <strong className="text-stone-900 block font-bold mb-1">⚔️ 戦闘シミュレータ (1on1 Combat)</strong>
                   <p className="text-stone-600">
-                    自作機体とAI戦術ボット（Lv.1〜10）によるターン制バトル。出撃前のロボット選択画面で機体が繰り出せる戦術技・発動条件・発動率（知性Int補正）や、モーションスタジオ連携のGSAP技アニメーション演出をプレビュー確認できます。武装（ビームサーベル・シールド）の装備による奥義解放もリアルタイムに反映されます。演習勝利時には、獲得した工房名声やバトルエレメント、修理キットが画面手前へ弾け飛ぶダイナミックな報酬獲得エフェクト演出が発動します。
+                    自作機体とAI戦術ボット（Lv.1〜10）によるターン制バトル。出撃前のロボット選択画面で機体が繰り出せる戦術技・発動条件・発動率（知性Int補正）や、モーションスタジオ連携のGSAP技アニメーション演出をプレビュー確認できます。武装（ビームサーベル・シールド）の装備による奥義解放もリアルタイムに反映されます。演習勝利時には、<strong>宝箱ドロップ＆開封アニメーション演出</strong>が発動！Lv.4以下では修理キット・★1素材・ゴールドのいずれか1つが確定出現し、Lv.5以降は修理キット確定＋★1〜★3素材・ゴールド・バトルエレメント・工房名声を獲得できます。
                   </p>
                 </div>
 
                 <div className="bg-white p-2.5 rounded-lg border border-stone-200">
                   <strong className="text-stone-900 block font-bold mb-1">🛡️ 拠点防衛戦 (Base Defense)</strong>
                   <p className="text-stone-600">
-                    最大3機のロボットをタレットとして配備するリアルタイム防衛戦。勝利で修理キットと<strong>12時間HP自然回復リジェネ</strong>を付与。
+                    最大3機のロボットをタレットとして配備するリアルタイム防衛戦。勝利時に<strong>防衛宝箱ドロップ＆開封演出</strong>が発生し、高確率の修理キット・素材・ゴールド・エレメント・工房名声（Lv.3:+5, Lv.4:+10, Lv.5:+15）を獲得。さらにステージ難易度に応じた<strong>防衛リジェネ（3h〜24h）</strong>が出撃機体全員に付与されます。
                   </p>
                 </div>
 

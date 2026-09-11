@@ -299,11 +299,20 @@ export const CombatGame: React.FC<MinigameProps> = ({
 
           <p className="text-xs sm:text-sm text-stone-700 max-w-lg mx-auto leading-relaxed">
             {winner === 'player' 
-              ? `お見事！${activeOpponent.name}の耐久力を削り切りました！報酬として修理キット × ${activeOpponent.rewardKits} 個を獲得しました。` 
+              ? `お見事！${activeOpponent.name}の耐久力を削り切りました！勝利報酬として宝箱ドロップを獲得しました！` 
               : winner === 'opponent' 
                 ? `${activeOpponent.name}の猛攻により耐久限界に達しました。工房でロボットのステータス強化やパーツ換装を行い再挑戦しましょう！` 
                 : '両機が同時に耐久限界を迎えました。激戦の記録が残されました。'}
           </p>
+
+          {winner === 'player' && (
+            <div className="flex items-center justify-center gap-1.5 py-1">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-200 text-amber-950 font-black text-xs border border-amber-400 shadow-2xs">
+                <Gi.GiLockedChest className="text-base text-amber-700 animate-bounce" />
+                <span>勝利報酬: 宝箱ドロップ獲得！</span>
+              </div>
+            </div>
+          )}
 
           {/* 戦闘スタッツまとめ */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-left text-xs bg-white/90 p-2.5 rounded-xl border border-stone-300 max-w-xl mx-auto">

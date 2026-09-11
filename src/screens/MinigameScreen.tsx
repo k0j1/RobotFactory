@@ -17,6 +17,8 @@ import { MinigameDashboard } from '../components/minigames/MinigameDashboard';
 import { RobotVisual } from '../components/robot/RobotVisual';
 import { motion } from 'motion/react';
 import * as Gi from 'react-icons/gi';
+import { BattleChestRewardService, BattleChestDropResult } from '../components/minigames/BattleChestRewardService';
+import { BattleChestRewardModal } from '../components/minigames/BattleChestRewardModal';
 
 interface CategoryDef {
   id: string;
@@ -80,6 +82,8 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
   const [pianoBestScores, setPianoBestScores] = useState<Record<string, PianoBestScore>>(() => getPianoBestScores());
   const [isBattleActive, setIsBattleActive] = useState(false);
   const [battleResult, setBattleResult] = useState<'win' | 'lose' | 'draw' | null>(null);
+  const [currentChestDrop, setCurrentChestDrop] = useState<BattleChestDropResult | null>(null);
+  const [isChestModalOpen, setIsChestModalOpen] = useState<boolean>(false);
   const [speed, setSpeed] = useState(1);
   const [isPaused, setIsPaused] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
@@ -179,30 +183,54 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
       setPianoBestScores(getPianoBestScores());
     }
     if (result === 'win') {
-      if (requiresOpponent && activeOpponent) {
-        (engine as any).addRepairKits(activeOpponent.rewardKits);
-        if (activeOpponent.rewardFame > 0) {
-          (engine as any).addFame(activeOpponent.rewardFame, `演習勝利: ${activeOpponent.name}`);
+      if (selectedGame === 'combat' && activeOpponent) {
+        // バトル演習 (Combat): レベル別宝箱報酬
+        const chestDrop = BattleChestRewardService.rollCombatChest(
+          activeOpponent.level,
+          activeOpponent.name,
+          activeOpponent.rewardFame
+        );
+        setCurrentChestDrop(chestDrop);
+
+        if (chestDrop.repairKits > 0) {
+          (engine as any).addRepairKits(chestDrop.repairKits);
         }
-        if (selectedGame === "combat" && activeOpponent.rewardElements) {
-          (engine as any).addBattleElements(activeOpponent.rewardElements);
+        if (chestDrop.gold > 0) {
+          (engine as any).addGold(chestDrop.gold);
         }
-      } else if (selectedGame === 'danmaku') {
-        // Difficulty-based reward for danmaku survival
-        (engine as any).addRepairKits(activeDanmakuDiff.rewardKits);
-        if (activeDanmakuDiff.rewardFame > 0) {
-          (engine as any).addFame(activeDanmakuDiff.rewardFame, `弾幕サバイバルクリア: ${activeDanmakuDiff.name}`);
+        if (chestDrop.elements > 0) {
+          (engine as any).addBattleElements(chestDrop.elements);
         }
-      } else if (selectedGame === 'piano') {
-        (engine as any).addRepairKits(Math.max(1, Math.ceil(activePianoSong.level / 2)));
-        if (activePianoSong.rewardFame > 0) {
-          (engine as any).addFame(activePianoSong.rewardFame, `ピアノ演奏クリア: ${activePianoSong.title}`);
+        for (const mat of chestDrop.materials) {
+          (engine as any).addMaterial(mat.material.id, mat.count);
+        }
+        if (chestDrop.fame > 0) {
+          (engine as any).addFame(chestDrop.fame, `演習勝利: ${activeOpponent.name}`);
         }
       } else if (selectedGame === 'defense') {
-        (engine as any).addRepairKits(activeDefenseStage.rewardKits);
-        if (activeDefenseStage.rewardFame > 0) {
-          (engine as any).addFame(activeDefenseStage.rewardFame, `拠点防衛成功: ${activeDefenseStage.name}`);
+        // 拠点防衛戦 (Defense): レベル別宝箱報酬
+        const chestDrop = BattleChestRewardService.rollDefenseChest(
+          activeDefenseStage.level,
+          activeDefenseStage.name
+        );
+        setCurrentChestDrop(chestDrop);
+
+        if (chestDrop.repairKits > 0) {
+          (engine as any).addRepairKits(chestDrop.repairKits);
         }
+        if (chestDrop.gold > 0) {
+          (engine as any).addGold(chestDrop.gold);
+        }
+        if (chestDrop.elements > 0) {
+          (engine as any).addBattleElements(chestDrop.elements);
+        }
+        for (const mat of chestDrop.materials) {
+          (engine as any).addMaterial(mat.material.id, mat.count);
+        }
+        if (chestDrop.fame > 0) {
+          (engine as any).addFame(chestDrop.fame, `拠点防衛成功: ${activeDefenseStage.name}`);
+        }
+
         const selectedDefenseRobots = selectedDefenseRobotIds.map(id => state.robots.find(r => r.id === id)!).filter(Boolean);
         const regenHours = activeDefenseStage.rewardRegenHours || 12;
         for (const robot of selectedDefenseRobots) {
@@ -210,10 +238,62 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
         }
         // 当日の防衛戦成功を記録（朝9:00まで再挑戦不可）
         (engine as any).recordDefenseVictory();
+      } else if (selectedGame === 'danmaku') {
+        // Difficulty-based reward for danmaku survival
+        const chestDrop = BattleChestRewardService.rollGenericChest(
+          'danmaku',
+          activeDanmakuDiff.id === 'hard' ? 3 : activeDanmakuDiff.id === 'normal' ? 2 : 1,
+          `弾幕サバイバル (${activeDanmakuDiff.label})`,
+          activeDanmakuDiff.rewardKits,
+          activeDanmakuDiff.rewardFame
+        );
+        setCurrentChestDrop(chestDrop);
+        if (chestDrop.repairKits > 0) (engine as any).addRepairKits(chestDrop.repairKits);
+        if (chestDrop.fame > 0) {
+          (engine as any).addFame(chestDrop.fame, `弾幕サバイバルクリア: ${activeDanmakuDiff.name}`);
+        }
+      } else if (selectedGame === 'piano') {
+        const kits = Math.max(1, Math.ceil(activePianoSong.level / 2));
+        const chestDrop = BattleChestRewardService.rollGenericChest(
+          'piano',
+          activePianoSong.level,
+          `ピアノ演奏 (${activePianoSong.title})`,
+          kits,
+          activePianoSong.rewardFame
+        );
+        setCurrentChestDrop(chestDrop);
+        if (chestDrop.repairKits > 0) (engine as any).addRepairKits(chestDrop.repairKits);
+        if (chestDrop.fame > 0) {
+          (engine as any).addFame(chestDrop.fame, `ピアノ演奏クリア: ${activePianoSong.title}`);
+        }
+      } else if (requiresOpponent && activeOpponent) {
+        // 他の対戦ゲーム（オセロ・チェス）
+        const chestDrop = BattleChestRewardService.rollGenericChest(
+          'other',
+          activeOpponent.level,
+          activeOpponent.name,
+          activeOpponent.rewardKits,
+          activeOpponent.rewardFame
+        );
+        setCurrentChestDrop(chestDrop);
+        if (chestDrop.repairKits > 0) (engine as any).addRepairKits(chestDrop.repairKits);
+        if (chestDrop.fame > 0) {
+          (engine as any).addFame(chestDrop.fame, `演習勝利: ${activeOpponent.name}`);
+        }
       } else if (!requiresOpponent) {
-        // Flat reward for solo games (repair kits only)
+        // Flat reward for solo games
+        const chestDrop = BattleChestRewardService.rollGenericChest(
+          'other',
+          1,
+          selectedGameDef?.name || '演習',
+          1,
+          0
+        );
+        setCurrentChestDrop(chestDrop);
         (engine as any).addRepairKits(1);
       }
+      // 勝利時は宝箱開封モーダルを自動ポップアップ
+      setIsChestModalOpen(true);
     }
   };
 
@@ -269,6 +349,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
     setIsConfirmModalOpen(false);
     setIsBattleActive(true);
     setBattleResult(null);
+    setCurrentChestDrop(null);
     setIsPaused(false);
     setSpeed(1);
   };
@@ -525,11 +606,11 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                             <span className="text-[10px] bg-stone-200 text-stone-700 px-1.5 py-0.5 rounded border border-stone-300 font-bold">
                               最大配備: {stage.maxRobots}体
                             </span>
-                            <span className="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-300 px-1.5 py-0.5 rounded flex items-center gap-0.5 font-bold">
-                              <Gi.GiSpanner className="inline" /> 報酬: x{stage.rewardKits}
+                            <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300 px-1.5 py-0.5 rounded flex items-center gap-0.5 font-bold">
+                              <Gi.GiLockedChest className="inline text-amber-600" /> 宝箱ドロップ
                             </span>
                             {stage.rewardFame > 0 && (
-                              <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300 px-1.5 py-0.5 rounded flex items-center gap-0.5 font-bold">
+                              <span className="text-[10px] bg-yellow-100 text-yellow-900 border border-yellow-300 px-1.5 py-0.5 rounded flex items-center gap-0.5 font-bold">
                                 <Gi.GiTrophyCup className="inline text-amber-600" /> 名声 +{stage.rewardFame}
                               </span>
                             )}
@@ -1203,85 +1284,92 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                   )}
                 </div>
 
-                {battleResult === 'win' && requiresOpponent && (
-                  <div className="bg-amber-50 border-2 border-amber-300 px-6 py-2.5 rounded-xl shadow-xs space-y-1">
-                    <p className="text-amber-900 font-bold text-base sm:text-lg flex items-center justify-center gap-2">
-                      <span className="text-xl"><Gi.GiSpanner className="inline text-stone-500" /></span>
-                      <span>獲得報酬: 修理キット +{activeOpponent?.rewardKits}個</span>
-                    </p>
-                    {activeOpponent && activeOpponent.rewardFame > 0 && (
-                      <p className="text-amber-800 font-bold text-sm sm:text-base flex items-center justify-center gap-1.5">
-                        <Gi.GiTrophyCup className="text-amber-600 text-lg" />
-                        <span>工房名声: +{activeOpponent.rewardFame} 獲得！</span>
-                      </p>
+                {battleResult === 'win' && (
+                  <div className="w-full max-w-lg mx-auto space-y-3">
+                    {/* 宝箱獲得サマリーカード */}
+                    {currentChestDrop ? (
+                      <div className="bg-amber-50/90 border-2 border-amber-400 p-4 rounded-2xl shadow-sm text-center space-y-2">
+                        <div className="flex items-center justify-center gap-2">
+                          <Gi.GiLockedChest className="text-2xl text-amber-600 animate-bounce" />
+                          <span className="font-mono font-black text-amber-950 text-base">
+                            【{currentChestDrop.chestTier.toUpperCase()} CHEST】 獲得！
+                          </span>
+                        </div>
+                        <p className="text-xs text-stone-600">
+                          {currentChestDrop.stageName} の勝利報酬宝箱を獲得しました。
+                        </p>
+
+                        {/* 獲得アイテム一覧のミニバッジ */}
+                        <div className="flex flex-wrap items-center justify-center gap-1.5 pt-1">
+                          {currentChestDrop.items.map((item, idx) => (
+                            <span 
+                              key={idx}
+                              className="text-[11px] font-bold px-2 py-0.5 rounded-lg bg-white border border-stone-300 text-stone-800 shadow-2xs flex items-center gap-1 font-mono"
+                            >
+                              {item.type === 'repairKit' && <Gi.GiSpanner className="text-amber-600" />}
+                              {item.type === 'gold' && <Gi.GiGoldBar className="text-yellow-600" />}
+                              {item.type === 'element' && <Gi.GiCrystalBars className="text-blue-500" />}
+                              {item.type === 'fame' && <Gi.GiTrophyCup className="text-amber-500" />}
+                              <span>{item.name}</span>
+                              <span className="text-amber-700 font-black">+{item.count}</span>
+                            </span>
+                          ))}
+                        </div>
+
+                        {/* 宝箱モーダル再表示ボタン */}
+                        <div className="pt-2">
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => setIsChestModalOpen(true)}
+                            className="text-xs font-bold border-amber-300 text-amber-900 bg-amber-100/80 hover:bg-amber-200 shadow-2xs"
+                          >
+                            <Gi.GiChest className="inline text-amber-700 mr-1 text-sm" />
+                            宝箱の開封演出をもう一度見る
+                          </Button>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {/* 拠点防衛戦のリジェネボーナス */}
+                    {selectedGame === 'defense' && (
+                      <div className="flex items-center justify-center gap-2 text-xs sm:text-sm font-bold text-emerald-800 bg-emerald-100/90 border border-emerald-300 py-2 px-4 rounded-xl shadow-xs">
+                        <Gi.GiHealing className="inline text-emerald-600 animate-pulse text-lg" />
+                        <span>拠点防衛ボーナス: 出撃機体全員に【{activeDefenseStage.rewardRegenHours || 12}時間】の防衛リジェネ（1時間毎にHP1自動回復）が付与されました！</span>
+                      </div>
                     )}
-                    {selectedGame === "combat" && activeOpponent?.rewardElements && (
-                      <p className="text-blue-900 font-bold text-sm sm:text-base flex items-center justify-center gap-2 mt-1">
-                        <span className="text-xl"><Gi.GiCrystalBars className="inline text-blue-500" /></span>
-                        <span>獲得報酬: エレメント +{activeOpponent.rewardElements}個</span>
-                      </p>
-                    )}
-                  </div>
-                )}
-                {battleResult === 'win' && !requiresOpponent && selectedGame === 'danmaku' && (
-                  <div className="bg-amber-50 border-2 border-amber-300 px-6 py-2.5 rounded-xl shadow-xs text-center space-y-1">
-                    <p className="text-amber-900 font-bold text-base sm:text-lg flex items-center justify-center gap-2">
-                      <span className="text-xl"><Gi.GiSpanner className="inline text-stone-500" /></span>
-                      <span>クリア報酬 ({activeDanmakuDiff.label}): 修理キット +{activeDanmakuDiff.rewardKits}個</span>
-                    </p>
-                    {activeDanmakuDiff.rewardFame > 0 && (
-                      <p className="text-amber-800 font-bold text-sm sm:text-base flex items-center justify-center gap-1.5">
-                        <Gi.GiTrophyCup className="text-amber-600 text-lg" />
-                        <span>工房名声: +{activeDanmakuDiff.rewardFame} 獲得！</span>
-                      </p>
-                    )}
-                  </div>
-                )}
-                {battleResult === 'win' && selectedGame === 'defense' && (
-                  <div className="bg-amber-50 border-2 border-amber-300 px-6 py-3 rounded-xl shadow-xs text-center mt-4 space-y-1.5">
-                    <p className="text-amber-900 font-bold text-base sm:text-lg flex items-center justify-center gap-2">
-                      <span className="text-xl"><Gi.GiSpanner className="inline text-stone-500" /></span>
-                      <span>防衛成功報酬 ({activeDefenseStage.name}): 修理キット +{activeDefenseStage.rewardKits}個</span>
-                    </p>
-                    {activeDefenseStage.rewardFame > 0 && (
-                      <p className="text-amber-800 font-bold text-sm sm:text-base flex items-center justify-center gap-1.5">
-                        <Gi.GiTrophyCup className="text-amber-600 text-lg" />
-                        <span>工房名声: +{activeDefenseStage.rewardFame} 獲得！</span>
-                      </p>
-                    )}
-                    <div className="flex items-center justify-center gap-2 text-xs sm:text-sm font-bold text-emerald-800 bg-emerald-100/80 border border-emerald-300 py-1.5 px-3 rounded-lg">
-                      <Gi.GiHealing className="inline text-emerald-600 animate-pulse text-base" />
-                      <span>防衛リジェネ効果付与！ 出撃機体全員が12時間の間、1時間毎にHP1回復</span>
+
+                    <div className="pt-2">
+                      <Button 
+                        onClick={() => { 
+                          setIsBattleActive(false); 
+                          setBattleResult(null); 
+                          setCurrentChestDrop(null); 
+                          setIsChestModalOpen(false);
+                        }}
+                        className="px-8 py-2.5 text-sm sm:text-base shadow-md font-bold w-full sm:w-auto"
+                      >
+                        演習メニューへ戻る
+                      </Button>
                     </div>
                   </div>
                 )}
-                {battleResult === 'win' && selectedGame === 'piano' && activePianoSong.rewardFame > 0 && (
-                  <div className="bg-amber-50 border-2 border-amber-300 px-6 py-2.5 rounded-xl shadow-xs text-center space-y-1">
-                    <p className="text-amber-900 font-bold text-base sm:text-lg flex items-center justify-center gap-2">
-                      <span className="text-xl"><Gi.GiSpanner className="inline text-stone-500" /></span>
-                      <span>クリア報酬: 修理キット +{Math.max(1, Math.ceil(activePianoSong.level / 2))}個</span>
-                    </p>
-                    <p className="text-amber-800 font-bold text-sm sm:text-base flex items-center justify-center gap-1.5">
-                      <Gi.GiTrophyCup className="text-amber-600 text-lg" />
-                      <span>工房名声: +{activePianoSong.rewardFame} 獲得！</span>
-                    </p>
-                  </div>
-                )}
-                {battleResult === 'win' && !requiresOpponent && selectedGame !== 'danmaku' && selectedGame !== 'piano' && (
-                  <div className="bg-amber-50 border-2 border-amber-300 px-6 py-2.5 rounded-xl shadow-xs">
-                    <p className="text-amber-900 font-bold text-base sm:text-lg flex items-center justify-center gap-2">
-                      <span className="text-xl"><Gi.GiSpanner className="inline text-stone-500" /></span>
-                      <span>クリア報酬: 修理キット +1個</span>
-                    </p>
-                  </div>
-                )}
 
-                <Button 
-                  onClick={() => { setIsBattleActive(false); setBattleResult(null); }}
-                  className="px-8 py-2.5 text-sm sm:text-base shadow-md font-bold"
-                >
-                  結果を確認して戻る
-                </Button>
+                {battleResult !== 'win' && (
+                  <div className="pt-2">
+                    <Button 
+                      onClick={() => { 
+                        setIsBattleActive(false); 
+                        setBattleResult(null); 
+                        setCurrentChestDrop(null); 
+                        setIsChestModalOpen(false);
+                      }}
+                      className="px-8 py-2.5 text-sm sm:text-base shadow-md font-bold"
+                    >
+                      演習メニューへ戻る
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -1355,6 +1443,18 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
             </div>
           </motion.div>
         </div>
+      )}
+
+      {/* 勝利時の宝箱ドロップ＆開封モーダル（画面最前面オーバーレイ） */}
+      {isChestModalOpen && currentChestDrop && (
+        <BattleChestRewardModal
+          dropResult={currentChestDrop}
+          isOpen={isChestModalOpen}
+          onClaim={() => {
+            setIsChestModalOpen(false);
+          }}
+          defenseRegenHours={selectedGame === 'defense' ? (activeDefenseStage.rewardRegenHours || 12) : undefined}
+        />
       )}
     </div>
   );

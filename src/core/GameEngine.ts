@@ -1,4 +1,4 @@
-import { GameState, Robot, ClientRequest, Attribute, RequestRank, RobotPart, PartType, AttributeNames, WeatherType, WeatherInfo } from './models';
+import { GameState, Robot, ClientRequest, Attribute, RequestRank, RobotPart, PartType, AttributeNames, WeatherType, WeatherInfo, Material } from './models';
 import { MATERIALS, LOCATIONS, getMaterialCraftableVisuals } from './data';
 import { AttributeColors } from './models';
 import { getDefenseDailyResetInfo, DefenseResetInfo } from '../components/minigames/Shared';
@@ -83,6 +83,41 @@ export class GameEngine {
               };
             }
           });
+        }
+
+        // Migrate weights
+        const applyWeightMigration = (part: any) => {
+          if (part && part.stats && part.weight === undefined) {
+            part.weight = Math.floor(((part.stats.power || 0) + (part.stats.defense || 0)) * 1.5) + 2;
+          }
+        };
+
+        const applyRobotWeightMigration = (r: any) => {
+          if (r && r.parts) {
+            applyWeightMigration(r.parts.head);
+            applyWeightMigration(r.parts.body);
+            applyWeightMigration(r.parts.arms);
+            applyWeightMigration(r.parts.legs);
+            if (r.weight === undefined) {
+              r.weight = (r.parts.head?.weight || 0) + 
+                         (r.parts.body?.weight || 0) + 
+                         (r.parts.arms?.weight || 0) + 
+                         (r.parts.legs?.weight || 0);
+            }
+          }
+        };
+
+        if (parsed.parts) {
+          parsed.parts.forEach(applyWeightMigration);
+        }
+        if (parsed.robots) {
+          parsed.robots.forEach(applyRobotWeightMigration);
+        }
+        if (parsed.craftedRobots) {
+          parsed.craftedRobots.forEach(applyRobotWeightMigration);
+        }
+        if (parsed.deliveredLogs) {
+          parsed.deliveredLogs.forEach(applyRobotWeightMigration);
         }
 
         // Migrate old deliveredLogs to new parts format
@@ -423,6 +458,17 @@ export class GameEngine {
   }
 
   /**
+   * 工房の素材インベントリに素材を追加
+   */
+  public addMaterial(materialId: string, amount: number = 1) {
+    if (!this.state.materials) {
+      this.state.materials = {};
+    }
+    this.state.materials[materialId] = (this.state.materials[materialId] || 0) + amount;
+    this.saveState();
+  }
+
+  /**
    * バトル演習報酬エレメントの加算
    */
   public addBattleElements(amount: number) {
@@ -751,6 +797,43 @@ export class GameEngine {
     return baseDuration;
   }
 
+  private _generatePartStatsAndWeight(type: PartType, mainMat: Material, subMat: Material) {
+    const typeMultipliers = {
+      head: { hp: 0.5, power: 0.2, defense: 0.5, agility: 0.5, dexterity: 0.8, intelligence: 2.0 },
+      body: { hp: 2.0, power: 0.8, defense: 2.0, agility: 0.3, dexterity: 0.5, intelligence: 0.5 },
+      arms: { hp: 0.8, power: 2.0, defense: 0.8, agility: 0.8, dexterity: 1.5, intelligence: 0.5 },
+      legs: { hp: 1.0, power: 1.0, defense: 1.0, agility: 2.0, dexterity: 1.2, intelligence: 0.5 },
+    };
+
+    const matHp = mainMat.baseStats.hp + Math.floor(subMat.baseStats.hp * 0.5);
+    const matPow = mainMat.baseStats.power + Math.floor(subMat.baseStats.power * 0.5);
+    const matDef = mainMat.baseStats.defense + Math.floor(subMat.baseStats.defense * 0.5);
+    const matAgi = mainMat.baseStats.agility + Math.floor(subMat.baseStats.agility * 0.5);
+    const matDex = mainMat.baseStats.dexterity + Math.floor(subMat.baseStats.dexterity * 0.5);
+    const matInt = mainMat.baseStats.intelligence + Math.floor(subMat.baseStats.intelligence * 0.5);
+
+    const multi = typeMultipliers[type];
+
+    let hp = Math.floor(matHp * multi.hp) + Math.floor(Math.random() * 5);
+    let power = Math.floor(matPow * multi.power) + Math.floor(Math.random() * 5);
+    let defense = Math.floor(matDef * multi.defense) + Math.floor(Math.random() * 5);
+    let agility = Math.floor(matAgi * multi.agility) + Math.floor(Math.random() * 5);
+    let dexterity = Math.floor(matDex * multi.dexterity) + Math.floor(Math.random() * 5);
+    let intelligence = Math.floor(matInt * multi.intelligence) + Math.floor(Math.random() * 5);
+
+    // Calculate weight based on power and defense
+    const weight = Math.floor((power + defense) * 1.5) + Math.floor(Math.random() * 5);
+
+    // Heavier parts have lower agility. We apply a penalty.
+    const agilityPenalty = Math.floor(weight / 5);
+    agility = Math.max(1, agility - agilityPenalty);
+
+    return {
+      stats: { hp, power, defense, agility, dexterity, intelligence },
+      weight
+    };
+  }
+
   // Active Crafting (Parts)
   public startCraftPart(type: PartType, mainMaterialId: string, subMaterialId: string) {
     if (this.state.activePartCraft) {
@@ -779,20 +862,16 @@ export class GameEngine {
     // Add star mark to name based on rarity to distinguish
     const name = `${mainMat.name}の${typeNames[type]}`;
 
+    const generatedStatsAndWeight = this._generatePartStatsAndWeight(type, mainMat, subMat);
+
     const newPart: RobotPart = {
       id: `part_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
       type,
       name,
       attribute: mainMat.attribute, // Main material decides attribute
       rarity: craftRarity as 1 | 2 | 3,
-      stats: {
-        hp: mainMat.baseStats.hp + Math.floor(subMat.baseStats.hp * 0.5) + Math.floor(Math.random() * 5),
-        power: mainMat.baseStats.power + Math.floor(subMat.baseStats.power * 0.5) + Math.floor(Math.random() * 5),
-        defense: mainMat.baseStats.defense + Math.floor(subMat.baseStats.defense * 0.5) + Math.floor(Math.random() * 5),
-        agility: mainMat.baseStats.agility + Math.floor(subMat.baseStats.agility * 0.5) + Math.floor(Math.random() * 5),
-        dexterity: mainMat.baseStats.dexterity + Math.floor(subMat.baseStats.dexterity * 0.5) + Math.floor(Math.random() * 5),
-        intelligence: mainMat.baseStats.intelligence + Math.floor(subMat.baseStats.intelligence * 0.5) + Math.floor(Math.random() * 5),
-      },
+      stats: generatedStatsAndWeight.stats,
+      weight: generatedStatsAndWeight.weight,
       visualIndex: chosenCraft.visualIndex,
     };
 
@@ -866,6 +945,7 @@ export class GameEngine {
     const totalAgi = head.stats.agility + body.stats.agility + arms.stats.agility + legs.stats.agility;
     const totalDex = head.stats.dexterity + body.stats.dexterity + arms.stats.dexterity + legs.stats.dexterity;
     const totalInt = head.stats.intelligence + body.stats.intelligence + arms.stats.intelligence + legs.stats.intelligence;
+    const totalWeight = (head.weight || 0) + (body.weight || 0) + (arms.weight || 0) + (legs.weight || 0);
 
     const prefix1 = ['野生の', '古代の', '謎の', '伝説の', '鋼鉄の', '真紅の', '漆黒の', '錆びた', '光る', '怒れる', '眠れる', '小さな', '巨大な', '忘れられた', '名無しの'];
     const prefix2 = ['繊細な', '凶暴な', '勇敢な', '臆病な', '賢い', '鈍い', '素早い', '硬い', '柔らかい', '冷たい', '熱い', '美しい', '醜い', '奇妙な', '完璧な'];
@@ -879,6 +959,7 @@ export class GameEngine {
       stats: {
         hp: totalHp, power: totalPow, defense: totalDef, agility: totalAgi, dexterity: totalDex, intelligence: totalInt
       },
+      weight: totalWeight,
       currentHp: 12,
       maxHp: 12,
       createdAt: Date.now(),
@@ -950,20 +1031,16 @@ export class GameEngine {
     
     const name = `${mainMat.name}の${typeNames[type]}`;
 
+    const generatedStatsAndWeight = this._generatePartStatsAndWeight(type, mainMat, subMat);
+
     const newPart: RobotPart = {
       id: `part_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
       type,
       name,
       attribute: mainMat.attribute, // Main material decides attribute
       rarity: craftRarity as 1 | 2 | 3,
-      stats: {
-        hp: mainMat.baseStats.hp + Math.floor(subMat.baseStats.hp * 0.5) + Math.floor(Math.random() * 5),
-        power: mainMat.baseStats.power + Math.floor(subMat.baseStats.power * 0.5) + Math.floor(Math.random() * 5),
-        defense: mainMat.baseStats.defense + Math.floor(subMat.baseStats.defense * 0.5) + Math.floor(Math.random() * 5),
-        agility: mainMat.baseStats.agility + Math.floor(subMat.baseStats.agility * 0.5) + Math.floor(Math.random() * 5),
-        dexterity: mainMat.baseStats.dexterity + Math.floor(subMat.baseStats.dexterity * 0.5) + Math.floor(Math.random() * 5),
-        intelligence: mainMat.baseStats.intelligence + Math.floor(subMat.baseStats.intelligence * 0.5) + Math.floor(Math.random() * 5),
-      },
+      stats: generatedStatsAndWeight.stats,
+      weight: generatedStatsAndWeight.weight,
       visualIndex: chosenCraft.visualIndex,
     };
     
@@ -994,6 +1071,7 @@ export class GameEngine {
     const totalAgi = head.stats.agility + body.stats.agility + arms.stats.agility + legs.stats.agility;
     const totalDex = head.stats.dexterity + body.stats.dexterity + arms.stats.dexterity + legs.stats.dexterity;
     const totalInt = head.stats.intelligence + body.stats.intelligence + arms.stats.intelligence + legs.stats.intelligence;
+    const totalWeight = (head.weight || 0) + (body.weight || 0) + (arms.weight || 0) + (legs.weight || 0);
 
     const prefix1 = ['野生の', '古代の', '謎の', '伝説の', '鋼鉄の', '真紅の', '漆黒の', '錆びた', '光る', '怒れる', '眠れる', '小さな', '巨大な', '忘れられた', '名無しの'];
     const prefix2 = ['繊細な', '凶暴な', '勇敢な', '臆病な', '賢い', '鈍い', '素早い', '硬い', '柔らかい', '冷たい', '熱い', '美しい', '醜い', '奇妙な', '完璧な'];
@@ -1007,6 +1085,7 @@ export class GameEngine {
       stats: {
         hp: totalHp, power: totalPow, defense: totalDef, agility: totalAgi, dexterity: totalDex, intelligence: totalInt
       },
+      weight: totalWeight,
       currentHp: 12,
       maxHp: 12,
       createdAt: Date.now(),

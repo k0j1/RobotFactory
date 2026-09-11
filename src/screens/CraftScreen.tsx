@@ -249,13 +249,16 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
             </span>
           </div>
           <p className="mt-1 text-sm text-stone-600">属性: <span className="font-bold">{lastCraftedPart.attribute}</span></p>
-          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mt-4 bg-white/80 p-2.5 rounded-md border border-amber-200 text-xs">
+          <div className="flex flex-wrap justify-center gap-2 mt-4 bg-white/80 p-2.5 rounded-md border border-amber-200 text-xs">
             <div><span className="text-stone-500">HP:</span> <strong className="text-stone-800">{lastCraftedPart.stats.hp}</strong></div>
             <div><span className="text-stone-500">Pow:</span> <strong className="text-stone-800">{lastCraftedPart.stats.power}</strong></div>
             <div><span className="text-stone-500">Def:</span> <strong className="text-stone-800">{lastCraftedPart.stats.defense}</strong></div>
             <div><span className="text-stone-500">Agi:</span> <strong className="text-stone-800">{lastCraftedPart.stats.agility}</strong></div>
             <div><span className="text-stone-500">Dex:</span> <strong className="text-stone-800">{lastCraftedPart.stats.dexterity}</strong></div>
             <div><span className="text-stone-500">Int:</span> <strong className="text-stone-800">{lastCraftedPart.stats.intelligence}</strong></div>
+            <div className="w-full text-center mt-1 border-t border-amber-100 pt-1">
+              <span className="text-stone-500 font-bold">Wt(重量):</span> <strong className="text-stone-800">{lastCraftedPart.weight || 0}</strong>
+            </div>
           </div>
           <Button className="mt-5" size="lg" onClick={() => setLastCraftedPart(null)}>閉じる</Button>
         </div>
@@ -272,13 +275,16 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
           </div>
           <h4 className={`${theme.typography.h2} mt-2`}>{lastCraftedRobot.name}</h4>
           <p className="text-xs text-stone-500 mt-0.5">評価額: {lastCraftedRobot.value} G</p>
-          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mt-4 bg-white/80 p-2.5 rounded-md border border-amber-200 text-xs">
+          <div className="flex flex-wrap justify-center gap-2 mt-4 bg-white/80 p-2.5 rounded-md border border-amber-200 text-xs">
             <div><span className="text-stone-500">HP:</span> <strong className="text-stone-800">{lastCraftedRobot.stats.hp}</strong></div>
             <div><span className="text-stone-500">Pow:</span> <strong className="text-stone-800">{lastCraftedRobot.stats.power}</strong></div>
             <div><span className="text-stone-500">Def:</span> <strong className="text-stone-800">{lastCraftedRobot.stats.defense}</strong></div>
             <div><span className="text-stone-500">Agi:</span> <strong className="text-stone-800">{lastCraftedRobot.stats.agility}</strong></div>
             <div><span className="text-stone-500">Dex:</span> <strong className="text-stone-800">{lastCraftedRobot.stats.dexterity}</strong></div>
             <div><span className="text-stone-500">Int:</span> <strong className="text-stone-800">{lastCraftedRobot.stats.intelligence}</strong></div>
+            <div className="w-full text-center mt-1 border-t border-amber-100 pt-1">
+              <span className="text-stone-500 font-bold">Wt(総重量):</span> <strong className="text-stone-800">{lastCraftedRobot.weight || 0}</strong>
+            </div>
           </div>
           <Button className="mt-5" size="lg" onClick={() => setLastCraftedRobot(null)}>閉じる</Button>
         </Card>

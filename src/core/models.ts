@@ -25,6 +25,7 @@ export interface RobotPart {
   name: string;
   attribute: Attribute;
   rarity: number;
+  weight?: number;
   stats: { hp: number; power: number; defense: number; agility: number; dexterity: number; intelligence: number; };
   battleStats?: {
     matches: number;
@@ -55,6 +56,7 @@ export interface Robot {
   name: string;
   parts: { head: RobotPart; body: RobotPart; arms: RobotPart; legs: RobotPart; };
   stats: { hp: number; power: number; defense: number; agility: number; dexterity: number; intelligence: number; };
+  weight?: number;
   currentHp?: number;
   maxHp?: number;
   battleStats?: {
