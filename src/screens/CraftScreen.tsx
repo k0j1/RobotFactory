@@ -5,11 +5,13 @@ import { MATERIALS, STORAGE_UPGRADE_COST, MAX_STORAGE_LEVELS } from '../core/dat
 import { Card, Button, Badge } from '../components/ui/core';
 import { RobotVisual, PartVisual } from '../components/robot/RobotVisual';
 import { RobotZoomPreview } from '../components/robot/RobotZoomPreview';
+import { RobotRadarChart } from '../components/robot/RobotRadarChart';
 import { AttributeEffects } from '../components/effects/AttributeEffects';
 import { AttributeNames, AttributeColors } from '../core/models';
 import { theme } from '../styles/theme';
 import { TutorialPopup } from '../components/ui/TutorialPopup';
 import { MaterialIcon } from '../components/ui/MaterialIcon';
+import { PartSelectCarousel } from '../components/part/PartSelectCarousel';
 import * as Gi from 'react-icons/gi';
 import { motion } from 'motion/react';
 import confetti from 'canvas-confetti';
@@ -54,6 +56,41 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
   const [selectedArms, setSelectedArms] = useState<string>('');
   const [selectedLegs, setSelectedLegs] = useState<string>('');
   const [lastCraftedRobot, setLastCraftedRobot] = useState<Robot | null>(null);
+
+  // Parts accordion collapse state (各パーツ選択箇所の折りたたみ管理)
+  const [collapsedParts, setCollapsedParts] = useState<Record<PartType, boolean>>({
+    head: false,
+    body: false,
+    arms: false,
+    legs: false,
+  });
+
+  const togglePartCollapse = (type: PartType) => {
+    setCollapsedParts(prev => ({ ...prev, [type]: !prev[type] }));
+  };
+
+  const handleSelectPart = (type: PartType, id: string) => {
+    if (type === 'head') setSelectedHead(id);
+    if (type === 'body') setSelectedBody(id);
+    if (type === 'arms') setSelectedArms(id);
+    if (type === 'legs') setSelectedLegs(id);
+
+    // パーツを選択した場合は自動的に折りたたむ
+    if (id) {
+      setCollapsedParts(prev => ({ ...prev, [type]: true }));
+    }
+  };
+
+  const areAllCollapsed = Object.values(collapsedParts).every(Boolean);
+  const toggleAllCollapse = () => {
+    const nextVal = !areAllCollapsed;
+    setCollapsedParts({
+      head: nextVal,
+      body: nextVal,
+      arms: nextVal,
+      legs: nextVal,
+    });
+  };
 
   // Animation & Timer tick
   useEffect(() => {
@@ -755,99 +792,127 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
               <p className="text-xs text-stone-600">各部位のパーツを組み合わせて新しいロボットを組み立てます。</p>
               
               {/* プレビューカード */}
-              <div className="flex flex-col items-center justify-center p-3 sm:p-4 bg-white border-2 border-stone-300 border-dashed rounded-xl relative overflow-hidden shadow-xs">
-                <div className="flex justify-between items-center w-full mb-1.5 z-10 px-1">
-                  <h3 className="font-bold text-stone-600 text-xs flex items-center gap-1">
-                    <Gi.GiCrosshair className="text-amber-600 inline" /> アセンブリプレビュー
-                  </h3>
-                  <span className="text-[11px] text-stone-500">スライダーで細部確認</span>
+              <div className="flex flex-col md:flex-row items-center justify-center p-3 sm:p-4 bg-white border-2 border-stone-300 border-dashed rounded-xl relative overflow-hidden shadow-xs gap-4">
+                <div className="flex flex-col items-center w-full md:w-1/2">
+                  <div className="flex justify-between items-center w-full mb-1.5 z-10 px-1">
+                    <h3 className="font-bold text-stone-600 text-xs flex items-center gap-1">
+                      <Gi.GiCrosshair className="text-amber-600 inline" /> アセンブリプレビュー
+                    </h3>
+                    <span className="text-[11px] text-stone-500">スライダーで細部確認</span>
+                  </div>
+                  
+                  <RobotZoomPreview
+                    robot={{
+                      parts: {
+                        head: heads.find(p => p.id === selectedHead),
+                        body: bodies.find(p => p.id === selectedBody),
+                        arms: arms.find(p => p.id === selectedArms),
+                        legs: legs.find(p => p.id === selectedLegs)
+                      }
+                    }}
+                    baseSize={105}
+                    viewportHeightClass="h-32 sm:h-36"
+                    attributes={Array.from(new Set([
+                      heads.find(p => p.id === selectedHead)?.attribute,
+                      bodies.find(p => p.id === selectedBody)?.attribute,
+                      arms.find(p => p.id === selectedArms)?.attribute,
+                      legs.find(p => p.id === selectedLegs)?.attribute
+                    ].filter(Boolean) as any))}
+                  />
                 </div>
                 
-                <RobotZoomPreview
-                  robot={{
-                    parts: {
-                      head: heads.find(p => p.id === selectedHead),
-                      body: bodies.find(p => p.id === selectedBody),
-                      arms: arms.find(p => p.id === selectedArms),
-                      legs: legs.find(p => p.id === selectedLegs)
-                    }
-                  }}
-                  baseSize={105}
-                  viewportHeightClass="h-32 sm:h-36"
-                  attributes={Array.from(new Set([
-                    heads.find(p => p.id === selectedHead)?.attribute,
-                    bodies.find(p => p.id === selectedBody)?.attribute,
-                    arms.find(p => p.id === selectedArms)?.attribute,
-                    legs.find(p => p.id === selectedLegs)?.attribute
-                  ].filter(Boolean) as any))}
-                />
+                <div className="w-full md:w-1/2 flex flex-col items-center justify-center border-t md:border-t-0 md:border-l border-stone-200 pt-4 md:pt-0 pl-0 md:pl-4">
+                  <h3 className="font-bold text-stone-600 text-xs flex items-center gap-1 w-full mb-2">
+                    <Gi.GiChart className="text-amber-600 inline" /> ステータスプレビュー
+                  </h3>
+                  <div className="flex items-center justify-center w-full">
+                    <RobotRadarChart 
+                      robot={{
+                        id: 'preview',
+                        name: 'プレビュー',
+                        parts: {
+                          head: heads.find(p => p.id === selectedHead),
+                          body: bodies.find(p => p.id === selectedBody),
+                          arms: arms.find(p => p.id === selectedArms),
+                          legs: legs.find(p => p.id === selectedLegs)
+                        },
+                        stats: {
+                          hp: (heads.find(p => p.id === selectedHead)?.stats.hp || 0) + (bodies.find(p => p.id === selectedBody)?.stats.hp || 0) + (arms.find(p => p.id === selectedArms)?.stats.hp || 0) + (legs.find(p => p.id === selectedLegs)?.stats.hp || 0),
+                          power: (heads.find(p => p.id === selectedHead)?.stats.power || 0) + (bodies.find(p => p.id === selectedBody)?.stats.power || 0) + (arms.find(p => p.id === selectedArms)?.stats.power || 0) + (legs.find(p => p.id === selectedLegs)?.stats.power || 0),
+                          defense: (heads.find(p => p.id === selectedHead)?.stats.defense || 0) + (bodies.find(p => p.id === selectedBody)?.stats.defense || 0) + (arms.find(p => p.id === selectedArms)?.stats.defense || 0) + (legs.find(p => p.id === selectedLegs)?.stats.defense || 0),
+                          agility: (heads.find(p => p.id === selectedHead)?.stats.agility || 0) + (bodies.find(p => p.id === selectedBody)?.stats.agility || 0) + (arms.find(p => p.id === selectedArms)?.stats.agility || 0) + (legs.find(p => p.id === selectedLegs)?.stats.agility || 0),
+                          dexterity: (heads.find(p => p.id === selectedHead)?.stats.dexterity || 0) + (bodies.find(p => p.id === selectedBody)?.stats.dexterity || 0) + (arms.find(p => p.id === selectedArms)?.stats.dexterity || 0) + (legs.find(p => p.id === selectedLegs)?.stats.dexterity || 0),
+                          intelligence: (heads.find(p => p.id === selectedHead)?.stats.intelligence || 0) + (bodies.find(p => p.id === selectedBody)?.stats.intelligence || 0) + (arms.find(p => p.id === selectedArms)?.stats.intelligence || 0) + (legs.find(p => p.id === selectedLegs)?.stats.intelligence || 0),
+                        },
+                        weight: (heads.find(p => p.id === selectedHead)?.weight || 0) + (bodies.find(p => p.id === selectedBody)?.weight || 0) + (arms.find(p => p.id === selectedArms)?.weight || 0) + (legs.find(p => p.id === selectedLegs)?.weight || 0),
+                        attribute: heads.find(p => p.id === selectedHead)?.attribute || 'neutral'
+                      } as unknown as Robot} 
+                      size={140} 
+                      themeStyle="light" 
+                    />
+                  </div>
+                  <div className="w-full text-center mt-2 text-[10px] font-mono font-bold text-stone-600">
+                    総重量(WT): {(heads.find(p => p.id === selectedHead)?.weight || 0) + (bodies.find(p => p.id === selectedBody)?.weight || 0) + (arms.find(p => p.id === selectedArms)?.weight || 0) + (legs.find(p => p.id === selectedLegs)?.weight || 0)}
+                  </div>
+                </div>
               </div>
 
-              {/* パーツ選択ドロップダウン */}
+              {/* パーツ選択カルーセル */}
               <div className="space-y-3">
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-bold text-stone-700">ヘッド</label>
-                  <select 
-                    className="p-2 border border-stone-300 rounded-md bg-white text-xs"
-                    value={selectedHead}
-                    onChange={e => setSelectedHead(e.target.value)}
+                <div className="flex justify-between items-center px-1">
+                  <span className="text-xs font-bold text-stone-700 flex items-center gap-1.5">
+                    <Gi.GiGears className="text-amber-700" />
+                    構成パーツの選択
+                  </span>
+                  <button
+                    type="button"
+                    onClick={toggleAllCollapse}
+                    className="text-[11px] font-bold text-amber-800 hover:text-amber-950 bg-amber-50 hover:bg-amber-100 px-2.5 py-1 rounded-md border border-amber-200 transition-colors cursor-pointer shadow-2xs"
                   >
-                    <option value="">選択してください</option>
-                    {heads.map((p, idx) => (
-                      <option key={`${p.id}-${idx}`} value={p.id}>
-                        {p.name} ({'★'.repeat(p.rarity || 1)} HP:{p.stats.hp} 属性:{p.attribute})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-bold text-stone-700">ボディ</label>
-                  <select 
-                    className="p-2 border border-stone-300 rounded-md bg-white text-xs"
-                    value={selectedBody}
-                    onChange={e => setSelectedBody(e.target.value)}
-                  >
-                    <option value="">選択してください</option>
-                    {bodies.map((p, idx) => (
-                      <option key={`${p.id}-${idx}`} value={p.id}>
-                        {p.name} ({'★'.repeat(p.rarity || 1)} HP:{p.stats.hp} 属性:{p.attribute})
-                      </option>
-                    ))}
-                  </select>
+                    {areAllCollapsed ? 'すべての部位を展開' : 'すべての部位を折りたたむ'}
+                  </button>
                 </div>
 
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-bold text-stone-700">アーム</label>
-                  <select 
-                    className="p-2 border border-stone-300 rounded-md bg-white text-xs"
-                    value={selectedArms}
-                    onChange={e => setSelectedArms(e.target.value)}
-                  >
-                    <option value="">選択してください</option>
-                    {arms.map((p, idx) => (
-                      <option key={`${p.id}-${idx}`} value={p.id}>
-                        {p.name} ({'★'.repeat(p.rarity || 1)} HP:{p.stats.hp} 属性:{p.attribute})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-bold text-stone-700">レッグ</label>
-                  <select 
-                    className="p-2 border border-stone-300 rounded-md bg-white text-xs"
-                    value={selectedLegs}
-                    onChange={e => setSelectedLegs(e.target.value)}
-                  >
-                    <option value="">選択してください</option>
-                    {legs.map((p, idx) => (
-                      <option key={`${p.id}-${idx}`} value={p.id}>
-                        {p.name} ({'★'.repeat(p.rarity || 1)} HP:{p.stats.hp} 属性:{p.attribute})
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                <PartSelectCarousel 
+                  title="ヘッド" 
+                  icon={<Gi.GiMechaHead className="text-amber-700 text-sm" />}
+                  parts={heads} 
+                  selectedId={selectedHead} 
+                  onSelect={(id) => handleSelectPart('head', id)} 
+                  type="head" 
+                  isCollapsed={collapsedParts.head}
+                  onToggleCollapse={() => togglePartCollapse('head')}
+                />
+                <PartSelectCarousel 
+                  title="ボディ" 
+                  icon={<Gi.GiChestArmor className="text-amber-700 text-sm" />}
+                  parts={bodies} 
+                  selectedId={selectedBody} 
+                  onSelect={(id) => handleSelectPart('body', id)} 
+                  type="body" 
+                  isCollapsed={collapsedParts.body}
+                  onToggleCollapse={() => togglePartCollapse('body')}
+                />
+                <PartSelectCarousel 
+                  title="アーム" 
+                  icon={<Gi.GiMechanicalArm className="text-amber-700 text-sm" />}
+                  parts={arms} 
+                  selectedId={selectedArms} 
+                  onSelect={(id) => handleSelectPart('arms', id)} 
+                  type="arms" 
+                  isCollapsed={collapsedParts.arms}
+                  onToggleCollapse={() => togglePartCollapse('arms')}
+                />
+                <PartSelectCarousel 
+                  title="レッグ" 
+                  icon={<Gi.GiLegArmor className="text-amber-700 text-sm" />}
+                  parts={legs} 
+                  selectedId={selectedLegs} 
+                  onSelect={(id) => handleSelectPart('legs', id)} 
+                  type="legs" 
+                  isCollapsed={collapsedParts.legs}
+                  onToggleCollapse={() => togglePartCollapse('legs')}
+                />
               </div>
 
               {/* 組立概要 & 開始ボタン */}
