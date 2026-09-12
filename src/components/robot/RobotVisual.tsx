@@ -45,9 +45,9 @@ export const PartVisual: React.FC<{ part: any, size?: number }> = ({ part, size 
   const color = AttributeColors[part.attribute] || '#000';
   
   const viewBox = r === 3
-    ? (part.type === 'head' ? '0 0 256 256' : '0 0 256 256')
+    ? (part.type === 'head' ? (((part.visualIndex % (SVG_HEADS[3]?.length || 6)) >= 3) ? '0 0 300 300' : '0 0 256 256') : part.type === 'body' ? '0 0 360 360' : '0 0 256 256')
     : r === 2
-    ? (part.type === 'head' ? '0 0 64 64' : part.type === 'arms' ? ((part.visualIndex % 4) === 0 ? '6 -4 52 52' : '0 0 300 300') : part.type === 'body' ? '22 28 56 52' : part.type === 'legs' ? '0 0 300 300' : '0 0 64 64')
+    ? (part.type === 'head' ? (((part.visualIndex % (SVG_HEADS[2]?.length || 8)) >= 4) ? '0 0 300 300' : '0 0 64 64') : part.type === 'arms' ? ((part.visualIndex % 4) === 0 ? '6 -4 52 52' : '0 0 300 300') : part.type === 'body' ? '22 28 56 52' : part.type === 'legs' ? '0 0 300 300' : '0 0 64 64')
     : (part.type === 'head' ? '20 0 60 45' :
        part.type === 'body' ? '25 32 50 48' :
        part.type === 'arms' ? '5 38 90 42' :

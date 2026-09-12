@@ -1107,6 +1107,268 @@ export const HeadStar3_3SVG = ({ color, viewBox = "-122 -30 500 500", className 
   );
 };
 
+export const HeadStar3_4SVG = ({ color, viewBox = "-130 -30 560 560", className }: SVGProps) => {
+  const pal = getAttributePalette(color);
+  const uid = React.useId().replace(/:/g, '');
+
+  const shellId = `shell-${uid}`;
+  const blueId = `blue-${uid}`;
+  const eyeId = `eye-${uid}`;
+
+  // 属性カラーに応じた発光色・装甲色調整
+  const isBlueOrWater = !color || color === '#2563eb' || color === '#38bdf8' || color === '#0284c7' || color.toLowerCase().includes('blue');
+  const blue0 = isBlueOrWater ? '#69d9ff' : (pal.glow0 || '#69d9ff');
+  const blue1 = isBlueOrWater ? '#2073d7' : (pal.armor100 || '#2073d7');
+  const eyeGlow = isBlueOrWater ? '#63eaff' : (pal.glow60 || '#63eaff');
+  const eyeDark = isBlueOrWater ? '#1685dd' : (pal.solidAccent || '#1685dd');
+  const strokeColor = isBlueOrWater ? '#14263f' : (pal.stroke || '#14263f');
+  const cheekColor = isBlueOrWater ? '#68eaff' : (pal.glow60 || '#68eaff');
+  const boltColor = isBlueOrWater ? '#4a91dd' : (pal.armor0 || '#4a91dd');
+  const antennaGlow = isBlueOrWater ? '#68eaff' : (pal.glow60 || '#68eaff');
+
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox={viewBox} className={className}>
+      <defs>
+        <linearGradient id={shellId} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#ffffff"/>
+          <stop offset="1" stopColor="#c8d7e7"/>
+        </linearGradient>
+        <linearGradient id={blueId} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor={blue0}/>
+          <stop offset="1" stopColor={blue1}/>
+        </linearGradient>
+        <radialGradient id={eyeId}>
+          <stop offset="0" stopColor="#eaffff"/>
+          <stop offset="0.35" stopColor={eyeGlow}/>
+          <stop offset="1" stopColor={eyeDark}/>
+        </radialGradient>
+      </defs>
+
+      {/* Square cyclops robot head */}
+      <rect x="55" y="55" width="190" height="190" rx="32"
+            fill={`url(#${shellId})`} stroke={strokeColor} strokeWidth="9"/>
+
+      {/* top antenna */}
+      <rect x="138" y="38" width="24" height="25" rx="7"
+            fill="#aebdce" stroke={strokeColor} strokeWidth="6"/>
+      <circle cx="150" cy="28" r="13"
+              fill={antennaGlow} stroke={strokeColor} strokeWidth="6"/>
+
+      {/* rounded square ear modules */}
+      <rect x="31" y="125" width="48" height="54" rx="16"
+            fill={`url(#${shellId})`} stroke={strokeColor} strokeWidth="8"/>
+      <rect x="221" y="125" width="48" height="54" rx="16"
+            fill={`url(#${shellId})`} stroke={strokeColor} strokeWidth="8"/>
+      <rect x="43" y="140" width="22" height="24" rx="8" fill={`url(#${blueId})`}/>
+      <rect x="235" y="140" width="22" height="24" rx="8" fill={`url(#${blueId})`}/>
+
+      {/* forehead square panel */}
+      <rect x="103" y="72" width="94" height="35" rx="12"
+            fill={`url(#${blueId})`} stroke={strokeColor} strokeWidth="7"/>
+      <path d="M119 83H176" stroke="#d9fbff" strokeWidth="6" strokeLinecap="round"/>
+
+      {/* face plate */}
+      <rect x="82" y="103" width="136" height="108" rx="28"
+            fill="#17304e" stroke={strokeColor} strokeWidth="8"/>
+
+      {/* single eye */}
+      <circle cx="150" cy="150" r="43"
+              fill="#e9f0f6" stroke={strokeColor} strokeWidth="7"/>
+      <circle cx="150" cy="150" r="33"
+              fill="#102b48" stroke="#38536e" strokeWidth="5"/>
+      <circle cx="150" cy="150" r="25" fill={`url(#${eyeId})`}/>
+      <circle cx="141" cy="141" r="8" fill="#ffffff"/>
+      <circle cx="161" cy="160" r="4" fill="#eaffff"/>
+
+      {/* cute smile */}
+      <path d="M133 182 Q150 198 167 182 Q165 205 150 208 Q135 205 133 182Z"
+            fill="#0e2138"/>
+      <path d="M141 193 Q150 199 159 193 Q158 201 150 202 Q142 201 141 193Z"
+            fill={antennaGlow}/>
+
+      {/* cheek marks */}
+      <rect x="88" y="184" width="10" height="7" rx="3" fill={cheekColor}/>
+      <rect x="202" y="184" width="10" height="7" rx="3" fill={cheekColor}/>
+
+      {/* lower square chin armor */}
+      <path d="M107 211 H193 L181 239 H119 Z"
+            fill={`url(#${blueId})`} stroke={strokeColor} strokeWidth="7" strokeLinejoin="round"/>
+      <rect x="137" y="220" width="26" height="8" rx="4" fill="#d9fbff"/>
+
+      {/* corner bolts */}
+      <circle cx="77" cy="78" r="7" fill={boltColor} stroke={strokeColor} strokeWidth="4"/>
+      <circle cx="223" cy="78" r="7" fill={boltColor} stroke={strokeColor} strokeWidth="4"/>
+      <circle cx="77" cy="222" r="7" fill={boltColor} stroke={strokeColor} strokeWidth="4"/>
+      <circle cx="223" cy="222" r="7" fill={boltColor} stroke={strokeColor} strokeWidth="4"/>
+    </svg>
+  );
+};
+
+export const HeadStar3_5SVG = ({ color, viewBox = "-130 -30 560 560", className }: SVGProps) => {
+  const pal = getAttributePalette(color);
+  const uid = React.useId().replace(/:/g, '');
+
+  const shellId = `tri-shell-${uid}`;
+  const blueId = `tri-blue-${uid}`;
+  const eyeId = `tri-eye-${uid}`;
+
+  // 属性カラーに応じた発光色・装甲色調整
+  const isBlueOrWater = !color || color === '#2563eb' || color === '#38bdf8' || color === '#0284c7' || color.toLowerCase().includes('blue');
+  const blue0 = isBlueOrWater ? '#72d8ff' : (pal.glow0 || '#72d8ff');
+  const blue1 = isBlueOrWater ? '#2175d5' : (pal.armor100 || '#2175d5');
+  const eyeGlow = isBlueOrWater ? '#63eaff' : (pal.glow60 || '#63eaff');
+  const eyeDark = isBlueOrWater ? '#1685dc' : (pal.solidAccent || '#1685dc');
+  const strokeColor = isBlueOrWater ? '#14263f' : (pal.stroke || '#14263f');
+  const smileGlow = isBlueOrWater ? '#63eaff' : (pal.glow60 || '#63eaff');
+  const antennaGlow = isBlueOrWater ? '#63eaff' : (pal.glow60 || '#63eaff');
+  const cheekColor = isBlueOrWater ? '#63eaff' : (pal.glow60 || '#63eaff');
+
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox={viewBox} className={className}>
+      <defs>
+        <linearGradient id={shellId} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#ffffff"/>
+          <stop offset="1" stopColor="#cbd9e7"/>
+        </linearGradient>
+        <linearGradient id={blueId} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor={blue0}/>
+          <stop offset="1" stopColor={blue1}/>
+        </linearGradient>
+        <radialGradient id={eyeId}>
+          <stop offset="0" stopColor="#eaffff"/>
+          <stop offset="0.4" stopColor={eyeGlow}/>
+          <stop offset="1" stopColor={eyeDark}/>
+        </radialGradient>
+      </defs>
+
+      {/* triangular cyclops robot head */}
+      <path d="M150 36 L232 190 Q237 201 226 213 Q195 239 150 241 Q105 239 74 213 Q63 201 68 190 Z"
+            fill={`url(#${shellId})`} stroke={strokeColor} strokeWidth="9" strokeLinejoin="round"/>
+
+      {/* antenna */}
+      <path d="M150 39V27" stroke={strokeColor} strokeWidth="7" strokeLinecap="round"/>
+      <circle cx="150" cy="18" r="11" fill={antennaGlow} stroke={strokeColor} strokeWidth="6"/>
+
+      {/* blue top triangular armor */}
+      <path d="M150 55 L181 101 H119 Z"
+            fill={`url(#${blueId})`} stroke={strokeColor} strokeWidth="7" strokeLinejoin="round"/>
+      <path d="M137 72L150 65" stroke="#dffcff" strokeWidth="5" strokeLinecap="round"/>
+
+      {/* side pods */}
+      <path d="M74 145 L48 160 L69 184 L88 169 Z"
+            fill={`url(#${blueId})`} stroke={strokeColor} strokeWidth="7"/>
+      <circle cx="65" cy="165" r="7" fill="#cfffff"/>
+      <path d="M226 145 L252 160 L231 184 L212 169 Z"
+            fill={`url(#${blueId})`} stroke={strokeColor} strokeWidth="7"/>
+      <circle cx="235" cy="165" r="7" fill="#cfffff"/>
+
+      {/* single large eye */}
+      <circle cx="150" cy="145" r="48" fill="#eef4f8" stroke={strokeColor} strokeWidth="8"/>
+      <circle cx="150" cy="145" r="37" fill="#142d49" stroke="#38546e" strokeWidth="5"/>
+      <circle cx="150" cy="145" r="27" fill={`url(#${eyeId})`}/>
+      <circle cx="141" cy="135" r="9" fill="#fff"/>
+      <circle cx="161" cy="155" r="4" fill="#eaffff"/>
+
+      {/* cute smile */}
+      <path d="M133 184 Q150 199 167 184 Q165 205 150 207 Q135 205 133 184Z"
+            fill="#14263f"/>
+      <path d="M141 194 Q150 200 159 194 Q158 202 150 203 Q142 202 141 194Z"
+            fill={smileGlow}/>
+
+      {/* cheek accents */}
+      <path d="M94 192L104 181L112 194" fill="none" stroke={cheekColor} strokeWidth="6" strokeLinecap="round"/>
+      <path d="M206 192L196 181L188 194" fill="none" stroke={cheekColor} strokeWidth="6" strokeLinecap="round"/>
+
+      {/* lower triangular sensor */}
+      <path d="M118 214 L150 235 L182 214 L173 238 Q150 246 127 238 Z"
+            fill={`url(#${blueId})`} stroke={strokeColor} strokeWidth="6" strokeLinejoin="round"/>
+      <rect x="139" y="225" width="22" height="6" rx="3" fill="#dffcff"/>
+    </svg>
+  );
+};
+
+export const HeadStar3_6SVG = ({ color, viewBox = "-130 -30 560 560", className }: SVGProps) => {
+  const pal = getAttributePalette(color);
+  const uid = React.useId().replace(/:/g, '');
+
+  const shellId = `shell-3-6-${uid}`;
+  const blueId = `blue-3-6-${uid}`;
+  const eyeId = `eye-3-6-${uid}`;
+
+  // 属性カラーに応じた発光色・装甲色調整
+  const isBlueOrWater = !color || color === '#2563eb' || color === '#38bdf8' || color === '#0284c7' || color.toLowerCase().includes('blue');
+  const blue0 = isBlueOrWater ? '#64d8ff' : (pal.glow0 || '#64d8ff');
+  const blue1 = isBlueOrWater ? '#1977df' : (pal.armor100 || '#1977df');
+  const strokeColor = isBlueOrWater ? '#12243c' : (pal.stroke || '#12243c');
+  const eyeGlow = isBlueOrWater ? '#64eaff' : (pal.glow60 || '#64eaff');
+  const eyeDark = isBlueOrWater ? '#078bd8' : (pal.solidAccent || '#078bd8');
+  const cheekLight = isBlueOrWater ? '#64eaff' : (pal.glow60 || '#64eaff');
+  const mouthLight = isBlueOrWater ? '#64eaff' : (pal.glow60 || '#64eaff');
+  const highlightGlow = isBlueOrWater ? '#bff5ff' : (pal.glow0 || '#bff5ff');
+  const chinGlow = isBlueOrWater ? '#bff8ff' : (pal.glow0 || '#bff8ff');
+
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox={viewBox} className={className}>
+      <defs>
+        <linearGradient id={shellId} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#ffffff"/><stop offset="1" stopColor="#cbd7e5"/>
+        </linearGradient>
+        <linearGradient id={blueId} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor={blue0}/><stop offset="1" stopColor={blue1}/>
+        </linearGradient>
+        <radialGradient id={eyeId}>
+          <stop offset="0" stopColor="#efffff"/><stop offset="0.35" stopColor={eyeGlow}/>
+          <stop offset="1" stopColor={eyeDark}/>
+        </radialGradient>
+      </defs>
+
+      {/* round cyclops robot head */}
+      <circle cx="150" cy="151" r="91" fill={`url(#${shellId})`} stroke={strokeColor} strokeWidth="9"/>
+
+      {/* top antenna */}
+      <ellipse cx="150" cy="39" rx="32" ry="13" fill={`url(#${blueId})`} stroke={strokeColor} strokeWidth="7"/>
+      <path d="M139 39v-20h22v20" fill="#aebdcd" stroke={strokeColor} strokeWidth="7"/>
+      <circle cx="150" cy="13" r="11" fill={eyeGlow} stroke={strokeColor} strokeWidth="6"/>
+
+      {/* side circular pods */}
+      <circle cx="62" cy="150" r="27" fill="#e6edf4" stroke={strokeColor} strokeWidth="8"/>
+      <circle cx="62" cy="150" r="14" fill={`url(#${blueId})`} stroke={strokeColor} strokeWidth="5"/>
+      <circle cx="58" cy="146" r="4" fill="#fff"/>
+
+      <circle cx="238" cy="150" r="27" fill="#e6edf4" stroke={strokeColor} strokeWidth="8"/>
+      <circle cx="238" cy="150" r="14" fill={`url(#${blueId})`} stroke={strokeColor} strokeWidth="5"/>
+      <circle cx="234" cy="146" r="4" fill="#fff"/>
+
+      {/* forehead armor */}
+      <path d="M103 79 Q150 61 197 79 L185 103 Q150 94 115 103Z"
+            fill={`url(#${blueId})`} stroke={strokeColor} strokeWidth="7"/>
+      <path d="M126 78 Q150 70 174 78" fill="none" stroke={highlightGlow} strokeWidth="5" strokeLinecap="round"/>
+
+      {/* single large eye */}
+      <circle cx="150" cy="139" r="49" fill="#eef3f8" stroke={strokeColor} strokeWidth="8"/>
+      <circle cx="150" cy="139" r="38" fill="#122b48" stroke="#314b67" strokeWidth="5"/>
+      <circle cx="150" cy="139" r="29" fill={`url(#${eyeId})`}/>
+      <circle cx="139" cy="127" r="10" fill="#fff"/>
+      <circle cx="164" cy="153" r="5" fill="#e8ffff"/>
+
+      {/* cute mouth */}
+      <path d="M132 185 Q150 202 168 185 Q168 211 150 214 Q132 211 132 185Z"
+            fill={strokeColor}/>
+      <path d="M141 199 Q150 205 159 199 Q158 208 150 209 Q142 208 141 199Z"
+            fill={mouthLight}/>
+
+      {/* cheek lights */}
+      <ellipse cx="96" cy="190" rx="12" ry="7" fill={cheekLight}/>
+      <ellipse cx="204" cy="190" rx="12" ry="7" fill={cheekLight}/>
+
+      {/* chin plate */}
+      <path d="M120 218 Q150 229 180 218 L171 241 Q150 249 129 241Z"
+            fill={`url(#${blueId})`} stroke={strokeColor} strokeWidth="7"/>
+      <rect x="139" y="229" width="22" height="6" rx="3" fill={chinGlow}/>
+    </svg>
+  );
+};
+
 export const LegsStar2SVG = ({ color, viewBox = "-230 -450 760 760", className }: SVGProps) => {
   const pal = getAttributePalette(color);
   const uid = React.useId().replace(/:/g, '');
@@ -1562,15 +1824,526 @@ export const HeadStar2_4SVG = ({ color, viewBox = "-64 -24 192 192", className }
   );
 };
 
+export const HeadStar2_5SVG = ({ color, viewBox = "-130 -30 560 560", className }: SVGProps) => {
+  const pal = getAttributePalette(color);
+  const uid = React.useId().replace(/:/g, '');
+
+  const wId = `twin-w-${uid}`;
+  const bId = `twin-b-${uid}`;
+
+  // 属性カラーに応じた発光色・装甲色調整
+  const isBlueOrWater = !color || color === '#2563eb' || color === '#38bdf8' || color === '#0284c7' || color.toLowerCase().includes('blue');
+  const blue0 = isBlueOrWater ? '#6fc8ff' : (pal.glow0 || '#6fc8ff');
+  const blue1 = isBlueOrWater ? '#2470d0' : (pal.armor100 || '#2470d0');
+  const strokeColor = isBlueOrWater ? '#172840' : (pal.stroke || '#172840');
+  const eyeColor = isBlueOrWater ? '#67eaff' : (pal.glow60 || '#67eaff');
+  const accentColor = isBlueOrWater ? '#4b9de9' : (pal.armor0 || '#4b9de9');
+  const antennaColor = isBlueOrWater ? '#67eaff' : (pal.glow60 || '#67eaff');
+
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox={viewBox} className={className}>
+      <defs>
+        <linearGradient id={wId} x1="0" y1="0" x2="1" y2="1">
+          <stop stopColor="#ffffff" />
+          <stop offset="1" stopColor="#d5e0eb" />
+        </linearGradient>
+        <linearGradient id={bId} x1="0" y1="0" x2="1" y2="1">
+          <stop stopColor={blue0} />
+          <stop offset="1" stopColor={blue1} />
+        </linearGradient>
+      </defs>
+
+      {/* Main outer shell */}
+      <path
+        d="M150 34L218 92 237 177Q240 201 218 216 190 235 150 239 110 235 82 216 60 201 63 177L82 92Z"
+        fill={`url(#${wId})`}
+        stroke={strokeColor}
+        strokeWidth="8"
+        strokeLinejoin="round"
+      />
+
+      {/* Top antenna base & glowing bulb */}
+      <rect x="139" y="25" width="22" height="25" rx="6" fill="#b8c7d6" stroke={strokeColor} strokeWidth="6" />
+      <circle cx="150" cy="18" r="12" fill={antennaColor} stroke={strokeColor} strokeWidth="6" />
+
+      {/* Ear pods */}
+      <circle cx="70" cy="150" r="22" fill={`url(#${wId})`} stroke={strokeColor} strokeWidth="7" />
+      <circle cx="230" cy="150" r="22" fill={`url(#${wId})`} stroke={strokeColor} strokeWidth="7" />
+      <circle cx="70" cy="150" r="10" fill={accentColor} />
+      <circle cx="230" cy="150" r="10" fill={accentColor} />
+
+      {/* Forehead triangle emblem */}
+      <path d="M150 67L174 94H126Z" fill={`url(#${bId})`} stroke={strokeColor} strokeWidth="6" strokeLinejoin="round" />
+
+      {/* Dark screen face visor */}
+      <path
+        d="M91 116Q91 103 105 103H195Q209 103 209 116V168Q209 181 195 184H105Q91 181 91 168Z"
+        fill="#17304f"
+        stroke={strokeColor}
+        strokeWidth="7"
+      />
+
+      {/* Twin glowing eyes */}
+      <ellipse cx="123" cy="139" rx="13" ry="17" fill={eyeColor} />
+      <ellipse cx="177" cy="139" rx="13" ry="17" fill={eyeColor} />
+      <circle cx="119" cy="134" r="4" fill="#ffffff" />
+      <circle cx="173" cy="134" r="4" fill="#ffffff" />
+
+      {/* Smile mouth */}
+      <path d="M142 159Q150 167 158 159" fill="none" stroke={eyeColor} strokeWidth="5" strokeLinecap="round" />
+
+      {/* Cheek side sensors */}
+      <path d="M88 191L112 181 119 211 101 218Z" fill={accentColor} />
+      <path d="M212 191L188 181 181 211 199 218Z" fill={accentColor} />
+    </svg>
+  );
+};
+
+export const HeadStar2_6SVG = ({ color, viewBox = "-130 -30 560 560", className }: SVGProps) => {
+  const pal = getAttributePalette(color);
+  const uid = React.useId().replace(/:/g, '');
+
+  const shellId = `shell-2-6-${uid}`;
+  const blueId = `blue-2-6-${uid}`;
+
+  // 属性カラーに応じた発光色・装甲色調整
+  const isBlueOrWater = !color || color === '#2563eb' || color === '#38bdf8' || color === '#0284c7' || color.toLowerCase().includes('blue');
+  const blue0 = isBlueOrWater ? '#72ccff' : (pal.glow0 || '#72ccff');
+  const blue1 = isBlueOrWater ? '#286fd0' : (pal.armor100 || '#286fd0');
+  const strokeColor = isBlueOrWater ? '#172840' : (pal.stroke || '#172840');
+  const eyeColor = isBlueOrWater ? '#67eaff' : (pal.glow60 || '#67eaff');
+  const noseColor = isBlueOrWater ? '#4b9de9' : (pal.armor0 || '#4b9de9');
+  const antennaColor = isBlueOrWater ? '#67eaff' : (pal.glow60 || '#67eaff');
+  const cheekColor = isBlueOrWater ? '#67eaff' : (pal.glow60 || '#67eaff');
+
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox={viewBox} className={className}>
+      <defs>
+        <linearGradient id={shellId} x1="0" y1="0" x2="1" y2="1">
+          <stop stopColor="#ffffff" />
+          <stop offset="1" stopColor="#c9d8e6" />
+        </linearGradient>
+        <linearGradient id={blueId} x1="0" y1="0" x2="1" y2="1">
+          <stop stopColor={blue0} />
+          <stop offset="1" stopColor={blue1} />
+        </linearGradient>
+      </defs>
+
+      {/* Alternate cute triangular robot head */}
+      <path
+        d="M150 38 L224 91 L211 195 Q208 220 185 230 Q168 238 150 238 Q132 238 115 230 Q92 220 89 195 L76 91 Z"
+        fill={`url(#${shellId})`}
+        stroke={strokeColor}
+        strokeWidth="8"
+        strokeLinejoin="round"
+      />
+
+      {/* small top antenna */}
+      <path d="M150 38V25" fill="none" stroke={strokeColor} strokeWidth="7" strokeLinecap="round" />
+      <circle cx="150" cy="17" r="10" fill={antennaColor} stroke={strokeColor} strokeWidth="6" />
+
+      {/* side fins */}
+      <path d="M79 105L55 122L67 153L88 143Z" fill={`url(#${blueId})`} stroke={strokeColor} strokeWidth="7" />
+      <path d="M221 105L245 122L233 153L212 143Z" fill={`url(#${blueId})`} stroke={strokeColor} strokeWidth="7" />
+
+      {/* face panel */}
+      <path
+        d="M101 105L150 82L199 105V163Q150 184 101 163Z"
+        fill="#17304f"
+        stroke={strokeColor}
+        strokeWidth="7"
+        strokeLinejoin="round"
+      />
+
+      {/* cute eyes */}
+      <circle cx="128" cy="132" r="14" fill={eyeColor} />
+      <circle cx="172" cy="132" r="14" fill={eyeColor} />
+      <circle cx="124" cy="127" r="4" fill="#ffffff" />
+      <circle cx="168" cy="127" r="4" fill="#ffffff" />
+
+      {/* tiny nose sensor */}
+      <path d="M150 143L158 151L150 158L142 151Z" fill={noseColor} stroke={strokeColor} strokeWidth="4" />
+
+      {/* simple smile */}
+      <path d="M140 168Q150 176 160 168" fill="none" stroke={eyeColor} strokeWidth="5" strokeLinecap="round" />
+
+      {/* lower triangular accent */}
+      <path d="M150 186L169 211H131Z" fill={`url(#${blueId})`} stroke={strokeColor} strokeWidth="6" strokeLinejoin="round" />
+      <circle cx="150" cy="200" r="5" fill={eyeColor} />
+
+      {/* cheek bolts */}
+      <circle cx="96" cy="176" r="7" fill={cheekColor} stroke={strokeColor} strokeWidth="4" />
+      <circle cx="204" cy="176" r="7" fill={cheekColor} stroke={strokeColor} strokeWidth="4" />
+    </svg>
+  );
+};
+
+export const HeadStar2_7SVG = ({ color, viewBox = "-130 -30 560 560", className }: SVGProps) => {
+  const pal = getAttributePalette(color);
+  const uid = React.useId().replace(/:/g, '');
+
+  const shellId = `shell-2-7-${uid}`;
+  const blueId = `blue-2-7-${uid}`;
+
+  // 属性カラーに応じた発光色・装甲色調整
+  const isBlueOrWater = !color || color === '#2563eb' || color === '#38bdf8' || color === '#0284c7' || color.toLowerCase().includes('blue');
+  const blue0 = isBlueOrWater ? '#79d6ff' : (pal.glow0 || '#79d6ff');
+  const blue1 = isBlueOrWater ? '#2772d4' : (pal.armor100 || '#2772d4');
+  const strokeColor = isBlueOrWater ? '#172840' : (pal.stroke || '#172840');
+  const eyeColor = isBlueOrWater ? '#67eaff' : (pal.glow60 || '#67eaff');
+  const noseColor = isBlueOrWater ? '#4b9de9' : (pal.armor0 || '#4b9de9');
+  const cheekColor = isBlueOrWater ? '#67eaff' : (pal.glow60 || '#67eaff');
+  const foreheadDot = isBlueOrWater ? '#dffbff' : (pal.glow0 || '#dffbff');
+
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox={viewBox} className={className}>
+      <defs>
+        <linearGradient id={shellId} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#ffffff" />
+          <stop offset="1" stopColor="#c8d7e6" />
+        </linearGradient>
+        <linearGradient id={blueId} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor={blue0} />
+          <stop offset="1" stopColor={blue1} />
+        </linearGradient>
+      </defs>
+
+      {/* main triangular shell */}
+      <path
+        d="M150 32 L235 196 Q239 205 229 213 Q197 239 150 242 Q103 239 71 213 Q61 205 65 196 Z"
+        fill={`url(#${shellId})`}
+        stroke={strokeColor}
+        strokeWidth="9"
+        strokeLinejoin="round"
+      />
+
+      {/* triangular top sensor */}
+      <path
+        d="M150 32 L168 55 H132 Z"
+        fill={`url(#${blueId})`}
+        stroke={strokeColor}
+        strokeWidth="6"
+        strokeLinejoin="round"
+      />
+      <circle cx="150" cy="43" r="4" fill="#ffffff" />
+
+      {/* side triangular ears */}
+      <path
+        d="M72 137 L43 153 L69 184 L87 168 Z"
+        fill={`url(#${blueId})`}
+        stroke={strokeColor}
+        strokeWidth="8"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M228 137 L257 153 L231 184 L213 168 Z"
+        fill={`url(#${blueId})`}
+        stroke={strokeColor}
+        strokeWidth="8"
+        strokeLinejoin="round"
+      />
+
+      {/* inner face triangle */}
+      <path
+        d="M150 73 L213 183 Q216 190 207 193 Q180 207 150 208 Q120 207 93 193 Q84 190 87 183 Z"
+        fill="#17304f"
+        stroke={strokeColor}
+        strokeWidth="7"
+        strokeLinejoin="round"
+      />
+
+      {/* large triangular forehead panel */}
+      <path
+        d="M150 88 L174 119 H126 Z"
+        fill={`url(#${blueId})`}
+        stroke={strokeColor}
+        strokeWidth="5"
+        strokeLinejoin="round"
+      />
+      <circle cx="150" cy="105" r="5" fill={foreheadDot} />
+
+      {/* cute eyes */}
+      <ellipse cx="125" cy="150" rx="13" ry="17" fill={eyeColor} />
+      <ellipse cx="175" cy="150" rx="13" ry="17" fill={eyeColor} />
+      <ellipse cx="121" cy="145" rx="4" ry="6" fill="#ffffff" />
+      <ellipse cx="171" cy="145" rx="4" ry="6" fill="#ffffff" />
+
+      {/* tiny triangular nose */}
+      <path d="M150 158 L158 168 L142 168 Z" fill={noseColor} />
+
+      {/* smile */}
+      <path
+        d="M139 177 Q150 186 161 177"
+        fill="none"
+        stroke={eyeColor}
+        strokeWidth="5"
+        strokeLinecap="round"
+      />
+
+      {/* lower triangular armor */}
+      <path
+        d="M150 195 L178 224 Q150 235 122 224 Z"
+        fill={`url(#${blueId})`}
+        stroke={strokeColor}
+        strokeWidth="6"
+        strokeLinejoin="round"
+      />
+      <circle cx="150" cy="218" r="5" fill="#ffffff" />
+
+      {/* cheek bolts */}
+      <circle cx="88" cy="192" r="7" fill={cheekColor} stroke={strokeColor} strokeWidth="4" />
+      <circle cx="212" cy="192" r="7" fill={cheekColor} stroke={strokeColor} strokeWidth="4" />
+    </svg>
+  );
+};
+
+export const HeadStar2_8SVG = ({ color, viewBox = "-130 -30 560 560", className }: SVGProps) => {
+  const pal = getAttributePalette(color);
+  const uid = React.useId().replace(/:/g, '');
+
+  const shellId = `shell-2-8-${uid}`;
+  const blueId = `blue-2-8-${uid}`;
+
+  // 属性カラーに応じた発光色・装甲色調整
+  const isBlueOrWater = !color || color === '#2563eb' || color === '#38bdf8' || color === '#0284c7' || color.toLowerCase().includes('blue');
+  const blue0 = isBlueOrWater ? '#74d5ff' : (pal.glow0 || '#74d5ff');
+  const blue1 = isBlueOrWater ? '#2473d5' : (pal.armor100 || '#2473d5');
+  const strokeColor = isBlueOrWater ? '#172840' : (pal.stroke || '#172840');
+  const eyeColor = isBlueOrWater ? '#67eaff' : (pal.glow60 || '#67eaff');
+  const antennaColor = isBlueOrWater ? '#67eaff' : (pal.glow60 || '#67eaff');
+  const ventColor = isBlueOrWater ? '#3978cf' : (pal.solidAccent || '#3978cf');
+  const highlightColor = isBlueOrWater ? '#dffbff' : (pal.glow0 || '#dffbff');
+
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox={viewBox} className={className}>
+      <defs>
+        <linearGradient id={shellId} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#ffffff" />
+          <stop offset="1" stopColor="#cbd9e7" />
+        </linearGradient>
+        <linearGradient id={blueId} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor={blue0} />
+          <stop offset="1" stopColor={blue1} />
+        </linearGradient>
+      </defs>
+
+      {/* round robot head */}
+      <path
+        d="M150 39 C205 39 239 75 239 139 C239 198 204 230 150 230 C96 230 61 198 61 139 C61 75 95 39 150 39Z"
+        fill={`url(#${shellId})`}
+        stroke={strokeColor}
+        strokeWidth="9"
+      />
+
+      {/* top antenna */}
+      <path d="M150 40V25" stroke={strokeColor} strokeWidth="7" strokeLinecap="round" />
+      <circle cx="150" cy="17" r="11" fill={antennaColor} stroke={strokeColor} strokeWidth="6" />
+
+      {/* round side pods */}
+      <circle cx="65" cy="142" r="28" fill={`url(#${shellId})`} stroke={strokeColor} strokeWidth="8" />
+      <circle cx="65" cy="142" r="14" fill={`url(#${blueId})`} stroke={strokeColor} strokeWidth="5" />
+      <circle cx="65" cy="138" r="5" fill="#ffffff" />
+
+      <circle cx="235" cy="142" r="28" fill={`url(#${shellId})`} stroke={strokeColor} strokeWidth="8" />
+      <circle cx="235" cy="142" r="14" fill={`url(#${blueId})`} stroke={strokeColor} strokeWidth="5" />
+      <circle cx="235" cy="138" r="5" fill="#ffffff" />
+
+      {/* forehead plate */}
+      <path
+        d="M150 68 L174 101 Q177 106 170 108 H130 Q123 106 126 101Z"
+        fill={`url(#${blueId})`}
+        stroke={strokeColor}
+        strokeWidth="6"
+      />
+      <circle cx="150" cy="91" r="5" fill={highlightColor} />
+
+      {/* visor */}
+      <rect x="82" y="112" width="136" height="76" rx="32" fill="#132b48" stroke={strokeColor} strokeWidth="8" />
+
+      {/* cute eyes */}
+      <ellipse cx="121" cy="148" rx="15" ry="20" fill={eyeColor} />
+      <ellipse cx="179" cy="148" rx="15" ry="20" fill={eyeColor} />
+      <ellipse cx="116" cy="142" rx="5" ry="7" fill="#ffffff" />
+      <ellipse cx="174" cy="142" rx="5" ry="7" fill="#ffffff" />
+
+      {/* smile */}
+      <path d="M139 164 Q150 175 161 164" fill="none" stroke={eyeColor} strokeWidth="6" strokeLinecap="round" />
+
+      {/* lower cheek vents */}
+      <path d="M86 193L101 187L106 202L92 207Z" fill={ventColor} />
+      <path d="M214 193L199 187L194 202L208 207Z" fill={ventColor} />
+
+      {/* chin plate */}
+      <path
+        d="M126 207 Q150 216 174 207 L169 224 Q150 231 131 224Z"
+        fill={`url(#${blueId})`}
+        stroke={strokeColor}
+        strokeWidth="6"
+      />
+      <rect x="143" y="213" width="14" height="6" rx="3" fill={highlightColor} />
+    </svg>
+  );
+};
+
+export const BodyStar3SVG = ({ color, viewBox = "-100 -50 560 560", className }: SVGProps) => {
+  const pal = getAttributePalette(color);
+  const uid = React.useId().replace(/:/g, '');
+
+  const armorId = `body3-armor-${uid}`;
+  const blueId = `body3-blue-${uid}`;
+
+  // 属性カラーに応じた発光色・装甲色調整
+  const isBlueOrWater = !color || color === '#2563eb' || color === '#38bdf8' || color === '#0284c7' || color.toLowerCase().includes('blue');
+  const blue0 = isBlueOrWater ? '#73dcff' : (pal.glow0 || '#73dcff');
+  const blue1 = isBlueOrWater ? '#1674d5' : (pal.armor100 || '#1674d5');
+  const strokeColor = isBlueOrWater ? '#14263f' : (pal.stroke || '#14263f');
+  const neckSocketGlow = isBlueOrWater ? '#62eaff' : (pal.glow60 || '#62eaff');
+  const jointLightColor = isBlueOrWater ? '#2b83db' : (pal.armor0 || '#2b83db');
+
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox={viewBox} className={className}>
+      <defs>
+        <linearGradient id={armorId} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#ffffff" />
+          <stop offset="1" stopColor="#c9d7e5" />
+        </linearGradient>
+        <linearGradient id={blueId} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor={blue0} />
+          <stop offset="1" stopColor={blue1} />
+        </linearGradient>
+      </defs>
+
+      {/* inverted-triangle robot body */}
+      <path
+        d="M82 78 Q70 78 62 92 L35 128 Q28 139 37 149 L66 174
+           L103 271 Q111 294 132 311 L164 337 Q180 349 196 337
+           L228 311 Q249 294 257 271 L294 174 L323 149
+           Q332 139 325 128 L298 92 Q290 78 278 78 L222 78
+           Q206 58 180 58 Q154 58 138 78 Z"
+        fill={`url(#${armorId})`}
+        stroke={strokeColor}
+        strokeWidth="9"
+        strokeLinejoin="round"
+      />
+
+      {/* neck socket */}
+      <ellipse cx="180" cy="78" rx="43" ry="22" fill="#dce6ef" stroke={strokeColor} strokeWidth="8" />
+      <ellipse cx="180" cy="77" rx="29" ry="12" fill="#182d48" />
+      <rect x="163" y="82" width="34" height="8" rx="4" fill={neckSocketGlow} />
+
+      {/* blue shoulder armor */}
+      <path
+        d="M91 88 L137 83 L157 119 L111 139 L78 121 Z"
+        fill={`url(#${blueId})`}
+        stroke={strokeColor}
+        strokeWidth="7"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M269 88 L223 83 L203 119 L249 139 L282 121 Z"
+        fill={`url(#${blueId})`}
+        stroke={strokeColor}
+        strokeWidth="7"
+        strokeLinejoin="round"
+      />
+
+      {/* shoulder circular lights */}
+      <circle cx="70" cy="137" r="30" fill="#eaf1f6" stroke={strokeColor} strokeWidth="8" />
+      <circle cx="70" cy="137" r="18" fill={`url(#${blueId})`} stroke={strokeColor} strokeWidth="5" />
+      <circle cx="70" cy="132" r="6" fill="#dffcff" />
+      <circle cx="290" cy="137" r="30" fill="#eaf1f6" stroke={strokeColor} strokeWidth="8" />
+      <circle cx="290" cy="137" r="18" fill={`url(#${blueId})`} stroke={strokeColor} strokeWidth="5" />
+      <circle cx="290" cy="132" r="6" fill="#dffcff" />
+
+      {/* shoulder yellow indicators */}
+      <rect x="92" y="126" width="13" height="31" rx="6" fill="#ffd52a" stroke={strokeColor} strokeWidth="5" transform="rotate(-18 98 141)" />
+      <rect x="255" y="126" width="13" height="31" rx="6" fill="#ffd52a" stroke={strokeColor} strokeWidth="5" transform="rotate(18 262 141)" />
+
+      {/* central chest plate */}
+      <path
+        d="M107 126 Q180 110 253 126 L235 222
+           Q180 245 125 222 Z"
+        fill="#f7fafc"
+        stroke={strokeColor}
+        strokeWidth="8"
+        strokeLinejoin="round"
+      />
+
+      {/* glowing inverted triangular core */}
+      <path
+        d="M180 139 L222 191 Q228 199 216 202
+           L144 202 Q132 199 138 191 Z"
+        fill={`url(#${blueId})`}
+        stroke={strokeColor}
+        strokeWidth="8"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M180 151 L205 187 Q208 192 201 192 H159 Q152 192 155 187 Z"
+        fill="#e7ffff"
+      />
+
+      {/* side vents */}
+      <rect x="119" y="153" width="11" height="38" rx="5" fill="#172a43" />
+      <rect x="134" y="151" width="11" height="31" rx="5" fill="#172a43" />
+      <rect x="231" y="153" width="11" height="38" rx="5" fill="#172a43" />
+      <rect x="216" y="151" width="11" height="31" rx="5" fill="#172a43" />
+
+      {/* lower blue armor */}
+      <path
+        d="M125 224 Q180 244 235 224 L221 278
+           Q180 299 139 278 Z"
+        fill={`url(#${blueId})`}
+        stroke={strokeColor}
+        strokeWidth="8"
+        strokeLinejoin="round"
+      />
+      <rect x="155" y="245" width="50" height="9" rx="4" fill="#172a43" />
+      <rect x="155" y="263" width="50" height="9" rx="4" fill="#172a43" />
+
+      {/* lower white armor strips */}
+      <path
+        d="M118 254 L139 281 L151 303 L132 289 Q118 276 112 258Z"
+        fill="#ffffff"
+        stroke={strokeColor}
+        strokeWidth="6"
+      />
+      <path
+        d="M242 254 L221 281 L209 303 L228 289 Q242 276 248 258Z"
+        fill="#ffffff"
+        stroke={strokeColor}
+        strokeWidth="6"
+      />
+
+      {/* bottom orange indicator */}
+      <rect
+        x="158"
+        y="302"
+        width="44"
+        height="17"
+        rx="8"
+        fill="#ffd52a"
+        stroke={strokeColor}
+        strokeWidth="6"
+      />
+      <rect x="169" y="307" width="22" height="6" rx="3" fill="#fff4a8" />
+
+      {/* side joint details */}
+      <circle cx="104" cy="211" r="13" fill={jointLightColor} stroke={strokeColor} strokeWidth="6" />
+      <circle cx="256" cy="211" r="13" fill={jointLightColor} stroke={strokeColor} strokeWidth="6" />
+    </svg>
+  );
+};
+
 export const SVG_HEADS: Record<number, React.FC<SVGProps>[]> = {
   1: [HeadBasicSVG, HeadRoundSVG, HeadTVSVG, HeadHornSVG, HeadCylinderSVG, HeadVisorSVG, HeadTriangleSVG, HeadDomeSVG],
-  2: [HeadStar2SVG, HeadStar2_2SVG, HeadStar2_3SVG, HeadStar2_4SVG],
-  3: [HeadStar3SVG, HeadStar3_2SVG, HeadStar3_3SVG]
+  2: [HeadStar2SVG, HeadStar2_2SVG, HeadStar2_3SVG, HeadStar2_4SVG, HeadStar2_5SVG, HeadStar2_6SVG, HeadStar2_7SVG, HeadStar2_8SVG],
+  3: [HeadStar3SVG, HeadStar3_2SVG, HeadStar3_3SVG, HeadStar3_4SVG, HeadStar3_5SVG, HeadStar3_6SVG]
 };
 export const SVG_BODIES: Record<number, React.FC<SVGProps>[]> = {
   1: [BodyBasicSVG, BodyRoundSVG, BodyHeavySVG, BodyBarrelSVG, BodySlimSVG, BodyFurnaceSVG, BodyDiamondSVG, BodyEngineSVG],
   2: [BodyStar2SVG, BodyStar2_2SVG],
-  3: []
+  3: [BodyStar3SVG]
 };
 export const ArmsStar2_2SVG = ({ color, viewBox = "-75 -134 457 457", className }: SVGProps) => {
   const pal = getAttributePalette(color);

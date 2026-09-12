@@ -10,15 +10,16 @@ import { ArmJointCalibrationModal } from '../components/robot/ArmJointCalibratio
 import { SVG_HEADS, SVG_BODIES, SVG_ARMS, SVG_LEGS } from '../components/robot/RobotSVGs';
 import { HandAnchorManager } from '../core/animations/HandAnchorManager';
 import { MATERIALS, getMaterialCraftableVisuals } from '../core/data';
+import { calculatePartBaseline } from '../utils/partBaseline';
 import * as Gi from 'react-icons/gi';
 import { MaterialIcon } from '../components/ui/MaterialIcon';
 
 const SinglePart: React.FC<{ Comp: React.FC<{color: string, viewBox?: string, className?: string}>, color: string, type: 'head'|'body'|'arms'|'legs', rarityLabel?: number, visualIndex?: number, hideContainer?: boolean }> = ({ Comp, color, type, rarityLabel, visualIndex = 0, hideContainer }) => {
   const r = rarityLabel || 1;
   const viewBox = r === 3
-    ? (type === 'head' ? '0 0 256 256' : '0 0 256 256')
+    ? (type === 'head' ? (visualIndex >= 3 ? '0 0 300 300' : '0 0 256 256') : type === 'body' ? '0 0 360 360' : '0 0 256 256')
     : r === 2
-    ? (type === 'head' ? '-10 -5 80 80' : type === 'arms' ? (visualIndex > 0 ? '0 0 300 300' : '6 -4 52 52') : type === 'body' ? '22 28 56 52' : type === 'legs' ? '0 0 300 300' : '0 0 32 32')
+    ? (type === 'head' ? (visualIndex >= 4 ? '0 0 300 300' : '-10 -5 80 80') : type === 'arms' ? (visualIndex > 0 ? '0 0 300 300' : '6 -4 52 52') : type === 'body' ? '22 28 56 52' : type === 'legs' ? '0 0 300 300' : '0 0 32 32')
     : (type === 'head' ? '20 0 60 45' :
        type === 'body' ? '25 32 50 48' :
        type === 'arms' ? '5 38 90 42' :
@@ -61,6 +62,20 @@ interface CatalogPartItem {
   isNew?: boolean;
 }
 
+const getBaselineStatsForCatalogItem = (item: CatalogPartItem, attribute: string) => {
+  const dummyPart: any = {
+    id: item.id,
+    type: item.type,
+    name: item.name,
+    attribute: attribute,
+    rarity: item.rarity,
+    visualIndex: item.visualIndex,
+    stats: { hp: 0, power: 0, defense: 0, agility: 0, dexterity: 0, intelligence: 0 }
+  };
+  const result = calculatePartBaseline(dummyPart);
+  return { stats: result.baselineStats, weight: result.baselineWeight };
+};
+
 const ALL_PARTS_CATALOG: CatalogPartItem[] = [
   // Head
   { id: 'h1_0', type: 'head', rarity: 1, visualIndex: 0, name: 'ベーシックヘッド' },
@@ -75,10 +90,17 @@ const ALL_PARTS_CATALOG: CatalogPartItem[] = [
   { id: 'h2_1', type: 'head', rarity: 2, visualIndex: 1, name: 'センサーヘッド', isNew: true },
   { id: 'h2_2', type: 'head', rarity: 2, visualIndex: 2, name: 'コマンドヘッド', isNew: true },
   { id: 'h2_3', type: 'head', rarity: 2, visualIndex: 3, name: 'バトルヘッド', isNew: true },
+  { id: 'h2_4', type: 'head', rarity: 2, visualIndex: 4, name: 'ポッドツインヘッド', isNew: true },
+  { id: 'h2_5', type: 'head', rarity: 2, visualIndex: 5, name: 'フィントライヘッド', isNew: true },
+  { id: 'h2_6', type: 'head', rarity: 2, visualIndex: 6, name: 'デルタイヤーヘッド', isNew: true },
+  { id: 'h2_7', type: 'head', rarity: 2, visualIndex: 7, name: 'ラウンドバイザーヘッド', isNew: true },
   { id: 'h3_0', type: 'head', rarity: 3, visualIndex: 0, name: 'パラディンヘッド' },
   { id: 'h3_1', type: 'head', rarity: 3, visualIndex: 1, name: 'エンジェルヘッド' },
   { id: 'h3_2', type: 'head', rarity: 3, visualIndex: 2, name: 'ドラゴンヘッド' },
-  { id: 'h3_3', type: 'head', rarity: 3, visualIndex: 3, name: 'アサシンヘッド' },
+  { id: 'h3_3', type: 'head', rarity: 3, visualIndex: 3, name: 'サイクロプスヘッド', isNew: true },
+  { id: 'h3_4', type: 'head', rarity: 3, visualIndex: 4, name: 'トライアングルヘッド', isNew: true },
+  { id: 'h3_5', type: 'head', rarity: 3, visualIndex: 5, name: 'デルタサイクロプスヘッド', isNew: true },
+  { id: 'h3_6', type: 'head', rarity: 3, visualIndex: 6, name: 'オーブサイクロプスヘッド', isNew: true },
 
   // Body
   { id: 'b1_0', type: 'body', rarity: 1, visualIndex: 0, name: 'ベーシックボディ' },
@@ -91,6 +113,7 @@ const ALL_PARTS_CATALOG: CatalogPartItem[] = [
   { id: 'b1_7', type: 'body', rarity: 1, visualIndex: 7, name: 'エンジンボディ' },
   { id: 'b2_0', type: 'body', rarity: 2, visualIndex: 0, name: 'ハイテクコアボディ' },
   { id: 'b2_1', type: 'body', rarity: 2, visualIndex: 1, name: 'バイザーコアボディ', isNew: true },
+  { id: 'b3_0', type: 'body', rarity: 3, visualIndex: 0, name: 'トライアングルコアボディ', isNew: true },
 
   // Arms
   { id: 'a1_0', type: 'arms', rarity: 1, visualIndex: 0, name: 'ベーシックアーム' },
@@ -274,6 +297,7 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
   }, [filterPartType, filterRarity, searchQuery]);
 
   const activeColor = filterAttribute === 'All' ? AttributeColors['Water'] : (AttributeColors[filterAttribute] || AttributeColors['Water']);
+  const activeAttr = filterAttribute === 'All' ? 'Earth' : filterAttribute;
 
   return (
     <div className="space-y-6">
@@ -460,6 +484,8 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
               const Comp = getPartSVG(item.type, item.rarity, item.visualIndex);
               const typeLabel = item.type === 'head' ? 'ヘッド' : item.type === 'body' ? 'ボディ' : item.type === 'arms' ? 'アーム' : 'レッグ';
               const TypeIcon = item.type === 'head' ? Gi.GiMechaHead : item.type === 'body' ? Gi.GiChestArmor : item.type === 'arms' ? Gi.GiMechanicalArm : Gi.GiLegArmor;
+              const baselineData = getBaselineStatsForCatalogItem(item, activeAttr);
+              const baselineStats = baselineData.stats;
 
               return (
                 <Card key={item.id} className="p-2.5 flex flex-col items-center bg-white border border-stone-200 relative group hover:shadow-md transition-shadow">
@@ -483,10 +509,42 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
                     <SinglePart Comp={Comp} color={activeColor} type={item.type} rarityLabel={item.rarity} visualIndex={item.visualIndex} hideContainer={true} />
                   </div>
 
-                  <p className="text-xs font-bold text-stone-800 text-center w-full truncate">
+                  <p className="text-xs font-bold text-stone-800 text-center w-full truncate mb-1">
                     {item.name}
                   </p>
                   
+                  <div className="w-full grid grid-cols-2 gap-1 text-[9px] mb-1">
+                    <div className="flex justify-between bg-stone-100 px-1 py-0.5 rounded">
+                      <span className="text-stone-500">HP</span>
+                      <span className="font-bold text-stone-700">{baselineStats.hp}</span>
+                    </div>
+                    <div className="flex justify-between bg-stone-100 px-1 py-0.5 rounded">
+                      <span className="text-stone-500">POW</span>
+                      <span className="font-bold text-stone-700">{baselineStats.power}</span>
+                    </div>
+                    <div className="flex justify-between bg-stone-100 px-1 py-0.5 rounded">
+                      <span className="text-stone-500">DEF</span>
+                      <span className="font-bold text-stone-700">{baselineStats.defense}</span>
+                    </div>
+                    <div className="flex justify-between bg-stone-100 px-1 py-0.5 rounded">
+                      <span className="text-stone-500">AGI</span>
+                      <span className="font-bold text-stone-700">{baselineStats.agility}</span>
+                    </div>
+                    <div className="flex justify-between bg-stone-100 px-1 py-0.5 rounded">
+                      <span className="text-stone-500">DEX</span>
+                      <span className="font-bold text-stone-700">{baselineStats.dexterity}</span>
+                    </div>
+                    <div className="flex justify-between bg-stone-100 px-1 py-0.5 rounded">
+                      <span className="text-stone-500">INT</span>
+                      <span className="font-bold text-stone-700">{baselineStats.intelligence}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="w-full flex justify-between bg-stone-100 px-1 py-0.5 rounded text-[9px] mb-1">
+                    <span className="text-stone-500">WT</span>
+                    <span className="font-bold text-stone-700">{baselineData.weight}</span>
+                  </div>
+
                   {item.type === 'arms' && (
                     <button
                       type="button"

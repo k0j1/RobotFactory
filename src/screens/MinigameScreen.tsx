@@ -167,6 +167,20 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
   const selectedGameDef = GAMES.find(g => g.id === selectedGame);
   const requiresOpponent = selectedGameDef?.requiresOpponent ?? true;
 
+  // 選択中のロボット・対戦相手/難易度/ステージが「本日クリア済み」かどうかを判定
+  const isCurrentBattleClearedToday = useMemo(() => {
+    if (selectedGame === 'defense') {
+      return defenseResetInfo.isCompletedToday;
+    }
+    if (!activeRobot) return false;
+    let levelId: number | string = 1;
+    if (requiresOpponent && activeOpponent) levelId = activeOpponent.level;
+    else if (selectedGame === 'danmaku') levelId = DANMAKU_DIFFICULTIES.find(d => d.id === danmakuDifficulty)?.id || 'easy';
+    else if (selectedGame === 'piano') levelId = pianoSongId;
+
+    return (engine as any).checkDailyBattleLimit(activeRobot.id, selectedGame, levelId, currentTimestamp);
+  }, [selectedGame, activeRobot, requiresOpponent, activeOpponent, danmakuDifficulty, pianoSongId, defenseResetInfo.isCompletedToday, currentTimestamp, state.dailyBattleLimits]);
+
   const handleFinish = (result: 'win' | 'lose' | 'draw') => {
     if (selectedGame === 'defense') {
       const selectedDefenseRobots = selectedDefenseRobotIds.map(id => state.robots.find(r => r.id === id)!).filter(Boolean);
@@ -183,8 +197,21 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
       setPianoBestScores(getPianoBestScores());
     }
     if (result === 'win') {
-      if (selectedGame === 'combat' && activeOpponent) {
-        // バトル演習 (Combat): レベル別宝箱報酬
+      // 勝利時：本日のクリア制限を記録
+      if (activeRobot) {
+        if (selectedGame === 'combat' || selectedGame === 'othello' || selectedGame === 'chess') {
+          if (activeOpponent) {
+            (engine as any).recordDailyBattleLimit(activeRobot.id, selectedGame, activeOpponent.level);
+          }
+        } else if (selectedGame === 'danmaku') {
+          (engine as any).recordDailyBattleLimit(activeRobot.id, selectedGame, activeDanmakuDiff.id);
+        } else if (selectedGame === 'piano') {
+          (engine as any).recordDailyBattleLimit(activeRobot.id, selectedGame, activePianoSong.id);
+        }
+      }
+
+      if ((selectedGame === 'combat' || selectedGame === 'othello' || selectedGame === 'chess') && activeOpponent) {
+        // バトル演習 (Combat), オセロ, チェス: レベル別宝箱報酬
         const chestDrop = BattleChestRewardService.rollCombatChest(
           activeOpponent.level,
           activeOpponent.name,
@@ -205,7 +232,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
           (engine as any).addMaterial(mat.material.id, mat.count);
         }
         if (chestDrop.fame > 0) {
-          (engine as any).addFame(chestDrop.fame, `演習勝利: ${activeOpponent.name}`);
+          (engine as any).addFame(chestDrop.fame, `${selectedGame === 'othello' ? 'オセロ' : selectedGame === 'chess' ? 'チェス' : '演習'}勝利: ${activeOpponent.name}`);
         }
       } else if (selectedGame === 'defense') {
         // 拠点防衛戦 (Defense): レベル別宝箱報酬
@@ -239,18 +266,17 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
         // 当日の防衛戦成功を記録（朝9:00まで再挑戦不可）
         (engine as any).recordDefenseVictory();
       } else if (selectedGame === 'danmaku') {
-        // Difficulty-based reward for danmaku survival
-        const chestDrop = BattleChestRewardService.rollGenericChest(
-          'danmaku',
-          activeDanmakuDiff.id === 'hard' ? 3 : activeDanmakuDiff.id === 'normal' ? 2 : 1,
-          `弾幕サバイバル (${activeDanmakuDiff.label})`,
-          activeDanmakuDiff.rewardKits,
-          activeDanmakuDiff.rewardFame
+        // 弾幕よけ: 名声獲得なし、専用宝箱ドロップ＆開封
+        const chestDrop = BattleChestRewardService.rollDanmakuChest(
+          activeDanmakuDiff.id,
+          activeDanmakuDiff.name
         );
         setCurrentChestDrop(chestDrop);
         if (chestDrop.repairKits > 0) (engine as any).addRepairKits(chestDrop.repairKits);
-        if (chestDrop.fame > 0) {
-          (engine as any).addFame(chestDrop.fame, `弾幕サバイバルクリア: ${activeDanmakuDiff.name}`);
+        if (chestDrop.gold > 0) (engine as any).addGold(chestDrop.gold);
+        if (chestDrop.elements > 0) (engine as any).addBattleElements(chestDrop.elements);
+        for (const mat of chestDrop.materials) {
+          (engine as any).addMaterial(mat.material.id, mat.count);
         }
       } else if (selectedGame === 'piano') {
         const kits = Math.max(1, Math.ceil(activePianoSong.level / 2));
@@ -298,9 +324,13 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
   };
 
   const handleStartBattle = () => {
+    // すでに本日クリア済みの場合は開始不可
+    if (isCurrentBattleClearedToday) {
+      return;
+    }
+
     if (selectedGame === 'defense') {
       if (defenseResetInfo.isCompletedToday) {
-        alert("本日の拠点防衛戦はすでに成功しています。朝9:00のリセットをお待ちください。");
         return;
       }
       if (selectedDefenseRobotIds.length === 0) return;
@@ -321,6 +351,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
       alert("HPが足りません。バトルに参加するにはHPが1必要です。");
       return;
     }
+
     setIsConfirmModalOpen(true);
   };
 
@@ -557,6 +588,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
               setSelectedOpponentId={setSelectedOpponentId}
               onExchangeEquipment={(eq) => engine.exchangeCombatEquipment(eq)}
               onToggleEquipment={(eq, enabled) => engine.toggleCombatEquipment(eq, enabled)}
+              isOpponentCleared={(lvl) => activeRobot ? (engine as any).checkDailyBattleLimit(activeRobot.id, 'combat', lvl, currentTimestamp) : false}
             />
           )}
 
@@ -770,6 +802,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                   <div className="space-y-2">
                     {DANMAKU_DIFFICULTIES.map(diff => {
                       const isSelected = danmakuDifficulty === diff.id;
+                      const isCleared = activeRobot ? (engine as any).checkDailyBattleLimit(activeRobot.id, 'danmaku', diff.id, currentTimestamp) : false;
                       return (
                         <button
                           key={diff.id}
@@ -777,6 +810,8 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                           className={`w-full text-left p-3 rounded-xl border-2 transition-all ${
                             isSelected 
                               ? 'border-amber-500 bg-amber-50/90 shadow-xs ring-2 ring-amber-300' 
+                              : isCleared
+                              ? 'border-emerald-400 bg-emerald-50/40 hover:border-emerald-500'
                               : 'border-stone-300 bg-white hover:border-stone-400 hover:bg-stone-50'
                           }`}
                         >
@@ -786,12 +821,17 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                               <span className={`text-[10px] px-1.5 py-0.5 rounded border font-bold ${diff.badgeClass}`}>
                                 {diff.subLabel}
                               </span>
+                              {isCleared && (
+                                <span className="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5 font-mono">
+                                  <Gi.GiCheckMark className="text-[8px]" /> 本日クリア済
+                                </span>
+                              )}
                             </div>
                             <div className="text-right font-mono text-xs text-amber-800 font-bold bg-amber-100/80 px-2 py-0.5 rounded border border-amber-300 flex flex-col items-end gap-0.5">
-                              <span><Gi.GiSpanner className="inline text-stone-500" /> キット×{diff.rewardKits}</span>
-                              {diff.rewardFame > 0 && (
-                                <span className="text-[10px] text-amber-900 font-bold">名声 +{diff.rewardFame}</span>
-                              )}
+                              <span className="flex items-center gap-1 text-[11px] text-amber-900 font-bold">
+                                <Gi.GiLockedChest className="inline text-amber-600" /> 宝箱ドロップ
+                              </span>
+                              <span className="text-[10px] text-stone-600 font-medium">キット×{diff.rewardKits}他</span>
                             </div>
                           </div>
                           <div className="text-[11px] text-stone-500 leading-tight">
@@ -829,6 +869,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                     {PIANO_SONGS.map(song => {
                       const isSelected = pianoSongId === song.id;
                       const best = pianoBestScores[song.id];
+                      const isClearedToday = activeRobot ? (engine as any).checkDailyBattleLimit(activeRobot.id, 'piano', song.id, currentTimestamp) : false;
 
                       return (
                         <button
@@ -837,15 +878,22 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                           className={`w-full text-left p-3 rounded-xl border-2 transition-all cursor-pointer ${
                             isSelected 
                               ? 'border-amber-500 bg-amber-50/90 shadow-xs ring-2 ring-amber-300' 
+                              : isClearedToday
+                              ? 'border-emerald-400 bg-emerald-50/40 hover:border-emerald-500'
                               : 'border-stone-300 bg-white hover:border-stone-400 hover:bg-stone-50'
                           }`}
                         >
                           <div className="flex justify-between items-center mb-0.5">
                             <div className="flex items-center gap-1.5 truncate">
                               <span className="font-bold text-sm text-stone-900 truncate">{song.title}</span>
-                              {best?.cleared && (
-                                <span className="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold font-mono px-1.5 py-0.2 rounded shrink-0">
-                                  CLEAR済
+                              {isClearedToday && (
+                                <span className="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold font-mono px-1.5 py-0.2 rounded shrink-0 flex items-center gap-0.5">
+                                  <Gi.GiCheckMark className="text-[7px]" /> 本日クリア済
+                                </span>
+                              )}
+                              {!isClearedToday && best?.cleared && (
+                                <span className="text-[10px] bg-stone-100 text-stone-700 border border-stone-300 font-bold font-mono px-1.5 py-0.2 rounded shrink-0">
+                                  CLEAR歴あり
                                 </span>
                               )}
                               {song.rewardFame > 0 && (
@@ -903,6 +951,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                   <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
                     {OPPONENTS.map(o => {
                       const isSelected = selectedOpponentId === o.id;
+                      const isCleared = activeRobot ? (engine as any).checkDailyBattleLimit(activeRobot.id, selectedGame, o.level, currentTimestamp) : false;
                       return (
                         <button
                           key={o.id}
@@ -910,11 +959,20 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                           className={`w-full text-left p-3 rounded-xl border-2 transition-all flex justify-between items-center ${
                             isSelected 
                               ? 'border-amber-500 bg-amber-50/90 shadow-xs ring-2 ring-amber-300' 
+                              : isCleared
+                              ? 'border-emerald-400 bg-emerald-50/40 hover:border-emerald-500'
                               : 'border-stone-300 bg-white hover:border-stone-400 hover:bg-stone-50'
                           }`}
                         >
                           <div>
-                            <div className="font-bold text-stone-900 text-sm">{o.name}</div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-bold text-stone-900 text-sm">{o.name}</span>
+                              {isCleared && (
+                                <span className="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold px-1.5 py-0.2 rounded flex items-center gap-0.5 font-mono">
+                                  <Gi.GiCheckMark className="text-[7px]" /> 本日クリア済
+                                </span>
+                              )}
+                            </div>
                             {selectedGame === 'combat' ? (
                               <div className="space-y-0.5 mt-0.5">
                                 <div className="flex gap-2 text-[10px] text-stone-600 font-mono">
@@ -1085,22 +1143,27 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                 if (isDefenseLocked) e.preventDefault();
               }}
               disabled={
-                isDefenseLocked
-                  ? false
-                  : selectedGame === 'defense'
+                isCurrentBattleClearedToday ||
+                (selectedGame === 'defense'
                   ? selectedDefenseRobotIds.length === 0
-                  : !selectedRobotId || (requiresOpponent && !selectedOpponentId)
+                  : !selectedRobotId || (requiresOpponent && !selectedOpponentId))
               }
               className={`w-full sm:w-2/3 md:w-1/2 py-3.5 text-base font-bold shadow-md mx-auto transition-all ${
-                isDefenseLocked 
+                isCurrentBattleClearedToday
                   ? 'bg-stone-200 hover:bg-stone-200 text-stone-600 border-2 border-stone-300 cursor-not-allowed shadow-none opacity-50' 
                   : ''
               }`}
             >
-              {isDefenseLocked ? (
-                <span className="flex items-center justify-center gap-2">
-                  <Gi.GiPadlock className="text-stone-500 text-lg" /> 本日防衛完了 (朝9:00リセット / 残り約{defenseResetInfo.remainingHours}時間{defenseResetInfo.remainingMinutes}分)
-                </span>
+              {isCurrentBattleClearedToday ? (
+                selectedGame === 'defense' ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Gi.GiPadlock className="text-stone-500 text-lg" /> 本日防衛完了 (朝9:00リセット / 残り約{defenseResetInfo.remainingHours}時間{defenseResetInfo.remainingMinutes}分)
+                  </span>
+                ) : (
+                  <span className="flex items-center justify-center gap-2">
+                    <Gi.GiPadlock className="text-stone-500 text-lg" /> 本日クリア済 (朝9:00リセット)
+                  </span>
+                )
               ) : selectedGame === 'danmaku' ? (
                 `演習開始！ (${activeDanmakuDiff.label})`
               ) : selectedGame === 'piano' ? (
@@ -1122,19 +1185,21 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                     {selectedGameDef?.name || 'バトル'}
                   </span>
                   <div className="text-xs text-stone-200 truncate">
-                    {selectedGame === 'defense' ? (
-                      isDefenseLocked ? (
-                        <span className="text-emerald-400 font-bold flex items-center gap-1">
-                          <Gi.GiCheckMark className="text-xs" /> 本日防衛完了（朝9:00リセット）
-                        </span>
-                      ) : (
-                        <><span className="text-stone-400">配備:</span> <strong className="text-amber-300 font-bold">{selectedDefenseRobotIds.length}体</strong></>
-                      )
+                    {isCurrentBattleClearedToday ? (
+                      <span className="text-emerald-400 font-bold flex items-center gap-1">
+                        <Gi.GiCheckMark className="text-xs" /> 本日クリア済（朝9:00リセット）
+                      </span>
                     ) : (
-                      <><span className="text-stone-400">機体:</span> <strong className="text-amber-300 font-bold">{activeRobot?.name}</strong></>
-                    )}
-                    {requiresOpponent && activeOpponent && (
-                      <span className="ml-2 text-stone-300 hidden sm:inline">vs <strong className="text-red-400">{activeOpponent.name}</strong></span>
+                      <>
+                        {selectedGame === 'defense' ? (
+                          <><span className="text-stone-400">配備:</span> <strong className="text-amber-300 font-bold">{selectedDefenseRobotIds.length}体</strong></>
+                        ) : (
+                          <><span className="text-stone-400">機体:</span> <strong className="text-amber-300 font-bold">{activeRobot?.name}</strong></>
+                        )}
+                        {requiresOpponent && activeOpponent && (
+                          <span className="ml-2 text-stone-300 hidden sm:inline">vs <strong className="text-red-400">{activeOpponent.name}</strong></span>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
@@ -1147,15 +1212,15 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                     if (isDefenseLocked) e.preventDefault();
                   }}
                   size="md"
-                  variant={isDefenseLocked ? "secondary" : "primary"}
-                  disabled={isDefenseLocked ? false : false}
+                  variant={isCurrentBattleClearedToday ? "secondary" : "primary"}
+                  disabled={isCurrentBattleClearedToday}
                   className={`px-6 py-2 text-sm font-bold shadow-lg shrink-0 flex items-center gap-1.5 ${
-                    isDefenseLocked 
+                    isCurrentBattleClearedToday 
                       ? 'bg-stone-700 text-stone-400 cursor-not-allowed border border-stone-600 opacity-50' 
                       : 'bg-amber-600 hover:bg-amber-500 text-white'
                   }`}
                 >
-                  {isDefenseLocked ? (
+                  {isCurrentBattleClearedToday ? (
                     <>
                       <Gi.GiPadlock className="text-base" />
                       本日完了

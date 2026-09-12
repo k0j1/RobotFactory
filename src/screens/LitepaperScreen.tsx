@@ -27,7 +27,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
           </div>
           <div>
             <h2 className={theme.typography.h2}>ポンコツロボット工房 公式仕様書</h2>
-            <p className="text-xs text-stone-500 font-medium">現在採用されている最新ゲームシステムの完全ガイド (v1.0.300)</p>
+            <p className="text-xs text-stone-500 font-medium">現在採用されている最新ゲームシステムの完全ガイド (v1.0.314)</p>
           </div>
         </div>
         <Button size="sm" variant="secondary" onClick={onBack}>
@@ -183,7 +183,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                   <li><strong>依頼掲示板での納品:</strong> 王様の依頼 (+50)、貴族の依頼 (+25)、おじさんの依頼 (+10)。好感度MAX時はさらに追加ボーナス付与。</li>
                   <li><strong>高難度バトル演習勝利:</strong> Lv.3〜10の強敵戦術ボット撃破 (+5〜+70 名声)。</li>
                   <li><strong>拠点防衛戦の制覇:</strong> ウェーブ防衛成功 (+5〜+70 名声)。</li>
-                  <li><strong>弾幕サバイバル・ピアノ演奏会:</strong> 高難度クリア (+5〜+30 名声)。</li>
+                  <li><strong>ピアノ演奏会:</strong> 高難度楽曲完全演奏クリア (+5〜+30 名声)。※弾幕よけは名声の獲得なし（専用宝箱ドロップ）。</li>
                 </ul>
               </div>
             </div>
@@ -336,6 +336,8 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                 </div>
                 <p className="text-[10px] text-stone-500 font-sans">
                   ※ モニターの「階級基準」ボタンからいつでも詳細基準を確認可能。各カテゴリーカードで次ランク昇格までの残り必要勝利数がリアルタイムに表示されます。
+                  <br />
+                  ※ <strong>挑戦回数・クリア制限ルール:</strong> すべてのバトル（戦闘演習・オセロ・チェス・弾幕よけ・ピアノ演奏）は、<strong>未勝利であれば1日何回でも再挑戦可能</strong>です。勝利（クリア）したバトル・難易度は「本日クリア済」と表示され、翌朝9:00のリセットまで出撃ボタンが無効化されます。防衛戦も同様に当日クリア後は翌朝9:00までボタンが無効化されます。
                 </p>
               </div>
 
@@ -343,21 +345,21 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                 <div className="bg-white p-2.5 rounded-lg border border-stone-200">
                   <strong className="text-stone-900 block font-bold mb-1">⚔️ 戦闘シミュレータ (1on1 Combat)</strong>
                   <p className="text-stone-600">
-                    自作機体とAI戦術ボット（Lv.1〜10）によるターン制バトル。出撃前のロボット選択画面で機体が繰り出せる戦術技・発動条件・発動率（知性Int補正）や、モーションスタジオ連携のGSAP技アニメーション演出をプレビュー確認できます。武装（ビームサーベル・シールド）の装備による奥義解放もリアルタイムに反映されます。演習勝利時には、<strong>宝箱ドロップ＆開封アニメーション演出</strong>が発動！Lv.4以下では修理キット・★1素材・ゴールドのいずれか1つが確定出現し、Lv.5以降は修理キット確定＋★1〜★3素材・ゴールド・バトルエレメント・工房名声を獲得できます。
+                    自作機体とAI戦術ボット（Lv.1〜10）によるターン制バトル。出撃前のロボット選択画面で機体が繰り出せる戦術技・発動条件・発動率（知性Int補正）や、モーションスタジオ連携のGSAP技アニメーション演出をプレビュー確認できます。武装（ビームサーベル・シールド）の装備による奥義解放もリアルタイムに反映されます。演習勝利時には、<strong>宝箱ドロップ＆開封アニメーション演出</strong>が発動！Lv.4以下では修理キット・★1素材・ゴールドのいずれか1つが確定出現し、Lv.5以降は修理キット確定＋★1〜★3素材・ゴールド・バトルエレメント・工房名声を獲得できます。未勝利の場合は1日何回でも再挑戦可能です。
                   </p>
                 </div>
 
                 <div className="bg-white p-2.5 rounded-lg border border-stone-200">
                   <strong className="text-stone-900 block font-bold mb-1">🛡️ 拠点防衛戦 (Base Defense)</strong>
                   <p className="text-stone-600">
-                    最大3機のロボットをタレットとして配備するリアルタイム防衛戦。勝利時に<strong>防衛宝箱ドロップ＆開封演出</strong>が発生し、高確率の修理キット・素材・ゴールド・エレメント・工房名声（Lv.3:+5, Lv.4:+10, Lv.5:+15）を獲得。さらにステージ難易度に応じた<strong>防衛リジェネ（3h〜24h）</strong>が出撃機体全員に付与されます。
+                    最大3機のロボットをタレットとして配備するリアルタイム防衛戦。勝利時に<strong>防衛宝箱ドロップ＆開封演出</strong>が発生し、高確率の修理キット・素材・ゴールド・エレメント・工房名声（Lv.3:+5, Lv.4:+10, Lv.5:+15）を獲得。さらにステージ難易度に応じた<strong>防衛リジェネ（3h〜24h）</strong>が出撃機体全員に付与されます（※防衛戦は1日1回挑戦制限）。
                   </p>
                 </div>
 
                 <div className="bg-white p-2.5 rounded-lg border border-stone-200">
                   <strong className="text-stone-900 block font-bold mb-1">🚀 弾幕サバイバル (Danmaku Survival)</strong>
                   <p className="text-stone-600">
-                    敵機から放たれる幾何学的な弾幕を回避するアクションシューティング。Easy / Normal / Hard の3段階難易度。
+                    敵機から放たれる幾何学的な弾幕を回避するアクションシューティング。Easy / Normal / Hard の3段階難易度。名声の獲得はありませんが、生還成功時に<strong>専用のクリア宝箱ドロップ＆開封演出</strong>が発生し、修理キット・ゴールド・クラフト素材・バトルエレメント（上級）などを獲得できます。未生還時は何度でも再挑戦可能です。
                   </p>
                 </div>
 
@@ -369,9 +371,9 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                 </div>
 
                 <div className="bg-white p-2.5 rounded-lg border border-stone-200 sm:col-span-2">
-                  <strong className="text-stone-900 block font-bold mb-1">♟️ クラシック頭脳対戦 (五目並べ / オセロ / 三目並べ / チェス)</strong>
+                  <strong className="text-stone-900 block font-bold mb-1">♟️ クラシック頭脳対戦 (オセロ / チェス / 五目並べ / 三目並べ)</strong>
                   <p className="text-stone-600">
-                    ロボットの知力(INT)や思考ロジックを試すボードゲーム集。勝利で修理キットを獲得できます。
+                    ロボットの知力(INT)や思考ロジックを試すボードゲーム集。<strong>オセロおよびチェスでは勝利時に専用の宝箱ドロップ＆開封演出</strong>が発生し、対局相手のレベルに応じた修理キット・素材・ゴールド・バトルエレメント・工房名声を獲得可能！未勝利時は1日何回でも繰り返し挑戦できます。
                   </p>
                 </div>
               </div>

@@ -62,10 +62,6 @@ export const RobotZoomPreview: React.FC<RobotZoomPreviewProps> = ({
     updateZoom(zoom - 0.15);
   };
 
-  const handleResetZoom = () => {
-    updateZoom(1.0);
-  };
-
   const percentZoom = Math.round(zoom * 100);
 
   return (
@@ -169,34 +165,6 @@ export const RobotZoomPreview: React.FC<RobotZoomPreviewProps> = ({
             className="w-6 h-6 rounded bg-stone-200 hover:bg-stone-300 active:bg-stone-400 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center font-bold text-stone-700 shadow-2xs shrink-0 transition-colors"
           >
             <Gi.GiExpand className="text-stone-700 text-[11px]" />
-          </button>
-
-          {/* 100%リセットボタン */}
-          <button
-            type="button"
-            onClick={handleResetZoom}
-            className={`px-1.5 py-0.5 rounded text-[10px] font-bold border shrink-0 transition-colors ${
-              Math.abs(zoom - 1.0) < 0.05
-                ? 'bg-amber-100 text-amber-900 border-amber-300 font-mono'
-                : 'bg-white text-stone-600 border-stone-300 hover:bg-amber-50 hover:text-amber-700'
-            }`}
-            title="標準倍率(100%)に戻す"
-          >
-            100%
-          </button>
-
-          {/* 140%詳細拡大プリセット */}
-          <button
-            type="button"
-            onClick={() => updateZoom(1.4)}
-            className={`px-1.5 py-0.5 rounded text-[10px] font-bold border shrink-0 transition-colors ${
-              Math.abs(zoom - 1.4) < 0.05
-                ? 'bg-amber-600 text-white border-amber-600 font-mono'
-                : 'bg-white text-stone-600 border-stone-300 hover:bg-amber-50 hover:text-amber-700'
-            }`}
-            title="140%詳細倍率"
-          >
-            1.4x
           </button>
         </div>
       )}

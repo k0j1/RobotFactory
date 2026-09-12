@@ -190,6 +190,7 @@ export interface GameState {
   combatEquipments?: { beamSaber?: boolean; beamShield?: boolean }; // 交換済み戦闘専用装備
   activeCombatEquipments?: { beamSaber?: boolean; beamShield?: boolean }; // 戦闘出撃時に有効化する装備
   minigameRecords?: Record<string, { plays: number; wins: number; losses: number; draws: number }>;
+  dailyBattleLimits?: Record<string, string[]>; // { "YYYY-MM-DD": ["robotId_categoryId_levelId", ...] }
 }
 
 export interface FameRankInfo {

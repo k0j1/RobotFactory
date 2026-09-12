@@ -467,6 +467,139 @@ export class BattleChestRewardService {
   }
 
   /**
+   * 弾幕サバイバル (Danmaku Survival) のクリア宝箱抽選
+   * （名声は獲得なし・難易度に応じた修理キット、ゴールド、素材、エレメント等の宝箱ドロップ）
+   */
+  public static rollDanmakuChest(
+    difficulty: 'easy' | 'normal' | 'hard',
+    difficultyName: string
+  ): BattleChestDropResult {
+    let repairKits = 0;
+    let gold = 0;
+    let elements = 0;
+    const materials: { material: Material; count: number }[] = [];
+    const items: BattleRewardItem[] = [];
+
+    let level = 1;
+    let chestTier: 'bronze' | 'silver' | 'gold' = 'bronze';
+    let chestTitle = '弾幕サバイバル 初級コンテナ';
+
+    switch (difficulty) {
+      case 'easy':
+        level = 1;
+        chestTier = 'bronze';
+        chestTitle = '回避訓練 初級コンテナ';
+        // 修理キット1個100%、1〜5G (50%)、☆1素材 (40%)
+        repairKits = 1;
+        if (checkRate(50)) gold += randomInt(1, 5);
+        if (checkRate(40)) {
+          const mat = pickRandomMaterial(1);
+          if (mat) materials.push({ material: mat, count: 1 });
+        }
+        break;
+
+      case 'normal':
+        level = 2;
+        chestTier = 'silver';
+        chestTitle = '弾幕突破 中級コンテナ';
+        // 修理キット1個100%、プラス修理キット1個 (30%)、3〜8G (60%)、☆1素材 (70%)、☆2素材 (30%)
+        repairKits = 1;
+        if (checkRate(30)) repairKits += 1;
+        if (checkRate(60)) gold += randomInt(3, 8);
+        if (checkRate(70)) {
+          const mat1 = pickRandomMaterial(1);
+          if (mat1) materials.push({ material: mat1, count: 1 });
+        }
+        if (checkRate(30)) {
+          const mat2 = pickRandomMaterial(2);
+          if (mat2) materials.push({ material: mat2, count: 1 });
+        }
+        break;
+
+      case 'hard':
+      default:
+        level = 3;
+        chestTier = 'gold';
+        chestTitle = '極限弾幕 上級プレミアムコンテナ';
+        // 修理キット2個100%、プラス修理キット1〜2個 (50%)、10〜25G (70%)、☆2素材 (75%)、☆3素材 (35%)、エレメント10〜20個 (50%)
+        repairKits = 2;
+        if (checkRate(50)) repairKits += randomInt(1, 2);
+        if (checkRate(70)) gold += randomInt(10, 25);
+        if (checkRate(75)) {
+          const mat2 = pickRandomMaterial(2);
+          if (mat2) materials.push({ material: mat2, count: 1 });
+        }
+        if (checkRate(35)) {
+          const mat3 = pickRandomMaterial(3);
+          if (mat3) materials.push({ material: mat3, count: 1 });
+        }
+        if (checkRate(50)) elements += randomInt(10, 20);
+        break;
+    }
+
+    if (repairKits > 0) {
+      items.push({
+        id: 'kit',
+        type: 'repairKit',
+        name: '修理キット',
+        count: repairKits,
+        iconType: 'kit',
+        desc: '破損したロボットパーツの修理に使用'
+      });
+    }
+
+    if (gold > 0) {
+      items.push({
+        id: 'gold',
+        type: 'gold',
+        name: 'ゴールド (G)',
+        count: gold,
+        iconType: 'gold',
+        desc: '弾幕サバイバル報奨金'
+      });
+    }
+
+    if (elements > 0) {
+      items.push({
+        id: 'element',
+        type: 'element',
+        name: 'バトルエレメント',
+        count: elements,
+        iconType: 'element',
+        desc: '戦闘装備交換に使用する高密度エネルギー結晶'
+      });
+    }
+
+    for (let i = 0; i < materials.length; i++) {
+      const entry = materials[i];
+      items.push({
+        id: `mat_${entry.material.id}_${i}`,
+        type: 'material',
+        name: entry.material.name,
+        count: entry.count,
+        iconType: 'material',
+        material: entry.material,
+        rarity: entry.material.rarity,
+        desc: `☆${entry.material.rarity} ${entry.material.attribute}属性 クラフト素材`
+      });
+    }
+
+    return {
+      gameMode: 'danmaku',
+      stageLevel: level,
+      stageName: `弾幕よけ (${difficultyName})`,
+      chestTier,
+      chestTitle,
+      repairKits,
+      gold,
+      elements,
+      materials,
+      fame: 0, // 弾幕よけは名声獲得なし
+      items
+    };
+  }
+
+  /**
    * 弾幕サバイバルやピアノなど他ミニゲーム用宝箱
    */
   public static rollGenericChest(

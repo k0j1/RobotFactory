@@ -266,7 +266,7 @@ export const DANMAKU_DIFFICULTIES: DanmakuDifficultyConfig[] = [
     bulletSpeedMult: 1.0,
     ringCount: 8,
     rewardKits: 1,
-    rewardFame: 5,
+    rewardFame: 0,
     badgeClass: 'bg-blue-100 text-blue-800 border-blue-300',
   },
   {
@@ -278,7 +278,7 @@ export const DANMAKU_DIFFICULTIES: DanmakuDifficultyConfig[] = [
     bulletSpeedMult: 1.25,
     ringCount: 10,
     rewardKits: 2,
-    rewardFame: 15,
+    rewardFame: 0,
     badgeClass: 'bg-purple-100 text-purple-800 border-purple-300',
   },
 ];
@@ -355,5 +355,19 @@ export function getDefenseDailyResetInfo(lastVictoryTime?: number, now: number =
     remainingHours,
     remainingMinutes,
   };
+}
+
+/**
+ * 毎朝9:00基準のデイリーキー（YYYY-MM-DD）を取得
+ * 9:00前は前日扱い、9:00以降は当日扱いとなり、朝9:00にリセットされます
+ */
+export function getDailyResetDateKey(now: number = Date.now()): string {
+  const d = new Date(now);
+  const today9am = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 9, 0, 0, 0).getTime();
+  const resetBaseDate = now >= today9am ? d : new Date(now - 24 * 60 * 60 * 1000);
+  const y = resetBaseDate.getFullYear();
+  const m = String(resetBaseDate.getMonth() + 1).padStart(2, '0');
+  const day = String(resetBaseDate.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 

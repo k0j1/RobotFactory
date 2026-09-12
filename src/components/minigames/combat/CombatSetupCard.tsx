@@ -22,6 +22,7 @@ interface CombatSetupCardProps {
   setSelectedOpponentId: (id: string) => void;
   onExchangeEquipment: (equipment: 'beamSaber' | 'beamShield') => void;
   onToggleEquipment: (equipment: 'beamSaber' | 'beamShield', enabled: boolean) => void;
+  isOpponentCleared?: (opponentLevel: number) => boolean;
 }
 
 export const CombatSetupCard: React.FC<CombatSetupCardProps> = ({
@@ -34,6 +35,7 @@ export const CombatSetupCard: React.FC<CombatSetupCardProps> = ({
   setSelectedOpponentId,
   onExchangeEquipment,
   onToggleEquipment,
+  isOpponentCleared,
 }) => {
   const elements = state.battleElements || 0;
   const eq = state.combatEquipments || {};
@@ -280,18 +282,26 @@ export const CombatSetupCard: React.FC<CombatSetupCardProps> = ({
           <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
             {OPPONENTS.map(o => {
               const isSelected = selectedOpponentId === o.id;
+              const isCleared = isOpponentCleared ? isOpponentCleared(o.level) : false;
               // 簡易表示としてレベルバッジを使う
               return (
                 <button
                   key={o.id}
                   onClick={() => setSelectedOpponentId(o.id)}
-                  className={`shrink-0 w-[56px] h-[56px] relative rounded-xl border-2 transition-all p-1 bg-white flex items-center justify-center ${
+                  className={`shrink-0 w-[56px] h-[56px] relative rounded-xl border-2 transition-all p-1 bg-white flex flex-col items-center justify-center ${
                     isSelected 
                       ? 'border-amber-500 ring-2 ring-amber-300 shadow-xs' 
+                      : isCleared
+                      ? 'border-emerald-400 bg-emerald-50/40 hover:border-emerald-500'
                       : 'border-stone-300 hover:border-amber-400'
                   }`}
                 >
-                  <div className="font-black text-stone-400 text-xl font-mono">Lv{o.level}</div>
+                  <div className={`font-black text-xl font-mono ${isCleared ? 'text-emerald-700' : 'text-stone-400'}`}>Lv{o.level}</div>
+                  {isCleared && (
+                    <span className="absolute -top-2 -left-1 bg-emerald-600 text-white text-[8px] font-bold px-1 py-0.2 rounded shadow-2xs flex items-center gap-0.5 font-mono">
+                      <Gi.GiCheckMark className="text-[7px]" /> 済
+                    </span>
+                  )}
                   {isSelected && (
                     <Badge className="absolute -bottom-2 -right-2 bg-amber-600 text-white text-[9px] px-1 py-0 shadow-2xs">
                       選択中
@@ -302,7 +312,19 @@ export const CombatSetupCard: React.FC<CombatSetupCardProps> = ({
             })}
           </div>
           {activeOpponent && (
-            <div className="bg-white p-2.5 rounded-xl border border-stone-200 shadow-2xs space-y-2">
+            <div className={`p-2.5 rounded-xl border shadow-2xs space-y-2 ${
+              isOpponentCleared && isOpponentCleared(activeOpponent.level)
+                ? 'bg-emerald-50/70 border-emerald-300'
+                : 'bg-white border-stone-200'
+            }`}>
+              {isOpponentCleared && isOpponentCleared(activeOpponent.level) && (
+                <div className="bg-emerald-100 border border-emerald-300 px-2 py-1 rounded-lg flex items-center justify-between text-[10px] text-emerald-900 font-bold">
+                  <span className="flex items-center gap-1">
+                    <Gi.GiCheckMark className="text-emerald-700" /> 本日この機体でクリア済みです
+                  </span>
+                  <span className="text-emerald-700 font-mono text-[9px]">朝9:00リセット</span>
+                </div>
+              )}
               <div className="flex justify-between items-start border-b border-stone-100 pb-1.5">
                 <div>
                   <div className="font-bold text-[13px] text-stone-900">{activeOpponent.name}</div>

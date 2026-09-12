@@ -792,13 +792,13 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
               <p className="text-xs text-stone-600">各部位のパーツを組み合わせて新しいロボットを組み立てます。</p>
               
               {/* プレビューカード */}
-              <div className="flex flex-col md:flex-row items-center justify-center p-3 sm:p-4 bg-white border-2 border-stone-300 border-dashed rounded-xl relative overflow-hidden shadow-xs gap-4">
-                <div className="flex flex-col items-center w-full md:w-1/2">
+              <div className="flex flex-row items-center justify-center p-2 sm:p-4 bg-white border-2 border-stone-300 border-dashed rounded-xl relative overflow-hidden shadow-xs gap-2 sm:gap-4">
+                <div className="flex flex-col items-center w-1/2">
                   <div className="flex justify-between items-center w-full mb-1.5 z-10 px-1">
-                    <h3 className="font-bold text-stone-600 text-xs flex items-center gap-1">
-                      <Gi.GiCrosshair className="text-amber-600 inline" /> アセンブリプレビュー
+                    <h3 className="font-bold text-stone-600 text-[10px] sm:text-xs flex items-center gap-1">
+                      <Gi.GiCrosshair className="text-amber-600 inline" /> 外見
                     </h3>
-                    <span className="text-[11px] text-stone-500">スライダーで細部確認</span>
+                    <span className="text-[9px] sm:text-[11px] text-stone-500 hidden sm:inline">スライダーで細部確認</span>
                   </div>
                   
                   <RobotZoomPreview
@@ -821,11 +821,11 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                   />
                 </div>
                 
-                <div className="w-full md:w-1/2 flex flex-col items-center justify-center border-t md:border-t-0 md:border-l border-stone-200 pt-4 md:pt-0 pl-0 md:pl-4">
-                  <h3 className="font-bold text-stone-600 text-xs flex items-center gap-1 w-full mb-2">
-                    <Gi.GiChart className="text-amber-600 inline" /> ステータスプレビュー
+                <div className="w-1/2 flex flex-col items-center justify-center border-l border-stone-200 pl-2 sm:pl-4">
+                  <h3 className="font-bold text-stone-600 text-[10px] sm:text-xs flex items-center gap-1 w-full mb-1 sm:mb-2">
+                    <Gi.GiChart className="text-amber-600 inline" /> ステータス
                   </h3>
-                  <div className="flex items-center justify-center w-full">
+                  <div className="flex items-center justify-center w-full scale-75 sm:scale-100 origin-center -my-2 sm:my-0">
                     <RobotRadarChart 
                       robot={{
                         id: 'preview',

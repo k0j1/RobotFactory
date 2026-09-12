@@ -1,7 +1,7 @@
 import { GameState, Robot, ClientRequest, Attribute, RequestRank, RobotPart, PartType, AttributeNames, WeatherType, WeatherInfo, Material } from './models';
 import { MATERIALS, LOCATIONS, getMaterialCraftableVisuals } from './data';
 import { AttributeColors } from './models';
-import { getDefenseDailyResetInfo, DefenseResetInfo } from '../components/minigames/Shared';
+import { getDefenseDailyResetInfo, DefenseResetInfo, getDailyResetDateKey } from '../components/minigames/Shared';
 
 const INITIAL_STATE: GameState = {
   gold: 0,
@@ -518,6 +518,32 @@ export class GameEngine {
     this.saveState();
   }
 
+
+  public checkDailyBattleLimit(robotId: string, categoryId: string, levelId: number | string, now: number = Date.now()): boolean {
+    const today = getDailyResetDateKey(now);
+    if (!this.state.dailyBattleLimits) {
+      this.state.dailyBattleLimits = {};
+    }
+    const todayRecords = this.state.dailyBattleLimits[today] || [];
+    const key = `${robotId}_${categoryId}_${levelId}`;
+    return todayRecords.includes(key);
+  }
+
+  public recordDailyBattleLimit(robotId: string, categoryId: string, levelId: number | string, now: number = Date.now()) {
+    const today = getDailyResetDateKey(now);
+    if (!this.state.dailyBattleLimits) {
+      this.state.dailyBattleLimits = {};
+    }
+    if (!this.state.dailyBattleLimits[today]) {
+      // 過去の記録をクリーンアップ
+      this.state.dailyBattleLimits = { [today]: [] };
+    }
+    const key = `${robotId}_${categoryId}_${levelId}`;
+    if (!this.state.dailyBattleLimits[today].includes(key)) {
+      this.state.dailyBattleLimits[today].push(key);
+      this.saveState();
+    }
+  }
 
   public recordMinigameResult(gameId: string, result: 'win' | 'lose' | 'draw') {
     if (!this.state.minigameRecords) {
