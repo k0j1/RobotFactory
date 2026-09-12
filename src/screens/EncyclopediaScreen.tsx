@@ -146,6 +146,7 @@ const ALL_PARTS_CATALOG: CatalogPartItem[] = [
 
 export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void }> = ({ state, onBack }) => {
   const [tab, setTab] = useState<'robots'|'gallery'|'parts'|'history'>('robots');
+  const [galleryViewMode, setGalleryViewMode] = useState<'card' | 'table'>('card');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterAttribute, setFilterAttribute] = useState<string>('All');
   const [filterRarity, setFilterRarity] = useState<number | 'All'>('All');
@@ -470,15 +471,111 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
 
       {tab === 'gallery' && (
         <div className="space-y-4">
-          <div className="bg-stone-100 p-3 rounded-md text-sm text-stone-700 flex justify-between items-center">
+          <div className="bg-stone-100 p-3 rounded-md text-sm text-stone-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
             <span>
               全パーツの形状カタログです。表示カラーを切り替えて各属性での色合いを確認できます。
             </span>
-            <span className="font-bold text-stone-500 whitespace-nowrap ml-2">
-              全 {filteredCatalogParts.length} 件
-            </span>
+            <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto">
+              <span className="font-bold text-stone-500 whitespace-nowrap">
+                全 {filteredCatalogParts.length} 件
+              </span>
+              <div className="flex bg-stone-200 p-0.5 rounded-md">
+                <button
+                  type="button"
+                  onClick={() => setGalleryViewMode('card')}
+                  title="カード表示"
+                  className={`p-1.5 rounded-sm flex items-center justify-center transition-colors ${galleryViewMode === 'card' ? 'bg-white shadow-sm text-amber-600' : 'text-stone-500 hover:bg-stone-300'}`}
+                >
+                  <Gi.GiCardPick size={16} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setGalleryViewMode('table')}
+                  title="テーブル表示"
+                  className={`p-1.5 rounded-sm flex items-center justify-center transition-colors ${galleryViewMode === 'table' ? 'bg-white shadow-sm text-amber-600' : 'text-stone-500 hover:bg-stone-300'}`}
+                >
+                  <Gi.GiHamburgerMenu size={16} />
+                </button>
+              </div>
+            </div>
           </div>
 
+          {galleryViewMode === 'table' ? (
+            <Card className="overflow-x-auto p-0 border border-stone-200">
+              <table className="w-full text-xs text-left min-w-[750px]">
+                <thead className="bg-stone-100 text-stone-600 uppercase border-b border-stone-200">
+                  <tr>
+                    <th className="px-3 py-2.5 w-14 text-center">外観</th>
+                    <th className="px-3 py-2.5">パーツ名</th>
+                    <th className="px-3 py-2.5">部位</th>
+                    <th className="px-2 py-2.5 text-center">レア度</th>
+                    <th className="px-2 py-2.5 text-right" title="耐久力">HP</th>
+                    <th className="px-2 py-2.5 text-right" title="攻撃力">POW</th>
+                    <th className="px-2 py-2.5 text-right" title="防御力">DEF</th>
+                    <th className="px-2 py-2.5 text-right" title="速度">AGI</th>
+                    <th className="px-2 py-2.5 text-right" title="探索力">DEX</th>
+                    <th className="px-2 py-2.5 text-right" title="解析力">INT</th>
+                    <th className="px-2 py-2.5 text-right" title="重量">WT</th>
+                    <th className="px-3 py-2.5 text-center">操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredCatalogParts.map((item) => {
+                    const Comp = getPartSVG(item.type, item.rarity, item.visualIndex);
+                    const typeLabel = item.type === 'head' ? 'ヘッド' : item.type === 'body' ? 'ボディ' : item.type === 'arms' ? 'アーム' : 'レッグ';
+                    const TypeIcon = item.type === 'head' ? Gi.GiMechaHead : item.type === 'body' ? Gi.GiChestArmor : item.type === 'arms' ? Gi.GiMechanicalArm : Gi.GiLegArmor;
+                    const baselineData = getBaselineStatsForCatalogItem(item, activeAttr);
+                    const baselineStats = baselineData.stats;
+                    
+                    return (
+                      <tr key={item.id} className="border-b border-stone-100 hover:bg-stone-50 transition-colors">
+                        <td className="px-2 py-1.5 text-center">
+                          <div className="w-9 h-9 bg-stone-100 rounded border border-stone-200 mx-auto">
+                            <SinglePart Comp={Comp} color={activeColor} type={item.type} rarityLabel={item.rarity} visualIndex={item.visualIndex} hideContainer={true} />
+                          </div>
+                        </td>
+                        <td className="px-3 py-1.5 font-bold text-stone-800">
+                          {item.name}
+                          {item.isNew && (
+                            <span className="ml-2 bg-rose-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-sm animate-pulse">NEW</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-1.5 text-stone-600 font-medium whitespace-nowrap">
+                          <span className="flex items-center gap-1"><TypeIcon size={14} />{typeLabel}</span>
+                        </td>
+                        <td className="px-2 py-1.5 text-center">
+                          <span className="inline-flex items-center justify-center gap-0.5 font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100">
+                            <Gi.GiStarFormation size={11} />{item.rarity}
+                          </span>
+                        </td>
+                        <td className="px-2 py-1.5 text-right font-mono font-bold text-stone-700 bg-stone-50/50">{baselineStats.hp}</td>
+                        <td className="px-2 py-1.5 text-right font-mono font-bold text-stone-700">{baselineStats.power}</td>
+                        <td className="px-2 py-1.5 text-right font-mono font-bold text-stone-700 bg-stone-50/50">{baselineStats.defense}</td>
+                        <td className="px-2 py-1.5 text-right font-mono font-bold text-stone-700">{baselineStats.agility}</td>
+                        <td className="px-2 py-1.5 text-right font-mono font-bold text-stone-700 bg-stone-50/50">{baselineStats.dexterity}</td>
+                        <td className="px-2 py-1.5 text-right font-mono font-bold text-stone-700">{baselineStats.intelligence}</td>
+                        <td className="px-2 py-1.5 text-right font-mono font-bold text-stone-500 bg-stone-50/50">{baselineData.weight}</td>
+                        <td className="px-3 py-1.5 text-center">
+                          {item.type === 'arms' ? (
+                            <button
+                              type="button"
+                              onClick={() => setCalibrationArmPart(item)}
+                              className="text-[10px] bg-amber-600 hover:bg-amber-500 text-white px-2 py-1 rounded-sm font-bold inline-flex items-center justify-center gap-1 cursor-pointer transition-colors whitespace-nowrap"
+                            >
+                              <Gi.GiMechanicalArm size={12} />
+                              調整
+                            </button>
+                          ) : (
+                            <span className="text-stone-300">-</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </Card>
+          ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
             {filteredCatalogParts.map((item) => {
               const Comp = getPartSVG(item.type, item.rarity, item.visualIndex);
@@ -559,6 +656,7 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
               );
             })}
           </div>
+          )}
         </div>
       )}
 

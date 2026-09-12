@@ -225,7 +225,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                     <li><strong>修理キット:</strong> 破損した機体を即座に全回復。ミニゲーム勝利等で獲得。</li>
                     <li><strong>機体命名＆愛着度:</strong> 製造したロボットには自由に名前を付けられます。</li>
                     <li><strong>分解リサイクル:</strong> 不要になった機体やパーツを素材へと還元。</li>
-                    <li><strong>図鑑登録:</strong> 完成した新機体は自動的に工房図鑑へ記録されます。</li>
+                    <li><strong>図鑑登録・パーツ基準値一覧:</strong> 完成した新機体は自動的に図鑑へ記録されます。また、パーツ図鑑タブではすべてのパーツ形状と、耐久力(HP)・攻撃力(POW)・探索力(DEX)などの「基準値ステータス」を便利なテーブル（表）形式で一覧表示し、比較することができます。</li>
                   </ul>
                 </div>
               </div>
