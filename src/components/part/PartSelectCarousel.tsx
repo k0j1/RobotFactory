@@ -112,7 +112,7 @@ export const PartSelectCarousel: React.FC<PartSelectCarouselProps> = ({
                     <span>HP:{selectedPart.stats.hp}</span>
                     <span>PW:{selectedPart.stats.power}</span>
                     <span>DF:{selectedPart.stats.defense}</span>
-                    <span className="font-bold text-stone-700">WT:{selectedPart.weight || 0}</span>
+                    <span className="text-amber-700">AGI:{selectedPart.stats.agility}</span>
                   </div>
                 </div>
               </div>
@@ -200,7 +200,7 @@ export const PartSelectCarousel: React.FC<PartSelectCarouselProps> = ({
                       <span className="truncate">HP:{p.stats.hp}</span>
                       <span className="truncate">PW:{p.stats.power}</span>
                       <span className="truncate">DF:{p.stats.defense}</span>
-                      <span className="truncate">WT:{p.weight || 0}</span>
+                      <span className="truncate text-amber-700">AG:{p.stats.agility}</span>
                     </div>
                   </button>
                 );

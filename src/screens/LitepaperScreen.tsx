@@ -2,6 +2,7 @@ import * as Gi from 'react-icons/gi';
 import React, { useState } from 'react';
 import { Card, Button, Badge } from '../components/ui/core';
 import { theme } from '../styles/theme';
+import { ScreenHeader } from '../components/ui/ScreenHeader';
 
 export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [activeTab, setActiveTab] = useState<'all' | 'overview' | 'fame' | 'craft' | 'quest' | 'request' | 'minigame' | 'shop'>('all');
@@ -18,22 +19,21 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
   ];
 
   return (
-    <div className="space-y-6 pb-16 max-w-4xl mx-auto">
-      {/* ヘッダーバー */}
-      <div className="flex justify-between items-center border-b-2 border-stone-300 pb-3">
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-stone-800 text-amber-400 flex items-center justify-center shadow-xs">
-            <Gi.GiScrollUnfurled size={22} />
-          </div>
-          <div>
-            <h2 className={theme.typography.h2}>ポンコツロボット工房 公式仕様書</h2>
-            <p className="text-xs text-stone-500 font-medium">現在採用されている最新ゲームシステムの完全ガイド (v1.0.314)</p>
-          </div>
-        </div>
-        <Button size="sm" variant="secondary" onClick={onBack}>
-          ← 工房へ戻る
-        </Button>
-      </div>
+    <div className="space-y-4 pb-16 max-w-4xl mx-auto">
+      <ScreenHeader
+        icon={<Gi.GiScrollUnfurled size={16} />}
+        title="ポンコツロボット工房 公式仕様書"
+        badge={
+          <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300 font-mono font-bold px-1.5 py-0.2 rounded">
+            v1.0.328
+          </span>
+        }
+        rightElement={
+          <Button size="sm" variant="secondary" onClick={onBack} className="text-xs py-1 px-2.5">
+            ← 工房へ戻る
+          </Button>
+        }
+      />
 
       {/* カテゴリ切り替えタブ */}
       <div className="flex flex-wrap gap-1.5 p-1.5 bg-stone-200/80 rounded-xl border border-stone-300">
@@ -204,16 +204,15 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div className="bg-white p-3 rounded-lg border border-stone-200 space-y-1.5">
                   <div className="font-bold text-stone-900 text-sm flex items-center gap-1.5">
-                    <Gi.GiAnvil className="text-amber-600" /> パラメータ構成と重量(WT)
+                    <Gi.GiAnvil className="text-amber-600" /> パラメータ構成と性能
                   </div>
                   <ul className="list-disc list-inside space-y-1 text-stone-600">
                     <li><strong>INT (知力):</strong> 探索成功率や頭脳戦演習での思考補正に影響。ヘッドパーツで高くなりやすい。</li>
-                    <li><strong>AGI (敏捷性):</strong> 速度や探索時間短縮に影響。レッグパーツで高くなりやすいが、<strong>重量が重いと低下</strong>する。</li>
+                    <li><strong>AGI (敏捷性):</strong> 速度や探索時間短縮に影響。レッグパーツで高くなりやすい。</li>
                     <li><strong>DEX (器用さ):</strong> 命中率、クリティカル、採集効率に影響。アームやレッグで高くなりやすい。</li>
                     <li><strong>HP (耐久度) / DEF (防御力):</strong> 機体の生命力と硬さ。ボディパーツで高くなりやすい。</li>
-                    <li><strong>ATK (攻撃力):</strong> 攻撃力。アームパーツで高くなりやすい。</li>
-                    <li><strong>WT (重量):</strong> パーツの重さ。ATKやDEFが高いパーツほど重くなり、AGIの成長を阻害します。</li>
-                    <li><strong>基準値差分グラフ:</strong> 倉庫の各パーツで「基準値比較」ボタンを押すと、素材標準設計値に対するステータスの上振れ・下振れや軽量化ボーナスを双方向バー＆レーダーで詳細確認できます。</li>
+                    <li><strong>POW (攻撃力):</strong> 攻撃力。アームパーツで高くなりやすい。</li>
+                    <li><strong>基準値差分グラフ:</strong> 倉庫の各パーツで「基準値比較」ボタンを押すと、素材標準設計値に対する各ステータスの上振れ・下振れを双方向バー＆レーダーで詳細確認できます。</li>
                   </ul>
                 </div>
 
@@ -252,9 +251,9 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                   </div>
                 </div>
                 <div className="bg-white p-2.5 rounded-lg border border-stone-200">
-                  <strong className="text-stone-900">放置自動採集＆まとめて回収機能:</strong>
+                  <strong className="text-stone-900">遠征インターフェース＆結果表示ダッシュボード:</strong>
                   <div className="text-stone-600 mt-1">
-                    遠征完了後、保管箱に素材が自動蓄積されます。工房ダッシュボードの「まとめて回収」ボタンで全遠征の成果を一括でインベントリに収納できます。
+                    遠征中は同行ロボ選択UIが自動的に格納され、現在進行中の遠征状況・リアルタイム進捗バー・残り時間が整理されたレイアウトで表示されます。遠征完了時の結果表示ダッシュボードは、<strong>「遠征場所」「素材を回収（受取ボタン）」「ロボットの表示（バンザイ大歓喜演出）」</strong>の3要素のみに絞り込まれた極めてシンプルな設計に刷新されており、余計な情報を排除して直感的にワンタップで素材を回収できます。素材受取時には工房風の明るい木製ボードと真鍮銘板の素材受取ダイアログが表示され、獲得した素材を安全に工房倉庫へ格納できます。
                   </div>
                 </div>
               </div>
@@ -335,7 +334,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                   <div className="bg-white p-1.5 rounded border border-stone-200"><span className="font-bold text-fuchsia-600">SSS:</span> 4000勝以上 (神話超越)</div>
                 </div>
                 <p className="text-[10px] text-stone-500 font-sans">
-                  ※ モニターの「階級基準」ボタンからいつでも詳細基準を確認可能。各カテゴリーカードで次ランク昇格までの残り必要勝利数がリアルタイムに表示されます。
+                  ※ 各カテゴリーカードで次ランク昇格までの残り必要勝利数がリアルタイムに表示されます。
                   <br />
                   ※ <strong>挑戦回数・クリア制限ルール:</strong> すべてのバトル（戦闘演習・オセロ・チェス・弾幕よけ・ピアノ演奏）は、<strong>未勝利であれば1日何回でも再挑戦可能</strong>です。勝利（クリア）したバトル・難易度は「本日クリア済」と表示され、翌朝9:00のリセットまで出撃ボタンが無効化されます。防衛戦も同様に当日クリア後は翌朝9:00までボタンが無効化されます。
                 </p>
@@ -345,21 +344,37 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                 <div className="bg-white p-2.5 rounded-lg border border-stone-200">
                   <strong className="text-stone-900 block font-bold mb-1">⚔️ 戦闘シミュレータ (1on1 Combat)</strong>
                   <p className="text-stone-600">
-                    自作機体とAI戦術ボット（Lv.1〜10）によるターン制バトル。出撃前のロボット選択画面で機体が繰り出せる戦術技・発動条件・発動率（知性Int補正）や、モーションスタジオ連携のGSAP技アニメーション演出をプレビュー確認できます。武装（ビームサーベル・シールド）の装備による奥義解放もリアルタイムに反映されます。演習勝利時には、<strong>宝箱ドロップ＆開封アニメーション演出</strong>が発動！Lv.4以下では修理キット・★1素材・ゴールドのいずれか1つが確定出現し、Lv.5以降は修理キット確定＋★1〜★3素材・ゴールド・バトルエレメント・工房名声を獲得できます。未勝利の場合は1日何回でも再挑戦可能です。
+                    自作機体とAI戦術ボット（Lv.1〜10）によるターン制バトル。バトル画面は工房の温かみを感じる木製・真鍮ダッシュボードと明るい雰囲気に統一され、過度な英単語やテキストを削減して直感的なアイコン（攻・防・速・避・知・耐久、宝箱など）を主体とした見やすいUIへと改善されています。また、機体能力値の詳細仕様や計算式は折りたたみ式アコーディオンとなっており、必要な時だけワンタップで展開して確認可能です。
+                    <br />
+                    <strong>敵レベル対応・戦術技Tierシステム (全5階層):</strong> 機体の知性(Int)や各主能力値(Pow/Def/Agi/Dex)が敵のレベル別想定ステータスに到達することで、段階的に高位技がアンロックされます。
+                    <br />
+                    ・<strong>Tier 1 (Lv.1〜2対応 / Int 12+):</strong> ロケットパンチ、ナノバリア、緊急リペア、EMPパルス等の基本戦術
+                    <br />
+                    ・<strong>Tier 2 (Lv.3〜4対応 / Int 24+):</strong> フライングスマッシュ、最適化プロトコル、プラズマジェット
+                    <br />
+                    ・<strong>Tier 3 (Lv.5〜6対応 / Int 45+):</strong> 火炎旋風回転斬り、超速ガトリングラッシュ、精密長距離狙撃
+                    <br />
+                    ・<strong>Tier 4 (Lv.7〜8対応 / Int 80+):</strong> 【必殺奥義】星断オメガクロス、フルバースト・オーバードライブ
+                    <br />
+                    ・<strong>Tier 5 (Lv.9〜10対応 / Int 130+):</strong> 【終焉奥義】アポカリプス・オメガバースト（高知性機体のみが到達できる究極破壊技）
+                    <br />
+                    <strong>演習専用武装ランクアップシステム:</strong> ビームサーベルとビームシールドは、バトル勝利などで獲得できるエレメントを消費することで、<strong>初級★1 (初期解放: 100 E) → 中級★2 (500 E) → 上級★3 (1,000 E) → 特級★4 (5,000 E) → 伝説★5 (10,000 E)</strong> の全5段階にランクアップ強化可能！ランクに応じて攻撃力（Power +35〜+320）や防御力（Defense +30〜+270）が大幅に上昇し、専用奥義【星断オメガクロス】やシールド防御が飛躍的に強化されます。
+                    <br />
+                    演習勝利時には、<strong>宝箱がドロップ</strong>しアイテムとして回収できます（倉庫画面から開封可能）。開封時には★1〜★3素材・ゴールド・バトルエレメント・工房名声を獲得できます。未勝利の場合は1日何回でも再挑戦可能です。
                   </p>
                 </div>
 
                 <div className="bg-white p-2.5 rounded-lg border border-stone-200">
                   <strong className="text-stone-900 block font-bold mb-1">🛡️ 拠点防衛戦 (Base Defense)</strong>
                   <p className="text-stone-600">
-                    最大3機のロボットをタレットとして配備するリアルタイム防衛戦。勝利時に<strong>防衛宝箱ドロップ＆開封演出</strong>が発生し、高確率の修理キット・素材・ゴールド・エレメント・工房名声（Lv.3:+5, Lv.4:+10, Lv.5:+15）を獲得。さらにステージ難易度に応じた<strong>防衛リジェネ（3h〜24h）</strong>が出撃機体全員に付与されます（※防衛戦は1日1回挑戦制限）。
+                    最大3機のロボットをタレットとして配備するリアルタイム防衛戦。勝利時に<strong>防衛宝箱がドロップ</strong>し、回収可能です（倉庫で開封）。素材・ゴールド・エレメント・工房名声（Lv.3:+5, Lv.4:+10, Lv.5:+15）を獲得。さらにステージ難易度に応じた<strong>防衛リジェネ（3h〜24h）</strong>が出撃機体全員に付与されます（※防衛戦は1日1回挑戦制限）。
                   </p>
                 </div>
 
                 <div className="bg-white p-2.5 rounded-lg border border-stone-200">
                   <strong className="text-stone-900 block font-bold mb-1">🚀 弾幕サバイバル (Danmaku Survival)</strong>
                   <p className="text-stone-600">
-                    敵機から放たれる幾何学的な弾幕を回避するアクションシューティング。Easy / Normal / Hard の3段階難易度。名声の獲得はありませんが、生還成功時に<strong>専用のクリア宝箱ドロップ＆開封演出</strong>が発生し、修理キット・ゴールド・クラフト素材・バトルエレメント（上級）などを獲得できます。未生還時は何度でも再挑戦可能です。
+                    敵機から放たれる幾何学的な弾幕を回避するアクションシューティング。Easy / Normal / Hard の3段階難易度。名声の獲得はありませんが、生還成功時に<strong>専用のクリア宝箱がドロップ</strong>し、回収できます。倉庫で開封することで、ゴールド・クラフト素材・バトルエレメントなどを獲得できます。未生還時は何度でも再挑戦可能です。
                   </p>
                 </div>
 
@@ -373,7 +388,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                 <div className="bg-white p-2.5 rounded-lg border border-stone-200 sm:col-span-2">
                   <strong className="text-stone-900 block font-bold mb-1">♟️ クラシック頭脳対戦 (オセロ / チェス / 五目並べ / 三目並べ)</strong>
                   <p className="text-stone-600">
-                    ロボットの知力(INT)や思考ロジックを試すボードゲーム集。<strong>オセロおよびチェスでは勝利時に専用の宝箱ドロップ＆開封演出</strong>が発生し、対局相手のレベルに応じた修理キット・素材・ゴールド・バトルエレメント・工房名声を獲得可能！未勝利時は1日何回でも繰り返し挑戦できます。
+                    ロボットの知力(INT)や思考ロジックを試すボードゲーム集。<strong>オセロおよびチェスでは勝利時に専用の宝箱がドロップ</strong>し、回収可能！対局相手のレベルに応じた素材・ゴールド・バトルエレメント・工房名声を獲得できます。未勝利時は1日何回でも繰り返し挑戦できます。
                   </p>
                 </div>
               </div>

@@ -6,6 +6,7 @@ import { theme } from '../styles/theme';
 import { MATERIALS } from '../core/data';
 import { MaterialIcon } from '../components/ui/MaterialIcon';
 import { INTERIORS } from '../core/interiors';
+import { ScreenHeader } from '../components/ui/ScreenHeader';
 import * as Gi from 'react-icons/gi';
 
 export const ShopScreen: React.FC<{ state: GameState, engine: GameEngine, onBack: () => void }> = ({ state, engine, onBack }) => {
@@ -23,11 +24,16 @@ export const ShopScreen: React.FC<{ state: GameState, engine: GameEngine, onBack
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center border-b-2 border-stone-300 pb-2">
-        <h2 className={theme.typography.h2}>商店</h2>
-        <Button size="sm" variant="secondary" onClick={onBack}>工房へ戻る</Button>
-      </div>
+    <div className="space-y-4">
+      <ScreenHeader
+        icon={<Gi.GiShop size={16} />}
+        title="ジャンク商店・資材交換所"
+        rightElement={
+          <Button size="sm" variant="secondary" onClick={onBack} className="text-xs py-1 px-2.5">
+            ← 工房へ戻る
+          </Button>
+        }
+      />
 
       <div className="flex gap-2">
         <button 

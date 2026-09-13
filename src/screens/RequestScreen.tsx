@@ -7,6 +7,7 @@ import { RobotVisual } from '../components/robot/RobotVisual';
 import { ClientVisual } from '../components/ui/ClientVisual';
 import { theme } from '../styles/theme';
 import { TutorialPopup } from '../components/ui/TutorialPopup';
+import { ScreenHeader } from '../components/ui/ScreenHeader';
 
 const CLIENT_SCHEDULE_INFO: Record<RequestRank, { label: string; interval: string; times: string; tagColor: string }> = {
   King: {
@@ -125,12 +126,15 @@ export const RequestScreen: React.FC<{ state: GameState; engine: GameEngine }> =
         }
       />
 
-      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 border-b-2 border-stone-200 pb-2">
-        <h2 className={theme.typography.h2}>依頼掲示板</h2>
-        <span className="text-xs text-stone-500 font-sans">
-          現在時刻: {new Date(now).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-        </span>
-      </div>
+      <ScreenHeader
+        icon={<Gi.GiScrollUnfurled size={16} />}
+        title="依頼掲示板"
+        rightElement={
+          <span className="text-[11px] text-stone-500 font-mono bg-stone-100 px-2 py-0.5 rounded border border-stone-200">
+            更新時刻: {new Date(now).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+          </span>
+        }
+      />
 
       {/* Schedule & Rules Explanation Box */}
       <Card className="bg-stone-50 border border-stone-300 p-4">

@@ -1,6 +1,7 @@
 import { CombatFighter, SkillDef, SkillResult } from './combatTypes';
 import { Robot } from '../../../core/models';
 import { Opponent } from '../Shared';
+import { CombatEquipmentRank, getEquipmentBonus } from '../../../core/combatEquipmentData';
 
 // 通常攻撃ダメージ計算公式（ユーザー指定準拠）:
 // 1回のダメージ ＝ 自分Pow値 × (80〜120) - 相手Def値 × 50
@@ -25,16 +26,19 @@ export const checkDodge = (attackerDex: number, defenderDex: number, defenderDod
 };
 
 export const ALL_COMBAT_SKILLS: SkillDef[] = [
+  // -------------------------------------------------------------
+  // 武装専用奥義（ビームサーベル / ビームシールド 装備で解放）
+  // -------------------------------------------------------------
   {
     id: 'omega_cross',
     name: '【必殺奥義】星断オメガクロス',
-    desc: 'ビームサーベルの最大出力を解放し、十字の斬撃を放つ必殺の剣技。通常の2.5倍の威力を誇る。',
-    shortDesc: '専用・威力2.5倍十字斬り',
+    desc: 'ビームサーベルの最大出力を解放し、天空を星ごと十字に断ち割る必殺の剣技。通常の2.8倍の破壊力に加え、相手の行動値(AP)を-300遅延させる。',
+    shortDesc: '専用・威力2.8倍十字斬り＋敵AP遅延',
     category: 'attack',
-    reqInt: 8,
+    reqInt: 15,
     reqEquipment: 'beamSaber',
-    reqStat: { stat: 'power', name: 'Power', value: 10 },
-    baseLearnChance: 15,
+    reqStat: { stat: 'power', name: 'Power', value: 15 },
+    baseLearnChance: 18,
     cooldownSeconds: 12,
     iconName: 'GiBroadsword',
     badgeColor: 'bg-rose-100 text-rose-800 border-rose-300',
@@ -42,47 +46,60 @@ export const ALL_COMBAT_SKILLS: SkillDef[] = [
       if (checkDodge(attacker.dexterity, defender.dexterity)) {
         return { damage: 0, isDodge: true, isCritical: false };
       }
-      const { damage } = calcBaseDamage(attacker.power, defender.defense, 2.5);
-      return { damage, isDodge: false, isCritical: true, specialLog: '星を断つ光の十字が輝く！！' };
+      const { damage } = calcBaseDamage(attacker.power, defender.defense, 2.8);
+      return { 
+        damage, 
+        isDodge: false, 
+        isCritical: true, 
+        targetApReduction: 300,
+        specialLog: '★★★【必殺奥義】星断オメガクロス！光波十字の斬撃が敵機を完全両断！' 
+      };
     }
   },
   {
     id: 'energy_shield',
     name: 'エネルギーシールド防御',
-    desc: 'ビームシールドを過負荷状態にし、強固な光波防壁を展開。約10秒間、被ダメージを半減する。',
-    shortDesc: '専用・強固な光波防壁',
+    desc: 'ビームシールドを過負荷状態にして光波防壁を展開。装甲を250自己修復し、8秒間被ダメージを50%カット＆防御力+40%。',
+    shortDesc: '専用・耐久250修復＋8秒間 軽減50%',
     category: 'shield',
-    reqInt: 8,
+    reqInt: 15,
     reqEquipment: 'beamShield',
-    reqStat: { stat: 'defense', name: 'Defense', value: 10 },
+    reqStat: { stat: 'defense', name: 'Defense', value: 15 },
     baseLearnChance: 20,
-    cooldownSeconds: 18,
+    cooldownSeconds: 14,
     iconName: 'GiShield',
     badgeColor: 'bg-cyan-100 text-cyan-800 border-cyan-300',
-    execute: (attacker) => {
+    execute: () => {
       return { 
         damage: 0, 
         isDodge: false, 
         isCritical: false,
-        addBuff: {
+        healAmount: 250,
+        selfBuff: {
           id: 'energy_shield_buff',
           name: '光波防壁',
-          durationMs: 10000,
+          desc: '被ダメージ50%カット、防御力+40%',
+          icon: 'shield',
+          durationSeconds: 8,
+          defMult: 1.4,
           damageReductionMult: 0.5,
         },
-        specialLog: '強固な光波防御障壁が展開された！'
+        specialLog: '強固な光波防御障壁を展開！耐久修復とともに鉄壁の防護を形成！'
       };
     }
   },
 
+  // -------------------------------------------------------------
+  // Tier 1: 初級基本技（Lv.1〜2帯・初心者機体目安）
+  // -------------------------------------------------------------
   {
     id: 'smash',
     name: '粉砕スマッシュ',
-    desc: '渾身のパワーで装甲の脆い部分を叩き割る強撃。通常の1.8倍前後の威力を誇る。',
-    shortDesc: '威力1.8倍の強力打撃',
+    desc: '渾身のパワーで装甲の脆い部分を叩き割る強撃。通常の1.6倍前後の威力を誇る。',
+    shortDesc: 'Lv.1〜 威力1.6倍の強力打撃',
     category: 'attack',
-    reqInt: 6,
-    reqStat: { stat: 'power', name: 'Power', value: 10 },
+    reqInt: 12,
+    reqStat: { stat: 'power', name: 'Power', value: 15 },
     baseLearnChance: 25,
     cooldownSeconds: 6,
     iconName: 'GiHammerDrop',
@@ -91,18 +108,77 @@ export const ALL_COMBAT_SKILLS: SkillDef[] = [
       if (checkDodge(attacker.dexterity, defender.dexterity)) {
         return { damage: 0, isDodge: true, isCritical: false };
       }
-      const { damage } = calcBaseDamage(attacker.power, defender.defense, 1.8);
+      const { damage } = calcBaseDamage(attacker.power, defender.defense, 1.6);
       return { damage, isDodge: false, isCritical: true, specialLog: '重い一撃が装甲を軋ませた！' };
     }
   },
   {
+    id: 'nano_barrier',
+    name: '要塞ナノバリア',
+    desc: 'エネルギー防壁を瞬時に展開。6秒間、受けるあらゆるダメージを40%軽減する。',
+    shortDesc: 'Lv.1〜 6秒間 被ダメージ40%カット',
+    category: 'shield',
+    reqInt: 14,
+    reqStat: { stat: 'defense', name: 'Defense', value: 12 },
+    baseLearnChance: 22,
+    cooldownSeconds: 10,
+    iconName: 'GiShieldReflect',
+    badgeColor: 'bg-blue-100 text-blue-800 border-blue-300',
+    execute: () => {
+      return {
+        damage: 0,
+        isDodge: false,
+        isCritical: false,
+        selfBuff: {
+          id: 'nano_barrier',
+          name: 'ナノバリア',
+          desc: '被ダメージ40%軽減',
+          icon: 'shield',
+          durationSeconds: 6,
+          damageReductionMult: 0.6
+        },
+        specialLog: '強固なナノバリアを展開！6秒間被ダメージ40%カット！'
+      };
+    }
+  },
+  {
+    id: 'rocket_punch',
+    name: 'ロケットパンチ',
+    desc: '肘のバーニアジェット噴射で鋼鉄のロケットナックルを射出！通常攻撃の1.8倍の推進打撃を叩き込み、次行動への加速（AP+200）を得る。',
+    shortDesc: 'Lv.2〜 威力1.8倍の射出打撃＋AP加速',
+    category: 'attack',
+    reqInt: 20,
+    reqStat: { stat: 'power', name: 'Power', value: 25 },
+    baseLearnChance: 22,
+    cooldownSeconds: 8,
+    iconName: 'GiPunch',
+    badgeColor: 'bg-orange-100 text-orange-800 border-orange-300',
+    execute: (attacker, defender) => {
+      if (checkDodge(attacker.dexterity, defender.dexterity)) {
+        return { damage: 0, isDodge: true, isCritical: false, apGain: 100 };
+      }
+      const { damage } = calcBaseDamage(attacker.power, defender.defense, 1.8);
+      return {
+        damage,
+        isDodge: false,
+        isCritical: true,
+        apGain: 200,
+        specialLog: 'ロケットパンチ発射！爆熱ジェット推進の鋼鉄拳が敵装甲を粉砕！'
+      };
+    }
+  },
+
+  // -------------------------------------------------------------
+  // Tier 2: 中級戦術技（Lv.3〜4帯・中堅機体目安）
+  // -------------------------------------------------------------
+  {
     id: 'gatling_rush',
     name: 'ガトリング連撃',
     desc: '敏捷な関節駆動で素早い2連打を繰り出し、さらに次行動への加速（AP+250）を得る。',
-    shortDesc: '2連撃＋行動値チャージ',
+    shortDesc: 'Lv.3〜 2連撃＋行動値チャージ',
     category: 'rush',
-    reqInt: 10,
-    reqStat: { stat: 'agility', name: 'Agility', value: 10 },
+    reqInt: 30,
+    reqStat: { stat: 'agility', name: 'Agility', value: 25 },
     baseLearnChance: 20,
     cooldownSeconds: 8,
     iconName: 'GiRapidshareArrow',
@@ -114,7 +190,7 @@ export const ALL_COMBAT_SKILLS: SkillDef[] = [
         if (checkDodge(attacker.dexterity, defender.dexterity)) {
           dodges++;
         } else {
-          const { damage } = calcBaseDamage(attacker.power, defender.defense, 0.75);
+          const { damage } = calcBaseDamage(attacker.power, defender.defense, 0.8);
           totalDmg += damage;
         }
       }
@@ -135,58 +211,28 @@ export const ALL_COMBAT_SKILLS: SkillDef[] = [
     id: 'precision_snipe',
     name: '精密スナイプ',
     desc: '敵の急所回路を光学照準で捕捉。相手の回避行動を封じ、防御力を半減して急所を穿つ。',
-    shortDesc: '必中・防御半減の急所撃ち',
+    shortDesc: 'Lv.4〜 必中・防御半減の急所撃ち',
     category: 'snipe',
-    reqInt: 14,
-    reqStat: { stat: 'dexterity', name: 'Dexterity', value: 10 },
+    reqInt: 40,
+    reqStat: { stat: 'dexterity', name: 'Dexterity', value: 35 },
     baseLearnChance: 20,
     cooldownSeconds: 9,
     iconName: 'GiBullseye',
     badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-300',
     execute: (attacker, defender) => {
-      // 必中（回避チェックなし）＋相手防御力を半分として計算
       const piercedDef = Math.floor(defender.defense * 0.5);
-      const { damage } = calcBaseDamage(attacker.power, piercedDef, 1.4);
+      const { damage } = calcBaseDamage(attacker.power, piercedDef, 1.5);
       return { damage, isDodge: false, isCritical: true, specialLog: '死角を捉えた必中クリティカル撃！' };
-    }
-  },
-  {
-    id: 'nano_barrier',
-    name: '要塞ナノバリア',
-    desc: 'エネルギー防壁を瞬時に展開。6秒間、受けるあらゆるダメージを50%軽減する。',
-    shortDesc: '6秒間 被ダメージ50%カット',
-    category: 'shield',
-    reqInt: 8,
-    reqStat: { stat: 'defense', name: 'Defense', value: 10 },
-    baseLearnChance: 22,
-    cooldownSeconds: 12,
-    iconName: 'GiShieldReflect',
-    badgeColor: 'bg-blue-100 text-blue-800 border-blue-300',
-    execute: (attacker) => {
-      return {
-        damage: 0,
-        isDodge: false,
-        isCritical: false,
-        selfBuff: {
-          id: 'nano_barrier',
-          name: 'ナノバリア',
-          desc: '被ダメージ50%軽減',
-          icon: 'shield',
-          durationSeconds: 6,
-          damageReductionMult: 0.5
-        },
-        specialLog: '強固なナノバリアを展開！6秒間被ダメージ半減！'
-      };
     }
   },
   {
     id: 'emergency_repair',
     name: '緊急リペアプロトコル',
     desc: '内蔵された応急修復ナノマシンを活性化し、最大耐久値の20%を即時修復する。',
-    shortDesc: '耐久値20%即時回復',
+    shortDesc: 'Lv.4〜 耐久値20%即時修復',
     category: 'repair',
-    reqInt: 16,
-    reqStat: { stat: 'hp', name: 'Vitality', value: 10 },
+    reqInt: 44,
+    reqStat: { stat: 'hp', name: 'Vitality', value: 30 },
     baseLearnChance: 18,
     cooldownSeconds: 15,
     iconName: 'GiHealing',
@@ -202,14 +248,18 @@ export const ALL_COMBAT_SKILLS: SkillDef[] = [
       };
     }
   },
+
+  // -------------------------------------------------------------
+  // Tier 3: 上級戦術技（Lv.5〜6帯・精鋭機体目安）
+  // -------------------------------------------------------------
   {
     id: 'emp_disruptor',
     name: 'EMPディスラプター',
     desc: '電磁衝撃波を放射してダメージを与え、さらに相手の行動値(AP)をゼロに吹き飛ばす。',
-    shortDesc: 'ダメージ＋相手APリセット',
+    shortDesc: 'Lv.5〜 ダメージ＋相手AP完全リセット',
     category: 'emp',
-    reqInt: 22,
-    reqStat: { stat: 'power', name: 'Power', value: 20 },
+    reqInt: 52,
+    reqStat: { stat: 'power', name: 'Power', value: 50 },
     baseLearnChance: 16,
     cooldownSeconds: 12,
     iconName: 'GiLightningTrio',
@@ -218,7 +268,7 @@ export const ALL_COMBAT_SKILLS: SkillDef[] = [
       if (checkDodge(attacker.dexterity, defender.dexterity)) {
         return { damage: 0, isDodge: true, isCritical: false };
       }
-      const { damage } = calcBaseDamage(attacker.power, defender.defense, 1.1);
+      const { damage } = calcBaseDamage(attacker.power, defender.defense, 1.2);
       return {
         damage,
         isDodge: false,
@@ -229,181 +279,13 @@ export const ALL_COMBAT_SKILLS: SkillDef[] = [
     }
   },
   {
-    id: 'optimize_protocol',
-    name: '戦術オプティマイズ',
-    desc: '知性演算により相手の動作癖を完全看破。8秒間、自身の攻撃力+25%＆回避率+25%。',
-    shortDesc: '8秒間 攻撃力+25%＆回避+25%',
-    category: 'attack',
-    reqInt: 28,
-    baseLearnChance: 15,
-    cooldownSeconds: 14,
-    iconName: 'GiBrain',
-    badgeColor: 'bg-indigo-100 text-indigo-800 border-indigo-300',
-    execute: (attacker, defender) => {
-      const { damage } = calcBaseDamage(attacker.power, defender.defense, 1.0);
-      return {
-        damage,
-        isDodge: false,
-        isCritical: false,
-        selfBuff: {
-          id: 'optimize_buff',
-          name: 'オプティマイズ',
-          desc: '攻撃力+25%、回避率+25%',
-          icon: 'brain',
-          durationSeconds: 8,
-          powMult: 1.25,
-          dodgeBonus: 25
-        },
-        specialLog: '戦術解析完了！機動オプティマイズで能力大幅強化！'
-      };
-    }
-  },
-  {
-    id: 'overdrive',
-    name: 'リミッター解除',
-    desc: '出力制限を解除した猛攻モード。8秒間、攻撃力+40%および行動値蓄積速度が1.5倍に跳ね上がる。',
-    shortDesc: '8秒間 攻撃力+40%＆速度1.5倍',
-    category: 'overdrive',
-    reqInt: 35,
-    reqStat: { stat: 'power', name: 'Power', value: 25 },
-    baseLearnChance: 12,
-    cooldownSeconds: 18,
-    iconName: 'GiFlamingSheet',
-    badgeColor: 'bg-rose-100 text-rose-800 border-rose-300',
-    execute: () => {
-      return {
-        damage: 0,
-        isDodge: false,
-        isCritical: true,
-        selfBuff: {
-          id: 'overdrive_buff',
-          name: 'オーバードライブ',
-          desc: '攻撃力+40%、Agi速度1.5倍',
-          icon: 'flame',
-          durationSeconds: 8,
-          powMult: 1.4,
-          agiMult: 1.5
-        },
-        specialLog: '★ リミッター解除！超高出力オーバードライブ始動！'
-      };
-    }
-  },
-  {
-    id: 'plasma_burst',
-    name: '零距離プラズマ撃',
-    desc: '装甲の隙間に圧縮プラズマを全放射する工房技術の究極奥義。通常攻撃の2.6倍の超絶破壊力。',
-    shortDesc: '超高威力2.6倍の究極一撃',
-    category: 'attack',
-    reqInt: 45,
-    reqStat: { stat: 'power', name: 'Power', value: 35 },
-    baseLearnChance: 10,
-    cooldownSeconds: 15,
-    iconName: 'GiPlasmaBlast',
-    badgeColor: 'bg-amber-200 text-amber-950 border-amber-400',
-    execute: (attacker, defender) => {
-      if (checkDodge(attacker.dexterity, defender.dexterity)) {
-        return { damage: 0, isDodge: true, isCritical: false };
-      }
-      const { damage } = calcBaseDamage(attacker.power, defender.defense, 2.6);
-      return {
-        damage,
-        isDodge: false,
-        isCritical: true,
-        specialLog: '★★ 零距離プラズマバースト炸裂！圧倒的破壊力！'
-      };
-    }
-  },
-  {
-    id: 'omega_cross_slash',
-    name: '【必殺奥義】星断オメガクロス',
-    desc: '天空を星ごと十字に断ち割る伝説の超必殺奥義。超高出力のオメガ交差十字斬撃で通常攻撃の3.2倍の壊滅的特大ダメージを与え、敵の次行動値(AP)を大幅に遅延させる。',
-    shortDesc: '特大3.2倍の星断十字撃＋敵AP半減',
-    category: 'attack',
-    reqInt: 40,
-    reqStat: { stat: 'power', name: 'Power', value: 30 },
-    baseLearnChance: 12,
-    cooldownSeconds: 20,
-    iconName: 'GiCrossedSwords',
-    badgeColor: 'bg-purple-200 text-purple-950 border-purple-400',
-    execute: (attacker, defender) => {
-      if (checkDodge(attacker.dexterity, defender.dexterity)) {
-        return { damage: 0, isDodge: true, isCritical: false };
-      }
-      const { damage } = calcBaseDamage(attacker.power, defender.defense, 3.2);
-      return {
-        damage,
-        isDodge: false,
-        isCritical: true,
-        targetApReduction: 400,
-        specialLog: '★★★【必殺奥義】星断オメガクロス炸裂！星をも断つ十字光が敵機を完全両断！'
-      };
-    }
-  },
-  {
-    id: 'rocket_punch',
-    name: 'ロケットパンチ',
-    desc: '肘のバーニアジェット噴射で鋼鉄のロケットナックルを射出！通常攻撃の1.9倍の強烈な推進打撃を叩き込み、次行動への加速（AP+200）を得る。',
-    shortDesc: '威力1.9倍の射出打撃＋AP加速',
-    category: 'attack',
-    reqInt: 14,
-    reqStat: { stat: 'power', name: 'Power', value: 16 },
-    baseLearnChance: 22,
-    cooldownSeconds: 8,
-    iconName: 'GiPunch',
-    badgeColor: 'bg-orange-100 text-orange-800 border-orange-300',
-    execute: (attacker, defender) => {
-      if (checkDodge(attacker.dexterity, defender.dexterity)) {
-        return { damage: 0, isDodge: true, isCritical: false, apGain: 100 };
-      }
-      const { damage } = calcBaseDamage(attacker.power, defender.defense, 1.9);
-      return {
-        damage,
-        isDodge: false,
-        isCritical: true,
-        apGain: 200,
-        specialLog: 'ロケットパンチ発射！爆熱ジェット推進の鋼鉄拳が敵装甲を粉砕！'
-      };
-    }
-  },
-  {
-    id: 'energy_shield_defense',
-    name: 'エネルギーシールド防御',
-    desc: '高密度の電磁バリアフィールドを全身に全開展開！装甲を瞬時に250自己修復するとともに、8秒間防御力+50%＆被ダメージ40%カットの鉄壁バリアを形成する。',
-    shortDesc: '耐久250修復＋8秒間 Def+50%＆軽減',
-    category: 'shield',
-    reqInt: 18,
-    reqStat: { stat: 'defense', name: 'Defense', value: 16 },
-    baseLearnChance: 20,
-    cooldownSeconds: 12,
-    iconName: 'GiShieldReflect',
-    badgeColor: 'bg-blue-100 text-blue-800 border-blue-300',
-    execute: () => {
-      return {
-        damage: 0,
-        isDodge: false,
-        isCritical: false,
-        healAmount: 250,
-        selfBuff: {
-          id: 'energy_shield_buff',
-          name: 'エネルギーシールド',
-          desc: '防御力+50%、被ダメージ40%カット',
-          icon: 'shield',
-          durationSeconds: 8,
-          defMult: 1.5,
-          damageReductionMult: 0.6
-        },
-        specialLog: 'エネルギーシールド防御展開！高密度電磁バリアが機体を強固に防護！'
-      };
-    }
-  },
-  {
     id: 'flame_blade_cyclone',
     name: '炎刃・旋風回転斬り',
     desc: '灼熱のヒートブレードを両手に構え、機体を高速旋回させて放つ炎の竜巻3連撃！合計2.4倍の連続回転ダメージを叩き込む。',
-    shortDesc: '炎刃の3連旋風斬り（合計2.4倍）',
+    shortDesc: 'Lv.6〜 炎刃の3連旋風斬り（合計2.4倍）',
     category: 'rush',
-    reqInt: 22,
-    reqStat: { stat: 'agility', name: 'Agility', value: 18 },
+    reqInt: 65,
+    reqStat: { stat: 'agility', name: 'Agility', value: 50 },
     baseLearnChance: 18,
     cooldownSeconds: 10,
     iconName: 'GiSpinningBlades',
@@ -428,6 +310,125 @@ export const ALL_COMBAT_SKILLS: SkillDef[] = [
         isCritical: true,
         hitsCount: 3 - dodges,
         specialLog: '炎刃・旋風回転斬り炸裂！燃え盛る烈火の旋風が敵機を連続両断！'
+      };
+    }
+  },
+
+  // -------------------------------------------------------------
+  // Tier 4: 達人技（Lv.7〜8帯・熟練カスタム機目安）
+  // -------------------------------------------------------------
+  {
+    id: 'optimize_protocol',
+    name: '戦術オプティマイズ',
+    desc: '知性演算により相手の動作癖を完全看破。8秒間、自身の攻撃力+30%＆回避率+30%。',
+    shortDesc: 'Lv.7〜 8秒間 攻撃力+30%＆回避+30%',
+    category: 'attack',
+    reqInt: 85,
+    baseLearnChance: 15,
+    cooldownSeconds: 14,
+    iconName: 'GiBrain',
+    badgeColor: 'bg-indigo-100 text-indigo-800 border-indigo-300',
+    execute: (attacker, defender) => {
+      const { damage } = calcBaseDamage(attacker.power, defender.defense, 1.0);
+      return {
+        damage,
+        isDodge: false,
+        isCritical: false,
+        selfBuff: {
+          id: 'optimize_buff',
+          name: 'オプティマイズ',
+          desc: '攻撃力+30%、回避率+30%',
+          icon: 'brain',
+          durationSeconds: 8,
+          powMult: 1.3,
+          dodgeBonus: 30
+        },
+        specialLog: '戦術解析完了！機動オプティマイズで能力大幅強化！'
+      };
+    }
+  },
+  {
+    id: 'plasma_burst',
+    name: '零距離プラズマ撃',
+    desc: '装甲の隙間に圧縮プラズマを全放射する工房技術の究極奥義。通常攻撃の2.6倍の超絶破壊力。',
+    shortDesc: 'Lv.8〜 超高威力2.6倍の究極一撃',
+    category: 'attack',
+    reqInt: 120,
+    reqStat: { stat: 'power', name: 'Power', value: 150 },
+    baseLearnChance: 12,
+    cooldownSeconds: 15,
+    iconName: 'GiPlasmaBlast',
+    badgeColor: 'bg-amber-200 text-amber-950 border-amber-400',
+    execute: (attacker, defender) => {
+      if (checkDodge(attacker.dexterity, defender.dexterity)) {
+        return { damage: 0, isDodge: true, isCritical: false };
+      }
+      const { damage } = calcBaseDamage(attacker.power, defender.defense, 2.6);
+      return {
+        damage,
+        isDodge: false,
+        isCritical: true,
+        specialLog: '★★ 零距離プラズマバースト炸裂！圧倒的破壊力！'
+      };
+    }
+  },
+
+  // -------------------------------------------------------------
+  // Tier 5: 頂点・オメガ級究極奥義（Lv.9〜10帯・極限機体目安）
+  // -------------------------------------------------------------
+  {
+    id: 'overdrive',
+    name: 'リミッター全面解除',
+    desc: '出力制限を全面解除した猛攻モード。8秒間、攻撃力+50%および行動値蓄積速度が1.8倍に跳ね上がる。',
+    shortDesc: 'Lv.9〜 8秒間 攻撃力+50%＆速度1.8倍',
+    category: 'overdrive',
+    reqInt: 170,
+    reqStat: { stat: 'power', name: 'Power', value: 200 },
+    baseLearnChance: 12,
+    cooldownSeconds: 18,
+    iconName: 'GiFlamingSheet',
+    badgeColor: 'bg-rose-100 text-rose-800 border-rose-300',
+    execute: () => {
+      return {
+        damage: 0,
+        isDodge: false,
+        isCritical: true,
+        selfBuff: {
+          id: 'overdrive_buff',
+          name: 'オーバードライブ',
+          desc: '攻撃力+50%、Agi速度1.8倍',
+          icon: 'flame',
+          durationSeconds: 8,
+          powMult: 1.5,
+          agiMult: 1.8
+        },
+        specialLog: '★ リミッター全面解除！超高出力オーバードライブ始動！'
+      };
+    }
+  },
+  {
+    id: 'apocalypse_omega_strike',
+    name: '【終焉奥義】アポカリプス・オメガバースト',
+    desc: '全出力ジェネレーターを臨界まで解放し、すべてを塵に帰すオメガプラズマ奔流を放射する究極奥義。通常攻撃の3.5倍の超壊滅的特大ダメージを与え、相手の行動値(AP)を完全リセット(-1000)する。',
+    shortDesc: 'Lv.10〜 壊滅3.5倍の終焉奥義＋敵APリセット',
+    category: 'attack',
+    reqInt: 230,
+    reqStat: { stat: 'power', name: 'Power', value: 300 },
+    baseLearnChance: 15,
+    cooldownSeconds: 22,
+    iconName: 'GiSuperMushroom',
+    badgeColor: 'bg-purple-200 text-purple-950 border-purple-400',
+    execute: (attacker, defender) => {
+      if (checkDodge(attacker.dexterity, defender.dexterity)) {
+        return { damage: 0, isDodge: true, isCritical: false };
+      }
+      const { damage } = calcBaseDamage(attacker.power, defender.defense, 3.5);
+      return {
+        damage,
+        isDodge: false,
+        isCritical: true,
+        targetApReduction: 1000,
+        specialLog: '★★★★【終焉奥義】アポカリプス・オメガバースト炸裂！臨界プラズマ奔流が大地ごと蒸発させた！'
       };
     }
   }
@@ -522,9 +523,12 @@ export const chooseStrategicSkill = (attacker: CombatFighter, defender: CombatFi
 // -------------------------------------------------------------
 export const getGsapPatternIdForSkill = (skillId: string): string => {
   switch (skillId) {
+    case 'apocalypse_omega_strike': return 'ultimate_omega_cross_slash';
     case 'omega_cross_slash': return 'ultimate_omega_cross_slash';
+    case 'omega_cross': return 'ultimate_omega_cross_slash';
     case 'rocket_punch': return 'rocket_punch';
     case 'energy_shield_defense': return 'shield_barrier';
+    case 'energy_shield': return 'shield_barrier';
     case 'flame_blade_cyclone': return 'flame_blade_cyclone';
     case 'gatling_rush': return 'missile_barrage';
     case 'precision_snipe': return 'two_handed_sniper_scope_shot';
@@ -534,8 +538,6 @@ export const getGsapPatternIdForSkill = (skillId: string): string => {
     case 'overdrive': return 'overdrive';
     case 'plasma_burst': return 'jet_dash';
     case 'smash': return 'flying_kick';
-    case 'omega_cross': return 'ultimate_omega_cross_slash';
-    case 'energy_shield': return 'shield_barrier';
     case 'nano_barrier': return 'shield_block_item';
     default: return 'slash_combo';
   }
@@ -543,6 +545,8 @@ export const getGsapPatternIdForSkill = (skillId: string): string => {
 
 export const getSkillAnimationLabel = (skillId: string): { label: string; tag: string } => {
   switch (skillId) {
+    case 'apocalypse_omega_strike':
+      return { label: '【終焉奥義】アポカリプス・オメガバースト', tag: '終焉奥義' };
     case 'omega_cross_slash':
     case 'omega_cross':
       return { label: '星断オメガクロス・光波十字斬撃', tag: '必殺奥義' };
@@ -598,6 +602,10 @@ export interface FighterStatProfile {
   equipments?: {
     beamSaber?: boolean;
     beamShield?: boolean;
+  };
+  equipmentRanks?: {
+    beamSaber?: CombatEquipmentRank;
+    beamShield?: CombatEquipmentRank;
   };
   boosts?: {
     saberPower: number;
@@ -695,11 +703,14 @@ export const evaluateAllSkillsForProfile = (profile: FighterStatProfile): {
 
 export const createProfileFromRobot = (
   robot: Robot,
-  equipments?: { beamSaber?: boolean; beamShield?: boolean }
+  equipments?: { beamSaber?: boolean; beamShield?: boolean },
+  equipmentRanks?: { beamSaber?: CombatEquipmentRank; beamShield?: CombatEquipmentRank }
 ): FighterStatProfile => {
   const rStats = robot.stats || { power: 10, defense: 5, agility: 10, dexterity: 10, intelligence: 10, hp: 10 };
-  const saberBoost = equipments?.beamSaber ? 35 : 0;
-  const shieldBoost = equipments?.beamShield ? 30 : 0;
+  const saberRank = equipmentRanks?.beamSaber || 'common';
+  const shieldRank = equipmentRanks?.beamShield || 'common';
+  const saberBoost = equipments?.beamSaber ? getEquipmentBonus('beamSaber', saberRank) : 0;
+  const shieldBoost = equipments?.beamShield ? getEquipmentBonus('beamShield', shieldRank) : 0;
   const hpVal = robot.currentHp ?? (robot.parts ? Math.floor((robot.parts.head.stats.hp + robot.parts.body.stats.hp + robot.parts.arms.stats.hp + robot.parts.legs.stats.hp) / 4) : 10);
 
   return {
@@ -719,6 +730,7 @@ export const createProfileFromRobot = (
       hp: hpVal,
     },
     equipments,
+    equipmentRanks,
     boosts: {
       saberPower: saberBoost,
       shieldDefense: shieldBoost,

@@ -25,7 +25,6 @@ export interface RobotPart {
   name: string;
   attribute: Attribute;
   rarity: number;
-  weight?: number;
   stats: { hp: number; power: number; defense: number; agility: number; dexterity: number; intelligence: number; };
   battleStats?: {
     matches: number;
@@ -56,7 +55,6 @@ export interface Robot {
   name: string;
   parts: { head: RobotPart; body: RobotPart; arms: RobotPart; legs: RobotPart; };
   stats: { hp: number; power: number; defense: number; agility: number; dexterity: number; intelligence: number; };
-  weight?: number;
   currentHp?: number;
   maxHp?: number;
   battleStats?: {
@@ -163,6 +161,7 @@ export interface GameState {
   fame?: number; // 工房の名声値 (依頼達成や高難度バトル勝利で増加)
   storageSize: number;
   materials: Record<string, number>;
+  unopenedChests?: Record<string, number>;
   parts: RobotPart[];
   robots: Robot[];
   unlockedLocations: string[];
@@ -188,6 +187,7 @@ export interface GameState {
   lastDefenseVictoryTime?: number; // 拠点防衛戦の前回防衛成功時刻（ミリ秒）
   battleElements?: number; // バトル演習報酬・エレメント所持数
   combatEquipments?: { beamSaber?: boolean; beamShield?: boolean }; // 交換済み戦闘専用装備
+  combatEquipmentRanks?: { beamSaber?: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'; beamShield?: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary' }; // 各戦闘専用装備のランク (Common -> Uncommon -> Rare -> Epic -> Legendary)
   activeCombatEquipments?: { beamSaber?: boolean; beamShield?: boolean }; // 戦闘出撃時に有効化する装備
   minigameRecords?: Record<string, { plays: number; wins: number; losses: number; draws: number }>;
   dailyBattleLimits?: Record<string, string[]>; // { "YYYY-MM-DD": ["robotId_categoryId_levelId", ...] }

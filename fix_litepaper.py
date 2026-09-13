@@ -1,14 +1,13 @@
 import re
 
-with open('src/screens/LitepaperScreen.tsx', 'r', encoding='utf-8') as f:
+with open('src/screens/LitepaperScreen.tsx', 'r') as f:
     content = f.read()
 
-content = content.replace(
-    "結果として高スコアを狙うことができます。</li>\n                  <li><strong>ロングノーツ",
-    "結果として高スコアを狙うことができます。\n                <ul className=\"list-disc list-inside space-y-1 ml-4 mt-1\">\n                  <li><strong>ロングノーツ"
-)
+# Replace texts
+content = content.replace("演習勝利時には、<strong>宝箱ドロップ＆開封アニメーション演出</strong>が発動！Lv.4以下では修理キット・★1素材・ゴールドのいずれか1つが確定出現し、Lv.5以降は修理キット確定＋★1〜★3素材・ゴールド・バトルエレメント・工房名声を獲得できます。未勝利の場合は1日何回でも再挑戦可能です。", "演習勝利時には、<strong>宝箱がドロップ</strong>しアイテムとして回収できます（倉庫画面から開封可能）。開封時には★1〜★3素材・ゴールド・バトルエレメント・工房名声を獲得できます。未勝利の場合は1日何回でも再挑戦可能です。")
+content = content.replace("勝利時に<strong>防衛宝箱ドロップ＆開封演出</strong>が発生し、高確率の修理キット・素材・ゴールド・エレメント・工房名声（Lv.3:+5, Lv.4:+10, Lv.5:+15）を獲得。", "勝利時に<strong>防衛宝箱がドロップ</strong>し、回収可能です（倉庫で開封）。素材・ゴールド・エレメント・工房名声（Lv.3:+5, Lv.4:+10, Lv.5:+15）を獲得。")
+content = content.replace("生還成功時に<strong>専用のクリア宝箱ドロップ＆開封演出</strong>が発生し、修理キット・ゴールド・クラフト素材・バトルエレメント（上級）などを獲得できます。", "生還成功時に<strong>専用のクリア宝箱がドロップ</strong>し、回収できます。倉庫で開封することで、ゴールド・クラフト素材・バトルエレメントなどを獲得できます。")
+content = content.replace("<strong>オセロおよびチェスでは勝利時に専用の宝箱ドロップ＆開封演出</strong>が発生し、対局相手のレベルに応じた修理キット・素材・ゴールド・バトルエレメント・工房名声を獲得可能！", "<strong>オセロおよびチェスでは勝利時に専用の宝箱がドロップ</strong>し、回収可能！対局相手のレベルに応じた素材・ゴールド・バトルエレメント・工房名声を獲得できます。")
 
-with open('src/screens/LitepaperScreen.tsx', 'w', encoding='utf-8') as f:
+with open('src/screens/LitepaperScreen.tsx', 'w') as f:
     f.write(content)
-
-print("Fixed LitepaperScreen.tsx tags")

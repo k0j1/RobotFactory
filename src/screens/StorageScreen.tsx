@@ -1,3 +1,4 @@
+import { BattleChestRewardService } from '../components/minigames/BattleChestRewardService';
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { GameState, AttributeColors, AttributeNames, Robot } from '../core/models';
 import { GameEngine } from '../core/GameEngine';
@@ -9,6 +10,7 @@ import { MaterialIcon } from '../components/ui/MaterialIcon';
 import { RobotRadarChart, STAT_CONFIGS } from '../components/robot/RobotRadarChart';
 import { RepairAnimationModal } from '../components/effects/RepairAnimationModal';
 import { PartBaselineModal } from '../components/part/PartBaselineModal';
+import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { RobotPart } from '../core/models';
 import * as Gi from 'react-icons/gi';
 
@@ -22,6 +24,34 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
   const [recentlyRepairedRobotId, setRecentlyRepairedRobotId] = useState<string | null>(null);
   const [selectedBaselinePart, setSelectedBaselinePart] = useState<RobotPart | null>(null);
   const [now, setNow] = useState(Date.now());
+
+  const [openingChest, setOpeningChest] = useState<string | null>(null);
+  const [openedChestResult, setOpenedChestResult] = useState<any | null>(null);
+
+  const handleOpenChest = (chestTier: string) => {
+    if (engine.removeChest(chestTier, 1)) {
+      setOpeningChest(chestTier);
+      // Simulate opening delay
+      setTimeout(() => {
+        let result;
+        // Depending on chestTier, roll something generic or combat
+        // For simplicity, we just use rollCombatChest with different levels
+        const level = chestTier === 'bronze' ? 2 : chestTier === 'silver' ? 4 : chestTier === 'gold' ? 6 : 8;
+        result = BattleChestRewardService.rollCombatChest(level, '宝箱開封', 0);
+        
+        // Add items to engine
+        if (result.gold > 0) engine.addGold(result.gold);
+        if (result.elements > 0) engine.addBattleElements(result.elements);
+        for (const mat of result.materials) {
+          engine.addMaterial(mat.material.id, mat.count);
+        }
+        
+        setOpeningChest(null);
+        setOpenedChestResult(result);
+      }, 1500);
+    }
+  };
+
   
   const disassemblyRef = useRef<HTMLDivElement>(null);
   const recycleRef = useRef<HTMLDivElement>(null);
@@ -109,13 +139,22 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
   }, [state.materials]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-end border-b-2 border-stone-300 pb-2">
-        <h2 className={theme.typography.h2}>倉庫</h2>
-        {tab === 'robots' && (
-          <span className="font-bold text-stone-500">容量: {state.robots?.length} / {state.storageSize}</span>
-        )}
-      </div>
+    <div className="space-y-4">
+      <ScreenHeader
+        icon={<Gi.GiCardboardBox size={16} />}
+        title="工房倉庫・保管庫"
+        rightElement={
+          tab === 'robots' ? (
+            <span className="text-xs font-bold text-stone-600 bg-stone-100 px-2 py-0.5 rounded border border-stone-200">
+              機体容量: <span className="text-amber-800 font-mono font-bold">{state.robots?.length}</span> / {state.storageSize}
+            </span>
+          ) : tab === 'materials' ? (
+            <span className="text-xs font-bold text-stone-600 bg-stone-100 px-2 py-0.5 rounded border border-stone-200">
+              全素材: <span className="text-amber-800 font-mono font-bold">{totalMaterialsCount}</span>個
+            </span>
+          ) : undefined
+        }
+      />
 
       <div className="flex gap-2">
         <Button 
@@ -382,7 +421,6 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                           <span>Agi: {r.stats.agility}</span>
                           <span>Dex: {r.stats.dexterity}</span>
                           <span>Int: {r.stats.intelligence}</span>
-                          <span className="font-bold text-stone-700 col-span-2 mt-0.5 border-t border-stone-200 pt-0.5">Wt: {r.weight || 0}</span>
                         </div>
                         {r.battleStats && r.battleStats.matches > 0 && (
                           <div className="mt-2 text-[10px] font-bold text-stone-600 bg-stone-100 p-1.5 rounded border border-stone-200">
@@ -513,8 +551,7 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                                         <span>Dex:{part.stats.dexterity}</span>
                                         <span>Int:{part.stats.intelligence}</span>
                                       </div>
-                                      <div className="flex items-center justify-between mt-1 pt-1 border-t border-stone-200">
-                                        <span className="font-bold text-stone-700 text-[10px] font-mono">Wt: {part.weight || 0}</span>
+                                      <div className="flex items-center justify-end mt-1 pt-1 border-t border-stone-200">
                                         <button
                                           onClick={(e) => {
                                             e.stopPropagation();
@@ -579,10 +616,6 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                             <div className="bg-white p-1.5 rounded border border-stone-200">
                               <span className="text-purple-600 font-bold block"><Gi.GiCrystalBall className="inline text-purple-500" /> INT: {r.stats.intelligence}</span>
                               <span className="text-stone-500 text-[9px]">解析力(幸運値)</span>
-                            </div>
-                            <div className="bg-white p-1.5 rounded border border-stone-200 col-span-2 text-center">
-                              <span className="text-stone-700 font-bold block"><Gi.GiWeight className="inline text-stone-500" /> WT: {r.weight || 0}</span>
-                              <span className="text-stone-500 text-[9px]">総重量 (アジリティ低下要因)</span>
                             </div>
                           </div>
                         </div>
@@ -706,7 +739,6 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                       <span>Agi: {p.stats.agility}</span>
                       <span>Dex: {p.stats.dexterity}</span>
                       <span>Int: {p.stats.intelligence}</span>
-                      <span className="font-bold text-stone-700 w-full mt-0.5">Wt: {p.weight || 0}</span>
                     </div>
                   </div>
                   <div className="bg-stone-100 rounded-md p-1 border border-stone-200">
@@ -747,8 +779,33 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
         </>
       )}
 
+      
       {tab === 'materials' && (
         <div className="space-y-4">
+          {/* Unopened Chests Section */}
+          {state.unopenedChests && Object.keys(state.unopenedChests).some(k => (state.unopenedChests![k] || 0) > 0) && (
+            <div className="bg-amber-50 p-4 rounded-xl border border-amber-200">
+              <h3 className="font-bold text-amber-900 mb-3 flex items-center">
+                <Gi.GiChest className="mr-2 text-xl" />
+                未開封の宝箱
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {Object.entries(state.unopenedChests).filter(([_, count]) => Number(count) > 0).map(([tier, count]) => (
+                  <Card key={tier} className="p-3 flex flex-col items-center justify-center text-center bg-white">
+                    <Gi.GiChest className={`text-4xl mb-2 ${tier === 'mythic' ? 'text-purple-500' : tier === 'gold' ? 'text-yellow-500' : tier === 'silver' ? 'text-gray-400' : 'text-amber-700'}`} />
+                    <span className="text-xs font-bold text-stone-700 mb-1">
+                      {tier === 'mythic' ? '神話の宝箱' : tier === 'gold' ? '金の宝箱' : tier === 'silver' ? '銀の宝箱' : '銅の宝箱'}
+                    </span>
+                    <Badge variant="secondary" className="mb-2">所持: {count}</Badge>
+                    <Button size="sm" onClick={() => handleOpenChest(tier)} disabled={!!openingChest}>
+                      開封する
+                    </Button>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Summary & Filters Header */}
           <div className="bg-stone-100 p-3 rounded-lg border border-stone-300 space-y-3">
             <div className="flex justify-between items-center flex-wrap gap-2">
@@ -886,6 +943,48 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
         />
       )}
       {/* パーツ基準値比較グラフモーダル */}
+
+      {/* Chest Opening Modal */}
+      {(openingChest || openedChestResult) && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-stone-900/80 backdrop-blur-sm">
+          <div className="bg-stone-50 border-4 border-stone-300 rounded-2xl p-6 w-full max-w-sm flex flex-col items-center animate-in fade-in zoom-in duration-300 shadow-2xl relative overflow-hidden">
+            {openingChest ? (
+              <div className="flex flex-col items-center py-8">
+                <Gi.GiChest className="text-6xl text-amber-500 animate-bounce mb-4" />
+                <h3 className="text-xl font-bold text-stone-800">宝箱を開封中...</h3>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center w-full">
+                <div className="absolute inset-0 bg-gradient-to-br from-amber-100 to-transparent opacity-50 pointer-events-none"></div>
+                <Gi.GiOpenTreasureChest className="text-7xl text-amber-500 mb-2 drop-shadow-lg" />
+                <h3 className="text-2xl font-bold text-amber-700 mb-6 relative z-10 drop-shadow-sm">開封結果</h3>
+                <div className="w-full space-y-3 relative z-10 mb-6">
+                  {openedChestResult.items.map((item: any, idx: number) => (
+                    <div key={idx} className="flex items-center p-3 rounded-xl bg-white border border-stone-200 shadow-sm gap-4 transform transition-all hover:scale-105">
+                      <div className="w-12 h-12 flex-shrink-0 flex items-center justify-center bg-stone-100 rounded-lg">
+                        {item.type === 'gold' && <Gi.GiCoins className="text-3xl text-yellow-500" />}
+                        {item.type === 'element' && <Gi.GiCrystalGrowth className="text-3xl text-cyan-500" />}
+                        {item.type === 'material' && <MaterialIcon attribute={item.material?.attribute || 'Earth'} className="text-3xl" />}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs text-stone-500">{item.desc}</p>
+                        <p className="text-sm font-bold text-stone-800">{item.name}</p>
+                      </div>
+                      <div className="text-lg font-bold text-amber-600">
+                        x{item.count}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <Button onClick={() => setOpenedChestResult(null)} className="w-full font-bold shadow-md relative z-10">
+                  閉じる
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {selectedBaselinePart && (
         <PartBaselineModal
           part={selectedBaselinePart}

@@ -1,5 +1,6 @@
 import { Robot } from '../../../core/models';
 import { Opponent } from '../Shared';
+import { CombatEquipmentRank } from '../../../core/combatEquipmentData';
 
 export interface CombatBuff {
   id: string;
@@ -89,6 +90,10 @@ export interface CombatFighter {
   equipments?: {
     beamSaber?: boolean;
     beamShield?: boolean;
+  };
+  equipmentRanks?: {
+    beamSaber?: CombatEquipmentRank;
+    beamShield?: CombatEquipmentRank;
   };
 }
 

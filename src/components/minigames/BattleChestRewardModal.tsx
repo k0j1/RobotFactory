@@ -172,32 +172,14 @@ export const BattleChestRewardModal: React.FC<BattleChestRewardModalProps> = ({
   }, [isOpen, dropResult]);
 
   // 宝箱クリック時の開封処理
+  
   const handleOpenChest = () => {
-    if (chestState !== 'closed') return;
-
-    setChestState('opening');
-    ChestAudioPlayer.playUnlock();
-
-    // カタカタ揺れた後にオープン
-    setTimeout(() => {
-      ChestAudioPlayer.playRattle();
-    }, 180);
-
-    setTimeout(() => {
-      setChestState('opened');
-      ChestAudioPlayer.playChestOpen();
-
-      // アイテムを1つずつテンポ良く出現
-      items.forEach((_, idx) => {
-        setTimeout(() => {
-          setVisibleItemsCount(prev => prev + 1);
-          ChestAudioPlayer.playItemPop(idx);
-        }, 260 + idx * 180);
-      });
-    }, 550);
+    ChestAudioPlayer.playItemPop(0);
+    onClaim();
   };
 
-  // 即時スキップで全アイテムを表示
+
+  // 即時すぐに回収で全アイテムを表示
   const handleInstantOpen = () => {
     if (chestState === 'closed') {
       ChestAudioPlayer.playUnlock();
@@ -289,7 +271,7 @@ export const BattleChestRewardModal: React.FC<BattleChestRewardModalProps> = ({
                 onClick={handleInstantOpen}
                 className="text-xs font-mono font-bold text-amber-300 hover:text-amber-100 bg-white/10 hover:bg-white/20 px-2 py-0.5 rounded-md border border-white/20 cursor-pointer"
               >
-                スキップ ▶
+                すぐに回収 ▶
               </button>
             ) : null}
           </div>
@@ -330,7 +312,7 @@ export const BattleChestRewardModal: React.FC<BattleChestRewardModalProps> = ({
                     <Gi.GiLockedChest className={`text-6xl sm:text-7xl ${tierStyle.iconColor} drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]`} />
                     <div className="absolute bottom-2 flex items-center gap-1 text-[10px] font-bold text-amber-200 bg-black/60 px-2 py-0.5 rounded-full border border-amber-500/40">
                       <Gi.GiSparkles className="text-amber-400 animate-spin" />
-                      <span>TAP TO OPEN</span>
+                      <span>TAP TO COLLECT</span>
                     </div>
                   </div>
                 </div>
@@ -340,7 +322,7 @@ export const BattleChestRewardModal: React.FC<BattleChestRewardModalProps> = ({
                     {dropResult.chestTitle}
                   </h3>
                   <p className="text-xs text-stone-300 font-bold flex items-center justify-center gap-1">
-                    <span>宝箱をタップして開ける！</span>
+                    <span>宝箱をタップして倉庫へ回収する</span>
                   </p>
                 </div>
               </motion.div>

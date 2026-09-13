@@ -1,4 +1,5 @@
 import { Robot } from '../../core/models';
+import { CombatEquipmentRank } from '../../core/combatEquipmentData';
 
 export interface Opponent {
   id: string;
@@ -307,6 +308,7 @@ export interface MinigameProps {
   onTogglePause?: () => void;
   onSetSpeed?: (speed: number) => void;
   activeCombatEquipments?: { beamSaber?: boolean; beamShield?: boolean };
+  combatEquipmentRanks?: { beamSaber?: CombatEquipmentRank; beamShield?: CombatEquipmentRank };
 }
 
 /**

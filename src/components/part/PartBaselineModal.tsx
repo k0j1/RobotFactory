@@ -18,7 +18,6 @@ const STAT_ICONS: Record<string, React.ReactNode> = {
   agility: <Gi.GiLightningTrio className="text-amber-500" />,
   dexterity: <Gi.GiBullseye className="text-emerald-500" />,
   intelligence: <Gi.GiCrystalBall className="text-purple-500" />,
-  weight: <Gi.GiWeight className="text-stone-500" />,
 };
 
 export const PartBaselineModal: React.FC<PartBaselineModalProps> = ({ part, onClose }) => {
@@ -163,11 +162,8 @@ export const PartBaselineModal: React.FC<PartBaselineModalProps> = ({ part, onCl
                 <span>基準値からの差分</span>
               </div>
               {report.items.map((item: StatBaselineItem) => {
-                const isWeight = item.key === 'weight';
-                // 差分が正の場合の良し悪し（weightはマイナスが良い）
-                const isPositiveGood = !item.isLowerBetter;
-                const isGood = isPositiveGood ? item.diff > 0 : item.diff < 0;
-                const isBad = isPositiveGood ? item.diff < 0 : item.diff > 0;
+                const isGood = item.diff > 0;
+                const isBad = item.diff < 0;
 
                 // 差分バーの長さ (最大±5で100%程度)
                 const maxBarRange = 6;
@@ -192,11 +188,6 @@ export const PartBaselineModal: React.FC<PartBaselineModalProps> = ({ part, onCl
                         }`}>
                           {item.diff > 0 ? `+${item.diff}` : item.diff}
                         </span>
-                        {isWeight && (
-                          <span className="text-[9px] text-stone-400">
-                            {item.diff < 0 ? '(軽快)' : item.diff > 0 ? '(重厚)' : '(標準)'}
-                          </span>
-                        )}
                       </div>
                     </div>
 
@@ -325,13 +316,6 @@ export const PartBaselineModal: React.FC<PartBaselineModalProps> = ({ part, onCl
                   })}
                 </svg>
               </div>
-
-              <div className="w-full bg-stone-50 p-2 rounded-lg border border-stone-200 mt-2 text-[11px] text-stone-600 flex justify-around font-mono">
-                <span>総重量(WT): <strong>{report.part.weight ?? report.baselineWeight}</strong> (基準:{report.baselineWeight})</span>
-                <span className={report.weightDiff < 0 ? 'text-emerald-600 font-bold' : report.weightDiff > 0 ? 'text-rose-600 font-bold' : 'text-stone-500'}>
-                  差分: {report.weightDiff > 0 ? `+${report.weightDiff}` : report.weightDiff}
-                </span>
-              </div>
             </div>
           )}
 
@@ -341,7 +325,6 @@ export const PartBaselineModal: React.FC<PartBaselineModalProps> = ({ part, onCl
             <p className="mt-0.5">
               基準値は素材と部位倍率に基づく標準設計スペック（乱数中央値）です。
               製造時のブレによって性能が上振れ・下振れします。
-              WT(重量)は低いほどロボット組立時のAGI(敏捷)ペナルティが軽微になります。
             </p>
           </div>
         </div>

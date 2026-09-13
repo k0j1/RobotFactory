@@ -16,7 +16,7 @@ export const PART_TYPE_MULTIPLIERS: Record<PartType, {
 };
 
 export interface StatBaselineItem {
-  key: 'hp' | 'power' | 'defense' | 'agility' | 'dexterity' | 'intelligence' | 'weight';
+  key: 'hp' | 'power' | 'defense' | 'agility' | 'dexterity' | 'intelligence';
   label: string;
   shortLabel: string;
   base: number;
@@ -37,10 +37,8 @@ export interface PartBaselineReport {
     dexterity: number;
     intelligence: number;
   };
-  baselineWeight: number;
   items: StatBaselineItem[];
   totalStatsDiff: number; // HP + Pow + Def + Agi + Dex + Int diff
-  weightDiff: number;
   qualityRank: 'S' | 'A' | 'B' | 'C';
   qualityLabel: string;
 }
@@ -86,17 +84,9 @@ export function calculatePartBaseline(part: RobotPart): PartBaselineReport {
   const baseHp = Math.floor(matHp * multi.hp) + 2;
   const basePow = Math.floor(matPow * multi.power) + 2;
   const baseDef = Math.floor(matDef * multi.defense) + 2;
-  let baseAgi = Math.floor(matAgi * multi.agility) + 2;
+  const baseAgi = Math.floor(matAgi * multi.agility) + 2;
   const baseDex = Math.floor(matDex * multi.dexterity) + 2;
   const baseInt = Math.floor(matInt * multi.intelligence) + 2;
-
-  // 基準重量
-  const baseWeight = Math.floor((basePow + baseDef) * 1.5) + 2;
-  // 基準重量による敏捷性ペナルティ
-  const baseAgilityPenalty = Math.floor(baseWeight / 5);
-  baseAgi = Math.max(1, baseAgi - baseAgilityPenalty);
-
-  const actualWeight = part.weight ?? baseWeight;
 
   const items: StatBaselineItem[] = [
     {
@@ -147,22 +137,9 @@ export function calculatePartBaseline(part: RobotPart): PartBaselineReport {
       actual: part.stats.intelligence,
       diff: part.stats.intelligence - baseInt,
     },
-    {
-      key: 'weight',
-      label: '重量',
-      shortLabel: 'WT',
-      base: baseWeight,
-      actual: actualWeight,
-      diff: actualWeight - baseWeight,
-      isLowerBetter: true, // 重量は軽い方がAGIペナルティが少ない
-    },
   ];
 
-  const totalStatsDiff = items
-    .filter(it => it.key !== 'weight')
-    .reduce((acc, it) => acc + it.diff, 0);
-
-  const weightDiff = actualWeight - baseWeight;
+  const totalStatsDiff = items.reduce((acc, it) => acc + it.diff, 0);
 
   // 評価判定（全ステータス差分ベース）
   let qualityRank: 'S' | 'A' | 'B' | 'C' = 'B';
@@ -190,10 +167,8 @@ export function calculatePartBaseline(part: RobotPart): PartBaselineReport {
       dexterity: baseDex,
       intelligence: baseInt,
     },
-    baselineWeight: baseWeight,
     items,
     totalStatsDiff,
-    weightDiff,
     qualityRank,
     qualityLabel,
   };

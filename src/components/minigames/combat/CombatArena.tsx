@@ -495,8 +495,54 @@ export const CombatArena: React.FC<CombatArenaProps> = ({
         <AnimatePresence>
           {skillVisual && (
             <div className="absolute inset-0 pointer-events-none z-35 flex items-center justify-center overflow-hidden">
+              {/* 0. 【終焉奥義】アポカリプス・オメガバースト */}
+              {skillVisual.skillId === 'apocalypse_omega_strike' && (
+                <div className="relative w-full h-full flex items-center justify-center">
+                  {/* 赤黒い臨界ダークフレア背景 */}
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: [0, 0.9, 0.7, 0] }}
+                    transition={{ duration: 1.0 }}
+                    className="absolute inset-0 bg-gradient-to-r from-red-950/90 via-purple-950/90 to-red-950/90 backdrop-blur-xs"
+                  />
+                  {/* 全画面臨界衝撃波リング */}
+                  <motion.div
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: [0, 3.5, 4.0], opacity: [1, 0.8, 0] }}
+                    transition={{ duration: 0.9, ease: 'easeOut' }}
+                    className="absolute w-64 h-64 rounded-full border-4 border-yellow-300 shadow-[0_0_50px_rgba(251,191,36,1)]"
+                  />
+                  {/* 破壊光線ビームストリーム */}
+                  <motion.div
+                    initial={{ scaleY: 0, opacity: 0 }}
+                    animate={{ scaleY: [0, 2.5, 0], opacity: [0, 1, 0] }}
+                    transition={{ duration: 0.85, delay: 0.1 }}
+                    className="absolute w-36 h-full bg-gradient-to-t from-transparent via-red-500/60 to-yellow-300 shadow-[0_0_60px_rgba(239,68,68,1)]"
+                  />
+                  {/* 臨界オメガコア */}
+                  <motion.div
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: [0, 2.5, 0], opacity: [0, 1, 0], rotate: 360 }}
+                    transition={{ duration: 0.9, delay: 0.1 }}
+                    className="relative text-yellow-300 drop-shadow-[0_0_40px_rgba(234,179,8,1)]"
+                  >
+                    <Gi.GiSuperMushroom className="text-8xl text-red-400" />
+                    <Gi.GiSparkles className="absolute -inset-6 text-9xl text-yellow-200 animate-spin" />
+                  </motion.div>
+                  {/* 終焉奥義コールテロップ */}
+                  <motion.div
+                    initial={{ y: 30, opacity: 0, scale: 0.7 }}
+                    animate={{ y: -50, opacity: [0, 1, 1, 0], scale: 1.3 }}
+                    transition={{ duration: 0.95 }}
+                    className="absolute text-center font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-red-400 via-yellow-200 to-purple-400 text-xl sm:text-2xl drop-shadow-[0_4px_15px_rgba(0,0,0,1)]"
+                  >
+                    ★★★ 終焉奥義・アポカリプス・オメガバースト ★★★
+                  </motion.div>
+                </div>
+              )}
+
               {/* 1. 【必殺奥義】星断オメガクロス */}
-              {skillVisual.skillId === 'omega_cross_slash' && (
+              {(skillVisual.skillId === 'omega_cross_slash' || skillVisual.skillId === 'omega_cross') && (
                 <div className="relative w-full h-full flex items-center justify-center">
                   {/* 背景暗転フラッシュ */}
                   <motion.div
@@ -575,7 +621,7 @@ export const CombatArena: React.FC<CombatArenaProps> = ({
               )}
 
               {/* 3. エネルギーシールド防御 */}
-              {skillVisual.skillId === 'energy_shield_defense' && (
+              {(skillVisual.skillId === 'energy_shield_defense' || skillVisual.skillId === 'energy_shield') && (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.5 }}
                   animate={{ opacity: [0, 1, 1, 0], scale: [0.6, 1.25, 1.2, 0.8] }}

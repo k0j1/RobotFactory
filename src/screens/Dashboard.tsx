@@ -4,6 +4,7 @@ import { GameState, Robot, getFameRank } from '../core/models';
 import { GameEngine } from '../core/GameEngine';
 import { Card, Button, Badge } from '../components/ui/core';
 import { RobotVisual } from '../components/robot/RobotVisual';
+import { GSAPRobotCanvas } from '../components/robot/GSAPRobotCanvas';
 import { theme } from '../styles/theme';
 import { LOCATIONS, MATERIALS } from '../core/data';
 import { MaterialIcon } from '../components/ui/MaterialIcon';
@@ -1165,7 +1166,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                   <div>
                     <p className="font-bold text-xs text-amber-900">{selectedModalRobot.name}</p>
                     <p className="text-[11px] text-stone-600 mt-0.5">
-                      パワー: <span className="font-bold text-orange-600">{selectedModalRobot.stats.power}</span> / 速度: <span className="font-bold text-amber-600">{selectedModalRobot.stats.agility}</span> / 重量: <span className="font-bold text-stone-700">{selectedModalRobot.weight || 0}</span>
+                      パワー: <span className="font-bold text-orange-600">{selectedModalRobot.stats.power}</span> / 速度: <span className="font-bold text-amber-600">{selectedModalRobot.stats.agility}</span> / 防御: <span className="font-bold text-sky-700">{selectedModalRobot.stats.defense}</span>
                     </p>
                     <p className="text-[10px] text-amber-700 font-mono mt-0.5">
                       <Gi.GiLightningTrio className="inline mr-1 text-yellow-400" /> 敏捷補正: -{selectedModalRobot.stats.agility}秒短縮 (周期: {Math.round(engine.getAutoDispatchIntervalMs(selectedModalRobot.id) / 60000 * 10) / 10}分)
@@ -1260,15 +1261,14 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                   </motion.p>
                 )}
 
-                {/* 素材獲得を大歓喜するロボット演出 */}
-                <div className="flex justify-center my-2">
-                  <RobotVisual
+                {/* 素材獲得を大歓喜するロボット演出（モーションスタジオのバンザイ大歓喜） */}
+                <div className="flex justify-center items-center my-2 h-24 overflow-visible">
+                  <GSAPRobotCanvas
                     robot={questRobot || state.robots[0]}
-                    size={68}
-                    emotion="happy"
-                    happyVariant="banzai"
-                    hasPendingDrops={true}
-                    hideBackground={true}
+                    size={80}
+                    patternId="banzai_cheer"
+                    loop={true}
+                    speed={1.0}
                   />
                 </div>
                 

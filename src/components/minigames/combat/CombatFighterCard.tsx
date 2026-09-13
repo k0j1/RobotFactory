@@ -102,13 +102,14 @@ export const CombatFighterCard: React.FC<CombatFighterCardProps> = ({
 
           {/* ゲージ群 */}
           <div className="flex-1 min-w-0 space-y-2">
-            {/* 耐久値（Vitality x 1000）バー */}
+            {/* 耐久値バー */}
             <div>
               <div className="flex justify-between items-center text-[10px] sm:text-xs mb-0.5">
                 <span className="font-bold text-stone-700 flex items-center gap-1">
-                  <Gi.GiHeartShield className="text-rose-600" /> 耐久値 (HP)
+                  <Gi.GiHeartShield className="text-rose-600 text-sm" />
+                  <span>耐久</span>
                 </span>
-                <span className="font-mono font-bold text-stone-900">
+                <span className="font-mono font-bold text-stone-900 text-[11px]">
                   {fighter.currentDurability.toLocaleString()} / {fighter.maxDurability.toLocaleString()}
                 </span>
               </div>
@@ -120,11 +121,12 @@ export const CombatFighterCard: React.FC<CombatFighterCardProps> = ({
               </div>
             </div>
 
-            {/* 行動値（AP: 0〜1000、Agilityで蓄積）バー */}
+            {/* 行動値バー */}
             <div>
               <div className="flex justify-between items-center text-[10px] mb-0.5">
                 <span className="font-bold text-stone-600 flex items-center gap-1">
-                  <Gi.GiSpeedometer className="text-amber-600" /> 行動値 (AP)
+                  <Gi.GiSpeedometer className="text-amber-600 text-xs" />
+                  <span>行動</span>
                 </span>
                 <span className="font-mono text-stone-600 text-[10px]">
                   {Math.floor(fighter.actionPoints)} / 1000
@@ -140,27 +142,32 @@ export const CombatFighterCard: React.FC<CombatFighterCardProps> = ({
           </div>
         </div>
 
-        {/* 能力値チップ（Pow, Def, Agi, Dex, Int） */}
+        {/* 能力値チップ（攻・防・速・避・知） */}
         <div className="grid grid-cols-5 gap-1 mt-2.5 pt-2 border-t border-stone-200 text-center font-mono">
-          <div className="bg-white/80 p-1 rounded border border-stone-200" title="Power: 攻撃力">
+          <div className="bg-white/90 p-1 rounded-lg border border-stone-200 shadow-2xs" title="攻撃力">
             <div className="text-[12px] text-red-600 flex justify-center"><Gi.GiBroadsword /></div>
             <div className="text-[11px] font-bold text-red-700">{fighter.power}</div>
+            <div className="text-[8px] text-stone-500 font-sans">攻撃</div>
           </div>
-          <div className="bg-white/80 p-1 rounded border border-stone-200" title="Defense: 防御力">
+          <div className="bg-white/90 p-1 rounded-lg border border-stone-200 shadow-2xs" title="防御力">
             <div className="text-[12px] text-blue-600 flex justify-center"><Gi.GiShield /></div>
             <div className="text-[11px] font-bold text-blue-700">{fighter.defense}</div>
+            <div className="text-[8px] text-stone-500 font-sans">防御</div>
           </div>
-          <div className="bg-white/80 p-1 rounded border border-stone-200" title="Agility: 行動蓄積速度">
-            <div className="text-[12px] text-amber-600 flex justify-center"><Gi.GiSprint /></div>
+          <div className="bg-white/90 p-1 rounded-lg border border-stone-200 shadow-2xs" title="行動蓄積速度">
+            <div className="text-[12px] text-amber-600 flex justify-center"><Gi.GiSpeedometer /></div>
             <div className="text-[11px] font-bold text-amber-700">{fighter.agility}</div>
+            <div className="text-[8px] text-stone-500 font-sans">速度</div>
           </div>
-          <div className="bg-white/80 p-1 rounded border border-stone-200" title="Dexterity: 回避力">
+          <div className="bg-white/90 p-1 rounded-lg border border-stone-200 shadow-2xs" title="回避力">
             <div className="text-[12px] text-emerald-600 flex justify-center"><Gi.GiCrosshair /></div>
             <div className="text-[11px] font-bold text-emerald-700">{fighter.dexterity}</div>
+            <div className="text-[8px] text-stone-500 font-sans">回避</div>
           </div>
-          <div className="bg-white/80 p-1 rounded border border-stone-200" title="Intelligence: 繰り出す技・戦術">
-            <div className="text-[12px] text-purple-600 flex justify-center"><Gi.GiBrain /></div>
+          <div className="bg-white/90 p-1 rounded-lg border border-stone-200 shadow-2xs" title="繰り出す技・知性">
+            <div className="text-[12px] text-purple-600 flex justify-center"><Gi.GiInspiration /></div>
             <div className="text-[11px] font-bold text-purple-700">{fighter.intelligence}</div>
+            <div className="text-[8px] text-stone-500 font-sans">知性</div>
           </div>
         </div>
 

@@ -2,6 +2,7 @@ import { GameState, Robot, ClientRequest, Attribute, RequestRank, RobotPart, Par
 import { MATERIALS, LOCATIONS, getMaterialCraftableVisuals } from './data';
 import { AttributeColors } from './models';
 import { getDefenseDailyResetInfo, DefenseResetInfo, getDailyResetDateKey } from '../components/minigames/Shared';
+import { CombatEquipmentType, CombatEquipmentRank, COMBAT_EQUIPMENT_RANKS, getNextEquipmentRank } from './combatEquipmentData';
 
 const INITIAL_STATE: GameState = {
   gold: 0,
@@ -85,39 +86,36 @@ export class GameEngine {
           });
         }
 
-        // Migrate weights
-        const applyWeightMigration = (part: any) => {
-          if (part && part.stats && part.weight === undefined) {
-            part.weight = Math.floor(((part.stats.power || 0) + (part.stats.defense || 0)) * 1.5) + 2;
+        // Clean up legacy weights
+        const cleanWeights = (part: any) => {
+          if (part && part.weight !== undefined) {
+            delete part.weight;
           }
         };
 
-        const applyRobotWeightMigration = (r: any) => {
-          if (r && r.parts) {
-            applyWeightMigration(r.parts.head);
-            applyWeightMigration(r.parts.body);
-            applyWeightMigration(r.parts.arms);
-            applyWeightMigration(r.parts.legs);
-            if (r.weight === undefined) {
-              r.weight = (r.parts.head?.weight || 0) + 
-                         (r.parts.body?.weight || 0) + 
-                         (r.parts.arms?.weight || 0) + 
-                         (r.parts.legs?.weight || 0);
+        const cleanRobotWeights = (r: any) => {
+          if (r) {
+            if (r.weight !== undefined) delete r.weight;
+            if (r.parts) {
+              cleanWeights(r.parts.head);
+              cleanWeights(r.parts.body);
+              cleanWeights(r.parts.arms);
+              cleanWeights(r.parts.legs);
             }
           }
         };
 
         if (parsed.parts) {
-          parsed.parts.forEach(applyWeightMigration);
+          parsed.parts.forEach(cleanWeights);
         }
         if (parsed.robots) {
-          parsed.robots.forEach(applyRobotWeightMigration);
+          parsed.robots.forEach(cleanRobotWeights);
         }
         if (parsed.craftedRobots) {
-          parsed.craftedRobots.forEach(applyRobotWeightMigration);
+          parsed.craftedRobots.forEach(cleanRobotWeights);
         }
         if (parsed.deliveredLogs) {
-          parsed.deliveredLogs.forEach(applyRobotWeightMigration);
+          parsed.deliveredLogs.forEach(cleanRobotWeights);
         }
 
         // Migrate old deliveredLogs to new parts format
@@ -210,6 +208,17 @@ export class GameEngine {
             });
           }
           parsed.fame = calculatedFame;
+        }
+
+        // Migrate combat equipment ranks (Default to 'common' for existing equipments)
+        if (!parsed.combatEquipmentRanks) {
+          parsed.combatEquipmentRanks = {};
+        }
+        if (parsed.combatEquipments?.beamSaber && !parsed.combatEquipmentRanks.beamSaber) {
+          parsed.combatEquipmentRanks.beamSaber = 'common';
+        }
+        if (parsed.combatEquipments?.beamShield && !parsed.combatEquipmentRanks.beamShield) {
+          parsed.combatEquipmentRanks.beamShield = 'common';
         }
 
         return { ...INITIAL_STATE, ...parsed };
@@ -460,6 +469,24 @@ export class GameEngine {
   /**
    * 工房の素材インベントリに素材を追加
    */
+  
+  public addChest(chestTier: string, amount: number = 1) {
+    if (!this.state.unopenedChests) {
+      this.state.unopenedChests = {};
+    }
+    this.state.unopenedChests[chestTier] = (this.state.unopenedChests[chestTier] || 0) + amount;
+    this.saveState();
+  }
+
+  public removeChest(chestTier: string, amount: number = 1): boolean {
+    if (!this.state.unopenedChests || (this.state.unopenedChests[chestTier] || 0) < amount) {
+      return false;
+    }
+    this.state.unopenedChests[chestTier] -= amount;
+    this.saveState();
+    return true;
+  }
+
   public addMaterial(materialId: string, amount: number = 1) {
     if (!this.state.materials) {
       this.state.materials = {};
@@ -477,32 +504,51 @@ export class GameEngine {
   }
 
   /**
-   * 戦闘カテゴリ専用装備（ビームサーベル・ビームシールド）の交換（各100エレメント）
+   * 戦闘カテゴリ専用装備（ビームサーベル・ビームシールド）の解放・ランクアップ
+   * Common(100) -> Uncommon(500) -> Rare(1000) -> Epic(5000) -> Legendary(10000)
    */
-  public exchangeCombatEquipment(equipment: 'beamSaber' | 'beamShield'): boolean {
+  public upgradeCombatEquipment(equipment: CombatEquipmentType): boolean {
     const currentElements = this.state.battleElements || 0;
-    const COST = 100;
-    if (currentElements < COST) {
-      return false;
-    }
     if (!this.state.combatEquipments) {
       this.state.combatEquipments = {};
     }
-    if (this.state.combatEquipments[equipment]) {
-      return false; // すでに所持している
+    if (!this.state.combatEquipmentRanks) {
+      this.state.combatEquipmentRanks = {};
     }
-
-    this.state.battleElements = currentElements - COST;
-    this.state.combatEquipments[equipment] = true;
-    
-    // 入手時は自動的に有効化
     if (!this.state.activeCombatEquipments) {
       this.state.activeCombatEquipments = {};
     }
-    this.state.activeCombatEquipments[equipment] = true;
+
+    const currentRank = this.state.combatEquipmentRanks[equipment] || (this.state.combatEquipments[equipment] ? 'common' : null);
+    const nextRank = getNextEquipmentRank(currentRank);
+    if (!nextRank) {
+      return false; // 既に最高ランク (Legendary)
+    }
+
+    const nextRankDef = COMBAT_EQUIPMENT_RANKS[nextRank];
+    if (currentElements < nextRankDef.cost) {
+      return false; // エレメント不足
+    }
+
+    // エレメント消費
+    this.state.battleElements = currentElements - nextRankDef.cost;
+    this.state.combatEquipments[equipment] = true;
+    this.state.combatEquipmentRanks[equipment] = nextRank;
+
+    // 初回解放時は自動的に有効化
+    if (!currentRank) {
+      this.state.activeCombatEquipments[equipment] = true;
+    }
 
     this.saveState();
     return true;
+  }
+
+  /**
+   * 戦闘カテゴリ専用装備の初期交換（旧メソッド互換・upgradeCombatEquipmentを呼び出し）
+   */
+  public exchangeCombatEquipment(equipment: CombatEquipmentType): boolean {
+    return this.upgradeCombatEquipment(equipment);
   }
 
   /**
@@ -761,7 +807,7 @@ export class GameEngine {
 
     for (let i = 0; i < dropCount; i++) {
       const dropId = this.getRandomDrop(loc, weather);
-      const amount = Math.floor(Math.random() * 3) + 2;
+      const amount = Math.floor(Math.random() * 2) + 1; // 1 to 2 (halved from 2-4)
       for (let j = 0; j < amount; j++) obtained.push(dropId);
       this.state.materials[dropId] = (this.state.materials[dropId] || 0) + amount;
     }
@@ -795,35 +841,11 @@ export class GameEngine {
   }
 
   public getRobotAssembleDuration(headId: string, bodyId: string, armsId: string, legsId: string): number {
-    const head = this.state.parts.find(p => p.id === headId);
-    const body = this.state.parts.find(p => p.id === bodyId);
-    const arms = this.state.parts.find(p => p.id === armsId);
-    const legs = this.state.parts.find(p => p.id === legsId);
-
-    // ベース1分 (60秒 = 60,000ms) (パーツ性能によって変える)
-    let baseDuration = 60000;
-
-    if (head && body && arms && legs) {
-      // 4パーツの合計レア度 (4〜12): レア度1増加につき +2.5秒
-      const totalRarity = (head.rarity || 1) + (body.rarity || 1) + (arms.rarity || 1) + (legs.rarity || 1);
-      const rarityBonus = Math.max(0, totalRarity - 4) * 2500;
-
-      // 4パーツの合計ステータス (標準120程度からの超過分により +0〜15秒)
-      const totalStats = (
-        (head.stats.hp + head.stats.power + head.stats.defense + head.stats.agility + head.stats.dexterity + head.stats.intelligence) +
-        (body.stats.hp + body.stats.power + body.stats.defense + body.stats.agility + body.stats.dexterity + body.stats.intelligence) +
-        (arms.stats.hp + arms.stats.power + arms.stats.defense + arms.stats.agility + arms.stats.dexterity + arms.stats.intelligence) +
-        (legs.stats.hp + legs.stats.power + legs.stats.defense + legs.stats.agility + legs.stats.dexterity + legs.stats.intelligence)
-      );
-      const statsBonus = Math.min(15000, Math.max(0, Math.floor((totalStats - 120) / 10) * 1000));
-
-      return baseDuration + rarityBonus + statsBonus;
-    }
-
-    return baseDuration;
+    // 組み立て所要時間は固定で2時間 (7,200,000ms)
+    return 7200000;
   }
 
-  private _generatePartStatsAndWeight(type: PartType, mainMat: Material, subMat: Material) {
+  private _generatePartStats(type: PartType, mainMat: Material, subMat: Material) {
     const typeMultipliers = {
       head: { hp: 0.5, power: 0.2, defense: 0.5, agility: 0.5, dexterity: 0.8, intelligence: 2.0 },
       body: { hp: 2.0, power: 0.8, defense: 2.0, agility: 0.3, dexterity: 0.5, intelligence: 0.5 },
@@ -847,16 +869,8 @@ export class GameEngine {
     let dexterity = Math.floor(matDex * multi.dexterity) + Math.floor(Math.random() * 5);
     let intelligence = Math.floor(matInt * multi.intelligence) + Math.floor(Math.random() * 5);
 
-    // Calculate weight based on power and defense
-    const weight = Math.floor((power + defense) * 1.5) + Math.floor(Math.random() * 5);
-
-    // Heavier parts have lower agility. We apply a penalty.
-    const agilityPenalty = Math.floor(weight / 5);
-    agility = Math.max(1, agility - agilityPenalty);
-
     return {
-      stats: { hp, power, defense, agility, dexterity, intelligence },
-      weight
+      stats: { hp, power, defense, agility, dexterity, intelligence }
     };
   }
 
@@ -888,7 +902,7 @@ export class GameEngine {
     // Add star mark to name based on rarity to distinguish
     const name = `${mainMat.name}の${typeNames[type]}`;
 
-    const generatedStatsAndWeight = this._generatePartStatsAndWeight(type, mainMat, subMat);
+    const generatedStats = this._generatePartStats(type, mainMat, subMat);
 
     const newPart: RobotPart = {
       id: `part_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
@@ -896,8 +910,7 @@ export class GameEngine {
       name,
       attribute: mainMat.attribute, // Main material decides attribute
       rarity: craftRarity as 1 | 2 | 3,
-      stats: generatedStatsAndWeight.stats,
-      weight: generatedStatsAndWeight.weight,
+      stats: generatedStats.stats,
       visualIndex: chosenCraft.visualIndex,
     };
 
@@ -971,7 +984,6 @@ export class GameEngine {
     const totalAgi = head.stats.agility + body.stats.agility + arms.stats.agility + legs.stats.agility;
     const totalDex = head.stats.dexterity + body.stats.dexterity + arms.stats.dexterity + legs.stats.dexterity;
     const totalInt = head.stats.intelligence + body.stats.intelligence + arms.stats.intelligence + legs.stats.intelligence;
-    const totalWeight = (head.weight || 0) + (body.weight || 0) + (arms.weight || 0) + (legs.weight || 0);
 
     const prefix1 = ['野生の', '古代の', '謎の', '伝説の', '鋼鉄の', '真紅の', '漆黒の', '錆びた', '光る', '怒れる', '眠れる', '小さな', '巨大な', '忘れられた', '名無しの'];
     const prefix2 = ['繊細な', '凶暴な', '勇敢な', '臆病な', '賢い', '鈍い', '素早い', '硬い', '柔らかい', '冷たい', '熱い', '美しい', '醜い', '奇妙な', '完璧な'];
@@ -985,7 +997,6 @@ export class GameEngine {
       stats: {
         hp: totalHp, power: totalPow, defense: totalDef, agility: totalAgi, dexterity: totalDex, intelligence: totalInt
       },
-      weight: totalWeight,
       currentHp: 12,
       maxHp: 12,
       createdAt: Date.now(),
@@ -1057,7 +1068,7 @@ export class GameEngine {
     
     const name = `${mainMat.name}の${typeNames[type]}`;
 
-    const generatedStatsAndWeight = this._generatePartStatsAndWeight(type, mainMat, subMat);
+    const generatedStats = this._generatePartStats(type, mainMat, subMat);
 
     const newPart: RobotPart = {
       id: `part_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
@@ -1065,8 +1076,7 @@ export class GameEngine {
       name,
       attribute: mainMat.attribute, // Main material decides attribute
       rarity: craftRarity as 1 | 2 | 3,
-      stats: generatedStatsAndWeight.stats,
-      weight: generatedStatsAndWeight.weight,
+      stats: generatedStats.stats,
       visualIndex: chosenCraft.visualIndex,
     };
     
@@ -1097,7 +1107,6 @@ export class GameEngine {
     const totalAgi = head.stats.agility + body.stats.agility + arms.stats.agility + legs.stats.agility;
     const totalDex = head.stats.dexterity + body.stats.dexterity + arms.stats.dexterity + legs.stats.dexterity;
     const totalInt = head.stats.intelligence + body.stats.intelligence + arms.stats.intelligence + legs.stats.intelligence;
-    const totalWeight = (head.weight || 0) + (body.weight || 0) + (arms.weight || 0) + (legs.weight || 0);
 
     const prefix1 = ['野生の', '古代の', '謎の', '伝説の', '鋼鉄の', '真紅の', '漆黒の', '錆びた', '光る', '怒れる', '眠れる', '小さな', '巨大な', '忘れられた', '名無しの'];
     const prefix2 = ['繊細な', '凶暴な', '勇敢な', '臆病な', '賢い', '鈍い', '素早い', '硬い', '柔らかい', '冷たい', '熱い', '美しい', '醜い', '奇妙な', '完璧な'];
@@ -1111,7 +1120,6 @@ export class GameEngine {
       stats: {
         hp: totalHp, power: totalPow, defense: totalDef, agility: totalAgi, dexterity: totalDex, intelligence: totalInt
       },
-      weight: totalWeight,
       currentHp: 12,
       maxHp: 12,
       createdAt: Date.now(),

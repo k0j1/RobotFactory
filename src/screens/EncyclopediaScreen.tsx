@@ -13,6 +13,7 @@ import { MATERIALS, getMaterialCraftableVisuals } from '../core/data';
 import { calculatePartBaseline } from '../utils/partBaseline';
 import * as Gi from 'react-icons/gi';
 import { MaterialIcon } from '../components/ui/MaterialIcon';
+import { ScreenHeader } from '../components/ui/ScreenHeader';
 
 const SinglePart: React.FC<{ Comp: React.FC<{color: string, viewBox?: string, className?: string}>, color: string, type: 'head'|'body'|'arms'|'legs', rarityLabel?: number, visualIndex?: number, hideContainer?: boolean }> = ({ Comp, color, type, rarityLabel, visualIndex = 0, hideContainer }) => {
   const r = rarityLabel || 1;
@@ -73,7 +74,7 @@ const getBaselineStatsForCatalogItem = (item: CatalogPartItem, attribute: string
     stats: { hp: 0, power: 0, defense: 0, agility: 0, dexterity: 0, intelligence: 0 }
   };
   const result = calculatePartBaseline(dummyPart);
-  return { stats: result.baselineStats, weight: result.baselineWeight };
+  return { stats: result.baselineStats };
 };
 
 const ALL_PARTS_CATALOG: CatalogPartItem[] = [
@@ -301,11 +302,16 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
   const activeAttr = filterAttribute === 'All' ? 'Earth' : filterAttribute;
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center border-b-2 border-stone-300 pb-2">
-        <h2 className={theme.typography.h2}>図鑑・実績</h2>
-        <Button size="sm" variant="secondary" onClick={onBack}>戻る</Button>
-      </div>
+    <div className="space-y-4">
+      <ScreenHeader
+        icon={<Gi.GiBookCover size={16} />}
+        title="ロボット・パーツ図鑑"
+        rightElement={
+          <Button size="sm" variant="secondary" onClick={onBack} className="text-xs py-1 px-2.5">
+            ← 戻る
+          </Button>
+        }
+      />
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         <Button 
@@ -515,7 +521,6 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
                     <th className="px-2 py-2.5 text-right" title="速度">AGI</th>
                     <th className="px-2 py-2.5 text-right" title="探索力">DEX</th>
                     <th className="px-2 py-2.5 text-right" title="解析力">INT</th>
-                    <th className="px-2 py-2.5 text-right" title="重量">WT</th>
                     <th className="px-3 py-2.5 text-center">操作</th>
                   </tr>
                 </thead>
@@ -554,7 +559,6 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
                         <td className="px-2 py-1.5 text-right font-mono font-bold text-stone-700">{baselineStats.agility}</td>
                         <td className="px-2 py-1.5 text-right font-mono font-bold text-stone-700 bg-stone-50/50">{baselineStats.dexterity}</td>
                         <td className="px-2 py-1.5 text-right font-mono font-bold text-stone-700">{baselineStats.intelligence}</td>
-                        <td className="px-2 py-1.5 text-right font-mono font-bold text-stone-500 bg-stone-50/50">{baselineData.weight}</td>
                         <td className="px-3 py-1.5 text-center">
                           {item.type === 'arms' ? (
                             <button
@@ -635,11 +639,6 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
                       <span className="text-stone-500">INT</span>
                       <span className="font-bold text-stone-700">{baselineStats.intelligence}</span>
                     </div>
-                  </div>
-                  
-                  <div className="w-full flex justify-between bg-stone-100 px-1 py-0.5 rounded text-[9px] mb-1">
-                    <span className="text-stone-500">WT</span>
-                    <span className="font-bold text-stone-700">{baselineData.weight}</span>
                   </div>
 
                   {item.type === 'arms' && (

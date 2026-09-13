@@ -1089,7 +1089,7 @@ export const LOCATIONS: QuestLocation[] = [
     "name": "裏山のスクラップ場",
     "description": "近所のゴミ捨て場。安全だが素材はしょぼい。",
     "unlockCostG": 0,
-    "baseTimeMs": 10000,
+    "baseTimeMs": 1800000,
     "drops": [
       "m_e1_1", "m_e1_2", "m_e1_3", "m_e1_4",
       "m_f1_1", "m_w1_1", "m_a1_1", "m_l1_1", "m_d1_1"
@@ -1100,7 +1100,7 @@ export const LOCATIONS: QuestLocation[] = [
     "name": "灼熱の廃工場",
     "description": "火属性の素材が出やすい危険な工場。",
     "unlockCostG": 200,
-    "baseTimeMs": 60000,
+    "baseTimeMs": 3600000,
     "drops": [
       "m_f1_1", "m_f1_2", "m_f1_3", "m_f1_4",
       "m_f2_1", "m_f2_2", "m_f2_3", "m_f2_4",
@@ -1112,7 +1112,7 @@ export const LOCATIONS: QuestLocation[] = [
     "name": "水没した都市遺跡",
     "description": "水属性の素材が眠る遺跡。",
     "unlockCostG": 500,
-    "baseTimeMs": 120000,
+    "baseTimeMs": 7200000,
     "drops": [
       "m_w1_1", "m_w1_2", "m_w1_3", "m_w1_4",
       "m_w2_1", "m_w2_2", "m_w2_3", "m_w2_4",
@@ -1124,7 +1124,7 @@ export const LOCATIONS: QuestLocation[] = [
     "name": "風の谷の観測所",
     "description": "風属性の素材が集まる高台。",
     "unlockCostG": 1000,
-    "baseTimeMs": 180000,
+    "baseTimeMs": 10800000,
     "drops": [
       "m_a1_1", "m_a1_2", "m_a1_3", "m_a1_4",
       "m_a2_1", "m_a2_2", "m_a2_3", "m_a2_4",
@@ -1136,7 +1136,7 @@ export const LOCATIONS: QuestLocation[] = [
     "name": "光の塔",
     "description": "光り輝く神秘の塔。",
     "unlockCostG": 2000,
-    "baseTimeMs": 240000,
+    "baseTimeMs": 14400000,
     "drops": [
       "m_l1_1", "m_l1_2", "m_l1_3", "m_l1_4",
       "m_l2_1", "m_l2_2", "m_l2_3", "m_l2_4",
@@ -1148,7 +1148,7 @@ export const LOCATIONS: QuestLocation[] = [
     "name": "最果てのクレーター",
     "description": "レアな闇や大地の素材が見つかるかも…",
     "unlockCostG": 4000,
-    "baseTimeMs": 300000,
+    "baseTimeMs": 18000000,
     "drops": [
       "m_d2_1", "m_d2_2", "m_d2_3", "m_d2_4",
       "m_d3_1", "m_d3_2",
@@ -1161,7 +1161,7 @@ export const LOCATIONS: QuestLocation[] = [
     "name": "古代文明の中枢",
     "description": "全ての属性の最高級素材が眠る伝説の地。",
     "unlockCostG": 10000,
-    "baseTimeMs": 600000,
+    "baseTimeMs": 36000000,
     "drops": [
       "m_e3_1", "m_e3_2", "m_e3_3", "m_e3_4",
       "m_f3_1", "m_f3_2", "m_f3_3", "m_f3_4",

@@ -88,13 +88,13 @@ export class BattleChestRewardService {
         // 修理キット1個10%、☆1素材80%、1〜5G10%（いずれか1つの報酬が必ず出現）
         const roll1 = Math.random() * 100;
         if (roll1 < 10) {
-          repairKits += 1;
+          
         } else if (roll1 < 90) {
           const mat = pickRandomMaterial(1);
           if (mat) {
             materials.push({ material: mat, count: 1 });
           } else {
-            repairKits += 1;
+            
           }
         } else {
           gold += randomInt(1, 5);
@@ -106,13 +106,13 @@ export class BattleChestRewardService {
         // 修理キット1個30%、☆1素材70%、2〜7G10%（重み比率 30:70:10 でいずれか1つの報酬が必ず出現）
         const roll2 = Math.random() * (30 + 70 + 10);
         if (roll2 < 30) {
-          repairKits += 1;
+          
         } else if (roll2 < 30 + 70) {
           const mat = pickRandomMaterial(1);
           if (mat) {
             materials.push({ material: mat, count: 1 });
           } else {
-            repairKits += 1;
+            
           }
         } else {
           gold += randomInt(2, 7);
@@ -124,13 +124,13 @@ export class BattleChestRewardService {
         // 修理キット1個50%、☆1素材40%、3〜9G10%（いずれか1つの報酬が必ず出現）
         const roll3 = Math.random() * 100;
         if (roll3 < 50) {
-          repairKits += 1;
+          
         } else if (roll3 < 90) {
           const mat = pickRandomMaterial(1);
           if (mat) {
             materials.push({ material: mat, count: 1 });
           } else {
-            repairKits += 1;
+            
           }
         } else {
           gold += randomInt(3, 9);
@@ -142,13 +142,13 @@ export class BattleChestRewardService {
         // 修理キット1個75%、☆1素材20%、4〜11G10%（重み比率 75:20:10 でいずれか1つの報酬が必ず出現）
         const roll4 = Math.random() * (75 + 20 + 10);
         if (roll4 < 75) {
-          repairKits += 1;
+          
         } else if (roll4 < 75 + 20) {
           const mat = pickRandomMaterial(1);
           if (mat) {
             materials.push({ material: mat, count: 1 });
           } else {
-            repairKits += 1;
+            
           }
         } else {
           gold += randomInt(4, 11);
@@ -158,7 +158,7 @@ export class BattleChestRewardService {
 
       case 5:
         // 修理キット1個は必ず出現、プラス次のものが確率で出現、☆1素材50%、☆2素材10%、エレメント1〜5個50%、5〜13G10%
-        repairKits += 1;
+        
         if (checkRate(50)) {
           const mat1 = pickRandomMaterial(1);
           if (mat1) materials.push({ material: mat1, count: 1 });
@@ -173,7 +173,7 @@ export class BattleChestRewardService {
 
       case 6:
         // 修理キット1個は必ず出現、プラス次のものが確率で出現、☆1素材75%、☆2素材25%、エレメント5〜10個50%、6〜15G10%
-        repairKits += 1;
+        
         if (checkRate(75)) {
           const mat1 = pickRandomMaterial(1);
           if (mat1) materials.push({ material: mat1, count: 1 });
@@ -188,7 +188,7 @@ export class BattleChestRewardService {
 
       case 7:
         // 修理キット1個は必ず出現、プラス次のものが確率で出現、☆1素材75%、☆2素材40%、☆3素材10%、エレメント10〜15個50%、7〜18G10%
-        repairKits += 1;
+        
         if (checkRate(75)) {
           const mat1 = pickRandomMaterial(1);
           if (mat1) materials.push({ material: mat1, count: 1 });
@@ -207,7 +207,7 @@ export class BattleChestRewardService {
 
       case 8:
         // 修理キット1個は必ず出現、プラス次のものが確率で出現、☆1素材75%、☆2素材75%、☆3素材30%、エレメント15〜30個50%、8〜21G10%
-        repairKits += 1;
+        
         if (checkRate(75)) {
           const mat1 = pickRandomMaterial(1);
           if (mat1) materials.push({ material: mat1, count: 1 });
@@ -226,7 +226,7 @@ export class BattleChestRewardService {
 
       case 9:
         // 修理キット1個は必ず出現、プラス次のものが確率で出現、☆1素材75%、☆2素材75%、☆3素材50%、エレメント30〜60個50%、9〜25G10%
-        repairKits += 1;
+        
         if (checkRate(75)) {
           const mat1 = pickRandomMaterial(1);
           if (mat1) materials.push({ material: mat1, count: 1 });
@@ -246,7 +246,7 @@ export class BattleChestRewardService {
       case 10:
       default:
         // 修理キット1個は必ず出現、プラス次のものが確率で出現、☆1素材75%、☆2素材75%、☆3素材75%、エレメント60〜120個50%、10〜30G10%
-        repairKits += 1;
+        
         if (checkRate(75)) {
           const mat1 = pickRandomMaterial(1);
           if (mat1) materials.push({ material: mat1, count: 1 });
@@ -265,9 +265,7 @@ export class BattleChestRewardService {
     }
 
     // レベル4以下で万が一報酬が0個だった場合の最低保証ガード（いずれか1つの報酬を確実に保証）
-    if (level <= 4 && repairKits === 0 && gold === 0 && materials.length === 0) {
-      repairKits = 1;
-    }
+    if (level <= 4 && gold === 0 && materials.length === 0) { gold = randomInt(5, 10); }
 
     // items 配列の構築
     if (repairKits > 0) {
@@ -348,7 +346,7 @@ export class BattleChestRewardService {
    * 拠点防衛戦 (Defense) の勝利宝箱抽選
    */
   public static rollDefenseChest(level: number, stageName: string): BattleChestDropResult {
-    let repairKits = 1; // 全レベル修理キット1個100%確定
+    let repairKits = 0; // 全レベル修理キット1個100%確定
     let gold = 0;
     let elements = 0;
     const materials: { material: Material; count: number }[] = [];
@@ -374,7 +372,7 @@ export class BattleChestRewardService {
         // レベル2:修理キット1個100%、プラス次のものが確率で出現、修理キット1個50%、5〜10G10%
         chestTier = 'silver';
         chestTitle = '前線警戒 補給コンテナ';
-        if (checkRate(50)) repairKits += 1;
+        if (checkRate(50)) 
         if (checkRate(10)) gold += randomInt(5, 10);
         break;
 
@@ -382,7 +380,7 @@ export class BattleChestRewardService {
         // レベル3:修理キット1個100%、プラス次のものが確率で出現、修理キット1〜2個50%、エレメント1〜10個50%、10〜15G10%
         chestTier = 'silver';
         chestTitle = '要衝防衛 作戦資材コンテナ';
-        if (checkRate(50)) repairKits += randomInt(1, 2);
+        if (checkRate(50)) 
         if (checkRate(50)) elements += randomInt(1, 10);
         if (checkRate(10)) gold += randomInt(10, 15);
         break;
@@ -391,7 +389,7 @@ export class BattleChestRewardService {
         // レベル4:修理キット1個100%、プラス次のものが確率で出現、修理キット1〜3個50%、エレメント10〜30個50%、15〜30G10%
         chestTier = 'gold';
         chestTitle = '激戦ライン 司令官補給箱';
-        if (checkRate(50)) repairKits += randomInt(1, 3);
+        if (checkRate(50)) 
         if (checkRate(50)) elements += randomInt(10, 30);
         if (checkRate(10)) gold += randomInt(15, 30);
         break;
@@ -401,7 +399,7 @@ export class BattleChestRewardService {
         // レベル5:修理キット1個100%、プラス次のものが確率で出現、修理キット1〜4個50%、エレメント30〜120個50%、30〜120G10%
         chestTier = 'mythic';
         chestTitle = '終焉防壁 至高の軍需コンテナ';
-        if (checkRate(50)) repairKits += randomInt(1, 4);
+        if (checkRate(50)) 
         if (checkRate(50)) elements += randomInt(30, 120);
         if (checkRate(10)) gold += randomInt(30, 120);
         break;
@@ -490,7 +488,7 @@ export class BattleChestRewardService {
         chestTier = 'bronze';
         chestTitle = '回避訓練 初級コンテナ';
         // 修理キット1個100%、1〜5G (50%)、☆1素材 (40%)
-        repairKits = 1;
+        repairKits = 0;
         if (checkRate(50)) gold += randomInt(1, 5);
         if (checkRate(40)) {
           const mat = pickRandomMaterial(1);
@@ -503,8 +501,8 @@ export class BattleChestRewardService {
         chestTier = 'silver';
         chestTitle = '弾幕突破 中級コンテナ';
         // 修理キット1個100%、プラス修理キット1個 (30%)、3〜8G (60%)、☆1素材 (70%)、☆2素材 (30%)
-        repairKits = 1;
-        if (checkRate(30)) repairKits += 1;
+        repairKits = 0;
+        if (checkRate(30)) 
         if (checkRate(60)) gold += randomInt(3, 8);
         if (checkRate(70)) {
           const mat1 = pickRandomMaterial(1);
@@ -522,8 +520,8 @@ export class BattleChestRewardService {
         chestTier = 'gold';
         chestTitle = '極限弾幕 上級プレミアムコンテナ';
         // 修理キット2個100%、プラス修理キット1〜2個 (50%)、10〜25G (70%)、☆2素材 (75%)、☆3素材 (35%)、エレメント10〜20個 (50%)
-        repairKits = 2;
-        if (checkRate(50)) repairKits += randomInt(1, 2);
+        repairKits = 0;
+        if (checkRate(50)) 
         if (checkRate(70)) gold += randomInt(10, 25);
         if (checkRate(75)) {
           const mat2 = pickRandomMaterial(2);

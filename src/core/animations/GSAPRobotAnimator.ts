@@ -611,20 +611,6 @@ export function mountSniperScopeHUDEffect(container: HTMLElement): {
 
 
 
-export class SlashComboAnimation extends BaseRobotAnimation {
-  seMarkers: AnimationSEMarker[] = [{time:.25,label:"曲刀構え",type:"draw"},{time:.43,label:"1段目スラッシュ",type:"slash"},{time:.7,label:"2段目返しスラッシュ",type:"slash"},{time:.85,label:"連撃インパクト",type:"hit"}];
-  id="slash_combo";
-  name="連撃スラッシュ (Slash Combo)";
-  category = "combat" as RobotAnimationCategory;
-  duration=1.4;
-  loop = true;
-  description="前方へ鋭く踏み込み、右腕の紅蓮曲刀で高速スラッシュを叩き込む近接斬撃モーション。";
-  technicalHighlights=["fxContainer への炎の曲刀SVGのマウントと腕部ピボット同期スイング","踏み込み時の左脚軸・右脚前進の歩行スタンス","インパクト瞬間のContainer微振動シェイク & 炎の斬撃軌跡"];
-
-  build(t: RobotDOMRefs, i: gsap.core.Timeline): void {
-    this.resetElements(t,i);const{container:a,head:o,body:d,arms:c,armLeft:u,armRight:h,legs:f,legLeft:x,legRight:p,fxContainer:b}=t;let v=null,w=null;b&&typeof document<"u"&&(v=mountPlasmaBlade(b,{hand:"right",initialRotation:-15,armPartKey:t.armPartKey}),w=mountGroundShatterEffect(b),i.set(v.wrapper,{opacity:1}),i.set(v.el,{opacity:1})),i.eventCallback("onComplete",()=>{v==null||v.cleanmountBeamSlashEffect(),w==null||w.cleanmountBeamSlashEffect()}),i.to(a,{x:-8,y:3,scaleY:.95,duration:.25,ease:"power2.in"}).to(o,{rotation:-10,duration:.25},"<"),h&&i.to(h,{rotation:-45,y:-6,duration:.25,ease:"power2.out"},"<"),v&&(i.to(v.wrapper,{rotation:-45,y:-6,duration:.25,ease:"power2.out"},"<"),i.to(v.el,{rotation:-15,duration:.25,ease:"power2.out"},"<")),u&&i.to(u,{rotation:25,y:-2,duration:.25,ease:"power2.out"},"<"),!h&&!u&&c&&i.to(c,{rotation:-30,y:-6,duration:.25},"<"),x&&i.to(x,{skewX:8,scaleY:.92,duration:.25},"<"),p&&i.to(p,{skewX:-8,scaleY:.96,duration:.25},"<"),i.to(a,{x:18,y:-4,scaleY:1.05,duration:.18,ease:"back.out(2)"}).to(o,{rotation:12,duration:.14},"<"),h&&i.to(h,{rotation:65,x:14,y:-10,duration:.14,ease:"power4.in"},"<"),v&&(i.to(v.wrapper,{rotation:65,x:14,y:-10,duration:.14,ease:"power4.in"},"<"),i.to(v.el,{rotation:15,duration:.14,ease:"power4.in"},"<")),u&&i.to(u,{rotation:-20,x:-4,duration:.14},"<"),!h&&!u&&c&&i.to(c,{rotation:45,y:-12,duration:.14},"<"),w&&(i.to(w.el,{opacity:.9,scale:1.1,rotation:10,duration:.08},"<"),i.to(w.el,{opacity:0,scale:1.3,duration:.14},">")),x&&i.to(x,{skewX:-14,duration:.18},"<"),p&&i.to(p,{skewX:10,scaleY:1.05,duration:.18},"<"),!x&&!p&&f&&i.to(f,{skewX:-12,duration:.18},"<"),i.to(a,{x:24,y:0,duration:.15,ease:"power2.out"}).to(o,{rotation:-15,y:-2,duration:.15},"<"),u&&i.to(u,{rotation:70,x:16,y:-8,duration:.15,ease:"power3.inOut"},"<"),h&&i.to(h,{rotation:-25,x:-4,duration:.15},"<"),v&&(i.to(v.wrapper,{rotation:-25,x:-4,duration:.15},"<"),i.to(v.el,{rotation:-20,duration:.15},"<")),!h&&!u&&c&&i.to(c,{rotation:-50,scaleX:1.15,duration:.15},"<"),i.to(a,{x:"+=2",y:"+=2",duration:.04,yoyo:!0,repeat:3,ease:"rough"});const j=[a,o,d,c,u,h,f,x,p].filter(Boolean);i.to(j,{x:0,y:0,rotation:0,scale:1,scaleX:1,scaleY:1,skewX:0,duration:.45,ease:"power2.out"}),v&&(i.to(v.wrapper,{x:0,y:0,rotation:0,duration:.45,ease:"power2.out"},"<"),i.to(v.el,{x:0,y:0,rotation:-15,duration:.45,ease:"power2.out"},"<"))
-  }
-}
 
 
 
@@ -885,19 +871,6 @@ export class CalibrationAnimation extends BaseRobotAnimation {
 
 
 
-export class VictoryCheerAnimation extends BaseRobotAnimation {
-  id="victory_cheer";
-  name="勝利のガッツポーズ (Victory Cheer)";
-  category = "emotion" as RobotAnimationCategory;
-  duration=1.6;
-  loop = true;
-  description="右腕を高く突き上げてガッツポーズ！ピョンピョン跳ねながらキラキラ星を振りまいて大喜び。";
-  technicalHighlights=["右腕 (ArmRight) の力強いハイパンチガッツポーズ (Rotation: -85deg)","左腕 (ArmLeft) の腰部安定ポーズ","連続バウンスジャンプ＆Sparklesパーティクルの祝賀明滅"];
-
-  build(t: RobotDOMRefs, i: gsap.core.Timeline): void {
-    this.resetElements(t,i);const{container:a,head:o,arms:d,armLeft:c,armRight:u,legs:h,legLeft:f,legRight:x,sparkles:p}=t;p&&i.to(p,{opacity:1,duration:.3}),i.to(o,{y:-4,rotation:-8,duration:.25},"<").to(a,{y:-18,duration:.25,ease:"power2.out"},"<"),u&&i.to(u,{rotation:80,y:-18,scaleY:1.15,duration:.25,ease:"back.out(2)"},"<"),c&&i.to(c,{rotation:-30,y:-4,duration:.25,ease:"power2.out"},"<"),!c&&!u&&d&&i.to(d,{rotation:-65,y:-16,scaleY:1.15,duration:.25,ease:"back.out(2)"},"<"),f&&i.to(f,{scaleY:1.1,duration:.2},"<"),x&&i.to(x,{scaleY:1.1,duration:.2},"<"),i.to(a,{y:0,duration:.2,ease:"bounce.out"}).to(a,{y:-12,duration:.18,ease:"power2.out"}).to(o,{rotation:8,duration:.18},"<").to(a,{y:0,duration:.2,ease:"bounce.out"}),u&&i.to(u,{rotation:90,scale:1.15,duration:.2,ease:"back.out(2)"}),c&&i.to(c,{rotation:-40,duration:.2},"<"),i.to(o,{y:-2,rotation:0,duration:.2},"<"),i.to({},{duration:.3}),p&&i.to(p,{opacity:0,duration:.25},"<");const b=[a,o,d,c,u,h,f,x].filter(Boolean);i.to(b,{x:0,y:0,rotation:0,scale:1,scaleY:1,duration:.3,ease:"power2.out"})
-  }
-}
 
 
 
@@ -933,19 +906,6 @@ export class PoliteBowAnimation extends BaseRobotAnimation {
 
 
 
-export class ApplauseClapAnimation extends BaseRobotAnimation {
-  id="applause_clap";
-  name="拍手喝采・クラップ (Applause Clap)";
-  category = "emotion" as RobotAnimationCategory;
-  duration=1.6;
-  loop = true;
-  description="左右のアームを正面でパチパチと打ち合わせ、仲間を称える拍手喝采。";
-  technicalHighlights=["左腕 (ArmLeft) と右腕 (ArmRight) の正面対向クラップスイング (Freq: 8Hz)","Bodyの拍手リズムに合わせた微小なノリ","Headの笑顔風アップ"];
-
-  build(t: RobotDOMRefs, i: gsap.core.Timeline): void {
-    this.resetElements(t,i);const{head:a,body:o,arms:d,armLeft:c,armRight:u,legLeft:h,legRight:f}=t;i.to(a,{y:-2,duration:.2},"<"),c&&i.to(c,{rotation:25,x:6,y:-6,duration:.2,ease:"power2.out"},"<"),u&&i.to(u,{rotation:-25,x:-6,y:-6,duration:.2,ease:"power2.out"},"<"),h&&i.to(h,{y:-2,duration:.2},"<"),f&&i.to(f,{y:-2,duration:.2},"<"),!c&&!u&&d&&i.to(d,{rotation:35,y:-8,duration:.2,ease:"power2.out"},"<");const x=gsap.timeline({repeat:5});c&&u?x.to(c,{rotation:45,x:12,duration:.08,ease:"power2.in"}).to(u,{rotation:-45,x:-12,duration:.08,ease:"power2.in"},"<").to(c,{rotation:20,x:4,duration:.08,ease:"power2.out"}).to(u,{rotation:-20,x:-4,duration:.08,ease:"power2.out"},"<").to(o,{y:-2,duration:.08,yoyo:!0},"<"):d&&x.to(d,{scaleX:.8,duration:.08,ease:"power2.in"}).to(d,{scaleX:1.15,duration:.08,ease:"power2.out"}).to(o,{y:-2,duration:.08,yoyo:!0},"<"),i.add(x);const p=[a,o,d,c,u].filter(Boolean);i.to(p,{x:0,y:0,rotation:0,scale:1,scaleX:1,duration:.3,ease:"power2.out"})
-  }
-}
 
 
 
@@ -1029,20 +989,6 @@ export class MissileBarrageAnimation extends BaseRobotAnimation {
 
 
 
-export class SwordSlashItemAnimation extends BaseRobotAnimation {
-  seMarkers: AnimationSEMarker[] = [{time:.22,label:"抜刀",type:"draw"},{time:.62,label:"一刀両断一閃",type:"slash"},{time:.78,label:"ヒット衝撃",type:"hit"}];
-  id="sword_slash_item";
-  name="紅蓮ブレード・一刀両断 (Flame Sword)";
-  category = "combat" as RobotAnimationCategory;
-  duration=1.5;
-  loop = true;
-  description="炎を宿した真紅の曲刀を右腕に装備し、渾身の構えから大迫力の紅蓮袈裟斬りを繰り出す専用武装モーション。";
-  technicalHighlights=["fxContainer 内への炎の曲刀SVGの精密マウント (柄・護拳・宝珠コア完全再現)","抜刀・ため・一閃・残心までのフルシークエンス制御","刀身の振りに完全同期した炎の斬撃波エフェクト"];
-
-  build(t: RobotDOMRefs, i: gsap.core.Timeline): void {
-    this.resetElements(t,i);const{container:a,head:o,body:d,armLeft:c,armRight:u,legLeft:h,legRight:f,fxContainer:x}=t;let p=null,b=null;x&&typeof document<"u"&&(p=mountPlasmaBlade(x,{hand:"right",sizePercent:54,initialRotation:-45,armPartKey:t.armPartKey}),b=mountGroundShatterEffect(x),i.set(p.wrapper,{opacity:1}),i.set(p.el,{opacity:0})),i.eventCallback("onComplete",()=>{p==null||p.cleanmountBeamSlashEffect(),b==null||b.cleanmountBeamSlashEffect()}),i.to(a,{y:3,duration:.22,ease:"power2.out"}).to(o,{rotation:8,x:2,duration:.22},"<"),h&&i.to(h,{skewX:8,duration:.22},"<"),f&&i.to(f,{skewX:-6,duration:.22},"<"),c&&i.to(c,{rotation:-25,x:-4,duration:.22},"<"),u&&i.to(u,{rotation:-50,x:-10,y:-8,duration:.25,ease:"power2.out"},"<"),p&&(i.to(p.wrapper,{rotation:-50,x:-10,y:-8,duration:.25,ease:"power2.out"},"<"),i.to(p.el,{opacity:1,rotation:-20,duration:.25,ease:"power2.out"},"<")),i.to(a,{x:-6,y:4,scaleY:.94,duration:.22,ease:"power3.in"},"+=0.06").to(o,{rotation:-12,duration:.22},"<"),d&&i.to(d,{rotation:-8,duration:.22},"<"),u&&i.to(u,{rotation:-75,x:-16,y:-14,duration:.22,ease:"power3.in"},"<"),p&&(i.to(p.wrapper,{rotation:-75,x:-16,y:-14,duration:.22,ease:"power3.in"},"<"),i.to(p.el,{rotation:-30,duration:.22,ease:"power3.in"},"<")),i.to(a,{x:24,y:-2,scaleY:1.04,duration:.15,ease:"power4.out"}).to(o,{rotation:14,duration:.15},"<"),d&&i.to(d,{rotation:10,duration:.15},"<"),u&&i.to(u,{rotation:88,x:22,y:8,duration:.15,ease:"power4.out"},"<"),p&&(i.to(p.wrapper,{rotation:88,x:22,y:8,duration:.15,ease:"power4.out"},"<"),i.to(p.el,{rotation:25,duration:.15,ease:"power4.out"},"<")),c&&i.to(c,{rotation:-35,duration:.15},"<"),b&&(i.to(b.el,{opacity:1,scale:1.25,rotation:18,duration:.1},"<"),i.to(b.el,{opacity:0,scale:1.45,duration:.2},">")),i.to(a,{x:"+=2",y:"+=1",duration:.04,yoyo:!0,repeat:2}),i.to({},{duration:.25}),p&&(i.to(p.el,{opacity:0,duration:.2},">"),i.to(p.wrapper,{x:0,y:0,rotation:0,duration:.4,ease:"power2.inOut"},"<"));const v=[a,o,d,c,u,h,f].filter(Boolean);i.to(v,{x:0,y:0,rotation:0,scale:1,scaleX:1,scaleY:1,skewX:0,duration:.4,ease:"power2.inOut"},"<")
-  }
-}
 
 
 
@@ -1163,37 +1109,9 @@ export class DualSaberMirageDanceAnimation extends BaseRobotAnimation {
 
 
 
-export class SaberParryCounterAnimation extends BaseRobotAnimation {
-  id="saber_parry_counter";
-  name="サーベル・受け流し反撃 (Parry & Riposte)";
-  category = "combat" as RobotAnimationCategory;
-  duration=1.8;
-  loop = true;
-  description="敵の攻撃をビームサーベルで斜めに弾き（パリィ火花）、姿勢を低く沈めて懐へ踏み込み、下段から豪快に切り上げるカウンタースラッシュ。";
-  technicalHighlights=["サーベルの斜めガード・受け流しポーズとマズルリコイル風の弾き衝撃","低姿勢への潜り込みから一気に跳ね上げるアッパースラッシュ","カウンターヒット瞬間の劇的ヒットストップ"];
-  seMarkers: AnimationSEMarker[] = [{time:.2,label:"受け流し構え",type:"draw"},{time:.45,label:"パリィ弾き火花！",type:"hit"},{time:.7,label:"低姿勢・懐潜り込み",type:"flame"},{time:.95,label:"電光石火・切り上げ反撃！",type:"slash"},{time:1.15,label:"直撃インパクト",type:"hit"}];
-
-  build(t: RobotDOMRefs, i: gsap.core.Timeline): void {
-    this.resetElements(t,i);const{container:a,head:o,body:d,armLeft:c,armRight:u,legLeft:h,legRight:f,fxContainer:x}=t;let p=null,b=null;x&&typeof document<"u"&&(p=mountPlasmaBlade(x,{hand:"right",sizePercent:54,initialRotation:35,armPartKey:t.armPartKey}),b=mountGroundShatterEffect(x),i.set(p.wrapper,{opacity:1}),i.set(p.el,{opacity:0})),i.eventCallback("onComplete",()=>{p==null||p.cleanmountBeamSlashEffect(),b==null||b.cleanmountBeamSlashEffect()}),i.to(a,{x:-4,y:3,duration:.2}),u&&i.to(u,{rotation:35,x:4,y:-6,duration:.2},"<"),p&&(i.to(p.wrapper,{rotation:35,x:4,y:-6,duration:.2},"<"),i.to(p.el,{opacity:1,rotation:40,duration:.2},"<")),i.to(a,{x:-10,rotation:-3,duration:.08,ease:"power4.out"}),u&&i.to(u,{rotation:50,x:8,duration:.08},"<"),p&&i.to(p.wrapper,{rotation:50,x:8,duration:.08},"<"),i.to(a,{x:"+=2",y:"+=2",duration:.03,yoyo:!0,repeat:2}),i.to(a,{x:10,y:8,scaleY:.88,rotation:0,duration:.25,ease:"power2.in"}).to(o,{rotation:-10,duration:.25},"<"),h&&i.to(h,{skewX:14,duration:.25},"<"),u&&i.to(u,{rotation:-40,x:-6,y:4,duration:.25},"<"),p&&(i.to(p.wrapper,{rotation:-40,x:-6,y:4,duration:.25},"<"),i.to(p.el,{rotation:-10,duration:.25},"<")),i.to(a,{x:26,y:-8,scaleY:1.12,duration:.14,ease:"power4.out"}).to(o,{rotation:18,duration:.14},"<"),u&&i.to(u,{rotation:85,x:22,y:-16,duration:.14,ease:"power4.out"},"<"),p&&(i.to(p.wrapper,{rotation:85,x:22,y:-16,duration:.14,ease:"power4.out"},"<"),i.to(p.el,{rotation:35,scale:1.25,duration:.14,ease:"power4.out"},"<")),c&&i.to(c,{rotation:-45,x:-8,duration:.14},"<"),b&&(i.to(b.el,{opacity:1,scale:1.3,rotation:-20,duration:.08},"<"),i.to(b.el,{opacity:0,scale:1.5,duration:.2},">")),i.to(a,{x:"+=2",y:"+=2",duration:.035,yoyo:!0,repeat:3}),i.to({},{duration:.2}),p&&(i.to(p.el,{opacity:0,duration:.25},">"),i.to(p.wrapper,{x:0,y:0,rotation:0,duration:.35,ease:"power2.out"},"<"));const v=[a,o,d,c,u,h,f].filter(Boolean);i.to(v,{x:0,y:0,rotation:0,scale:1,scaleX:1,scaleY:1,skewX:0,duration:.35,ease:"power2.out"},"<")
-  }
-}
 
 
 
-export class IaidoQuickDrawAnimation extends BaseRobotAnimation {
-  id="iaido_quick_draw";
-  name="神速・ビーム居合抜刀 (Iaido Quick Draw)";
-  category = "combat" as RobotAnimationCategory;
-  duration=1.8;
-  loop = true;
-  description="腰を低く落とし、左手で鞘を押さえ右手を柄に掛けた静寂の構えから、0.08秒の超神速踏み込みで一閃！残心の後に美しく納刀。";
-  technicalHighlights=["静寂の帯刀・居合タメポーズ (静と動のコントラスト)","0.08秒の瞬間最大加速抜刀一閃 (Duration 0.08s)","抜刀後の残心ブレードスピン＆静かな納刀モーション"];
-  seMarkers: AnimationSEMarker[] = [{time:.25,label:"居合・帯刀構え",type:"draw"},{time:.65,label:"集中・静寂",type:"flame"},{time:.9,label:"神速抜刀一閃！",type:"slash"},{time:1.1,label:"遅延切断衝撃",type:"hit"},{time:1.45,label:"残心・納刀",type:"draw"}];
-
-  build(t: RobotDOMRefs, i: gsap.core.Timeline): void {
-    this.resetElements(t,i);const{container:a,head:o,body:d,armLeft:c,armRight:u,legLeft:h,legRight:f,fxContainer:x}=t;let p=null,b=null;x&&typeof document<"u"&&(p=mountPlasmaBlade(x,{hand:"right",sizePercent:54,initialRotation:-70,armPartKey:t.armPartKey}),b=mountGroundShatterEffect(x),i.set(p.wrapper,{opacity:1}),i.set(p.el,{opacity:0})),i.eventCallback("onComplete",()=>{p==null||p.cleanmountBeamSlashEffect(),b==null||b.cleanmountBeamSlashEffect()}),i.to(a,{x:-8,y:7,scaleY:.9,duration:.4,ease:"power2.inOut"}).to(o,{rotation:-8,duration:.4},"<"),h&&i.to(h,{skewX:16,scaleY:.85,duration:.4},"<"),f&&i.to(f,{skewX:-10,scaleY:.88,duration:.4},"<"),u&&i.to(u,{rotation:-65,x:-12,y:6,duration:.4,ease:"power2.out"},"<"),c&&i.to(c,{rotation:-35,x:-8,y:4,duration:.4,ease:"power2.out"},"<"),p&&i.to(p.wrapper,{rotation:-65,x:-12,y:6,duration:.4},"<"),i.to(a,{y:8,duration:.25,ease:"sine.inOut"}),i.to(a,{x:36,y:-2,scaleX:1.12,scaleY:1.05,duration:.08,ease:"power4.out"}).to(o,{rotation:14,duration:.08},"<"),u&&i.to(u,{rotation:80,x:28,y:-4,duration:.08,ease:"power4.out"},"<"),p&&(i.to(p.wrapper,{rotation:80,x:28,y:-4,duration:.08,ease:"power4.out"},"<"),i.to(p.el,{opacity:1,rotation:25,scale:1.3,duration:.08,ease:"power4.out"},"<")),c&&i.to(c,{rotation:-60,x:-14,duration:.08},"<"),b&&(i.to(b.el,{opacity:1,scale:1.5,rotation:10,duration:.06},"<"),i.to(b.el,{opacity:0,scale:1.7,duration:.18},">")),i.to(a,{x:"+=3",y:"+=3",duration:.035,yoyo:!0,repeat:4}),i.to({},{duration:.25}),p&&(i.to(p.el,{opacity:0,duration:.25},">"),i.to(p.wrapper,{x:0,y:0,rotation:0,duration:.35,ease:"power2.out"},"<"));const v=[a,o,d,c,u,h,f].filter(Boolean);i.to(v,{x:0,y:0,rotation:0,scale:1,scaleX:1,scaleY:1,skewX:0,duration:.35,ease:"power2.out"},"<")
-  }
-}
 
 
 
@@ -1544,401 +1462,10 @@ export class DisappointedSlumpAnimation extends BaseRobotAnimation {
   }
 }
 
-/**
- * 2. 絶望のガックリ膝落ち (Despair Slump)
- * ORZのように膝からガクッと腰を落とし、両手をだらりと地面へ垂らして項垂れる。
- */
-export class DespairKneelAnimation extends BaseRobotAnimation {
-  id = 'despair_kneel';
-  seMarkers: AnimationSEMarker[] = [
-    { time: 0.40, label: 'ドサッ！膝崩れ接地', type: 'hit' },
-    { time: 0.90, label: 'プルプル震え・悔しさ', type: 'charge' },
-    { time: 1.30, label: '床ペシッ！悔し叩き', type: 'hit' }
-  ];
-  name = '絶望のガックリ膝落ち (Despair Slump)';
-  category = RobotAnimationCategory.EMOTION;
-  duration = 2.4;
-  loop = true;
-  description = '膝からガクンと崩れ落ちて地面に項垂れる。絶望に打ちひしがれて小刻みに震える哀愁モーション。';
-  technicalHighlights = [
-    '脚部 (Legs) の屈伸による極限ローアングル沈み込み (Y: +16px)',
-    '頭部 (Head) の地面向き前傾ドロップ (Rotation: 24deg)',
-    '両腕の地面への脱力接地＆悔しさの小刻みプルプル震え',
-    '絶望からの深いため息と微かなうなだれ'
-  ];
 
-  build(refs: RobotDOMRefs, tl: gsap.core.Timeline): void {
-    this.resetElements(refs, tl);
-    const { container, head, body, arms, armLeft, armRight, legLeft, legRight, auraOverlay } = refs;
 
-    if (auraOverlay) {
-      tl.to(auraOverlay, { opacity: 0.4, scale: 0.9, duration: 0.4 });
-    }
 
-    // 1. ガクンッ！と膝から崩れ落ちる
-    tl.to(container, { y: 16, duration: 0.4, ease: 'power3.in' });
-    if (legLeft) tl.to(legLeft, { scaleY: 0.72, y: 8, skewX: -8, duration: 0.4, ease: 'power3.in' }, '<');
-    if (legRight) tl.to(legRight, { scaleY: 0.72, y: 8, skewX: 8, duration: 0.4, ease: 'power3.in' }, '<');
-    if (body) tl.to(body, { y: 10, rotation: 6, duration: 0.4 }, '<');
-    if (head) tl.to(head, { y: 18, rotation: 24, duration: 0.45, ease: 'bounce.out' }, '<');
 
-    // 両腕が地面にペタッと落ちる
-    if (armLeft) tl.to(armLeft, { rotation: 48, y: 12, duration: 0.4, ease: 'power2.out' }, '<');
-    if (armRight) tl.to(armRight, { rotation: -48, y: 12, duration: 0.4, ease: 'power2.out' }, '<');
-    if (!armLeft && !armRight && arms) tl.to(arms, { y: 14, rotation: 20, duration: 0.4 }, '<');
-
-    // 2. 着地衝撃のバウンド＆プルプル震える
-    tl.to(container, { y: 14, duration: 0.1, ease: 'power1.out' })
-      .to(container, { y: 16, duration: 0.1, ease: 'power1.in' });
-
-    // 悔しさ・絶望にプルプル震える（頭部と両腕）
-    if (head) {
-      tl.to(head, { x: '+=1.5', rotation: '+=2', duration: 0.05, repeat: 8, yoyo: true, ease: 'none' });
-    }
-
-    // 3. 悔しそうに床をペシッと叩く仕草
-    if (armRight) {
-      tl.to(armRight, { rotation: -30, y: 8, duration: 0.15, ease: 'power2.out' })
-        .to(armRight, { rotation: -52, y: 13, duration: 0.08, ease: 'power4.in' });
-      tl.to(container, { y: 15, duration: 0.06, yoyo: true, repeat: 1 }, '<');
-    }
-
-    // 4. 静かに項垂れたまま脱力キープ
-    tl.to({}, { duration: 0.5 });
-
-    // 5. よっこらしょとゆっくり起き上がる
-    const all = [container, head, body, arms, armLeft, armRight, legLeft, legRight].filter(Boolean);
-    tl.to(all, { x: 0, y: 0, rotation: 0, scale: 1, scaleY: 1, skewX: 0, duration: 0.6, ease: 'power2.out' });
-    if (auraOverlay) tl.to(auraOverlay, { opacity: 0, duration: 0.4 }, '<');
-  }
-}
-
-/**
- * 3. 激怒の地団駄・プンプン (Angry Stomp)
- * 両拳を固めて全身を怒りで震わせ、左右の足でダン！ダン！ダン！と激しく地団駄を踏む！
- */
-export class AngryStompAnimation extends BaseRobotAnimation {
-  id = 'angry_stomp';
-  seMarkers: AnimationSEMarker[] = [
-    { time: 0.20, label: '怒り心頭！マーク出現', type: 'charge' },
-    { time: 0.55, label: '右足スタンプ！', type: 'hit' },
-    { time: 0.75, label: '左足スタンプ！', type: 'hit' },
-    { time: 0.95, label: '激怒スタンプ！', type: 'hit' },
-    { time: 1.15, label: '地団駄フィニッシュ！', type: 'hit' }
-  ];
-  name = '激怒の地団駄・プンプン (Angry Stomp)';
-  category = RobotAnimationCategory.EMOTION;
-  duration = 2.0;
-  loop = true;
-  description = '両腕の拳を握りしめて激怒！頭から怒りマークと湯気を出し、左右の足でドンドン激しく地団駄を踏む。';
-  technicalHighlights = [
-    '左右脚部 (LegLeft/LegRight) の高速交互地団駄スタンプ (Duration 0.1s)',
-    '怒りマーク 💢 と頭部スチーム蒸気 (mountAngryMarksEffect)',
-    '激怒の全身小刻みバイブレーション (Shake Amplitude: ±3px)',
-    '地面激突時の小刻みな画面振動と怒りのレッドオーラ'
-  ];
-
-  build(refs: RobotDOMRefs, tl: gsap.core.Timeline): void {
-    this.resetElements(refs, tl);
-    const { container, head, body, arms, armLeft, armRight, legLeft, legRight, fxContainer, auraOverlay } = refs;
-
-    let angryFx: { wrapper: HTMLDivElement; marks: SVGGElement; steam: SVGGElement; cleanup: () => void } | null = null;
-    if (fxContainer && typeof document !== 'undefined') {
-      angryFx = mountAngryMarksEffect(fxContainer);
-      tl.set(angryFx.wrapper, { opacity: 0 });
-    }
-
-    tl.eventCallback('onComplete', () => {
-      angryFx?.cleanup();
-    });
-
-    // 怒りのレッドオーラ
-    if (auraOverlay) {
-      tl.to(auraOverlay, { opacity: 0.6, scale: 1.05, duration: 0.3, ease: 'power2.out' });
-    }
-
-    // 1. 怒り構え！両腕をギュッと引き絞る
-    tl.to(container, { scaleY: 0.97, duration: 0.2, ease: 'power2.out' });
-    if (head) tl.to(head, { rotation: -4, y: 1, scale: 1.04, duration: 0.2 }, '<');
-    if (armLeft) tl.to(armLeft, { rotation: -38, x: -4, duration: 0.2, ease: 'back.out(2)' }, '<');
-    if (armRight) tl.to(armRight, { rotation: 38, x: 4, duration: 0.2, ease: 'back.out(2)' }, '<');
-    if (!armLeft && !armRight && arms) tl.to(arms, { scaleX: 1.1, rotation: -8, duration: 0.2 }, '<');
-
-    // 怒りマーク＆スチームポップアップ
-    if (angryFx) {
-      tl.to(angryFx.wrapper, { opacity: 1, duration: 0.15 }, '<');
-      tl.to(angryFx.marks, { scale: 1.25, duration: 0.15, yoyo: true, repeat: 3, ease: 'power1.inOut' }, '<');
-      tl.to(angryFx.steam, { y: -8, opacity: 0.9, duration: 0.3, repeat: 3, yoyo: true }, '<');
-    }
-
-    // 2. 怒りにプルプル震えるプレッシャー
-    tl.to(container, { x: '+=2', duration: 0.04, repeat: 6, yoyo: true, ease: 'none' });
-
-    // 3. ダン！ダン！ダン！激しい地団駄（4連発）
-    // 右足スタンプ！
-    if (legRight) {
-      tl.to(legRight, { y: -10, rotation: 8, duration: 0.08, ease: 'power2.out' })
-        .to(legRight, { y: 0, rotation: 0, duration: 0.06, ease: 'power4.in' });
-      tl.to(container, { y: 2, duration: 0.05, yoyo: true, repeat: 1 }, '>-0.04');
-    }
-    // 左足スタンプ！
-    if (legLeft) {
-      tl.to(legLeft, { y: -10, rotation: -8, duration: 0.08, ease: 'power2.out' })
-        .to(legLeft, { y: 0, rotation: 0, duration: 0.06, ease: 'power4.in' });
-      tl.to(container, { y: 2, duration: 0.05, yoyo: true, repeat: 1 }, '>-0.04');
-    }
-    // もう一回右足！
-    if (legRight) {
-      tl.to(legRight, { y: -12, rotation: 10, duration: 0.08, ease: 'power2.out' })
-        .to(legRight, { y: 0, rotation: 0, duration: 0.06, ease: 'power4.in' });
-      tl.to(container, { y: 3, duration: 0.05, yoyo: true, repeat: 1 }, '>-0.04');
-    }
-    // とどめの左足！
-    if (legLeft) {
-      tl.to(legLeft, { y: -12, rotation: -10, duration: 0.08, ease: 'power2.out' })
-        .to(legLeft, { y: 0, rotation: 0, duration: 0.06, ease: 'power4.in' });
-      tl.to(container, { y: 3, duration: 0.05, yoyo: true, repeat: 1 }, '>-0.04');
-    }
-
-    // 4. ふんがー！と頭を振って怒りアピール
-    if (head) {
-      tl.to(head, { rotation: 12, duration: 0.1 })
-        .to(head, { rotation: -12, duration: 0.1 })
-        .to(head, { rotation: 0, duration: 0.1 });
-    }
-
-    // 5. 息を整えて基本姿勢へ
-    const all = [container, head, body, arms, armLeft, armRight, legLeft, legRight].filter(Boolean);
-    tl.to(all, { x: 0, y: 0, rotation: 0, scale: 1, scaleY: 1, duration: 0.4, ease: 'power2.out' }, '+=0.2');
-    if (angryFx) tl.to(angryFx.wrapper, { opacity: 0, duration: 0.3 }, '<');
-    if (auraOverlay) tl.to(auraOverlay, { opacity: 0, duration: 0.3 }, '<');
-  }
-}
-
-/**
- * 4. ぷんぷん・そっぽ腕組み (Fuming Pout)
- * 「フンッ！」とそっぽを向いて胸の前で腕組みし、不満そうにつま先をトントン鳴らす。
- */
-export class FumingCrossArmsAnimation extends BaseRobotAnimation {
-  id = 'fuming_cross_arms';
-  seMarkers: AnimationSEMarker[] = [
-    { time: 0.20, label: 'フンッ！そっぽ腕組み', type: 'cutin' },
-    { time: 0.60, label: 'トントンつま先刻み', type: 'hit' },
-    { time: 0.85, label: 'プシュー蒸気噴出', type: 'spark' }
-  ];
-  name = 'ぷんぷん・そっぽ腕組み (Fuming Pout)';
-  category = RobotAnimationCategory.EMOTION;
-  duration = 2.2;
-  loop = true;
-  description = '「フンッ！」とぷいっと横を向いて腕組み。そっぽを向いて不機嫌そうにつま先をトントン鳴らす。';
-  technicalHighlights = [
-    '頭部 (Head) の急旋回そっぽ向き (Rotation: -20deg, Duration: 0.15s)',
-    '両腕 (ArmLeft/ArmRight) の胸前クロス腕組みポーズ',
-    '片足つま先の不機嫌トントンステップ (Foot Tap)',
-    '怒りのスチーム蒸気噴出エフェクト'
-  ];
-
-  build(refs: RobotDOMRefs, tl: gsap.core.Timeline): void {
-    this.resetElements(refs, tl);
-    const { container, head, body, arms, armLeft, armRight, legRight, fxContainer } = refs;
-
-    let angryFx: { wrapper: HTMLDivElement; marks: SVGGElement; steam: SVGGElement; cleanup: () => void } | null = null;
-    if (fxContainer && typeof document !== 'undefined') {
-      angryFx = mountAngryMarksEffect(fxContainer);
-      tl.set(angryFx.wrapper, { opacity: 0 });
-    }
-
-    tl.eventCallback('onComplete', () => {
-      angryFx?.cleanup();
-    });
-
-    // 1. 「フンッ！」と素早くそっぽを向き、胸の前で腕を組む
-    tl.to(container, { rotation: 2, duration: 0.18, ease: 'back.out(1.5)' });
-    if (head) tl.to(head, { rotation: -22, x: -6, y: -2, duration: 0.18, ease: 'back.out(2)' }, '<');
-    if (body) tl.to(body, { rotation: 4, duration: 0.18 }, '<');
-
-    // 腕組みポジション
-    if (armLeft) tl.to(armLeft, { rotation: 52, x: 10, y: -4, duration: 0.22, ease: 'power2.out' }, '<');
-    if (armRight) tl.to(armRight, { rotation: -52, x: -10, y: -4, duration: 0.22, ease: 'power2.out' }, '<');
-    if (!armLeft && !armRight && arms) tl.to(arms, { rotation: -15, y: -4, duration: 0.22 }, '<');
-
-    // ぷしゅ〜と頭から蒸気が立ち上る
-    if (angryFx) {
-      tl.to(angryFx.wrapper, { opacity: 1, duration: 0.2 }, '<');
-      tl.to(angryFx.steam, { y: -10, opacity: 1, duration: 0.4, repeat: 2, yoyo: true }, '<');
-    }
-
-    // 2. そっぽを向いたまま、不満そうにつま先をトントン！（3回）
-    if (legRight) {
-      for (let step = 0; step < 3; step++) {
-        tl.to(legRight, { rotation: 12, y: -3, duration: 0.1, ease: 'power1.out' })
-          .to(legRight, { rotation: 0, y: 0, duration: 0.08, ease: 'power2.in' });
-      }
-    }
-
-    // 頭をさらに「ツンッ」と上に向ける
-    if (head) {
-      tl.to(head, { y: -5, rotation: -25, duration: 0.25, ease: 'sine.out' })
-        .to(head, { y: -2, rotation: -20, duration: 0.35, ease: 'sine.inOut' });
-    }
-
-    // 3. 少し反省して（？）正面へ戻る
-    const all = [container, head, body, arms, armLeft, armRight, legRight].filter(Boolean);
-    tl.to(all, { x: 0, y: 0, rotation: 0, scale: 1, duration: 0.45, ease: 'power2.out' }, '+=0.2');
-    if (angryFx) tl.to(angryFx.wrapper, { opacity: 0, duration: 0.3 }, '<');
-  }
-}
-
-/**
- * 5. しくしく大泣き・涙拭い (Sobbing Tears)
- * 両手で顔を覆って肩をヒックヒックと上下に震わせ、左右交互に涙を拭いながら泣く。
- */
-export class SobbingTearsAnimation extends BaseRobotAnimation {
-  id = 'sobbing_tears';
-  seMarkers: AnimationSEMarker[] = [
-    { time: 0.35, label: 'しくしく...涙ポロポロ', type: 'spark' },
-    { time: 0.80, label: 'ヒック...しゃくり嗚咽', type: 'charge' },
-    { time: 1.30, label: 'ごしごし涙ぬぐい', type: 'spark' }
-  ];
-  name = 'しくしく大泣き・涙拭い (Sobbing Tears)';
-  category = RobotAnimationCategory.EMOTION;
-  duration = 2.4;
-  loop = true;
-  description = '両手で顔を覆ってしくしく泣く。肩をヒックヒックと震わせ、こぼれる涙を手でぬぐう切ない仕草。';
-  technicalHighlights = [
-    '両腕 (ArmLeft/ArmRight) の顔覆い・アイカバーポジション',
-    'ポロポロこぼれ落ちる大粒の涙エフェクト (mountTearsEffect)',
-    '嗚咽・しゃくりの肩ヒックヒック振動 (Hiccup Shivering)',
-    '片手マニピュレーターによる涙ぬぐいモーション'
-  ];
-
-  build(refs: RobotDOMRefs, tl: gsap.core.Timeline): void {
-    this.resetElements(refs, tl);
-    const { container, head, body, arms, armLeft, armRight, fxContainer, auraOverlay } = refs;
-
-    let tearsFx: { wrapper: HTMLDivElement; leftTears: SVGGElement; rightTears: SVGGElement; cleanup: () => void } | null = null;
-    if (fxContainer && typeof document !== 'undefined') {
-      tearsFx = mountTearsEffect(fxContainer, 'drops');
-      tl.set(tearsFx.wrapper, { opacity: 0 });
-    }
-
-    tl.eventCallback('onComplete', () => {
-      tearsFx?.cleanup();
-    });
-
-    if (auraOverlay) {
-      tl.to(auraOverlay, { opacity: 0.35, scale: 0.95, duration: 0.4 });
-    }
-
-    // 1. 両手で顔を覆う（しくしく泣き始める）
-    tl.to(container, { y: 4, duration: 0.35, ease: 'power2.out' });
-    if (head) tl.to(head, { y: 6, rotation: 6, duration: 0.35, ease: 'power2.out' }, '<');
-    if (armLeft) tl.to(armLeft, { rotation: 65, x: 12, y: -10, duration: 0.35, ease: 'power2.out' }, '<');
-    if (armRight) tl.to(armRight, { rotation: -65, x: -12, y: -10, duration: 0.35, ease: 'power2.out' }, '<');
-    if (!armLeft && !armRight && arms) tl.to(arms, { y: -8, rotation: 12, duration: 0.35 }, '<');
-
-    // 涙エフェクト表示＆滴り落ちる
-    if (tearsFx) {
-      tl.to(tearsFx.wrapper, { opacity: 1, duration: 0.3 }, '<');
-      tl.to([tearsFx.leftTears, tearsFx.rightTears], { y: 14, opacity: 0.8, duration: 0.8, repeat: 2, yoyo: true }, '<');
-    }
-
-    // 2. 嗚咽・しゃくり（ヒック、ヒックと肩と身体が上下に弾む）
-    for (let hiccup = 0; hiccup < 3; hiccup++) {
-      tl.to(container, { y: 1, duration: 0.08, ease: 'power2.out' })
-        .to(container, { y: 5, duration: 0.12, ease: 'power2.in' });
-      if (head) {
-        tl.to(head, { y: 3, duration: 0.08 }, '<')
-          .to(head, { y: 7, duration: 0.12 }, '>');
-      }
-    }
-
-    // 3. 右手で目元の涙をごしごしとぬぐう仕草
-    if (armRight) {
-      tl.to(armRight, { rotation: -45, x: -6, duration: 0.25, ease: 'sine.inOut' })
-        .to(armRight, { rotation: -70, x: -14, duration: 0.25, ease: 'sine.inOut' })
-        .to(armRight, { rotation: -55, x: -10, duration: 0.25, ease: 'sine.inOut' });
-    }
-
-    // 4. ふぅと息をついて顔を上げる
-    const all = [container, head, body, arms, armLeft, armRight].filter(Boolean);
-    tl.to(all, { x: 0, y: 0, rotation: 0, scale: 1, duration: 0.5, ease: 'power2.out' }, '+=0.1');
-    if (tearsFx) tl.to(tearsFx.wrapper, { opacity: 0, duration: 0.3 }, '<');
-    if (auraOverlay) tl.to(auraOverlay, { opacity: 0, duration: 0.3 }, '<');
-  }
-}
-
-/**
- * 6. 大号泣・じたばたパタパタ (Tantrum Cry)
- * 天を仰いで「うわ〜〜ん！」と大粒の涙を左右に撒き散らし、両腕をじたばたパタパタさせる。
- */
-export class TantrumWailingAnimation extends BaseRobotAnimation {
-  id = 'tantrum_wailing';
-  seMarkers: AnimationSEMarker[] = [
-    { time: 0.20, label: 'うわ〜〜ん！大号泣', type: 'charge' },
-    { time: 0.40, label: '涙大噴水スプラッシュ', type: 'spark' },
-    { time: 0.70, label: 'じたばたパタパタ', type: 'hit' }
-  ];
-  name = '大号泣・じたばたパタパタ (Tantrum Cry)';
-  category = RobotAnimationCategory.EMOTION;
-  duration = 2.0;
-  loop = true;
-  description = '天を仰いで大号泣！両腕をパタパタじたばた激しく振り回し、左右に噴水のように涙を吹き出す。';
-  technicalHighlights = [
-    '頭部 (Head) の仰天大口オープン傾斜 (Rotation: -18deg, Y: -4px)',
-    '左右へ噴出する大号泣ファウンテン涙エフェクト (mountTearsEffect)',
-    '両腕 (ArmLeft/ArmRight) の高速じたばたフラップスイング (Duration: 0.08s)',
-    '駄々っ子風の全身ジタバタ・バウンス'
-  ];
-
-  build(refs: RobotDOMRefs, tl: gsap.core.Timeline): void {
-    this.resetElements(refs, tl);
-    const { container, head, body, arms, armLeft, armRight, legLeft, legRight, fxContainer, auraOverlay } = refs;
-
-    let tearsFx: { wrapper: HTMLDivElement; leftTears: SVGGElement; rightTears: SVGGElement; cleanup: () => void } | null = null;
-    if (fxContainer && typeof document !== 'undefined') {
-      tearsFx = mountTearsEffect(fxContainer, 'fountain');
-      tl.set(tearsFx.wrapper, { opacity: 0 });
-    }
-
-    tl.eventCallback('onComplete', () => {
-      tearsFx?.cleanup();
-    });
-
-    if (auraOverlay) {
-      tl.to(auraOverlay, { opacity: 0.45, scale: 1.02, duration: 0.25 });
-    }
-
-    // 1. ガバッと天を仰いで大泣きスタンバイ！
-    tl.to(container, { y: -4, scaleY: 1.04, duration: 0.2, ease: 'power2.out' });
-    if (head) tl.to(head, { rotation: -18, y: -6, duration: 0.2, ease: 'back.out(2)' }, '<');
-    if (body) tl.to(body, { rotation: -4, duration: 0.2 }, '<');
-
-    // 涙噴水エフェクト大炸裂
-    if (tearsFx) {
-      tl.to(tearsFx.wrapper, { opacity: 1, duration: 0.15 }, '<');
-      tl.to(tearsFx.leftTears, { rotation: -15, scale: 1.2, duration: 0.15, repeat: 5, yoyo: true }, '<');
-      tl.to(tearsFx.rightTears, { rotation: 15, scale: 1.2, duration: 0.15, repeat: 5, yoyo: true }, '<');
-    }
-
-    // 2. 両腕をじたばたパタパタ！全身で駄々っ子泣き（6サイクル）
-    for (let flap = 0; flap < 6; flap++) {
-      const dir = flap % 2 === 0 ? 1 : -1;
-      if (armLeft) tl.to(armLeft, { rotation: dir * 45 + 10, y: dir * 6, duration: 0.08, ease: 'power1.inOut' }, '<');
-      if (armRight) tl.to(armRight, { rotation: -dir * 45 - 10, y: -dir * 6, duration: 0.08, ease: 'power1.inOut' }, '<');
-      if (!armLeft && !armRight && arms) tl.to(arms, { rotation: dir * 25, duration: 0.08 }, '<');
-      tl.to(container, { x: dir * 3, y: flap % 2 === 0 ? 2 : -2, duration: 0.08, ease: 'none' }, '<');
-      if (legLeft) tl.to(legLeft, { y: dir * 3, duration: 0.08 }, '<');
-      if (legRight) tl.to(legRight, { y: -dir * 3, duration: 0.08 }, '<');
-    }
-
-    // 3. ふえ〜んと少し落ち着く
-    const all = [container, head, body, arms, armLeft, armRight, legLeft, legRight].filter(Boolean);
-    tl.to(all, { x: 0, y: 0, rotation: 0, scale: 1, scaleY: 1, duration: 0.4, ease: 'power2.out' }, '+=0.1');
-    if (tearsFx) tl.to(tearsFx.wrapper, { opacity: 0, duration: 0.3 }, '<');
-    if (auraOverlay) tl.to(auraOverlay, { opacity: 0, duration: 0.3 }, '<');
-  }
-}
 
 /**
  * 7. ご機嫌るんるんスキップ (Joyful Skipping)
@@ -2028,205 +1555,8 @@ export class JoyfulSkippingAnimation extends BaseRobotAnimation {
   }
 }
 
-/**
- * 8. ウキウキ・バウンスホップ (Bouncing Hop)
- * 両足を揃えてつま先でポン！ポン！ポン！とリズミカルに連続ジャンプ。両腕を広げて愛らしくバウンス。
- */
-export class BouncingHopAnimation extends BaseRobotAnimation {
-  id = 'bouncing_hop';
-  seMarkers: AnimationSEMarker[] = [
-    { time: 0.20, label: 'ポンッ！第1ジャンプ', type: 'spark' },
-    { time: 0.55, label: 'ポンッ！第2ジャンプ', type: 'spark' },
-    { time: 0.90, label: 'ピョンッ！第3大ジャンプ', type: 'cutin' },
-    { time: 1.25, label: 'きまりの着地！', type: 'hit' }
-  ];
-  name = 'ウキウキ・バウンスホップ (Bouncing Hop)';
-  category = RobotAnimationCategory.EMOTION;
-  duration = 1.8;
-  loop = true;
-  description = '両足を揃えてポンポン連続ジャンプ！両腕をパタパタ羽ばたかせて愛らしく飛び跳ねる。';
-  technicalHighlights = [
-    '連続バウンスホップ (Bounce Jumps: 3連発)',
-    '着地時のエラスティック・スクワッシュ＆ストレッチ (ScaleY: 0.90 <-> 1.12)',
-    '両腕 (ArmLeft/ArmRight) の翼のような羽ばたきバランスモーション',
-    '頭部 (Head) のリズミカルな小気味良い首振り'
-  ];
-
-  build(refs: RobotDOMRefs, tl: gsap.core.Timeline): void {
-    this.resetElements(refs, tl);
-    const { container, head, body, arms, armLeft, armRight, legLeft, legRight, sparkles } = refs;
-
-    if (sparkles) {
-      tl.to(sparkles, { opacity: 1, duration: 0.2 });
-    }
-
-    // 3回連続ポン！ポン！ポン！とホッピング
-    for (let hop = 0; hop < 3; hop++) {
-      // 溜め（しゃがみ）
-      tl.to(container, { y: 6, scaleY: 0.90, scaleX: 1.06, duration: 0.08, ease: 'power1.in' });
-      if (legLeft) tl.to(legLeft, { scaleY: 0.88, duration: 0.08 }, '<');
-      if (legRight) tl.to(legRight, { scaleY: 0.88, duration: 0.08 }, '<');
-
-      // ジャンプ！
-      const jumpHeight = -18 - (hop * 2);
-      tl.to(container, { y: jumpHeight, scaleY: 1.12, scaleX: 0.94, duration: 0.18, ease: 'power2.out' });
-      if (head) tl.to(head, { y: -4, rotation: hop % 2 === 0 ? 6 : -6, duration: 0.18 }, '<');
-      if (armLeft) tl.to(armLeft, { rotation: -48, y: -10, duration: 0.18, ease: 'back.out(2)' }, '<');
-      if (armRight) tl.to(armRight, { rotation: 48, y: -10, duration: 0.18, ease: 'back.out(2)' }, '<');
-      if (!armLeft && !armRight && arms) tl.to(arms, { y: -8, scaleX: 1.15, duration: 0.18 }, '<');
-      if (legLeft) tl.to(legLeft, { scaleY: 1.05, y: 2, duration: 0.18 }, '<');
-      if (legRight) tl.to(legRight, { scaleY: 1.05, y: 2, duration: 0.18 }, '<');
-
-      // 着地（バウンド）
-      tl.to(container, { y: 3, scaleY: 0.92, scaleX: 1.04, duration: 0.12, ease: 'bounce.out' });
-      if (armLeft) tl.to(armLeft, { rotation: -15, y: 0, duration: 0.12 }, '<');
-      if (armRight) tl.to(armRight, { rotation: 15, y: 0, duration: 0.12 }, '<');
-      if (legLeft) tl.to(legLeft, { scaleY: 1, y: 0, duration: 0.12 }, '<');
-      if (legRight) tl.to(legRight, { scaleY: 1, y: 0, duration: 0.12 }, '<');
-    }
-
-    // 決めのポーズ
-    tl.to(container, { y: 0, scaleY: 1, scaleX: 1, duration: 0.25, ease: 'power2.out' });
-    if (head) tl.to(head, { y: 0, rotation: 0, duration: 0.25 }, '<');
-    if (armLeft) tl.to(armLeft, { rotation: 0, y: 0, duration: 0.25 }, '<');
-    if (armRight) tl.to(armRight, { rotation: 0, y: 0, duration: 0.25 }, '<');
-    if (sparkles) tl.to(sparkles, { opacity: 0, duration: 0.25 }, '<');
-  }
-}
 
 
-export class TwoHandedSniperScopeShotAnimation extends BaseRobotAnimation {
-  id = 'two_handed_sniper_scope_shot';
-  name = '両手持ちスコープ精密狙撃 (Scope Snipe)';
-  category = RobotAnimationCategory.COMBAT;
-  duration = 2.4;
-  loop = true;
-  description = '左手でグリップを握り、右手でトリガーを引き、顔をスコープに当てて照準を覗き込み、一撃必殺の超電導スナイパー弾を撃ち放つ。';
-  technicalHighlights = [
-    'スコープ接眼・顔密着エイミング（Head Rotation & Translate）',
-    '左腕（グリップ把持）＆右腕（トリガー操作）によるリアルな両手持ちスタンス',
-    'ホログラフィックHUDレティクル＆超微細レーザー照準光線展開',
-    '右手マニピュレーターによるトリガー引き込みアクションと発射マズルショック',
-    '重厚なキックバック反動、薬莢排気、白煙スモーク、着弾確認（残心）'
-  ];
-
-  seMarkers: AnimationSEMarker[] = [
-    { time: 0.30, label: '両手持ち構え＆スコープ接眼', type: 'draw' },
-    { time: 0.70, label: 'スコープHUD照準ロックオン', type: 'charge' },
-    { time: 1.15, label: 'トリガー引き＆超電導弾発射！', type: 'slash' },
-    { time: 1.30, label: '強烈マズルショック＆排莢', type: 'hit' },
-    { time: 1.80, label: '着弾確認・残心', type: 'draw' },
-  ];
-
-  build(refs: RobotDOMRefs, tl: gsap.core.Timeline): void {
-    this.resetElements(refs, tl);
-    const { container, head, body, arms, armLeft, armRight, legs, legLeft, legRight, fxContainer } = refs;
-
-    let rifle: { wrapper: HTMLDivElement; el: HTMLDivElement; cleanup: () => void } | null = null;
-    let hudFx: { wrapper: HTMLDivElement; laser: SVGLineElement; hud: SVGGElement; cleanup: () => void } | null = null;
-    let shot: { el: HTMLDivElement; cleanup: () => void } | null = null;
-
-    if (fxContainer && typeof document !== 'undefined') {
-      rifle = mountSniperRifle(fxContainer, { hand: 'right', sizePercent: 74, initialRotation: 4, armPartKey: refs.armPartKey });
-      hudFx = mountSniperScopeHUDEffect(fxContainer);
-      shot = mountSniperShotEffect(fxContainer);
-
-      tl.set(rifle.wrapper, { opacity: 1 });
-      tl.set(rifle.el, { opacity: 0 });
-      tl.set(hudFx.wrapper, { opacity: 0 });
-      tl.set(shot.el, { opacity: 0 });
-    }
-
-    tl.eventCallback('onComplete', () => {
-      rifle?.cleanup();
-      hudFx?.cleanup();
-      shot?.cleanup();
-    });
-
-    // 1. 狙撃構えへ移行（腰をわずかに落とし、両腕を中央へ引き寄せてライフルをホールド）
-    tl.to(container, { y: 2, duration: 0.35, ease: 'power2.out' });
-
-    // 脚部の踏ん張り
-    if (legLeft) tl.to(legLeft, { scaleY: 0.92, y: 3, skewX: -4, duration: 0.35 }, '<');
-    if (legRight) tl.to(legRight, { scaleY: 0.95, y: 2, skewX: 8, duration: 0.35 }, '<');
-
-    // ★ スコープに顔をあてる（頭部を前傾・接眼レンズへ吸着）
-    tl.to(head, { rotation: 9, x: 2, y: 3, duration: 0.35, ease: 'power2.out' }, '<');
-
-    // ★ 左手でグリップを握る（左肩から胸元前へ伸ばし、グリップ位置へ先端を合わせる）
-    if (armLeft) tl.to(armLeft, { rotation: 42, x: 8, y: -4, duration: 0.35, ease: 'power2.out' }, '<');
-
-    // ★ 右手でトリガーを引く構え（右肩から引きつけ、トリガー位置へ指を掛ける）
-    if (armRight) tl.to(armRight, { rotation: 62, x: 12, y: -4, duration: 0.35, ease: 'power2.out' }, '<');
-    if (!armLeft && !armRight && arms) tl.to(arms, { rotation: 52, x: 10, y: -4, duration: 0.35 }, '<');
-
-    // ライフル表示＆スコープ接眼角度セット
-    if (rifle) {
-      tl.to(rifle.wrapper, { rotation: 62, x: 12, y: -4, duration: 0.35, ease: 'power2.out' }, '<');
-      tl.to(rifle.el, { opacity: 1, rotation: 4, duration: 0.35, ease: 'power2.out' }, '<');
-    }
-
-    // 2. スコープHUD＆レーザー照準光線展開（目標捕捉ロックオン）
-    if (hudFx) {
-      tl.to(hudFx.wrapper, { opacity: 1, duration: 0.25, ease: 'power2.in' }, '+=0.05');
-      // HUDレティクルのスキャン回転＆レーザー点滅
-      tl.to(hudFx.hud, { rotation: 360, duration: 0.6, ease: 'power1.out' }, '<');
-    }
-
-    // スコープを覗きながら息を止める精密照準微動
-    tl.to(head, { rotation: 9.5, y: '+=0.5', duration: 0.3, ease: 'sine.inOut' })
-      .to(head, { rotation: 8.8, y: '-=0.5', duration: 0.3, ease: 'sine.inOut' });
-
-    // 3. 右手でトリガーを絞り込む！（直前の0.08秒、右腕がわずかに引き込まれる）
-    if (armRight) tl.to(armRight, { rotation: 65, duration: 0.08, ease: 'power1.in' });
-    if (rifle) tl.to(rifle.wrapper, { rotation: 65, duration: 0.08, ease: 'power1.in' }, '<');
-
-    // 4. ドォォン！！超電導スナイパー弾発射！（強烈マズルショック＆リコイル反動）
-    // スコープに顔を当てたまま上半身ごと後ろへ押し戻されるリアルなキックバック
-    tl.to(container, { x: -22, rotation: -3, duration: 0.06, ease: 'power4.out' });
-    tl.to(head, { rotation: 4, x: -1, duration: 0.06 }, '<');
-    if (armRight) tl.to(armRight, { rotation: 76, x: 8, duration: 0.06 }, '<');
-    if (armLeft) tl.to(armLeft, { rotation: 48, x: 4, duration: 0.06 }, '<');
-    if (!armLeft && !armRight && arms) tl.to(arms, { rotation: 62, duration: 0.06 }, '<');
-
-    if (rifle) {
-      tl.to(rifle.wrapper, { rotation: 76, x: 8, duration: 0.06 }, '<');
-      tl.to(rifle.el, { rotation: 12, duration: 0.06 }, '<');
-    }
-    if (shot) {
-      tl.to(shot.el, { opacity: 1, scale: 1.25, duration: 0.05 }, '<');
-      tl.to(shot.el, { opacity: 0, scale: 1.45, duration: 0.22 }, '>');
-    }
-    if (hudFx) {
-      // 発射衝撃でHUDが一瞬フラッシュして消滅
-      tl.to(hudFx.wrapper, { opacity: 0, duration: 0.1 }, '<');
-    }
-
-    // 5. 反動揺り戻し＆排莢・排煙
-    tl.to(container, { x: -14, duration: 0.12, ease: 'power2.out' });
-    tl.to(container, { x: '+=1.5', y: '+=1.5', duration: 0.035, yoyo: true, repeat: 3 });
-
-    // 6. スコープを覗いたまま着弾確認（残心）
-    tl.to(head, { rotation: 8, x: 1, duration: 0.2, ease: 'power2.out' });
-    if (rifle) {
-      tl.to(rifle.el, { rotation: 4, duration: 0.2 }, '<');
-      tl.to(rifle.wrapper, { rotation: 62, x: 10, duration: 0.2 }, '<');
-    }
-    tl.to({}, { duration: 0.35 }); // 着弾確認ホールド
-
-    // 7. 銃身を下げ、基本姿勢へ復帰
-    if (rifle) {
-      tl.to(rifle.el, { opacity: 0, duration: 0.25 }, '>');
-      tl.to(rifle.wrapper, { x: 0, y: 0, rotation: 0, duration: 0.35, ease: 'power2.out' }, '<');
-    }
-    const allTargets = [container, head, body, arms, armLeft, armRight, legs, legLeft, legRight].filter(Boolean);
-    tl.to(allTargets, {
-      x: 0, y: 0, rotation: 0, scale: 1, scaleX: 1, scaleY: 1, skewX: 0,
-      duration: 0.4,
-      ease: 'power2.out'
-    }, '<');
-  }
-}
 
 
 
@@ -2449,7 +1779,6 @@ export class GSAPRobotAnimationRegistry {
 
   private registerDefaults(): void {
     const list: RobotAnimationPattern[] = [
-      new SlashComboAnimation(),
       new DualSlashComboAnimation(),
       new RocketPunchAnimation(),
       new ShieldBarrierAnimation(),
@@ -2466,16 +1795,13 @@ export class GSAPRobotAnimationRegistry {
       new FastRechargeAnimation(),
       new SleepStandbyAnimation(),
       new CalibrationAnimation(),
-      new VictoryCheerAnimation(),
       new PanicTroubledAnimation(),
       new PoliteBowAnimation(),
-      new ApplauseClapAnimation(),
       new CuriousTiltAnimation(),
       new NodAgreeAnimation(),
       new BanzaiCheerAnimation(),
       new YayRejoiceAnimation(),
       new MissileBarrageAnimation(),
-      new SwordSlashItemAnimation(),
       new ShieldBlockItemAnimation(),
       new MissileFireItemAnimation(),
       new FlameBladeCycloneAnimation(),
@@ -2483,18 +1809,9 @@ export class GSAPRobotAnimationRegistry {
       new FireSlashAnimation(),
       new BeamSaberJudgementAnimation(),
       new DualSaberMirageDanceAnimation(),
-      new SaberParryCounterAnimation(),
-      new IaidoQuickDrawAnimation(),
       new UltimateOmegaCrossSlashAnimation(),
       new DisappointedSlumpAnimation(),
-      new DespairKneelAnimation(),
-      new AngryStompAnimation(),
-      new FumingCrossArmsAnimation(),
-      new SobbingTearsAnimation(),
-      new TantrumWailingAnimation(),
       new JoyfulSkippingAnimation(),
-      new BouncingHopAnimation(),
-      new TwoHandedSniperScopeShotAnimation(),
       new JetpackAscentFlightAnimation(),
       new JetpackForwardFlightAnimation(),
     ];

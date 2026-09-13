@@ -11,6 +11,7 @@ import { AttributeNames, AttributeColors } from '../core/models';
 import { theme } from '../styles/theme';
 import { TutorialPopup } from '../components/ui/TutorialPopup';
 import { MaterialIcon } from '../components/ui/MaterialIcon';
+import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { PartSelectCarousel } from '../components/part/PartSelectCarousel';
 import * as Gi from 'react-icons/gi';
 import { motion } from 'motion/react';
@@ -223,7 +224,24 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
   ];
 
   return (
-    <div className="space-y-6 bg-stone-50 min-h-full p-4 rounded-xl border-2 border-stone-300 shadow-sm relative overflow-hidden text-stone-800">
+    <div className="space-y-4">
+      <ScreenHeader
+        icon={<Gi.GiAnvil size={16} />}
+        title="ロボット製造・クラフト"
+        badge={
+          isPartReady || isRobotReady ? (
+            <span className="text-[10px] bg-emerald-500 text-white font-bold px-2 py-0.5 rounded-full animate-bounce shadow-2xs">
+              ★ 完成！受取可能
+            </span>
+          ) : isPartCrafting || isRobotAssembling ? (
+            <span className="text-[10px] bg-blue-500 text-white font-bold px-2 py-0.5 rounded-full animate-pulse shadow-2xs">
+              製造中
+            </span>
+          ) : undefined
+        }
+      />
+
+      <div className="space-y-6 bg-stone-50 min-h-full p-4 rounded-xl border-2 border-stone-300 shadow-sm relative overflow-hidden text-stone-800">
       {/* Factory Garage Background Elements */}
       <div className="absolute inset-0 pointer-events-none opacity-[0.03] z-0" style={{ backgroundImage: "repeating-linear-gradient(45deg, #000 0, #000 2px, transparent 2px, transparent 8px)" }}></div>
       <Gi.GiAnvil className="absolute top-20 right-10 opacity-5 text-9xl text-stone-400 pointer-events-none z-0" />
@@ -293,9 +311,6 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
             <div><span className="text-stone-500">Agi:</span> <strong className="text-stone-800">{lastCraftedPart.stats.agility}</strong></div>
             <div><span className="text-stone-500">Dex:</span> <strong className="text-stone-800">{lastCraftedPart.stats.dexterity}</strong></div>
             <div><span className="text-stone-500">Int:</span> <strong className="text-stone-800">{lastCraftedPart.stats.intelligence}</strong></div>
-            <div className="w-full text-center mt-1 border-t border-amber-100 pt-1">
-              <span className="text-stone-500 font-bold">Wt(重量):</span> <strong className="text-stone-800">{lastCraftedPart.weight || 0}</strong>
-            </div>
           </div>
           <Button className="mt-5" size="lg" onClick={() => setLastCraftedPart(null)}>閉じる</Button>
         </div>
@@ -319,9 +334,6 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
             <div><span className="text-stone-500">Agi:</span> <strong className="text-stone-800">{lastCraftedRobot.stats.agility}</strong></div>
             <div><span className="text-stone-500">Dex:</span> <strong className="text-stone-800">{lastCraftedRobot.stats.dexterity}</strong></div>
             <div><span className="text-stone-500">Int:</span> <strong className="text-stone-800">{lastCraftedRobot.stats.intelligence}</strong></div>
-            <div className="w-full text-center mt-1 border-t border-amber-100 pt-1">
-              <span className="text-stone-500 font-bold">Wt(総重量):</span> <strong className="text-stone-800">{lastCraftedRobot.weight || 0}</strong>
-            </div>
           </div>
           <Button className="mt-5" size="lg" onClick={() => setLastCraftedRobot(null)}>閉じる</Button>
         </Card>
@@ -844,15 +856,11 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                           dexterity: (heads.find(p => p.id === selectedHead)?.stats.dexterity || 0) + (bodies.find(p => p.id === selectedBody)?.stats.dexterity || 0) + (arms.find(p => p.id === selectedArms)?.stats.dexterity || 0) + (legs.find(p => p.id === selectedLegs)?.stats.dexterity || 0),
                           intelligence: (heads.find(p => p.id === selectedHead)?.stats.intelligence || 0) + (bodies.find(p => p.id === selectedBody)?.stats.intelligence || 0) + (arms.find(p => p.id === selectedArms)?.stats.intelligence || 0) + (legs.find(p => p.id === selectedLegs)?.stats.intelligence || 0),
                         },
-                        weight: (heads.find(p => p.id === selectedHead)?.weight || 0) + (bodies.find(p => p.id === selectedBody)?.weight || 0) + (arms.find(p => p.id === selectedArms)?.weight || 0) + (legs.find(p => p.id === selectedLegs)?.weight || 0),
                         attribute: heads.find(p => p.id === selectedHead)?.attribute || 'neutral'
                       } as unknown as Robot} 
                       size={140} 
                       themeStyle="light" 
                     />
-                  </div>
-                  <div className="w-full text-center mt-2 text-[10px] font-mono font-bold text-stone-600">
-                    総重量(WT): {(heads.find(p => p.id === selectedHead)?.weight || 0) + (bodies.find(p => p.id === selectedBody)?.weight || 0) + (arms.find(p => p.id === selectedArms)?.weight || 0) + (legs.find(p => p.id === selectedLegs)?.weight || 0)}
                   </div>
                 </div>
               </div>
@@ -1031,6 +1039,7 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };

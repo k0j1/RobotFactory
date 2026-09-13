@@ -1,5 +1,6 @@
 import { Robot } from '../../../core/models';
 import { Opponent } from '../Shared';
+import { CombatEquipmentRank, getEquipmentBonus } from '../../../core/combatEquipmentData';
 import { 
   CombatFighter, 
   CombatLogItem, 
@@ -40,12 +41,19 @@ export class CombatEngine {
   private lastLearnedSkill: { fighterId: string; fighterName: string; skill: SkillDef } | null = null;
   private lastActionEvent: CombatActionEvent | null = null;
 
-  constructor(robot: Robot, opponent: Opponent, options?: { beamSaber?: boolean; beamShield?: boolean }) {
+  constructor(
+    robot: Robot,
+    opponent: Opponent,
+    options?: { beamSaber?: boolean; beamShield?: boolean },
+    equipmentRanks?: { beamSaber?: CombatEquipmentRank; beamShield?: CombatEquipmentRank }
+  ) {
     // プレイヤー側ファイター生成
     const rStats = robot.stats;
     const playerVitality = Math.max(1, rStats.hp || 10);
-    const saberBoost = options?.beamSaber ? 35 : 0;
-    const shieldBoost = options?.beamShield ? 30 : 0;
+    const saberRank = equipmentRanks?.beamSaber || 'common';
+    const shieldRank = equipmentRanks?.beamShield || 'common';
+    const saberBoost = options?.beamSaber ? getEquipmentBonus('beamSaber', saberRank) : 0;
+    const shieldBoost = options?.beamShield ? getEquipmentBonus('beamShield', shieldRank) : 0;
 
     this.player = {
       id: 'player',
@@ -71,6 +79,7 @@ export class CombatEngine {
       skillsTriggeredCount: 0,
       skillsLearnedCount: 0,
       equipments: options,
+      equipmentRanks: equipmentRanks,
     };
 
     // 対戦相手側ファイター生成

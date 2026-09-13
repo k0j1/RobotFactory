@@ -14,6 +14,7 @@ import { CombatSetupCard } from '../components/minigames/combat/CombatSetupCard'
 import { CombatVictoryRewardEffect } from '../components/minigames/combat/CombatVictoryRewardEffect';
 import { DefenseGame } from '../components/minigames/DefenseGame';
 import { MinigameDashboard } from '../components/minigames/MinigameDashboard';
+import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { RobotVisual } from '../components/robot/RobotVisual';
 import { motion } from 'motion/react';
 import * as Gi from 'react-icons/gi';
@@ -36,10 +37,10 @@ interface GameDef {
 }
 
 const CATEGORIES: CategoryDef[] = [
-  { id: 'battle', name: '戦闘・対戦', icon: <Gi.GiCrossedSwords className="inline text-red-600" /> },
-  { id: 'puzzle', name: 'パズル・頭脳戦', icon: <Gi.GiChessPawn className="inline text-stone-600" /> },
-  { id: 'shooting', name: '射撃・機動演習', icon: <Gi.GiLightningTrio className="inline text-amber-500" /> },
-  { id: 'music', name: '音楽・演奏会', icon: <Gi.GiMusicalNotes className="inline text-blue-500" /> }
+  { id: 'battle', name: '戦闘', icon: <Gi.GiCrossedSwords className="inline text-red-600" /> },
+  { id: 'puzzle', name: 'パズル', icon: <Gi.GiChessPawn className="inline text-stone-600" /> },
+  { id: 'shooting', name: '射撃', icon: <Gi.GiLightningTrio className="inline text-amber-500" /> },
+  { id: 'music', name: '音楽', icon: <Gi.GiMusicalNotes className="inline text-blue-500" /> }
 ];
 
 const GAMES: GameDef[] = [
@@ -88,6 +89,8 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
   const [isPaused, setIsPaused] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [currentTimestamp, setCurrentTimestamp] = useState(() => Date.now());
+  const [showCombatStatSpecs, setShowCombatStatSpecs] = useState(false);
+  const [showDefenseStatSpecs, setShowDefenseStatSpecs] = useState(false);
 
   // 10秒ごとに現在時刻を更新（朝9:00のリセット切り替わりを即検知）
   useEffect(() => {
@@ -219,18 +222,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
         );
         setCurrentChestDrop(chestDrop);
 
-        if (chestDrop.repairKits > 0) {
-          (engine as any).addRepairKits(chestDrop.repairKits);
-        }
-        if (chestDrop.gold > 0) {
-          (engine as any).addGold(chestDrop.gold);
-        }
-        if (chestDrop.elements > 0) {
-          (engine as any).addBattleElements(chestDrop.elements);
-        }
-        for (const mat of chestDrop.materials) {
-          (engine as any).addMaterial(mat.material.id, mat.count);
-        }
+        (engine as any).addChest(chestDrop.chestTier, 1);
         if (chestDrop.fame > 0) {
           (engine as any).addFame(chestDrop.fame, `${selectedGame === 'othello' ? 'オセロ' : selectedGame === 'chess' ? 'チェス' : '演習'}勝利: ${activeOpponent.name}`);
         }
@@ -242,18 +234,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
         );
         setCurrentChestDrop(chestDrop);
 
-        if (chestDrop.repairKits > 0) {
-          (engine as any).addRepairKits(chestDrop.repairKits);
-        }
-        if (chestDrop.gold > 0) {
-          (engine as any).addGold(chestDrop.gold);
-        }
-        if (chestDrop.elements > 0) {
-          (engine as any).addBattleElements(chestDrop.elements);
-        }
-        for (const mat of chestDrop.materials) {
-          (engine as any).addMaterial(mat.material.id, mat.count);
-        }
+        (engine as any).addChest(chestDrop.chestTier, 1);
         if (chestDrop.fame > 0) {
           (engine as any).addFame(chestDrop.fame, `拠点防衛成功: ${activeDefenseStage.name}`);
         }
@@ -425,6 +406,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
           onTogglePause={() => setIsPaused(!isPaused)}
           onSetSpeed={(s) => setSpeed(s)}
           activeCombatEquipments={state.activeCombatEquipments}
+          combatEquipmentRanks={state.combatEquipmentRanks}
         />
       );
       case 'othello': return <OthelloGame activeRobot={activeRobot} activeOpponent={opponent} onFinish={handleFinish} speed={speed} isPaused={isPaused} isFinished={battleResult !== null} battleResult={battleResult} />;
@@ -451,23 +433,22 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
   };
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto pb-24">
-      {/* 工房演習アリーナ・ヘッダー */}
-      <div className="flex justify-between items-end border-b-2 border-stone-300 pb-2 flex-wrap gap-2">
-        <div>
-          <div className="flex items-center gap-2">
-            <Gi.GiCrossedSwords className="text-amber-600 text-2xl" />
-            <h2 className={theme.typography.h2}>工房演習アリーナ</h2>
+    <div className="space-y-4 max-w-4xl mx-auto pb-24">
+      <ScreenHeader
+        icon={<Gi.GiCrossedSwords size={16} />}
+        title="工房演習アリーナ・バトル"
+        badge={
+          <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300 font-bold px-1.5 py-0.2 rounded">
+            演習競技
+          </span>
+        }
+        rightElement={
+          <div className="flex items-center gap-1.5 text-xs font-bold text-stone-700 bg-stone-100 px-2.5 py-1 rounded-lg border border-stone-300 shadow-2xs">
+            <span><Gi.GiSpanner className="inline text-stone-500" /> 所持キット:</span>
+            <span className="font-mono text-amber-700 text-xs font-bold">{state.repairKits || 0} 個</span>
           </div>
-          <p className="text-stone-600 text-xs sm:text-sm mt-0.5">
-            自慢のロボットを競技に出場させ、企業のAIと性能テスト！勝利で修理キットを獲得できます。
-          </p>
-        </div>
-        <div className="flex items-center gap-1.5 text-xs font-bold text-stone-700 bg-stone-100 px-3 py-1.5 rounded-lg border border-stone-300 shadow-2xs">
-          <span><Gi.GiSpanner className="inline text-stone-500" /> 所持キット:</span>
-          <span className="font-mono text-amber-700 text-sm">{state.repairKits || 0} 個</span>
-        </div>
-      </div>
+        }
+      />
 
       {!isBattleActive && !battleResult && (
         <MinigameDashboard records={state.minigameRecords} />
@@ -508,13 +489,34 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               {GAMES.filter(g => g.category === selectedCategory).map(g => {
                 const isSelected = selectedGame === g.id;
+                // Check if this game is cleared today for currently active robot (or defense globally)
+                const isGameClearedToday = (() => {
+                  if (g.id === 'defense') return defenseResetInfo.isCompletedToday;
+                  if (!activeRobot) return false;
+                  if (g.id === 'combat') {
+                    return selectedOpponentId ? (engine as any).checkDailyBattleLimit(activeRobot.id, 'combat', activeOpponent?.level || 1, currentTimestamp) : false;
+                  }
+                  if (g.id === 'danmaku') {
+                    return (engine as any).checkDailyBattleLimit(activeRobot.id, 'danmaku', danmakuDifficulty, currentTimestamp);
+                  }
+                  if (g.id === 'piano') {
+                    return (engine as any).checkDailyBattleLimit(activeRobot.id, 'piano', pianoSongId, currentTimestamp);
+                  }
+                  if (g.id === 'othello' || g.id === 'chess') {
+                    return selectedOpponentId ? (engine as any).checkDailyBattleLimit(activeRobot.id, g.id, activeOpponent?.level || 1, currentTimestamp) : false;
+                  }
+                  return false;
+                })();
+
                 return (
                   <button
                     key={g.id}
                     onClick={() => setSelectedGame(g.id)}
-                    className={`p-3 rounded-xl border-2 text-left transition-all relative overflow-hidden ${
+                    className={`p-3 rounded-xl border-2 text-left transition-all relative overflow-visible ${
                       isSelected 
                         ? 'border-amber-500 bg-amber-50/90 ring-2 ring-amber-300/80 shadow-xs' 
+                        : isGameClearedToday
+                        ? 'border-emerald-400 bg-emerald-50/40 hover:border-emerald-500'
                         : 'border-stone-300 bg-white hover:border-amber-400 hover:bg-stone-100/70'
                     }`}
                   >
@@ -523,10 +525,10 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                         <span className="text-xl">{g.icon}</span>
                         <span className="font-bold text-stone-900 text-sm">{g.name}</span>
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        {g.id === 'defense' && defenseResetInfo.isCompletedToday && (
+                      <div className="flex items-center gap-1.5 relative z-10">
+                        {isGameClearedToday && (
                           <span className="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5 shadow-2xs">
-                            <Gi.GiCheckMark className="text-[9px] text-emerald-600" /> 本日完了
+                            <Gi.GiCheckMark className="text-[9px] text-emerald-600" /> 本日クリア済
                           </span>
                         )}
                         {isSelected && (
@@ -587,6 +589,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
               selectedOpponentId={selectedOpponentId}
               setSelectedOpponentId={setSelectedOpponentId}
               onExchangeEquipment={(eq) => engine.exchangeCombatEquipment(eq)}
+              onUpgradeEquipment={(eq) => engine.upgradeCombatEquipment(eq)}
               onToggleEquipment={(eq, enabled) => engine.toggleCombatEquipment(eq, enabled)}
               isOpponentCleared={(lvl) => activeRobot ? (engine as any).checkDailyBattleLimit(activeRobot.id, 'combat', lvl, currentTimestamp) : false}
             />
@@ -612,6 +615,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                   <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
                     {DEFENSE_STAGES.map(stage => {
                       const isSelected = defenseStageId === stage.id;
+                      const isDefenseCleared = defenseResetInfo.isCompletedToday;
                       return (
                         <button
                           key={stage.id}
@@ -619,14 +623,23 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                             setDefenseStageId(stage.id);
                             setSelectedDefenseRobotIds([]); // Reset selection when stage changes
                           }}
-                          className={`w-full text-left p-3 rounded-xl border-2 transition-all cursor-pointer ${
+                          className={`w-full text-left p-3 rounded-xl border-2 transition-all cursor-pointer relative overflow-visible ${
                             isSelected 
                               ? 'border-amber-500 bg-amber-50/90 shadow-xs ring-2 ring-amber-300' 
+                              : isDefenseCleared
+                              ? 'border-emerald-400 bg-emerald-50/40 hover:border-emerald-500'
                               : 'border-stone-300 bg-white hover:border-stone-400 hover:bg-stone-50'
                           }`}
                         >
                           <div className="flex justify-between items-center mb-1">
-                            <span className="font-bold text-sm text-stone-900">{stage.name}</span>
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-bold text-sm text-stone-900">{stage.name}</span>
+                              {isDefenseCleared && (
+                                <span className="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold px-1.5 py-0.2 rounded flex items-center gap-0.5 font-mono shadow-2xs">
+                                  <Gi.GiCheckMark className="text-[8px] text-emerald-600" /> 防衛完了
+                                </span>
+                              )}
+                            </div>
                             <span className="text-[10px] bg-red-100 text-red-800 border border-red-300 px-1.5 py-0.5 rounded font-bold">
                               敵 {stage.totalEnemies}体
                             </span>
@@ -685,6 +698,24 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                     const isHpLow = hp < 1;
                     const isSelected = selectedGame === 'defense' ? selectedDefenseRobotIds.includes(r.id) : selectedRobotId === r.id;
                     
+                    // Check if this specific robot already cleared current game setup today
+                    const isClearedWithRobot = (() => {
+                      if (selectedGame === 'defense') return defenseResetInfo.isCompletedToday;
+                      if (selectedGame === 'combat') {
+                        return activeOpponent ? (engine as any).checkDailyBattleLimit(r.id, 'combat', activeOpponent.level, currentTimestamp) : false;
+                      }
+                      if (selectedGame === 'danmaku') {
+                        return (engine as any).checkDailyBattleLimit(r.id, 'danmaku', danmakuDifficulty, currentTimestamp);
+                      }
+                      if (selectedGame === 'piano') {
+                        return (engine as any).checkDailyBattleLimit(r.id, 'piano', pianoSongId, currentTimestamp);
+                      }
+                      if (requiresOpponent) {
+                        return activeOpponent ? (engine as any).checkDailyBattleLimit(r.id, selectedGame, activeOpponent.level, currentTimestamp) : false;
+                      }
+                      return false;
+                    })();
+
                     const handleSelect = () => {
                       if (isDispatched || isHpLow) return;
                       if (selectedGame === 'defense') {
@@ -703,21 +734,35 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                         key={r.id}
                         onClick={handleSelect}
                         disabled={isDispatched || isHpLow || (selectedGame === 'defense' && !isSelected && selectedDefenseRobotIds.length >= activeDefenseStage.maxRobots)}
-                        className={`w-full text-left p-2.5 rounded-xl border-2 transition-all ${
+                        className={`w-full text-left p-2.5 rounded-xl border-2 transition-all relative overflow-visible ${
                           isSelected 
-                            ? 'border-amber-500 bg-amber-50/90 ring-2 ring-amber-300 shadow-xs' 
+                            ? 'border-amber-500 bg-amber-50/90 ring-2 ring-amber-300 shadow-xs z-10' 
+                            : isClearedWithRobot
+                            ? 'border-emerald-400 bg-emerald-50/30'
                             : 'border-stone-300 bg-white'
                         } ${isDispatched || isHpLow || (selectedGame === 'defense' && !isSelected && selectedDefenseRobotIds.length >= activeDefenseStage.maxRobots) ? 'opacity-50 cursor-not-allowed bg-stone-100' : 'hover:border-stone-400 hover:bg-stone-50'}`}
                       >
                         <div className="flex items-center gap-2.5">
-                          <div className="shrink-0 bg-stone-100 p-1 rounded-lg border border-stone-300">
+                          <div className="shrink-0 bg-stone-100 p-1 rounded-lg border border-stone-300 relative">
                             <RobotVisual robot={r} size={36} hideBackground={true} hideBubble={true} />
+                            {isClearedWithRobot && (
+                              <span className="absolute -top-1.5 -left-1.5 z-20 bg-emerald-600 text-white text-[8px] font-bold px-1 py-0.2 rounded shadow-md flex items-center gap-0.5 font-mono border border-emerald-400">
+                                <Gi.GiCheckMark className="text-[7px]" /> 済
+                              </span>
+                            )}
                           </div>
                           
                           <div className="min-w-0 flex-1">
                             <div className="flex justify-between items-center mb-0.5">
-                              <span className="font-bold text-xs sm:text-sm text-stone-900 truncate">{r.name}</span>
-                              <span className={`text-[10px] font-mono font-bold px-1.5 py-0.2 rounded ${
+                              <div className="flex items-center gap-1.5 truncate">
+                                <span className="font-bold text-xs sm:text-sm text-stone-900 truncate">{r.name}</span>
+                                {isClearedWithRobot && (
+                                  <span className="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold px-1.5 py-0.2 rounded flex items-center gap-0.5 font-mono shadow-2xs shrink-0">
+                                    <Gi.GiCheckMark className="text-[8px] text-emerald-600" /> 本日クリア済
+                                  </span>
+                                )}
+                              </div>
+                              <span className={`text-[10px] font-mono font-bold px-1.5 py-0.2 rounded shrink-0 ${
                                 hp <= 0 ? 'bg-red-100 text-red-700 border border-red-300' : 'bg-stone-100 text-stone-700 border border-stone-200'
                               }`}>
                                 HP {hp}/{maxHp}
@@ -796,7 +841,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                       <Gi.GiShield className="text-stone-700 text-lg" />
                       <h3 className={`${theme.typography.h3} text-stone-800`}>演習難易度</h3>
                     </div>
-                    <span className="text-xs text-stone-500">弾速・密度が変化</span>
+                    <span className="text-xs text-stone-500 font-mono">全3段階</span>
                   </div>
 
                   <div className="space-y-2">
@@ -807,11 +852,11 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                         <button
                           key={diff.id}
                           onClick={() => setDanmakuDifficulty(diff.id)}
-                          className={`w-full text-left p-3 rounded-xl border-2 transition-all ${
+                          className={`w-full text-left p-3 rounded-xl border-2 transition-all relative overflow-visible ${
                             isSelected 
-                              ? 'border-amber-500 bg-amber-50/90 shadow-xs ring-2 ring-amber-300' 
+                              ? 'border-amber-500 bg-amber-50/90 shadow-xs ring-2 ring-amber-300 z-10' 
                               : isCleared
-                              ? 'border-emerald-400 bg-emerald-50/40 hover:border-emerald-500'
+                              ? 'border-emerald-500 bg-emerald-50/70 hover:border-emerald-600'
                               : 'border-stone-300 bg-white hover:border-stone-400 hover:bg-stone-50'
                           }`}
                         >
@@ -822,7 +867,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                                 {diff.subLabel}
                               </span>
                               {isCleared && (
-                                <span className="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5 font-mono">
+                                <span className="text-[10px] bg-emerald-600 text-white font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5 font-mono shadow-xs border border-emerald-400">
                                   <Gi.GiCheckMark className="text-[8px]" /> 本日クリア済
                                 </span>
                               )}
@@ -875,11 +920,11 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                         <button
                           key={song.id}
                           onClick={() => setPianoSongId(song.id)}
-                          className={`w-full text-left p-3 rounded-xl border-2 transition-all cursor-pointer ${
+                          className={`w-full text-left p-3 rounded-xl border-2 transition-all cursor-pointer relative overflow-visible ${
                             isSelected 
-                              ? 'border-amber-500 bg-amber-50/90 shadow-xs ring-2 ring-amber-300' 
+                              ? 'border-amber-500 bg-amber-50/90 shadow-xs ring-2 ring-amber-300 z-10' 
                               : isClearedToday
-                              ? 'border-emerald-400 bg-emerald-50/40 hover:border-emerald-500'
+                              ? 'border-emerald-500 bg-emerald-50/70 hover:border-emerald-600'
                               : 'border-stone-300 bg-white hover:border-stone-400 hover:bg-stone-50'
                           }`}
                         >
@@ -887,8 +932,8 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                             <div className="flex items-center gap-1.5 truncate">
                               <span className="font-bold text-sm text-stone-900 truncate">{song.title}</span>
                               {isClearedToday && (
-                                <span className="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold font-mono px-1.5 py-0.2 rounded shrink-0 flex items-center gap-0.5">
-                                  <Gi.GiCheckMark className="text-[7px]" /> 本日クリア済
+                                <span className="text-[10px] bg-emerald-600 text-white border border-emerald-400 font-bold font-mono px-1.5 py-0.5 rounded shrink-0 flex items-center gap-0.5 shadow-xs">
+                                  <Gi.GiCheckMark className="text-[8px]" /> 本日クリア済
                                 </span>
                               )}
                               {!isClearedToday && best?.cleared && (
@@ -956,11 +1001,11 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                         <button
                           key={o.id}
                           onClick={() => setSelectedOpponentId(o.id)}
-                          className={`w-full text-left p-3 rounded-xl border-2 transition-all flex justify-between items-center ${
+                          className={`w-full text-left p-3 rounded-xl border-2 transition-all flex justify-between items-center relative overflow-visible ${
                             isSelected 
-                              ? 'border-amber-500 bg-amber-50/90 shadow-xs ring-2 ring-amber-300' 
+                              ? 'border-amber-500 bg-amber-50/90 shadow-xs ring-2 ring-amber-300 z-10' 
                               : isCleared
-                              ? 'border-emerald-400 bg-emerald-50/40 hover:border-emerald-500'
+                              ? 'border-emerald-500 bg-emerald-50/70 hover:border-emerald-600'
                               : 'border-stone-300 bg-white hover:border-stone-400 hover:bg-stone-50'
                           }`}
                         >
@@ -968,32 +1013,46 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                             <div className="flex items-center gap-1.5">
                               <span className="font-bold text-stone-900 text-sm">{o.name}</span>
                               {isCleared && (
-                                <span className="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold px-1.5 py-0.2 rounded flex items-center gap-0.5 font-mono">
-                                  <Gi.GiCheckMark className="text-[7px]" /> 本日クリア済
+                                <span className="text-[10px] bg-emerald-600 text-white border border-emerald-400 font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5 font-mono shadow-xs">
+                                  <Gi.GiCheckMark className="text-[8px]" /> 本日クリア済
                                 </span>
                               )}
                             </div>
                             {selectedGame === 'combat' ? (
-                              <div className="space-y-0.5 mt-0.5">
-                                <div className="flex gap-2 text-[10px] text-stone-600 font-mono">
-                                  <span className="font-bold text-red-700 bg-red-50 px-1 rounded">Pow:{o.power}</span>
-                                  <span className="font-bold text-blue-700 bg-blue-50 px-1 rounded">Def:{o.defense}</span>
-                                  <span className="font-bold text-amber-700 bg-amber-50 px-1 rounded">Agi:{o.agi}</span>
+                              <div className="space-y-1 mt-1">
+                                <div className="flex flex-wrap gap-1.5 text-[10px] font-mono">
+                                  <span className="font-bold text-red-700 bg-red-50/90 px-1.5 py-0.5 rounded border border-red-200 flex items-center gap-0.5" title="攻撃力">
+                                    <Gi.GiBroadsword className="text-red-600 text-xs" /> {o.power}
+                                  </span>
+                                  <span className="font-bold text-blue-700 bg-blue-50/90 px-1.5 py-0.5 rounded border border-blue-200 flex items-center gap-0.5" title="防御力">
+                                    <Gi.GiShield className="text-blue-600 text-xs" /> {o.defense}
+                                  </span>
+                                  <span className="font-bold text-amber-700 bg-amber-50/90 px-1.5 py-0.5 rounded border border-amber-200 flex items-center gap-0.5" title="速度・行動力">
+                                    <Gi.GiSpeedometer className="text-amber-500 text-xs" /> {o.agi}
+                                  </span>
                                 </div>
-                                <div className="flex gap-2 text-[10px] text-stone-600 font-mono">
-                                  <span className="font-bold text-emerald-700 bg-emerald-50 px-1 rounded">Dex:{o.dex}</span>
-                                  <span className="font-bold text-purple-700 bg-purple-50 px-1 rounded">Int:{o.int}</span>
-                                  <span className="font-bold text-stone-700 bg-stone-100 px-1 rounded">耐久:{(o.hp || 10) * 1000}</span>
+                                <div className="flex flex-wrap gap-1.5 text-[10px] font-mono">
+                                  <span className="font-bold text-emerald-700 bg-emerald-50/90 px-1.5 py-0.5 rounded border border-emerald-200 flex items-center gap-0.5" title="回避力">
+                                    <Gi.GiSprint className="text-emerald-600 text-xs" /> {o.dex}
+                                  </span>
+                                  <span className="font-bold text-purple-700 bg-purple-50/90 px-1.5 py-0.5 rounded border border-purple-200 flex items-center gap-0.5" title="知性・戦術">
+                                    <Gi.GiInspiration className="text-purple-600 text-xs" /> {o.int}
+                                  </span>
+                                  <span className="font-bold text-stone-700 bg-stone-100 px-1.5 py-0.5 rounded border border-stone-200 flex items-center gap-0.5" title="実耐久値">
+                                    <Gi.GiHeartShield className="text-rose-500 text-xs" /> {(o.hp || 10) * 1000}
+                                  </span>
                                 </div>
                               </div>
                             ) : (
-                              <div className="flex gap-2 text-[10px] text-stone-600 font-mono mt-0.5">
-                                <span className={selectedCategory === 'puzzle' ? 'font-black text-blue-700 bg-blue-50 px-1 rounded' : ''}>
-                                  Int:{o.int}
+                              <div className="flex gap-2 text-[10px] font-mono mt-1">
+                                <span className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded border ${selectedCategory === 'puzzle' ? 'font-bold text-blue-800 bg-blue-100 border-blue-300' : 'text-stone-700 bg-stone-100 border-stone-200'}`} title="知性">
+                                  <Gi.GiInspiration className="text-purple-600 text-xs" /> {o.int}
                                 </span>
-                                <span>Agi:{o.agi}</span>
-                                <span className={selectedCategory === 'shooting' ? 'font-black text-emerald-700 bg-emerald-50 px-1 rounded' : ''}>
-                                  Dex:{o.dex}
+                                <span className="flex items-center gap-0.5 text-stone-700 bg-stone-100 px-1.5 py-0.5 rounded border border-stone-200" title="行動速度">
+                                  <Gi.GiSpeedometer className="text-amber-500 text-xs" /> {o.agi}
+                                </span>
+                                <span className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded border ${selectedCategory === 'shooting' ? 'font-bold text-emerald-800 bg-emerald-100 border-emerald-300' : 'text-stone-700 bg-stone-100 border-stone-200'}`} title="回避・操作">
+                                  <Gi.GiCrosshair className="text-emerald-600 text-xs" /> {o.dex}
                                 </span>
                               </div>
                             )}
@@ -1025,115 +1084,147 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
             </>
           )}
 
-          {/* 拠点防衛戦時の能力値ルールガイド */}
+          {/* 拠点防衛戦時の能力値ルールガイド（折りたたみ可能） */}
           {selectedGame === 'defense' && (
-            <Card className="bg-stone-50 border-2 border-amber-300/80 p-3.5 sm:p-4 rounded-2xl shadow-xs">
-              <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-stone-200">
-                <Gi.GiCastleRuins className="text-amber-700 text-lg" />
-                <h4 className="font-bold text-xs sm:text-sm text-stone-800">
-                  拠点防衛戦の機体能力値＆敵耐久仕様
-                </h4>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-[11px] text-stone-700">
-                <div className="bg-white p-2.5 rounded-xl border border-stone-200 shadow-2xs">
-                  <div className="font-bold text-red-700 flex items-center gap-1 mb-0.5">
-                    <Gi.GiBroadsword className="text-sm text-red-600" /> Power（攻撃力）
-                  </div>
-                  <div className="text-stone-600 leading-snug">
-                    1回の攻撃で与えるダメージ量。<span className="font-bold font-mono text-stone-900">Powerが高い機体ほど工房の至近</span>に自動優先配置されます！
-                  </div>
+            <div className="bg-stone-50 border border-amber-300/80 rounded-xl overflow-hidden shadow-2xs">
+              <button
+                onClick={() => setShowDefenseStatSpecs(prev => !prev)}
+                className="w-full px-3.5 py-2 flex items-center justify-between text-left hover:bg-amber-100/50 transition-colors cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <Gi.GiCastleRuins className="text-amber-700 text-base" />
+                  <span className="font-bold text-xs sm:text-sm text-stone-800">
+                    拠点防衛戦の機体能力値＆敵耐久仕様
+                  </span>
                 </div>
+                <span className="text-[11px] text-amber-800 font-bold flex items-center gap-1 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-300">
+                  {showDefenseStatSpecs ? '閉じる ▲' : '仕様を見る ▼'}
+                </span>
+              </button>
 
-                <div className="bg-white p-2.5 rounded-xl border border-stone-200 shadow-2xs">
-                  <div className="font-bold text-amber-700 flex items-center gap-1 mb-0.5">
-                    <Gi.GiSpeedometer className="text-sm text-amber-500" /> Agility（行動値）
-                  </div>
-                  <div className="text-stone-600 leading-snug">
-                    機体の行動速度。<span className="font-bold font-mono text-stone-900">Agilityが高いほど次の攻撃までのインターバルが短縮</span>され怒涛の迎撃が可能になります。
-                  </div>
-                </div>
+              {showDefenseStatSpecs && (
+                <div className="p-3 pt-1 border-t border-stone-200">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-[11px] text-stone-700">
+                    <div className="bg-white p-2.5 rounded-xl border border-stone-200 shadow-2xs">
+                      <div className="font-bold text-red-700 flex items-center gap-1 mb-0.5">
+                        <Gi.GiBroadsword className="text-sm text-red-600" /> 攻撃力 (Power)
+                      </div>
+                      <div className="text-stone-600 leading-snug">
+                        1回の攻撃で与えるダメージ量。<span className="font-bold font-mono text-stone-900">高い機体ほど工房の至近</span>に自動優先配置されます。
+                      </div>
+                    </div>
 
-                <div className="bg-white p-2.5 rounded-xl border border-stone-200 shadow-2xs">
-                  <div className="font-bold text-purple-700 flex items-center gap-1 mb-0.5">
-                    <Gi.GiInspiration className="text-sm text-purple-600" /> Intelligence（攻撃技）
-                  </div>
-                  <div className="text-stone-600 leading-snug">
-                    IntとDexの組み合わせで<span className="font-bold text-purple-900">技が変化</span>（極滅ノヴァ、粒子砲、乱舞弾、爆装弾など広域スプラッシュを発動）。
+                    <div className="bg-white p-2.5 rounded-xl border border-stone-200 shadow-2xs">
+                      <div className="font-bold text-amber-700 flex items-center gap-1 mb-0.5">
+                        <Gi.GiSpeedometer className="text-sm text-amber-500" /> 行動値 (Agility)
+                      </div>
+                      <div className="text-stone-600 leading-snug">
+                        機体の行動速度。<span className="font-bold font-mono text-stone-900">高いほど次の攻撃までのインターバルが短縮</span>され怒涛の迎撃が可能になります。
+                      </div>
+                    </div>
+
+                    <div className="bg-white p-2.5 rounded-xl border border-stone-200 shadow-2xs">
+                      <div className="font-bold text-purple-700 flex items-center gap-1 mb-0.5">
+                        <Gi.GiInspiration className="text-sm text-purple-600" /> 攻撃技 (Intelligence)
+                      </div>
+                      <div className="text-stone-600 leading-snug">
+                        IntとDexの組み合わせで<span className="font-bold text-purple-900">技が変化</span>（極滅ノヴァ、粒子砲、乱舞弾、爆装弾など広域スプラッシュを発動）。
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </Card>
+              )}
+            </div>
           )}
 
-          {/* バトル演習時の能力値ルールガイド */}
+          {/* バトル演習時の能力値ルールガイド（折りたたみ・見たい人だけ展開） */}
           {selectedGame === 'combat' && (
-            <Card className="bg-stone-50 border-2 border-amber-300/80 p-3.5 sm:p-4 rounded-2xl shadow-xs">
-              <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-stone-200">
-                <Gi.GiCrossedSwords className="text-red-600 text-lg" />
-                <h4 className="font-bold text-xs sm:text-sm text-stone-800">
-                  バトル演習の機体能力値仕様
-                </h4>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 text-[11px] text-stone-700">
-                <div className="bg-white p-2 rounded-xl border border-stone-200 shadow-2xs">
-                  <div className="font-bold text-red-700 flex items-center gap-1 mb-0.5">
-                    <Gi.GiHeartShield className="text-sm text-rose-500" /> Vitality（耐久力）
-                  </div>
-                  <div className="text-stone-600 leading-snug">
-                    機体の基本耐久力。<span className="font-bold font-mono text-stone-900">値 × 1000</span> が戦闘中の実耐久値（HP）となります。
-                  </div>
+            <div className="bg-stone-50 border border-amber-300/80 rounded-xl overflow-hidden shadow-2xs">
+              <button
+                onClick={() => setShowCombatStatSpecs(prev => !prev)}
+                className="w-full px-3.5 py-2 flex items-center justify-between text-left hover:bg-amber-100/50 transition-colors cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <Gi.GiCrossedSwords className="text-red-600 text-base" />
+                  <span className="font-bold text-xs sm:text-sm text-stone-800">
+                    バトル演習の機体能力値仕様
+                  </span>
                 </div>
+                <span className="text-[11px] text-amber-800 font-bold flex items-center gap-1 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-300">
+                  {showCombatStatSpecs ? '閉じる ▲' : '計算仕様を見る ▼'}
+                </span>
+              </button>
 
-                <div className="bg-white p-2 rounded-xl border border-stone-200 shadow-2xs">
-                  <div className="font-bold text-amber-700 flex items-center gap-1 mb-0.5">
-                    <Gi.GiBroadsword className="text-sm text-amber-600" /> Power（攻撃力）
-                  </div>
-                  <div className="text-stone-600 leading-snug">
-                    <span className="font-bold font-mono text-stone-900">自分Pow × 80~120 − 相手Def × 50</span> が1回の基礎ダメージとなります。
-                  </div>
-                </div>
+              {showCombatStatSpecs && (
+                <div className="p-3 pt-1 border-t border-stone-200">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 text-[11px] text-stone-700">
+                    <div className="bg-white p-2.5 rounded-xl border border-stone-200 shadow-2xs">
+                      <div className="font-bold text-red-700 flex items-center gap-1 mb-0.5">
+                        <Gi.GiHeartShield className="text-sm text-rose-500" /> 耐久力 (Vitality)
+                      </div>
+                      <div className="text-stone-600 leading-snug">
+                        機体の基本耐久力。<span className="font-bold font-mono text-stone-900">値 × 1000</span> が戦闘中の実耐久値（HP）となります。
+                      </div>
+                    </div>
 
-                <div className="bg-white p-2 rounded-xl border border-stone-200 shadow-2xs">
-                  <div className="font-bold text-blue-700 flex items-center gap-1 mb-0.5">
-                    <Gi.GiShield className="text-sm text-blue-600" /> Defense（防御力）
-                  </div>
-                  <div className="text-stone-600 leading-snug">
-                    相手から受ける攻撃を軽減。高いほど相手の通常攻撃・技ダメージを大幅に相殺します。
-                  </div>
-                </div>
+                    <div className="bg-white p-2.5 rounded-xl border border-stone-200 shadow-2xs">
+                      <div className="font-bold text-amber-700 flex items-center gap-1 mb-0.5">
+                        <Gi.GiBroadsword className="text-sm text-amber-600" /> 攻撃力 (Power)
+                      </div>
+                      <div className="text-stone-600 leading-snug">
+                        <span className="font-bold font-mono text-stone-900">自分Pow × 80~120 − 相手Def × 50</span> が1回の基礎ダメージとなります。
+                      </div>
+                    </div>
 
-                <div className="bg-white p-2 rounded-xl border border-stone-200 shadow-2xs">
-                  <div className="font-bold text-amber-700 flex items-center gap-1 mb-0.5">
-                    <Gi.GiSpeedometer className="text-sm text-amber-500" /> Agility（敏捷性）
-                  </div>
-                  <div className="text-stone-600 leading-snug">
-                    0.1秒ごとに行動値が蓄積。<span className="font-bold font-mono text-stone-900">1000を超えると攻撃</span>し、行動値はゼロにリセットされます。
-                  </div>
-                </div>
+                    <div className="bg-white p-2.5 rounded-xl border border-stone-200 shadow-2xs">
+                      <div className="font-bold text-blue-700 flex items-center gap-1 mb-0.5">
+                        <Gi.GiShield className="text-sm text-blue-600" /> 防御力 (Defense)
+                      </div>
+                      <div className="text-stone-600 leading-snug">
+                        相手から受ける攻撃を軽減。高いほど相手の通常攻撃・技ダメージを大幅に相殺します。
+                      </div>
+                    </div>
 
-                <div className="bg-white p-2 rounded-xl border border-stone-200 shadow-2xs">
-                  <div className="font-bold text-emerald-700 flex items-center gap-1 mb-0.5">
-                    <Gi.GiSprint className="text-sm text-emerald-600" /> Dexterity（回避力）
-                  </div>
-                  <div className="text-stone-600 leading-snug">
-                    <span className="font-bold font-mono text-stone-900">相手とのDex差</span> がある分だけ相手の攻撃を回避（DODGE）する確率が上昇します。
-                  </div>
-                </div>
+                    <div className="bg-white p-2.5 rounded-xl border border-stone-200 shadow-2xs">
+                      <div className="font-bold text-amber-700 flex items-center gap-1 mb-0.5">
+                        <Gi.GiSpeedometer className="text-sm text-amber-500" /> 敏捷性 (Agility)
+                      </div>
+                      <div className="text-stone-600 leading-snug">
+                        0.1秒ごとに行動値が蓄積。<span className="font-bold font-mono text-stone-900">1000を超えると行動</span>し、行動値はゼロにリセットされます。
+                      </div>
+                    </div>
 
-                <div className="bg-white p-2 rounded-xl border border-stone-200 shadow-2xs">
-                  <div className="font-bold text-purple-700 flex items-center gap-1 mb-0.5">
-                    <Gi.GiInspiration className="text-sm text-purple-600" /> Intelligence（繰り出す技・戦術）
-                  </div>
-                  <div className="text-stone-600 leading-snug">
-                    知性と他能力値を基に<span className="font-bold text-purple-900">多彩な技を繰り出す</span>！状況に応じて多彩な効果の戦術技を発動します。
+                    <div className="bg-white p-2.5 rounded-xl border border-stone-200 shadow-2xs">
+                      <div className="font-bold text-emerald-700 flex items-center gap-1 mb-0.5">
+                        <Gi.GiSprint className="text-sm text-emerald-600" /> 回避力 (Dexterity)
+                      </div>
+                      <div className="text-stone-600 leading-snug">
+                        <span className="font-bold font-mono text-stone-900">相手とのDex差</span> がある分だけ相手の攻撃を回避（DODGE）する確率が上昇します。
+                      </div>
+                    </div>
+
+                    <div className="bg-white p-2.5 rounded-xl border border-stone-200 shadow-2xs">
+                      <div className="font-bold text-purple-700 flex items-center gap-1 mb-0.5">
+                        <Gi.GiInspiration className="text-sm text-purple-600" /> 戦術・技 (Intelligence)
+                      </div>
+                      <div className="text-stone-600 leading-snug">
+                        知性と能力値を基に<span className="font-bold text-purple-900">多彩な戦術技を繰り出す</span>！状況に応じて多彩な効果を発動します。
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </Card>
+              )}
+            </div>
           )}
 
           {/* 出撃ボタン */}
-          <div className="text-center pt-2">
+          <div className="text-center pt-2 space-y-2">
+            {isCurrentBattleClearedToday && (
+              <div className="bg-emerald-100 border border-emerald-400 text-emerald-950 px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 max-w-md mx-auto shadow-xs">
+                <Gi.GiCheckMark className="text-emerald-700 text-sm shrink-0" />
+                <span>本日この演習・バトルはクリア済みです（毎朝 09:00 にリセットされます）</span>
+              </div>
+            )}
             <Button
               onClick={handleStartBattle}
               onPointerDown={handlePointerDownReset}
@@ -1150,18 +1241,18 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
               }
               className={`w-full sm:w-2/3 md:w-1/2 py-3.5 text-base font-bold shadow-md mx-auto transition-all ${
                 isCurrentBattleClearedToday
-                  ? 'bg-stone-200 hover:bg-stone-200 text-stone-600 border-2 border-stone-300 cursor-not-allowed shadow-none opacity-50' 
+                  ? 'bg-stone-300 hover:bg-stone-300 text-stone-600 border-2 border-stone-400 cursor-not-allowed shadow-none opacity-60' 
                   : ''
               }`}
             >
               {isCurrentBattleClearedToday ? (
                 selectedGame === 'defense' ? (
                   <span className="flex items-center justify-center gap-2">
-                    <Gi.GiPadlock className="text-stone-500 text-lg" /> 本日防衛完了 (朝9:00リセット / 残り約{defenseResetInfo.remainingHours}時間{defenseResetInfo.remainingMinutes}分)
+                    <Gi.GiPadlock className="text-stone-600 text-lg" /> 本日防衛完了 (朝9:00リセット / 残り約{defenseResetInfo.remainingHours}時間{defenseResetInfo.remainingMinutes}分)
                   </span>
                 ) : (
                   <span className="flex items-center justify-center gap-2">
-                    <Gi.GiPadlock className="text-stone-500 text-lg" /> 本日クリア済 (朝9:00リセット)
+                    <Gi.GiPadlock className="text-stone-600 text-lg" /> 本日クリア済 (出撃不可・朝9:00リセット)
                   </span>
                 )
               ) : selectedGame === 'danmaku' ? (
@@ -1216,7 +1307,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                   disabled={isCurrentBattleClearedToday}
                   className={`px-6 py-2 text-sm font-bold shadow-lg shrink-0 flex items-center gap-1.5 ${
                     isCurrentBattleClearedToday 
-                      ? 'bg-stone-700 text-stone-400 cursor-not-allowed border border-stone-600 opacity-50' 
+                      ? 'bg-stone-700 text-stone-400 cursor-not-allowed border border-stone-600 opacity-60' 
                       : 'bg-amber-600 hover:bg-amber-500 text-white'
                   }`}
                 >
