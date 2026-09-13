@@ -141,11 +141,11 @@ export const CombatArena: React.FC<CombatArenaProps> = ({
     // 攻撃側のモーション発動
     if (isPlayerAttacking) {
       setPlayerAnimState(type === 'skill' ? 'skill' : 'attack');
-      setPlayerPatternId(skill ? getGsapPatternIdForSkill(skill.id) : 'slash_combo');
+      setPlayerPatternId(skill ? getGsapPatternIdForSkill(skill.id) : 'dual_slash');
       setPlayerAnimLoop(false);
     } else {
       setOpponentAnimState(type === 'skill' ? 'skill' : 'attack');
-      setOpponentPatternId(skill ? getGsapPatternIdForSkill(skill.id) : 'slash_combo');
+      setOpponentPatternId(skill ? getGsapPatternIdForSkill(skill.id) : 'dual_slash');
       setOpponentAnimLoop(false);
     }
 

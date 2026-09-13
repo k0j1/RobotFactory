@@ -92,24 +92,24 @@ export const ALL_COMBAT_SKILLS: SkillDef[] = [
   // -------------------------------------------------------------
   // Tier 1: 初級基本技（Lv.1〜2帯・初心者機体目安）
   // -------------------------------------------------------------
-  {
-    id: 'smash',
-    name: '粉砕スマッシュ',
-    desc: '渾身のパワーで装甲の脆い部分を叩き割る強撃。通常の1.6倍前後の威力を誇る。',
-    shortDesc: 'Lv.1〜 威力1.6倍の強力打撃',
+    {
+    id: 'flame_blade_thrust',
+    name: '紅蓮・突進突き',
+    desc: '腕を前方に真っ直ぐ伸ばし、ブースト推進力で敵の装甲を貫通する紅蓮の直線刺突撃。通常の1.7倍の貫通ダメージ。',
+    shortDesc: 'Lv.1〜 威力1.7倍の直線強襲突き',
     category: 'attack',
     reqInt: 12,
     reqStat: { stat: 'power', name: 'Power', value: 15 },
     baseLearnChance: 25,
     cooldownSeconds: 6,
-    iconName: 'GiHammerDrop',
+    iconName: 'GiBroadsword',
     badgeColor: 'bg-red-100 text-red-800 border-red-300',
     execute: (attacker, defender) => {
       if (checkDodge(attacker.dexterity, defender.dexterity)) {
         return { damage: 0, isDodge: true, isCritical: false };
       }
-      const { damage } = calcBaseDamage(attacker.power, defender.defense, 1.6);
-      return { damage, isDodge: false, isCritical: true, specialLog: '重い一撃が装甲を軋ませた！' };
+      const { damage } = calcBaseDamage(attacker.power, defender.defense, 1.7);
+      return { damage, isDodge: false, isCritical: true, specialLog: '腕を伸ばした鋭い紅蓮突きが敵装甲を貫通した！' };
     }
   },
   {
@@ -171,58 +171,58 @@ export const ALL_COMBAT_SKILLS: SkillDef[] = [
   // -------------------------------------------------------------
   // Tier 2: 中級戦術技（Lv.3〜4帯・中堅機体目安）
   // -------------------------------------------------------------
-  {
-    id: 'gatling_rush',
-    name: 'ガトリング連撃',
-    desc: '敏捷な関節駆動で素早い2連打を繰り出し、さらに次行動への加速（AP+250）を得る。',
-    shortDesc: 'Lv.3〜 2連撃＋行動値チャージ',
+    {
+    id: 'dual_saber_mirage',
+    name: '双剣・幻影乱舞',
+    desc: '左右の腕にサーベルを構え、神速の4連撃からX字クロスフィニッシュを叩き込む。行動値(AP+250)を獲得。',
+    shortDesc: 'Lv.3〜 4連撃＋行動値チャージ',
     category: 'rush',
     reqInt: 30,
     reqStat: { stat: 'agility', name: 'Agility', value: 25 },
     baseLearnChance: 20,
     cooldownSeconds: 8,
-    iconName: 'GiRapidshareArrow',
+    iconName: 'GiTwinSwords',
     badgeColor: 'bg-amber-100 text-amber-800 border-amber-300',
     execute: (attacker, defender) => {
       let totalDmg = 0;
       let dodges = 0;
-      for (let i = 0; i < 2; i++) {
+      for (let i = 0; i < 4; i++) {
         if (checkDodge(attacker.dexterity, defender.dexterity)) {
           dodges++;
         } else {
-          const { damage } = calcBaseDamage(attacker.power, defender.defense, 0.8);
+          const { damage } = calcBaseDamage(attacker.power, defender.defense, 0.45);
           totalDmg += damage;
         }
       }
-      if (dodges === 2) {
+      if (dodges === 4) {
         return { damage: 0, isDodge: true, isCritical: false, apGain: 250 };
       }
       return { 
         damage: totalDmg, 
         isDodge: false, 
-        isCritical: false, 
-        hitsCount: 2 - dodges, 
+        isCritical: true, 
+        hitsCount: 4 - dodges, 
         apGain: 250, 
-        specialLog: `電光石火の2連撃！行動値を+250即時チャージ！` 
+        specialLog: `双剣の幻影乱舞が炸裂！神速4連斬撃とX字クロスフィニッシュで圧倒！` 
       };
     }
   },
-  {
-    id: 'precision_snipe',
-    name: '精密スナイプ',
-    desc: '敵の急所回路を光学照準で捕捉。相手の回避行動を封じ、防御力を半減して急所を穿つ。',
-    shortDesc: 'Lv.4〜 必中・防御半減の急所撃ち',
+    {
+    id: 'beam_saber_judgement',
+    name: 'ビームサーベル・断空斬',
+    desc: '腕を正面に伸ばし、プラズマブレードで正面空間を一刀両断に切り裂く。相手の防御力を半減して急所を穿つ。',
+    shortDesc: 'Lv.4〜 防御半減・正面一刀両断',
     category: 'snipe',
     reqInt: 40,
     reqStat: { stat: 'dexterity', name: 'Dexterity', value: 35 },
     baseLearnChance: 20,
     cooldownSeconds: 9,
-    iconName: 'GiBullseye',
-    badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+    iconName: 'GiBroadsword',
+    badgeColor: 'bg-cyan-100 text-cyan-800 border-cyan-300',
     execute: (attacker, defender) => {
       const piercedDef = Math.floor(defender.defense * 0.5);
-      const { damage } = calcBaseDamage(attacker.power, piercedDef, 1.5);
-      return { damage, isDodge: false, isCritical: true, specialLog: '死角を捉えた必中クリティカル撃！' };
+      const { damage } = calcBaseDamage(attacker.power, piercedDef, 1.8);
+      return { damage, isDodge: false, isCritical: true, specialLog: '腕を伸ばした正面一刀両断！断空斬が敵機を切り裂く！' };
     }
   },
   {
@@ -348,27 +348,27 @@ export const ALL_COMBAT_SKILLS: SkillDef[] = [
     }
   },
   {
-    id: 'plasma_burst',
-    name: '零距離プラズマ撃',
-    desc: '装甲の隙間に圧縮プラズマを全放射する工房技術の究極奥義。通常攻撃の2.6倍の超絶破壊力。',
-    shortDesc: 'Lv.8〜 超高威力2.6倍の究極一撃',
+    id: 'missile_barrage',
+    name: 'フルバースト・ミサイル',
+    desc: '背部ウェポンコンテナから8発のスマートミサイルを一斉射出！通常攻撃の2.5倍の広域絨毯爆撃を浴びせる。',
+    shortDesc: 'Lv.8〜 背部8連ミサイル・2.5倍爆撃',
     category: 'attack',
     reqInt: 120,
     reqStat: { stat: 'power', name: 'Power', value: 150 },
     baseLearnChance: 12,
     cooldownSeconds: 15,
-    iconName: 'GiPlasmaBlast',
-    badgeColor: 'bg-amber-200 text-amber-950 border-amber-400',
+    iconName: 'GiMissileSwarm',
+    badgeColor: 'bg-red-100 text-red-950 border-red-400',
     execute: (attacker, defender) => {
       if (checkDodge(attacker.dexterity, defender.dexterity)) {
         return { damage: 0, isDodge: true, isCritical: false };
       }
-      const { damage } = calcBaseDamage(attacker.power, defender.defense, 2.6);
+      const { damage } = calcBaseDamage(attacker.power, defender.defense, 2.5);
       return {
         damage,
         isDodge: false,
         isCritical: true,
-        specialLog: '★★ 零距離プラズマバースト炸裂！圧倒的破壊力！'
+        specialLog: '背部ハッチ全開！8発のスマート誘導ミサイルが一斉着弾爆発！'
       };
     }
   },
@@ -508,13 +508,12 @@ export const chooseStrategicSkill = (attacker: CombatFighter, defender: CombatFi
     return buffSkill;
   }
 
-  // 戦略5: 高火力攻撃（零距離プラズマ、粉砕スマッシュ、ガトリング、スナイプ）
+  // 戦略5: 高火力攻撃（フルバーストミサイル、紅蓮突進突き、双剣幻影乱舞、断空斬）
   const attackSkills = readySkills.filter(s => s.category === 'attack' || s.category === 'snipe' || s.category === 'rush');
   if (attackSkills.length > 0) {
     // 高威力またはランダムで選択
     return attackSkills[Math.floor(Math.random() * attackSkills.length)];
   }
-
   return readySkills[0];
 };
 
@@ -523,23 +522,23 @@ export const chooseStrategicSkill = (attacker: CombatFighter, defender: CombatFi
 // -------------------------------------------------------------
 export const getGsapPatternIdForSkill = (skillId: string): string => {
   switch (skillId) {
-    case 'apocalypse_omega_strike': return 'ultimate_omega_cross_slash';
-    case 'omega_cross_slash': return 'ultimate_omega_cross_slash';
+    case 'apocalypse_omega_strike': return 'apocalypse_omega_strike';
+    case 'omega_cross_slash':
     case 'omega_cross': return 'ultimate_omega_cross_slash';
     case 'rocket_punch': return 'rocket_punch';
-    case 'energy_shield_defense': return 'shield_barrier';
+    case 'energy_shield_defense':
     case 'energy_shield': return 'shield_barrier';
+    case 'nano_barrier': return 'shield_block_item';
+    case 'flame_blade_thrust': return 'flame_blade_thrust';
     case 'flame_blade_cyclone': return 'flame_blade_cyclone';
-    case 'gatling_rush': return 'missile_barrage';
-    case 'precision_snipe': return 'two_handed_sniper_scope_shot';
+    case 'dual_saber_mirage': return 'dual_saber_mirage_dance';
+    case 'beam_saber_judgement': return 'beam_saber_judgement';
+    case 'missile_barrage': return 'missile_barrage';
     case 'emergency_repair': return 'fast_recharge';
-    case 'emp_disruptor': return 'precision_scan';
+    case 'emp_disruptor': return 'emp_disruptor';
     case 'optimize_protocol': return 'calibration';
     case 'overdrive': return 'overdrive';
-    case 'plasma_burst': return 'jet_dash';
-    case 'smash': return 'flying_kick';
-    case 'nano_barrier': return 'shield_block_item';
-    default: return 'slash_combo';
+    default: return 'dual_slash';
   }
 };
 
@@ -555,12 +554,18 @@ export const getSkillAnimationLabel = (skillId: string): { label: string; tag: s
     case 'energy_shield_defense':
     case 'energy_shield':
       return { label: '光波防壁・エネルギーシールド展開', tag: '防壁' };
+    case 'nano_barrier':
+      return { label: '要塞ナノバリア・幾何学力場防御', tag: '防壁' };
+    case 'flame_blade_thrust':
+      return { label: '腕伸張強襲・紅蓮突進突き', tag: '刺突' };
     case 'flame_blade_cyclone':
       return { label: '炎刃熱線・全方位旋風回転斬り', tag: '旋風' };
-    case 'gatling_rush':
-      return { label: '高速関節駆動・超速ガトリング猛撃', tag: '連撃' };
-    case 'precision_snipe':
-      return { label: '照準ロック・両手持ち精密スコープ狙撃', tag: '狙撃' };
+    case 'dual_saber_mirage':
+      return { label: '神速4連撃・双剣幻影乱舞', tag: '乱舞' };
+    case 'beam_saber_judgement':
+      return { label: '腕伸張正面一刀両断・断空斬', tag: '一閃' };
+    case 'missile_barrage':
+      return { label: '背部8連射出・フルバーストミサイル', tag: '爆撃' };
     case 'emergency_repair':
       return { label: 'ナノマシン緊急修復・高速リチャージ', tag: '修復' };
     case 'emp_disruptor':
@@ -569,14 +574,8 @@ export const getSkillAnimationLabel = (skillId: string): { label: string; tag: s
       return { label: '戦術キャリブレーション・自己最適化', tag: '演算' };
     case 'overdrive':
       return { label: 'リミッター全面解除・フルバースト覚醒', tag: '強化' };
-    case 'plasma_burst':
-      return { label: '零距離ジェットダッシュ・プラズマ撃', tag: '強撃' };
-    case 'smash':
-      return { label: '重量級フライング粉砕スマッシュ', tag: '強撃' };
-    case 'nano_barrier':
-      return { label: '装甲要塞化・ナノバリアシールドブロック', tag: '防壁' };
     default:
-      return { label: '高機動スラッシュコンボ', tag: '通常' };
+      return { label: '通常格闘・デュアルスラッシュ', tag: '通常' };
   }
 };
 

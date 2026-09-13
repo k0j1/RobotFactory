@@ -1,6 +1,6 @@
 import { BattleChestRewardService } from '../components/minigames/BattleChestRewardService';
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { GameState, AttributeColors, AttributeNames, Robot } from '../core/models';
+import { GameState, AttributeColors, AttributeNames, Robot, getFameRank } from '../core/models';
 import { GameEngine } from '../core/GameEngine';
 import { Card, Button, Badge } from '../components/ui/core';
 import { RobotVisual, PartVisual } from '../components/robot/RobotVisual';
@@ -12,10 +12,11 @@ import { RepairAnimationModal } from '../components/effects/RepairAnimationModal
 import { PartBaselineModal } from '../components/part/PartBaselineModal';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { RobotPart } from '../core/models';
+import { COMBAT_EQUIPMENT_RANKS, getEquipmentBonus, CombatEquipmentRank } from '../core/combatEquipmentData';
 import * as Gi from 'react-icons/gi';
 
 export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> = ({ state, engine }) => {
-  const [tab, setTab] = useState<'robots'|'parts'|'materials'>('robots');
+  const [tab, setTab] = useState<'robots'|'parts'|'items'|'materials'>('robots');
   const [confirmRobotId, setConfirmRobotId] = useState<string | null>(null);
   const [confirmPartId, setConfirmPartId] = useState<string | null>(null);
   const [activeTooltipRobotId, setActiveTooltipRobotId] = useState<string | null>(null);
@@ -27,6 +28,10 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
 
   const [openingChest, setOpeningChest] = useState<string | null>(null);
   const [openedChestResult, setOpenedChestResult] = useState<any | null>(null);
+  const [isRepairSelectOpen, setIsRepairSelectOpen] = useState(false);
+  const [isExchangeKitOpen, setIsExchangeKitOpen] = useState(false);
+  const [exchangeMaterialId, setExchangeMaterialId] = useState<string>(MATERIALS[0]?.id || '');
+  const [exchangeCount, setExchangeCount] = useState<number>(1);
 
   const handleOpenChest = (chestTier: string) => {
     if (engine.removeChest(chestTier, 1)) {
@@ -138,6 +143,32 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
     return Object.values(state.materials || {}).filter(count => (Number(count) || 0) > 0).length;
   }, [state.materials]);
 
+  const totalUnopenedChests = useMemo(() => {
+    if (!state.unopenedChests) return 0;
+    return Object.values(state.unopenedChests).reduce<number>((sum, count) => sum + (Number(count) || 0), 0);
+  }, [state.unopenedChests]);
+
+  const damagedRobots = useMemo(() => {
+    return (state.robots || []).filter(r => (r.currentHp ?? 12) < (r.maxHp ?? 12));
+  }, [state.robots]);
+
+  const handleExchangeRepairKit = () => {
+    if (!exchangeMaterialId) return;
+    try {
+      const result = engine.exchangeRepairKit(exchangeMaterialId, exchangeCount);
+      alert(`「${result.materialName}」${result.usedCount}個を消費して、修理キット${result.gainedKits}個を作成しました！`);
+      setIsExchangeKitOpen(false);
+      setExchangeCount(1);
+    } catch (e: any) {
+      alert(e.message);
+    }
+  };
+
+  const handleQuickRepair = (robot: Robot) => {
+    handleRepairRobot(robot);
+    setIsRepairSelectOpen(false);
+  };
+
   return (
     <div className="space-y-4">
       <ScreenHeader
@@ -148,6 +179,19 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
             <span className="text-xs font-bold text-stone-600 bg-stone-100 px-2 py-0.5 rounded border border-stone-200">
               機体容量: <span className="text-amber-800 font-mono font-bold">{state.robots?.length}</span> / {state.storageSize}
             </span>
+          ) : tab === 'parts' ? (
+            <span className="text-xs font-bold text-stone-600 bg-stone-100 px-2 py-0.5 rounded border border-stone-200">
+              保管パーツ: <span className="text-amber-800 font-mono font-bold">{state.parts?.length || 0}</span> 個
+            </span>
+          ) : tab === 'items' ? (
+            <div className="flex items-center gap-1.5 text-xs font-bold text-stone-600">
+              <span className="bg-amber-100 text-amber-900 px-2 py-0.5 rounded border border-amber-300">
+                宝箱: <span className="font-mono">{totalUnopenedChests}</span>個
+              </span>
+              <span className="bg-emerald-100 text-emerald-900 px-2 py-0.5 rounded border border-emerald-300">
+                修理キット: <span className="font-mono">{state.repairKits || 0}</span>個
+              </span>
+            </div>
           ) : tab === 'materials' ? (
             <span className="text-xs font-bold text-stone-600 bg-stone-100 px-2 py-0.5 rounded border border-stone-200">
               全素材: <span className="text-amber-800 font-mono font-bold">{totalMaterialsCount}</span>個
@@ -156,10 +200,10 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
         }
       />
 
-      <div className="flex gap-2">
+      <div className="grid grid-cols-4 gap-1.5 sm:gap-2">
         <Button 
           variant={tab === 'robots' ? 'primary' : 'secondary'} 
-          className="flex-1 relative" 
+          className="relative text-xs sm:text-sm px-1 sm:px-2 py-2" 
           onClick={() => setTab('robots')}
         >
           ロボット
@@ -172,7 +216,7 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
         </Button>
         <Button 
           variant={tab === 'parts' ? 'primary' : 'secondary'} 
-          className="flex-1 relative" 
+          className="relative text-xs sm:text-sm px-1 sm:px-2 py-2" 
           onClick={() => setTab('parts')}
         >
           パーツ
@@ -184,8 +228,21 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
           )}
         </Button>
         <Button 
+          variant={tab === 'items' ? 'primary' : 'secondary'} 
+          className="relative text-xs sm:text-sm px-1 sm:px-2 py-2" 
+          onClick={() => setTab('items')}
+        >
+          アイテム
+          {totalUnopenedChests > 0 && (
+            <span className="absolute -top-1 -right-1 flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
+            </span>
+          )}
+        </Button>
+        <Button 
           variant={tab === 'materials' ? 'primary' : 'secondary'} 
-          className="flex-1" 
+          className="text-xs sm:text-sm px-1 sm:px-2 py-2" 
           onClick={() => setTab('materials')}
         >
           素材
@@ -780,32 +837,285 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
       )}
 
       
+      {tab === 'items' && (
+        <div className="space-y-4">
+          {/* 1. 宝箱セクション */}
+          <div className="bg-amber-50/80 p-4 rounded-xl border border-amber-200 shadow-xs">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="font-bold text-amber-950 flex items-center text-sm sm:text-base">
+                <Gi.GiChest className="mr-2 text-xl text-amber-700" />
+                未開封の宝箱 ({totalUnopenedChests} 個)
+              </h3>
+              <span className="text-[11px] text-amber-800 bg-amber-100/90 px-2 py-0.5 rounded border border-amber-300 font-bold">
+                遠征・バトル演習で獲得
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                { tier: 'bronze', name: '銅の宝箱', color: 'text-amber-700', bg: 'bg-amber-50', border: 'border-amber-200', desc: '初級素材・ゴールド・エレメント' },
+                { tier: 'silver', name: '銀の宝箱', color: 'text-slate-500', bg: 'bg-slate-50', border: 'border-slate-200', desc: '中級素材・ゴールド・エレメント' },
+                { tier: 'gold', name: '金の宝箱', color: 'text-amber-500', bg: 'bg-amber-50/50', border: 'border-amber-300', desc: '上級素材・高額ゴールド・エレメント' },
+                { tier: 'mythic', name: '神話の宝箱', color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-200', desc: '最高峰レア素材・大量エレメント' },
+              ].map(item => {
+                const count = state.unopenedChests?.[item.tier] || 0;
+                return (
+                  <Card key={item.tier} className={`p-3 flex flex-col items-center justify-between text-center bg-white ${item.border} hover:shadow-md transition-shadow relative overflow-hidden`}>
+                    {count > 0 && (
+                      <span className="absolute top-1.5 right-1.5 flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                      </span>
+                    )}
+                    <div className="flex flex-col items-center">
+                      <Gi.GiChest className={`text-4xl mb-1.5 ${item.color} drop-shadow-xs`} />
+                      <span className="text-xs font-bold text-stone-800 mb-0.5">
+                        {item.name}
+                      </span>
+                      <p className="text-[10px] text-stone-500 leading-tight mb-2 h-6 flex items-center justify-center">
+                        {item.desc}
+                      </p>
+                    </div>
+
+                    <div className="w-full space-y-1.5 pt-2 border-t border-stone-100">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-stone-500 text-[11px] font-bold">所持数:</span>
+                        <span className={`font-mono font-bold ${count > 0 ? 'text-amber-700 bg-amber-100 px-1.5 py-0.2 rounded' : 'text-stone-400'}`}>
+                          {count} 個
+                        </span>
+                      </div>
+                      <Button 
+                        size="sm" 
+                        variant={count > 0 ? 'primary' : 'secondary'} 
+                        className="w-full text-xs font-bold py-1"
+                        onClick={() => handleOpenChest(item.tier)} 
+                        disabled={count <= 0 || !!openingChest}
+                      >
+                        {count > 0 ? '開封する' : '未所持'}
+                      </Button>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 2. 消耗品・修復アイテムセクション */}
+          <div className="bg-stone-50 p-4 rounded-xl border border-stone-300 shadow-xs space-y-3">
+            <div className="flex justify-between items-center">
+              <h3 className="font-bold text-stone-800 flex items-center text-sm sm:text-base">
+                <Gi.GiSpanner className="mr-2 text-xl text-emerald-600" />
+                消耗品・修復アイテム
+              </h3>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {/* 修理キットカード */}
+              <Card className="p-3.5 bg-white border border-stone-200 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-2xl shrink-0 border border-emerald-300">
+                        <Gi.GiSpanner />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <h4 className="font-bold text-stone-800 text-sm">ロボット修理キット</h4>
+                          <Badge className="bg-emerald-100 text-emerald-800 text-[10px] font-mono font-bold">所持: {state.repairKits || 0}個</Badge>
+                        </div>
+                        <p className="text-[11px] text-stone-500 mt-0.5 leading-tight">
+                          破損・損耗したロボットのHPを最大値まで即座に完全修復します。
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-stone-50 p-2 rounded border border-stone-200 text-xs mb-3 space-y-1">
+                    <div className="flex justify-between items-center">
+                      <span className="text-stone-600 font-bold">機体の状態:</span>
+                      {damagedRobots.length > 0 ? (
+                        <span className="text-rose-600 font-bold flex items-center gap-1 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200 text-[11px]">
+                          ⚠️ 修理が必要な機体: {damagedRobots.length} 機
+                        </span>
+                      ) : (
+                        <span className="text-emerald-700 font-bold text-[11px] bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                          ✨ 全機体 HP最大稼働中
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 pt-2 border-t border-stone-100">
+                  <Button 
+                    size="sm" 
+                    variant={damagedRobots.length > 0 && (state.repairKits || 0) > 0 ? 'success' : 'secondary'} 
+                    className="flex-1 text-xs font-bold"
+                    onClick={() => setIsRepairSelectOpen(true)}
+                  >
+                    機体を修理する
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="text-xs font-bold"
+                    onClick={() => setIsExchangeKitOpen(true)}
+                  >
+                    素材から作成
+                  </Button>
+                </div>
+              </Card>
+
+              {/* バトルエレメント結晶カード */}
+              <Card className="p-3.5 bg-white border border-stone-200 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-10 h-10 rounded-lg bg-cyan-100 text-cyan-700 flex items-center justify-center text-2xl shrink-0 border border-cyan-300">
+                        <Gi.GiCrystalGrowth />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <h4 className="font-bold text-stone-800 text-sm">バトルエレメント</h4>
+                          <Badge className="bg-cyan-100 text-cyan-900 text-[10px] font-mono font-bold">所持: {state.battleElements || 0} E</Badge>
+                        </div>
+                        <p className="text-[11px] text-stone-500 mt-0.5 leading-tight">
+                          演習専用武装（サーベル・シールド）の解放やランクアップ強化に使用する高密度エネルギー結晶。
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-stone-50 p-2 rounded border border-stone-200 text-xs mb-3 space-y-1">
+                    <div className="flex justify-between items-center text-stone-600">
+                      <span className="font-bold">主な入手先:</span>
+                      <span className="text-[11px] font-bold text-cyan-800 bg-cyan-50 px-1.5 py-0.5 rounded border border-cyan-200">
+                        バトル演習勝利 / 宝箱開封
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-stone-100">
+                  <p className="text-[11px] text-stone-500 text-center font-bold">
+                    ※バトル演習画面の武装強化メニューで使用できます
+                  </p>
+                </div>
+              </Card>
+            </div>
+          </div>
+
+          {/* 3. 戦闘演習専用装備セクション */}
+          <div className="bg-stone-50 p-4 rounded-xl border border-stone-300 shadow-xs space-y-3">
+            <div className="flex justify-between items-center">
+              <h3 className="font-bold text-stone-800 flex items-center text-sm sm:text-base">
+                <Gi.GiCrossedSwords className="mr-2 text-xl text-amber-600" />
+                戦闘演習専用武装 (保管状況)
+              </h3>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* ビームサーベル */}
+              {(() => {
+                const isUnlocked = !!state.combatEquipments?.beamSaber;
+                const rank: CombatEquipmentRank = state.combatEquipmentRanks?.beamSaber || 'common';
+                const rankDef = COMBAT_EQUIPMENT_RANKS[rank];
+                const bonus = getEquipmentBonus('beamSaber', rank);
+                return (
+                  <Card className={`p-3 bg-white border ${isUnlocked ? 'border-red-200 ring-1 ring-red-200/50' : 'border-stone-200 opacity-80'}`}>
+                    <div className="flex items-center gap-2.5 mb-2">
+                      <div className="w-10 h-10 rounded-lg bg-red-100 text-red-600 flex items-center justify-center text-2xl shrink-0 border border-red-300">
+                        <Gi.GiLaserSparks />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <h4 className="font-bold text-stone-800 text-sm">ビームサーベル</h4>
+                          {isUnlocked ? (
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${rankDef.badgeClass}`}>
+                              {rankDef.label}
+                            </span>
+                          ) : (
+                            <Badge variant="secondary" className="text-[10px]">未解放</Badge>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-stone-500 leading-tight mt-0.5">
+                          {isUnlocked ? `攻撃力補正: Power +${bonus}` : '演習画面でエレメントを消費して解放'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-[10px] text-stone-600 bg-stone-50 p-1.5 rounded border border-stone-200 leading-tight">
+                      【専用技】★1〜: 腕伸張正面一刀両断・断空斬 / ★4〜: 【必殺奥義】星断オメガクロス
+                    </div>
+                  </Card>
+                );
+              })()}
+
+              {/* ビームシールド */}
+              {(() => {
+                const isUnlocked = !!state.combatEquipments?.beamShield;
+                const rank: CombatEquipmentRank = state.combatEquipmentRanks?.beamShield || 'common';
+                const rankDef = COMBAT_EQUIPMENT_RANKS[rank];
+                const bonus = getEquipmentBonus('beamShield', rank);
+                return (
+                  <Card className={`p-3 bg-white border ${isUnlocked ? 'border-sky-200 ring-1 ring-sky-200/50' : 'border-stone-200 opacity-80'}`}>
+                    <div className="flex items-center gap-2.5 mb-2">
+                      <div className="w-10 h-10 rounded-lg bg-sky-100 text-sky-600 flex items-center justify-center text-2xl shrink-0 border border-sky-300">
+                        <Gi.GiShieldEchoes />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <h4 className="font-bold text-stone-800 text-sm">ビームシールド</h4>
+                          {isUnlocked ? (
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${rankDef.badgeClass}`}>
+                              {rankDef.label}
+                            </span>
+                          ) : (
+                            <Badge variant="secondary" className="text-[10px]">未解放</Badge>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-stone-500 leading-tight mt-0.5">
+                          {isUnlocked ? `防御力補正: Defense +${bonus}` : '演習画面でエレメントを消費して解放'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-[10px] text-stone-600 bg-stone-50 p-1.5 rounded border border-stone-200 leading-tight">
+                      【専用技】要塞ナノバリア・幾何学力場防御（ATフィールド力場展開 & ダメージ激減）
+                    </div>
+                  </Card>
+                );
+              })()}
+            </div>
+          </div>
+
+          {/* 4. 工房名声・称号セクション */}
+          {(() => {
+            const fameRank = getFameRank(state.fame || 0);
+            return (
+              <div className="bg-amber-50/60 p-3.5 rounded-xl border border-amber-200 shadow-xs flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center text-2xl shrink-0 border border-amber-300">
+                    <Gi.GiLaurelsTrophy />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-stone-600">工房称号:</span>
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded border ${fameRank.badgeBg} ${fameRank.badgeBorder} ${fameRank.textColor}`}>
+                        {fameRank.title}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-stone-500 mt-0.5">
+                      名声値: <strong className="font-mono text-amber-800">{state.fame || 0}</strong> pt — {fameRank.desc}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
       {tab === 'materials' && (
         <div className="space-y-4">
-          {/* Unopened Chests Section */}
-          {state.unopenedChests && Object.keys(state.unopenedChests).some(k => (state.unopenedChests![k] || 0) > 0) && (
-            <div className="bg-amber-50 p-4 rounded-xl border border-amber-200">
-              <h3 className="font-bold text-amber-900 mb-3 flex items-center">
-                <Gi.GiChest className="mr-2 text-xl" />
-                未開封の宝箱
-              </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {Object.entries(state.unopenedChests).filter(([_, count]) => Number(count) > 0).map(([tier, count]) => (
-                  <Card key={tier} className="p-3 flex flex-col items-center justify-center text-center bg-white">
-                    <Gi.GiChest className={`text-4xl mb-2 ${tier === 'mythic' ? 'text-purple-500' : tier === 'gold' ? 'text-yellow-500' : tier === 'silver' ? 'text-gray-400' : 'text-amber-700'}`} />
-                    <span className="text-xs font-bold text-stone-700 mb-1">
-                      {tier === 'mythic' ? '神話の宝箱' : tier === 'gold' ? '金の宝箱' : tier === 'silver' ? '銀の宝箱' : '銅の宝箱'}
-                    </span>
-                    <Badge variant="secondary" className="mb-2">所持: {count}</Badge>
-                    <Button size="sm" onClick={() => handleOpenChest(tier)} disabled={!!openingChest}>
-                      開封する
-                    </Button>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Summary & Filters Header */}
           <div className="bg-stone-100 p-3 rounded-lg border border-stone-300 space-y-3">
             <div className="flex justify-between items-center flex-wrap gap-2">
@@ -990,6 +1300,219 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
           part={selectedBaselinePart}
           onClose={() => setSelectedBaselinePart(null)}
         />
+      )}
+
+      {/* クイック修理モーダル */}
+      {isRepairSelectOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-stone-50 border-2 border-stone-300 rounded-2xl p-5 w-full max-w-md max-h-[85vh] flex flex-col shadow-2xl">
+            <div className="flex justify-between items-center pb-3 border-b border-stone-200">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-xl">
+                  <Gi.GiSpanner />
+                </div>
+                <div>
+                  <h3 className="font-bold text-stone-800 text-base">機体修理ステーション</h3>
+                  <p className="text-[11px] text-stone-500">修理キットでHPを全回復します</p>
+                </div>
+              </div>
+              <Badge className="bg-emerald-100 text-emerald-900 font-mono font-bold text-xs">
+                所持キット: {state.repairKits || 0} 個
+              </Badge>
+            </div>
+
+            <div className="flex-1 overflow-y-auto py-3 space-y-2.5">
+              {(!state.robots || state.robots.length === 0) ? (
+                <p className="text-center text-stone-500 py-6 text-xs font-bold">保管中のロボットがいません</p>
+              ) : (
+                state.robots.map((r) => {
+                  const maxHp = r.maxHp ?? 12;
+                  const currentHp = r.currentHp ?? 12;
+                  const isDamaged = currentHp < maxHp;
+                  const hpPercent = Math.max(0, Math.min(100, (currentHp / maxHp) * 100));
+
+                  return (
+                    <div key={r.id} className={`p-3 rounded-xl border transition-all ${isDamaged ? 'bg-white border-amber-300 shadow-xs' : 'bg-stone-100/70 border-stone-200'}`}>
+                      <div className="flex justify-between items-start gap-2 mb-1.5">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="font-bold text-xs text-stone-800 truncate">{r.name}</span>
+                          {isDamaged ? (
+                            <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-200 shrink-0">要修理</span>
+                          ) : (
+                            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200 shrink-0">万全</span>
+                          )}
+                        </div>
+                        <div className="text-right shrink-0">
+                          <span className="font-mono text-xs font-bold text-stone-700">HP {currentHp} / {maxHp}</span>
+                        </div>
+                      </div>
+
+                      {/* HP Gauge */}
+                      <div className="w-full bg-stone-200 h-2 rounded-full overflow-hidden mb-2">
+                        <div 
+                          className={`h-full transition-all duration-300 ${hpPercent <= 25 ? 'bg-rose-500' : hpPercent <= 50 ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                          style={{ width: `${hpPercent}%` }}
+                        />
+                      </div>
+
+                      <div className="flex justify-end">
+                        <Button
+                          size="sm"
+                          variant={isDamaged ? 'success' : 'secondary'}
+                          disabled={!isDamaged || (state.repairKits || 0) <= 0}
+                          className="text-xs font-bold py-1 px-3"
+                          onClick={() => handleQuickRepair(r)}
+                        >
+                          {!isDamaged ? 'HP満タン' : (state.repairKits || 0) <= 0 ? 'キット不足' : '修理する (1個消費)'}
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            <div className="pt-3 border-t border-stone-200 flex justify-between items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-xs"
+                onClick={() => {
+                  setIsRepairSelectOpen(false);
+                  setIsExchangeKitOpen(true);
+                }}
+              >
+                素材からキット作成
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                className="text-xs px-4"
+                onClick={() => setIsRepairSelectOpen(false)}
+              >
+                閉じる
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 修理キット素材交換モーダル */}
+      {isExchangeKitOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-stone-50 border-2 border-stone-300 rounded-2xl p-5 w-full max-w-sm flex flex-col shadow-2xl">
+            <div className="flex justify-between items-center pb-3 border-b border-stone-200">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-xl">
+                  <Gi.GiSpanner />
+                </div>
+                <div>
+                  <h3 className="font-bold text-stone-800 text-base">修理キット作成</h3>
+                  <p className="text-[11px] text-stone-500">素材を消費して修理キットを生成</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="py-3 space-y-3">
+              {/* レート案内 */}
+              <div className="bg-amber-50 p-2.5 rounded-lg border border-amber-200 text-[11px] text-amber-900 space-y-0.5">
+                <div className="font-bold mb-1">【交換レート】</div>
+                <div>・★1素材 3個 ➔ 修理キット 1個</div>
+                <div>・★2素材 1個 ➔ 修理キット 1個</div>
+                <div>・★3素材 1個 ➔ 修理キット 3個</div>
+              </div>
+
+              {/* 素材選択 */}
+              <div>
+                <label className="block text-xs font-bold text-stone-700 mb-1">使用する素材を選択:</label>
+                <select
+                  value={exchangeMaterialId}
+                  onChange={(e) => setExchangeMaterialId(e.target.value)}
+                  className="w-full p-2 text-xs border border-stone-300 rounded-lg bg-white font-bold text-stone-800"
+                >
+                  {MATERIALS.map(m => {
+                    const count = state.materials[m.id] || 0;
+                    return (
+                      <option key={m.id} value={m.id}>
+                        ★{m.rarity} {m.name} (所持: {count}個)
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+
+              {/* 交換数量 */}
+              {(() => {
+                const selectedMat = MATERIALS.find(m => m.id === exchangeMaterialId);
+                const matCount = selectedMat ? (state.materials[selectedMat.id] || 0) : 0;
+                const reqPerKit = selectedMat ? (selectedMat.rarity === 1 ? 3 : 1) : 1;
+                const yieldPerKit = selectedMat ? (selectedMat.rarity === 3 ? 3 : 1) : 1;
+                const totalReq = reqPerKit * exchangeCount;
+                const totalGain = yieldPerKit * exchangeCount;
+                const canAfford = matCount >= totalReq && totalReq > 0;
+
+                return (
+                  <div className="bg-white p-3 rounded-lg border border-stone-200 space-y-2 text-xs">
+                    <div className="flex justify-between items-center">
+                      <span className="text-stone-600 font-bold">作成セット数:</span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          className="w-6 h-6 rounded bg-stone-200 font-bold text-stone-700 hover:bg-stone-300 disabled:opacity-50"
+                          disabled={exchangeCount <= 1}
+                          onClick={() => setExchangeCount(c => Math.max(1, c - 1))}
+                        >
+                          -
+                        </button>
+                        <span className="font-mono font-bold text-sm w-6 text-center">{exchangeCount}</span>
+                        <button
+                          className="w-6 h-6 rounded bg-stone-200 font-bold text-stone-700 hover:bg-stone-300"
+                          onClick={() => setExchangeCount(c => c + 1)}
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-stone-100 flex justify-between items-center">
+                      <span className="text-stone-600">消費素材:</span>
+                      <span className={`font-mono font-bold ${canAfford ? 'text-stone-800' : 'text-rose-600'}`}>
+                        {totalReq} 個 / 所持 {matCount} 個
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <span className="text-stone-600">獲得修理キット:</span>
+                      <span className="font-mono font-bold text-emerald-600 text-sm">
+                        +{totalGain} 個
+                      </span>
+                    </div>
+
+                    <Button
+                      size="sm"
+                      variant="success"
+                      disabled={!canAfford}
+                      className="w-full mt-2 font-bold py-1.5"
+                      onClick={handleExchangeRepairKit}
+                    >
+                      {canAfford ? `キットを ${totalGain} 個作成` : '素材が足りません'}
+                    </Button>
+                  </div>
+                );
+              })()}
+            </div>
+
+            <div className="pt-2 border-t border-stone-200 flex justify-end">
+              <Button
+                size="sm"
+                variant="secondary"
+                className="text-xs px-4"
+                onClick={() => setIsExchangeKitOpen(false)}
+              >
+                閉じる
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

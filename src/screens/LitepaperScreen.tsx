@@ -25,7 +25,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
         title="ポンコツロボット工房 公式仕様書"
         badge={
           <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300 font-mono font-bold px-1.5 py-0.2 rounded">
-            v1.0.328
+            v1.0.331
           </span>
         }
         rightElement={
@@ -348,15 +348,15 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                     <br />
                     <strong>敵レベル対応・戦術技Tierシステム (全5階層):</strong> 機体の知性(Int)や各主能力値(Pow/Def/Agi/Dex)が敵のレベル別想定ステータスに到達することで、段階的に高位技がアンロックされます。
                     <br />
-                    ・<strong>Tier 1 (Lv.1〜2対応 / Int 12+):</strong> ロケットパンチ、ナノバリア、緊急リペア、EMPパルス等の基本戦術
+                    ・<strong>Tier 1 (Lv.1〜2対応 / Int 12+):</strong> 紅蓮・突進突き、要塞ナノバリア、ロケットパンチ
                     <br />
-                    ・<strong>Tier 2 (Lv.3〜4対応 / Int 24+):</strong> フライングスマッシュ、最適化プロトコル、プラズマジェット
+                    ・<strong>Tier 2 (Lv.3〜4対応 / Int 30+):</strong> 双剣・幻影乱舞、ビームサーベル・断空斬、緊急リペアプロトコル
                     <br />
-                    ・<strong>Tier 3 (Lv.5〜6対応 / Int 45+):</strong> 火炎旋風回転斬り、超速ガトリングラッシュ、精密長距離狙撃
+                    ・<strong>Tier 3 (Lv.5〜6対応 / Int 52+):</strong> EMPディスラプター、炎刃・旋風回転斬り
                     <br />
-                    ・<strong>Tier 4 (Lv.7〜8対応 / Int 80+):</strong> 【必殺奥義】星断オメガクロス、フルバースト・オーバードライブ
+                    ・<strong>Tier 4 (Lv.7〜8対応 / Int 85+):</strong> 戦術オプティマイズ、フルバースト・ミサイル、【必殺奥義】星断オメガクロス
                     <br />
-                    ・<strong>Tier 5 (Lv.9〜10対応 / Int 130+):</strong> 【終焉奥義】アポカリプス・オメガバースト（高知性機体のみが到達できる究極破壊技）
+                    ・<strong>Tier 5 (Lv.9〜10対応 / Int 170+):</strong> リミッター全面解除（オーバードライブ）、【終焉奥義】アポカリプス・オメガバースト（高知性機体のみが到達できる究極破壊技）
                     <br />
                     <strong>演習専用武装ランクアップシステム:</strong> ビームサーベルとビームシールドは、バトル勝利などで獲得できるエレメントを消費することで、<strong>初級★1 (初期解放: 100 E) → 中級★2 (500 E) → 上級★3 (1,000 E) → 特級★4 (5,000 E) → 伝説★5 (10,000 E)</strong> の全5段階にランクアップ強化可能！ランクに応じて攻撃力（Power +35〜+320）や防御力（Defense +30〜+270）が大幅に上昇し、専用奥義【星断オメガクロス】やシールド防御が飛躍的に強化されます。
                     <br />
@@ -406,9 +406,9 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
             <div className="space-y-3 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                 <div className="bg-white p-2.5 rounded-lg border border-stone-200">
-                  <strong className="text-stone-900 block font-bold mb-1">📦 倉庫・保管庫拡張</strong>
+                  <strong className="text-stone-900 block font-bold mb-1">📦 倉庫・保管庫システム</strong>
                   <p className="text-stone-600">
-                    ゴールドを消費してロボット所持枠・素材保管枠を拡張。大量の機体運用が可能になります。
+                    「ロボット」「パーツ」「アイテム」「素材」の4分類で管理。アイテムタブでは未開封宝箱の即時開封や、修理キットによる機体HP回復・素材からのキット作成、エレメント・演習武装の保管状況を確認できます。
                   </p>
                 </div>
                 <div className="bg-white p-2.5 rounded-lg border border-stone-200">

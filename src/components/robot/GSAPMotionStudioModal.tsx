@@ -131,7 +131,10 @@ export const GSAPMotionStudioModal: React.FC<GSAPMotionStudioModalProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<RobotAnimationCategory>(
     RobotAnimationCategory.COMBAT
   );
-  const [selectedPatternId, setSelectedPatternId] = useState<string>('fire_slash');
+  const [selectedPatternId, setSelectedPatternId] = useState<string>(() => {
+    const combatPatterns = GSAPRobotAnimationRegistry.getInstance().getPatternsByCategory(RobotAnimationCategory.COMBAT);
+    return combatPatterns[0]?.id || GSAPRobotAnimationRegistry.getInstance().getAllPatterns()[0]?.id || 'shield_barrier';
+  });
   const [speed, setSpeed] = useState<number>(1.0);
   const [loop, setLoop] = useState<boolean>(true);
   const [isPaused, setIsPaused] = useState<boolean>(false);
