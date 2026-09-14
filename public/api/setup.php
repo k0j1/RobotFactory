@@ -28,7 +28,6 @@ try {
         email VARCHAR(255),
         name VARCHAR(255),
         picture VARCHAR(255),
-        received_initial_bonus BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -54,6 +53,7 @@ try {
         consumed_gold INT DEFAULT 0,
         storage_limit INT DEFAULT 0,
         delivered_count INT DEFAULT 0,
+        received_initial_bonus BOOLEAN DEFAULT FALSE,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

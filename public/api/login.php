@@ -39,9 +39,6 @@ try {
             ':picture' => $picture,
             ':google_id' => $googleId
         ]);
-        // 更新後のデータを取得
-        $stmt->execute([':google_id' => $googleId]);
-        $user = $stmt->fetch();
     } else {
         // 新規ユーザー作成
         $insertStmt = $pdo->prepare("INSERT INTO users (google_id, email, name, picture) VALUES (:google_id, :email, :name, :picture)");
@@ -52,9 +49,20 @@ try {
             ':picture' => $picture
         ]);
         
-        $stmt->execute([':google_id' => $googleId]);
-        $user = $stmt->fetch();
+        // 新規ユーザーの場合は初期ステータスも作成
+        $insertStatusStmt = $pdo->prepare("INSERT IGNORE INTO user_workshop_status (user_id) VALUES (:google_id)");
+        $insertStatusStmt->execute([':google_id' => $googleId]);
     }
+    
+    // 更新後のユーザーデータとステータスを結合して取得
+    $stmt = $pdo->prepare("
+        SELECT u.*, s.received_initial_bonus 
+        FROM users u 
+        LEFT JOIN user_workshop_status s ON u.google_id = s.user_id 
+        WHERE u.google_id = :google_id
+    ");
+    $stmt->execute([':google_id' => $googleId]);
+    $user = $stmt->fetch();
 
     echo json_encode([
         "success" => true,

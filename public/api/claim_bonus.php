@@ -22,7 +22,7 @@ if (!$googleId) {
 
 $pdo = getDB();
 try {
-    $stmt = $pdo->prepare("UPDATE users SET received_initial_bonus = TRUE WHERE google_id = :google_id");
+    $stmt = $pdo->prepare("UPDATE user_workshop_status SET received_initial_bonus = TRUE WHERE user_id = :google_id");
     $stmt->execute([':google_id' => $googleId]);
 
     echo json_encode([
