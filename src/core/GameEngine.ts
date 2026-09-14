@@ -947,19 +947,20 @@ export class GameEngine {
     const isSuccess = true; // Always 100% success
     const obtained: string[] = [];
 
-    let dropCount = Math.floor(Math.random() * 5) + 3; // Base drop count (3 to 7)
+    // 基本ドロップ個数: 5〜7個
+    let dropCount = Math.floor(Math.random() * 3) + 5; // 5, 6, 7
 
     if (this.state.activeQuest.dispatchedRobotId) {
       const robot = this.state.robots.find(r => r.id === this.state.activeQuest!.dispatchedRobotId);
       if (robot) {
-        // Dispatched robot adds extra materials
-        dropCount += 4;
+        // 同行ロボットボーナス (+1)
+        dropCount += 1;
         
-        // Power stat gives a chance for even more materials
-        const extraDrops = Math.floor(robot.stats.power / 10);
+        // Power ステータスボーナス (最大+2)
+        const extraDrops = Math.min(2, Math.floor(robot.stats.power / 25));
         dropCount += extraDrops;
         
-        // Attribute affinity
+        // 属性相性ボーナス (+1)
         const robotAttrs = [robot.parts.head.attribute, robot.parts.body.attribute, robot.parts.arms.attribute, robot.parts.legs.attribute];
         if (loc.name.includes('火') && robotAttrs.includes('Water')) dropCount += 1;
         else if (loc.name.includes('水') && robotAttrs.includes('Earth')) dropCount += 1;
@@ -967,11 +968,13 @@ export class GameEngine {
       }
     }
 
+    // 1回の遠征で取れる素材の総数を確実に 5〜10 個の範囲におさめる
+    dropCount = Math.max(5, Math.min(10, dropCount));
+
     for (let i = 0; i < dropCount; i++) {
       const dropId = this.getRandomDrop(loc, weather);
-      const amount = Math.floor(Math.random() * 2) + 1; // 1 to 2 (halved from 2-4)
-      for (let j = 0; j < amount; j++) obtained.push(dropId);
-      this.state.materials[dropId] = (this.state.materials[dropId] || 0) + amount;
+      obtained.push(dropId);
+      this.state.materials[dropId] = (this.state.materials[dropId] || 0) + 1;
     }
 
     this.state.activeQuest = null;
