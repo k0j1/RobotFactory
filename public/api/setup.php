@@ -12,7 +12,7 @@ if (!$pdo) {
 }
 
 try {
-    // セーブデータを保存するテーブルの作成
+    // 各種テーブルの作成
     $sql = "
     CREATE TABLE IF NOT EXISTS save_data (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -31,6 +31,108 @@ try {
         received_initial_bonus BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    CREATE TABLE IF NOT EXISTS m_parts_encyclopedia (
+        id VARCHAR(255) PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        part_type VARCHAR(50) NOT NULL,
+        attribute VARCHAR(50) NOT NULL,
+        rarity INT NOT NULL,
+        base_hp INT DEFAULT 0,
+        base_power INT DEFAULT 0,
+        base_defense INT DEFAULT 0,
+        base_agility INT DEFAULT 0,
+        base_dexterity INT DEFAULT 0,
+        base_int INT DEFAULT 0
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    CREATE TABLE IF NOT EXISTS user_workshop_status (
+        user_id VARCHAR(255) PRIMARY KEY,
+        fame INT DEFAULT 0,
+        gold INT DEFAULT 0,
+        consumed_gold INT DEFAULT 0,
+        storage_limit INT DEFAULT 0,
+        delivered_count INT DEFAULT 0,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    CREATE TABLE IF NOT EXISTS user_minigame_status (
+        user_id VARCHAR(255),
+        minigame_id VARCHAR(255),
+        play_count INT DEFAULT 0,
+        wins INT DEFAULT 0,
+        elements_count INT DEFAULT 0,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (user_id, minigame_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    CREATE TABLE IF NOT EXISTS minigame_rankings (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        minigame_id VARCHAR(255) NOT NULL,
+        user_id VARCHAR(255) NOT NULL,
+        high_score INT NOT NULL,
+        achieved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    CREATE TABLE IF NOT EXISTS user_parts (
+        id VARCHAR(255) PRIMARY KEY,
+        user_id VARCHAR(255) NOT NULL,
+        master_part_id VARCHAR(255) NOT NULL,
+        is_equipped BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    CREATE TABLE IF NOT EXISTS user_robots (
+        id VARCHAR(255) PRIMARY KEY,
+        user_id VARCHAR(255) NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        head_part_id VARCHAR(255),
+        body_part_id VARCHAR(255),
+        arms_part_id VARCHAR(255),
+        legs_part_id VARCHAR(255),
+        total_hp INT DEFAULT 0,
+        total_power INT DEFAULT 0,
+        total_defense INT DEFAULT 0,
+        total_agility INT DEFAULT 0,
+        total_dexterity INT DEFAULT 0,
+        total_int INT DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    CREATE TABLE IF NOT EXISTS active_expeditions (
+        user_id VARCHAR(255) PRIMARY KEY,
+        location_id VARCHAR(255) NOT NULL,
+        start_time BIGINT NOT NULL,
+        end_time BIGINT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    CREATE TABLE IF NOT EXISTS active_part_crafts (
+        user_id VARCHAR(255) PRIMARY KEY,
+        part_type VARCHAR(50) NOT NULL,
+        main_material_id VARCHAR(255) NOT NULL,
+        sub_material_id VARCHAR(255) NOT NULL,
+        start_time BIGINT NOT NULL,
+        end_time BIGINT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    CREATE TABLE IF NOT EXISTS active_robot_assemblies (
+        user_id VARCHAR(255) PRIMARY KEY,
+        start_time BIGINT NOT NULL,
+        end_time BIGINT NOT NULL,
+        result_robot_data JSON NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    CREATE TABLE IF NOT EXISTS active_requests (
+        user_id VARCHAR(255) PRIMARY KEY,
+        request_id VARCHAR(255) NOT NULL,
+        rank VARCHAR(50) NOT NULL,
+        reward_g INT NOT NULL,
+        deadline BIGINT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ";
     

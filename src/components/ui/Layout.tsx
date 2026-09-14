@@ -56,7 +56,7 @@ export const Layout: React.FC<{
       badge: isStorageTaskDone ? '完了' : (isStorageTaskActive ? '解体中' : undefined),
       badgeColor: isStorageTaskDone ? 'bg-amber-500 text-white animate-bounce' : 'bg-blue-500 text-white'
     },
-    { id: 'minigame', label: 'バトル', icon: <Gi.GiCrossedSwords size={22} /> },
+    { id: 'minigame', label: 'ミニゲーム', icon: <Gi.GiGamepad size={22} /> },
   ];
 
   return (
