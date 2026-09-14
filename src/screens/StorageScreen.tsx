@@ -13,6 +13,7 @@ import { PartBaselineModal } from '../components/part/PartBaselineModal';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { RobotPart } from '../core/models';
 import { COMBAT_EQUIPMENT_RANKS, getEquipmentBonus, CombatEquipmentRank } from '../core/combatEquipmentData';
+import { RewardAdShortenButton } from '../components/ads/RewardAdShortenButton';
 import * as Gi from 'react-icons/gi';
 
 export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> = ({ state, engine }) => {
@@ -295,9 +296,17 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                         style={{ width: `${Math.min(100, Math.max(0, 100 - ((activeDisassembly.endTime - now) / activeDisassembly.durationMs * 100)))}%` }}
                       />
                     </div>
-                    <p className="text-[11px] text-stone-500 text-right font-mono">
-                      解体中: 頭部・胴体・腕部・脚部パーツに分解しています...
-                    </p>
+                    <div className="flex items-center justify-between gap-2 flex-wrap pt-1">
+                      <p className="text-[11px] text-stone-500 font-mono">
+                        解体中: 頭部・胴体・腕部・脚部パーツに分解しています...
+                      </p>
+                      <RewardAdShortenButton
+                        engine={engine}
+                        taskType="robotDisassembly"
+                        taskName="ロボット解体"
+                        size="sm"
+                      />
+                    </div>
                   </div>
                 ) : (
                   <div className="space-y-3 mt-3 pt-3 border-t border-rose-100">
@@ -750,9 +759,17 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                         style={{ width: `${Math.min(100, Math.max(0, 100 - ((activeRecycle.endTime - now) / activeRecycle.durationMs * 100)))}%` }}
                       />
                     </div>
-                    <p className="text-[11px] text-stone-500 text-right font-mono">
-                      素材抽出中: メイン素材2個に還元しています...
-                    </p>
+                    <div className="flex items-center justify-between gap-2 flex-wrap pt-1">
+                      <p className="text-[11px] text-stone-500 font-mono">
+                        素材抽出中: メイン素材2個に還元しています...
+                      </p>
+                      <RewardAdShortenButton
+                        engine={engine}
+                        taskType="partRecycle"
+                        taskName="パーツ還元"
+                        size="sm"
+                      />
+                    </div>
                   </div>
                 ) : (
                   <div className="space-y-3 mt-3 pt-3 border-t border-amber-100">

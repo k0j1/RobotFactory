@@ -63,7 +63,7 @@ export const RewardAdModal: React.FC = () => {
         <div className="bg-stone-800/95 px-4 py-3 border-b border-stone-700 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="bg-amber-500/20 text-amber-400 border border-amber-500/50 text-[10px] px-2 py-0.5 rounded font-bold">
-              Google AdSense リワード広告
+              Google AdSense オファーウォール / リワード
             </span>
             <span className="text-xs font-bold text-stone-300">スポンサー提供</span>
           </div>

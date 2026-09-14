@@ -5,7 +5,7 @@ import * as Gi from 'react-icons/gi';
 
 interface RewardAdShortenButtonProps {
   engine: GameEngine;
-  taskType: 'quest' | 'partCraft' | 'robotAssembly';
+  taskType: 'quest' | 'partCraft' | 'robotAssembly' | 'robotDisassembly' | 'partRecycle';
   taskName: string;
   className?: string;
   size?: 'sm' | 'md';
@@ -57,7 +57,7 @@ export const RewardAdShortenButton: React.FC<RewardAdShortenButtonProps> = ({
           ? 'px-2 py-1 text-[10px] bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-stone-950 border-amber-400 font-mono'
           : 'px-3 py-1.5 text-xs bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-stone-950 border-amber-400 font-bold'
       } ${className}`}
-      title="動画広告を見て完了時間を30分短縮"
+      title="Google AdSense オファーウォール/リワード広告を見て完了時間を30分短縮"
     >
       <span className="flex items-center gap-1">
         <Gi.GiFilmProjector className="text-stone-900 text-sm animate-pulse" />

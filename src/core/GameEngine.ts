@@ -1207,12 +1207,12 @@ export class GameEngine {
   }
 
   /**
-   * リワード広告視聴等による進行中タスク（遠征・パーツ製造・ロボット組立）の完了時間短縮
-   * @param taskType 'quest' | 'partCraft' | 'robotAssembly'
+   * Google AdSense オファーウォール/リワード広告視聴等による進行中タスク（遠征・パーツ製造・ロボット組立・解体・還元）の完了時間30分短縮
+   * @param taskType 'quest' | 'partCraft' | 'robotAssembly' | 'robotDisassembly' | 'partRecycle'
    * @param reduceMinutes 短縮する分数（デフォルト: 30分）
    * @returns 実際に短縮されたミリ秒数
    */
-  public reduceTaskTime(taskType: 'quest' | 'partCraft' | 'robotAssembly', reduceMinutes: number = 30): number {
+  public reduceTaskTime(taskType: 'quest' | 'partCraft' | 'robotAssembly' | 'robotDisassembly' | 'partRecycle', reduceMinutes: number = 30): number {
     const reduceMs = reduceMinutes * 60 * 1000;
     const now = Date.now();
     let actualReducedMs = 0;
@@ -1241,6 +1241,26 @@ export class GameEngine {
         this.state.activeRobotAssembly.endTime = newEnd;
         this.saveState();
       }
+    } else if (taskType === 'robotDisassembly' && this.state.activeRobotDisassembly) {
+      const currentEnd = this.state.activeRobotDisassembly.endTime;
+      if (currentEnd > now) {
+        const newEnd = Math.max(now, currentEnd - reduceMs);
+        actualReducedMs = currentEnd - newEnd;
+        this.state.activeRobotDisassembly.endTime = newEnd;
+        this.saveState();
+      }
+    } else if (taskType === 'partRecycle' && this.state.activePartRecycle) {
+      const currentEnd = this.state.activePartRecycle.endTime;
+      if (currentEnd > now) {
+        const newEnd = Math.max(now, currentEnd - reduceMs);
+        actualReducedMs = currentEnd - newEnd;
+        this.state.activePartRecycle.endTime = newEnd;
+        this.saveState();
+      }
+    }
+
+    if (actualReducedMs > 0) {
+      this.update();
     }
 
     return actualReducedMs;
