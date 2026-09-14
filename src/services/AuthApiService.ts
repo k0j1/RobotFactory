@@ -366,6 +366,14 @@ export class AuthApiService {
   private async executeSyncToTables(userId: string, state: GameState): Promise<AuthApiResponse> {
     if (this.isSyncing) {
       // 既に通信中であれば次回のデバウンスで送られるよう保留
+      if (!this.syncTimer) {
+        this.syncTimer = setTimeout(() => {
+          this.syncTimer = null;
+          if (this.pendingStateToSync) {
+            this.executeSyncToTables(userId, this.pendingStateToSync).catch(console.error);
+          }
+        }, 1500);
+      }
       return { success: true, message: 'Sync queued' };
     }
 

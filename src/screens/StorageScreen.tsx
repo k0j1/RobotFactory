@@ -194,7 +194,7 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
             </span>
           ) : tab === 'parts' ? (
             <span className="text-xs font-bold text-stone-600 bg-stone-100 px-2 py-0.5 rounded border border-stone-200">
-              保管パーツ: <span className="text-amber-800 font-mono font-bold">{state.parts?.length || 0}</span> 個
+              保管パーツ: <span className="text-amber-800 font-mono font-bold">{state.parts?.filter(p => !p.isEquipped).length || 0}</span> 個
             </span>
           ) : tab === 'materials' ? (
             <span className="text-xs font-bold text-stone-600 bg-stone-100 px-2 py-0.5 rounded border border-stone-200">
@@ -809,10 +809,10 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
             </div>
           )}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-            {state.parts?.length === 0 ? (
+            {state.parts?.filter(p => !p.isEquipped).length === 0 ? (
               <p className="text-stone-500 col-span-full">パーツがありません</p>
             ) : (
-            state.parts.map((p, idx) => (
+            state.parts.filter(p => !p.isEquipped).map((p, idx) => (
               <Card key={`${p.id}-${idx}`} className="p-3 flex flex-col justify-between">
                 <div className="flex justify-between items-start">
                   <div>

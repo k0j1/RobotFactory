@@ -105,6 +105,14 @@ try {
         $pdo->exec("ALTER TABLE active_requests ADD COLUMN request_data JSON");
     } catch (PDOException $e) {}
 
+    try {
+        $pdo->exec("ALTER TABLE user_parts ADD COLUMN part_data JSON");
+    } catch (PDOException $e) {}
+
+    try {
+        $pdo->exec("ALTER TABLE user_robots ADD COLUMN robot_data JSON");
+    } catch (PDOException $e) {}
+
     $pdo->beginTransaction();
 
     // 2. save_data テーブルにゲーム全体のスナップショットを保存 (UPSERT)
@@ -120,6 +128,8 @@ try {
     unset($saveDataSnapshot['currentRequest']);         // active_requests
 
     // その他の個別テーブルに保存される情報も重複排除
+    unset($saveDataSnapshot['robots']);                 // user_robots
+    unset($saveDataSnapshot['parts']);                  // user_parts
     unset($saveDataSnapshot['materials']);              // user_material
     unset($saveDataSnapshot['gold']);                   // user_workshop_status
     unset($saveDataSnapshot['fame']);                   // user_workshop_status
@@ -166,56 +176,14 @@ try {
         ':up_delivered_count' => $deliveredCount,
     ]);
 
-    // 4. user_robots テーブルの同期
-    // 既存ロボットデータを一旦クリアして最新の所持ロボットを挿入
-    $delRobotsStmt = $pdo->prepare("DELETE FROM user_robots WHERE user_id = :user_id");
-    $delRobotsStmt->execute([':user_id' => $actualUserId]);
-
-    if (!empty($gameData['robots']) && is_array($gameData['robots'])) {
-        $stmtRobot = $pdo->prepare("
-            INSERT INTO user_robots (
-                id, user_id, name, head_part_id, body_part_id, arms_part_id, legs_part_id,
-                total_hp, total_power, total_defense, total_agility, total_dexterity, total_int
-            ) VALUES (
-                :id, :user_id, :name, :head_id, :body_id, :arms_id, :legs_id,
-                :hp, :power, :defense, :agility, :dexterity, :intel
-            )
-        ");
-
-        foreach ($gameData['robots'] as $robot) {
-            if (empty($robot['id'])) continue;
-            $headId = $robot['parts']['head']['id'] ?? '';
-            $bodyId = $robot['parts']['body']['id'] ?? '';
-            $armsId = $robot['parts']['arms']['id'] ?? '';
-            $legsId = $robot['parts']['legs']['id'] ?? '';
-            $stats = $robot['stats'] ?? [];
-
-            $stmtRobot->execute([
-                ':id' => $robot['id'],
-                ':user_id' => $actualUserId,
-                ':name' => $robot['name'] ?? '名無しのロボット',
-                ':head_id' => $headId,
-                ':body_id' => $bodyId,
-                ':arms_id' => $armsId,
-                ':legs_id' => $legsId,
-                ':hp' => (int)($stats['hp'] ?? 0),
-                ':power' => (int)($stats['power'] ?? 0),
-                ':defense' => (int)($stats['defense'] ?? 0),
-                ':agility' => (int)($stats['agility'] ?? 0),
-                ':dexterity' => (int)($stats['dexterity'] ?? 0),
-                ':intel' => (int)($stats['intelligence'] ?? 0)
-            ]);
-        }
-    }
-
-    // 5. user_parts テーブルの同期
+    // 4. user_parts テーブルの同期
     $delPartsStmt = $pdo->prepare("DELETE FROM user_parts WHERE user_id = :user_id");
     $delPartsStmt->execute([':user_id' => $actualUserId]);
 
     if (!empty($gameData['parts']) && is_array($gameData['parts'])) {
         $stmtPart = $pdo->prepare("
-            INSERT INTO user_parts (id, user_id, master_part_id, is_equipped)
-            VALUES (:id, :user_id, :master_id, :is_equipped)
+            INSERT INTO user_parts (id, user_id, master_part_id, is_equipped, part_data)
+            VALUES (:id, :user_id, :master_id, :is_equipped, :part_data)
         ");
 
         // 装備中パーツのIDリストを収集
@@ -234,12 +202,56 @@ try {
 
         foreach ($gameData['parts'] as $part) {
             if (empty($part['id'])) continue;
-            $isEquipped = isset($equippedPartIds[$part['id']]) ? 1 : 0;
+            // state.parts内ですでにisEquippedが設定されていればそれを優先
+            $isEquipped = (!empty($part['isEquipped']) || !empty($equippedPartIds[$part['id']])) ? 1 : 0;
             $stmtPart->execute([
                 ':id' => $part['id'],
                 ':user_id' => $actualUserId,
                 ':master_id' => $part['name'] ?? $part['id'],
-                ':is_equipped' => $isEquipped
+                ':is_equipped' => $isEquipped,
+                ':part_data' => json_encode($part, JSON_UNESCAPED_UNICODE)
+            ]);
+        }
+    }
+
+    // 5. user_robots テーブルの同期
+    // 既存ロボットデータを一旦クリアして最新の所持ロボットを挿入
+    $delRobotsStmt = $pdo->prepare("DELETE FROM user_robots WHERE user_id = :user_id");
+    $delRobotsStmt->execute([':user_id' => $actualUserId]);
+
+    if (!empty($gameData['robots']) && is_array($gameData['robots'])) {
+        $stmtRobot = $pdo->prepare("
+            INSERT INTO user_robots (
+                id, user_id, name, head_part_id, body_part_id, arms_part_id, legs_part_id,
+                total_hp, total_power, total_defense, total_agility, total_dexterity, total_int, robot_data
+            ) VALUES (
+                :id, :user_id, :name, :head_id, :body_id, :arms_id, :legs_id,
+                :hp, :power, :defense, :agility, :dexterity, :intel, :robot_data
+            )
+        ");
+
+        foreach ($gameData['robots'] as $robot) {
+            if (empty($robot['id'])) continue;
+            $headId = $robot['parts']['head']['id'] ?? '';
+            $bodyId = $robot['parts']['body']['id'] ?? '';
+            $armsId = $robot['parts']['arms']['id'] ?? '';
+            $legsId = $robot['parts']['legs']['id'] ?? '';
+            $stats = $robot['stats'] ?? [];
+            $stmtRobot->execute([
+                ':id' => $robot['id'],
+                ':user_id' => $actualUserId,
+                ':name' => $robot['name'] ?? '名無しのロボット',
+                ':head_id' => $headId,
+                ':body_id' => $bodyId,
+                ':arms_id' => $armsId,
+                ':legs_id' => $legsId,
+                ':hp' => (int)($stats['hp'] ?? 0),
+                ':power' => (int)($stats['power'] ?? 0),
+                ':defense' => (int)($stats['defense'] ?? 0),
+                ':agility' => (int)($stats['agility'] ?? 0),
+                ':dexterity' => (int)($stats['dexterity'] ?? 0),
+                ':intel' => (int)($stats['intelligence'] ?? 0),
+                ':robot_data' => json_encode($robot, JSON_UNESCAPED_UNICODE)
             ]);
         }
     }

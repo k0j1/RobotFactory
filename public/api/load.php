@@ -129,6 +129,7 @@ try {
         SELECT fame, gold, storage_limit, delivered_count, received_initial_bonus 
         FROM user_workshop_status 
         WHERE user_id IN ($inPlaceholders) 
+        ORDER BY updated_at DESC
         LIMIT 1
     ");
     $wsStmt->execute(array_values($candidateUserIds));
@@ -253,6 +254,41 @@ try {
     $miniRow = $miniStmt->fetch();
     $battleElements = $miniRow ? (int)$miniRow['elements_count'] : 0;
 
+    // 8. user_parts テーブルから所持パーツ一覧を取得
+    $partsStmt = $pdo->prepare("
+        SELECT part_data, is_equipped 
+        FROM user_parts 
+        WHERE user_id IN ($inPlaceholders)
+    ");
+    $partsStmt->execute(array_values($candidateUserIds));
+    $dbParts = [];
+    while ($pRow = $partsStmt->fetch()) {
+        if (!empty($pRow['part_data'])) {
+            $pData = json_decode($pRow['part_data'], true);
+            if (is_array($pData)) {
+                $pData['isEquipped'] = !empty($pRow['is_equipped']);
+                $dbParts[] = $pData;
+            }
+        }
+    }
+
+    // 9. user_robots テーブルから所持ロボット一覧を取得
+    $robotsStmt = $pdo->prepare("
+        SELECT robot_data 
+        FROM user_robots 
+        WHERE user_id IN ($inPlaceholders)
+    ");
+    $robotsStmt->execute(array_values($candidateUserIds));
+    $dbRobots = [];
+    while ($rRow = $robotsStmt->fetch()) {
+        if (!empty($rRow['robot_data'])) {
+            $rData = json_decode($rRow['robot_data'], true);
+            if (is_array($rData)) {
+                $dbRobots[] = $rData;
+            }
+        }
+    }
+
     if ($row && !empty($row['game_data'])) {
         $gameData = json_decode($row['game_data'], true);
         if (!is_array($gameData)) {
@@ -261,9 +297,30 @@ try {
 
         // 廃止された starterBonusClaimed 変数は返却データからも完全に除外
         unset($gameData['starterBonusClaimed']);
+        unset($gameData['parts']);
+        unset($gameData['robots']);
+        unset($gameData['materials']);
+        unset($gameData['gold']);
+        unset($gameData['fame']);
+        unset($gameData['storageSize']);
+        unset($gameData['deliveredRobotsCount']);
+
+        // user_robots 内のパーツが user_parts に無い場合は復元する
+        $existingPartIds = array_column($dbParts, 'id');
+        foreach ($dbRobots as $robot) {
+            $robotParts = [$robot['parts']['head'] ?? null, $robot['parts']['body'] ?? null, $robot['parts']['arms'] ?? null, $robot['parts']['legs'] ?? null];
+            foreach ($robotParts as $rp) {
+                if ($rp && isset($rp['id']) && !in_array($rp['id'], $existingPartIds)) {
+                    $dbParts[] = $rp;
+                    $existingPartIds[] = $rp['id'];
+                }
+            }
+        }
 
         // 各個別テーブルで管理されている最新データを gameData へ統合
         $gameData['materials'] = $dbMaterials;
+        $gameData['parts'] = $dbParts;
+        $gameData['robots'] = $dbRobots;
         $gameData['gold'] = $goldVal;
         $gameData['fame'] = $fameVal;
         $gameData['storageSize'] = $storageLimitVal;
@@ -285,6 +342,8 @@ try {
     } else {
         $gameData = [
             "materials" => $dbMaterials,
+            "parts" => $dbParts,
+            "robots" => $dbRobots,
             "gold" => $goldVal,
             "fame" => $fameVal,
             "storageSize" => $storageLimitVal,

@@ -25,6 +25,7 @@ export interface RobotPart {
   name: string;
   attribute: Attribute;
   rarity: number;
+  isEquipped?: boolean;
   stats: { hp: number; power: number; defense: number; agility: number; dexterity: number; intelligence: number; };
   battleStats?: {
     matches: number;

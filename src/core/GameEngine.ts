@@ -1140,8 +1140,11 @@ export class GameEngine {
 
     const durationMs = this.getRobotAssembleDuration(headId, bodyId, armsId, legsId);
 
-    // remove parts from inventory
-    this.state.parts = this.state.parts.filter(p => ![headId, bodyId, armsId, legsId].includes(p.id));
+    // mark parts as equipped
+    head.isEquipped = true;
+    body.isEquipped = true;
+    arms.isEquipped = true;
+    legs.isEquipped = true;
 
     const totalHp = head.stats.hp + body.stats.hp + arms.stats.hp + legs.stats.hp;
     const totalPow = head.stats.power + body.stats.power + arms.stats.power + legs.stats.power;
@@ -1201,10 +1204,22 @@ export class GameEngine {
   public cancelAssembleRobot() {
     if (!this.state.activeRobotAssembly) return;
     const { parts } = this.state.activeRobotAssembly.resultRobot;
-    if (parts.head) this.state.parts.push(parts.head);
-    if (parts.body) this.state.parts.push(parts.body);
-    if (parts.arms) this.state.parts.push(parts.arms);
-    if (parts.legs) this.state.parts.push(parts.legs);
+    if (parts.head) {
+      const p = this.state.parts.find(x => x.id === parts.head.id);
+      if (p) p.isEquipped = false;
+    }
+    if (parts.body) {
+      const p = this.state.parts.find(x => x.id === parts.body.id);
+      if (p) p.isEquipped = false;
+    }
+    if (parts.arms) {
+      const p = this.state.parts.find(x => x.id === parts.arms.id);
+      if (p) p.isEquipped = false;
+    }
+    if (parts.legs) {
+      const p = this.state.parts.find(x => x.id === parts.legs.id);
+      if (p) p.isEquipped = false;
+    }
     this.state.activeRobotAssembly = null;
     this.saveState();
   }
@@ -1323,8 +1338,11 @@ export class GameEngine {
 
     if (!head || !body || !arms || !legs) throw new Error("パーツが不足しています");
 
-    // remove parts from inventory
-    this.state.parts = this.state.parts.filter(p => ![headId, bodyId, armsId, legsId].includes(p.id));
+    // mark parts as equipped
+    head.isEquipped = true;
+    body.isEquipped = true;
+    arms.isEquipped = true;
+    legs.isEquipped = true;
 
     const totalHp = head.stats.hp + body.stats.hp + arms.stats.hp + legs.stats.hp;
     const totalPow = head.stats.power + body.stats.power + arms.stats.power + legs.stats.power;
@@ -1615,6 +1633,8 @@ export class GameEngine {
       stats: { ...robot.stats },
       parts: { ...robot.parts }
     });
+    const partIds = [robot.parts.head.id, robot.parts.body.id, robot.parts.arms.id, robot.parts.legs.id];
+    this.state.parts = this.state.parts.filter(p => !partIds.includes(p.id));
     this.state.robots.splice(robotIdx, 1);
     this.state.deliveredRobotsCount += 1;
     this.state.currentRequest = null;
@@ -1733,7 +1753,8 @@ export class GameEngine {
     if (this.state.activeRobotDisassembly.endTime > Date.now()) throw new Error("解体がまだ完了していません");
 
     for (const part of this.state.activeRobotDisassembly.resultParts) {
-      this.state.parts.push(part);
+      const p = this.state.parts.find(x => x.id === part.id);
+      if (p) p.isEquipped = false;
     }
     
     this.state.activeRobotDisassembly = null;

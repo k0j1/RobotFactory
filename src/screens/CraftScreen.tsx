@@ -137,10 +137,10 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
   const availableMainMats = MATERIALS.filter(m => (state.materials[m.id] || 0) >= 3);
   const availableSubMats = MATERIALS.filter(m => (state.materials[m.id] || 0) >= 2);
   
-  const heads = state.parts.filter(p => p.type === 'head');
-  const bodies = state.parts.filter(p => p.type === 'body');
-  const arms = state.parts.filter(p => p.type === 'arms');
-  const legs = state.parts.filter(p => p.type === 'legs');
+  const heads = state.parts.filter(p => p.type === 'head' && !p.isEquipped);
+  const bodies = state.parts.filter(p => p.type === 'body' && !p.isEquipped);
+  const arms = state.parts.filter(p => p.type === 'arms' && !p.isEquipped);
+  const legs = state.parts.filter(p => p.type === 'legs' && !p.isEquipped);
 
   // Part crafting duration estimate
   const estimatedPartDuration = selectedMainMat ? engine.getPartCraftDuration(selectedMainMat, selectedSubMat || undefined) : 10000;

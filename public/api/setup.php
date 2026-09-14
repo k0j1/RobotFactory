@@ -80,6 +80,7 @@ try {
         user_id VARCHAR(255) NOT NULL,
         master_part_id VARCHAR(255) NOT NULL,
         is_equipped BOOLEAN DEFAULT FALSE,
+        part_data JSON,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -97,7 +98,12 @@ try {
         total_agility INT DEFAULT 0,
         total_dexterity INT DEFAULT 0,
         total_int INT DEFAULT 0,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        robot_data JSON,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT fk_head_part FOREIGN KEY (head_part_id) REFERENCES user_parts(id) ON DELETE SET NULL,
+        CONSTRAINT fk_body_part FOREIGN KEY (body_part_id) REFERENCES user_parts(id) ON DELETE SET NULL,
+        CONSTRAINT fk_arms_part FOREIGN KEY (arms_part_id) REFERENCES user_parts(id) ON DELETE SET NULL,
+        CONSTRAINT fk_legs_part FOREIGN KEY (legs_part_id) REFERENCES user_parts(id) ON DELETE SET NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
     CREATE TABLE IF NOT EXISTS active_expeditions (
@@ -178,6 +184,48 @@ try {
     } catch (PDOException $e) {
         // 既に追加されている場合は無視
     }
+
+    try {
+        $pdo->exec("ALTER TABLE user_parts ADD COLUMN part_data JSON");
+    } catch (PDOException $e) {}
+
+    try {
+        $pdo->exec("ALTER TABLE user_robots ADD COLUMN robot_data JSON");
+    } catch (PDOException $e) {}
+
+    // 外部キー制約の追加（既存データがある場合は無視される可能性があるためtry-catch）
+    try {
+        $pdo->exec("ALTER TABLE user_robots ADD CONSTRAINT fk_head_part FOREIGN KEY (head_part_id) REFERENCES user_parts(id) ON DELETE SET NULL");
+        $pdo->exec("ALTER TABLE user_robots ADD CONSTRAINT fk_body_part FOREIGN KEY (body_part_id) REFERENCES user_parts(id) ON DELETE SET NULL");
+        $pdo->exec("ALTER TABLE user_robots ADD CONSTRAINT fk_arms_part FOREIGN KEY (arms_part_id) REFERENCES user_parts(id) ON DELETE SET NULL");
+        $pdo->exec("ALTER TABLE user_robots ADD CONSTRAINT fk_legs_part FOREIGN KEY (legs_part_id) REFERENCES user_parts(id) ON DELETE SET NULL");
+    } catch (PDOException $e) {}
+
+    // save_dataテーブルのJSONから不要なデータを物理的に削除する
+    try {
+        $stmt = $pdo->query("SELECT id, game_data FROM save_data");
+        while ($row = $stmt->fetch()) {
+            if (empty($row['game_data'])) continue;
+            $data = json_decode($row['game_data'], true);
+            if (is_array($data)) {
+                $needsUpdate = false;
+                $keysToRemove = ['parts', 'robots', 'materials', 'gold', 'fame', 'storageSize', 'deliveredRobotsCount', 'starterBonusClaimed'];
+                foreach ($keysToRemove as $k) {
+                    if (isset($data[$k])) {
+                        unset($data[$k]);
+                        $needsUpdate = true;
+                    }
+                }
+                if ($needsUpdate) {
+                    $updateStmt = $pdo->prepare("UPDATE save_data SET game_data = :game_data WHERE id = :id");
+                    $updateStmt->execute([
+                        ':game_data' => json_encode($data, JSON_UNESCAPED_UNICODE),
+                        ':id' => $row['id']
+                    ]);
+                }
+            }
+        }
+    } catch (PDOException $e) {}
 
     echo json_encode([
         "success" => true, 
