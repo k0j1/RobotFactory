@@ -42,7 +42,21 @@ try {
     
     $receivedBonusVal = ($wsRow !== false && isset($wsRow['received_initial_bonus'])) 
         ? (int)$wsRow['received_initial_bonus'] 
-        : null;
+        : 0;
+
+    // usersテーブルからも最新のユーザー情報を取得
+    $uFullStmt = $pdo->prepare("
+        SELECT u.*, COALESCE(s.received_initial_bonus, 0) AS received_initial_bonus 
+        FROM users u 
+        LEFT JOIN user_workshop_status s ON u.google_id = s.user_id 
+        WHERE u.google_id = :u1 OR u.id = :u2 
+        LIMIT 1
+    ");
+    $uFullStmt->execute([':u1' => $actualUserId, ':u2' => $actualUserId]);
+    $userRecord = $uFullStmt->fetch();
+    if ($userRecord) {
+        $userRecord['received_initial_bonus'] = (int)$userRecord['received_initial_bonus'];
+    }
     
     if ($row && !empty($row['game_data'])) {
         $gameData = json_decode($row['game_data'], true);
@@ -57,6 +71,7 @@ try {
             "success" => true, 
             "data" => $gameData,
             "received_initial_bonus" => $receivedBonusVal,
+            "user" => $userRecord,
             "userId" => $actualUserId
         ]);
     } else {
@@ -64,6 +79,7 @@ try {
             "success" => false, 
             "message" => "No saved data found for this user",
             "received_initial_bonus" => $receivedBonusVal,
+            "user" => $userRecord,
             "userId" => $actualUserId
         ]);
     }

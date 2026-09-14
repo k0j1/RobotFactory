@@ -24,6 +24,12 @@ export interface DatabaseUser {
   updated_at?: string;
 }
 
+export interface LoadUserDataResponse {
+  data: GameState | null;
+  received_initial_bonus: number;
+  user?: DatabaseUser;
+}
+
 export interface AuthApiResponse<T = any> {
   success: boolean;
   user?: DatabaseUser;
@@ -307,9 +313,9 @@ export class AuthApiService {
    * データベース（save_dataおよび各テーブル）からユーザーのセーブデータを読み込み
    * @param userId usersテーブルのgoogle_idまたはid
    */
-  public async loadUserData(userId: string): Promise<GameState | null> {
+  public async loadUserData(userId: string): Promise<LoadUserDataResponse> {
     if (!userId) {
-      return null;
+      return { data: null, received_initial_bonus: 0 };
     }
 
     console.log(`[AuthApiService] user_id: ${userId} のセーブデータを読み込み中...`);
@@ -339,15 +345,22 @@ export class AuthApiService {
         }
 
         const parsed = JSON.parse(rawText);
-        if (parsed.success && parsed.data) {
-          console.log(`[AuthApiService] ユーザーデータを正常にロードしました:`, parsed.data);
-          return parsed.data as GameState;
+        if (parsed.success) {
+          console.log(`[AuthApiService] ユーザーデータを正常にロードしました:`, parsed);
+          const bonusVal = parsed.received_initial_bonus !== undefined && parsed.received_initial_bonus !== null
+            ? Number(parsed.received_initial_bonus)
+            : 0;
+          return {
+            data: (parsed.data || null) as GameState | null,
+            received_initial_bonus: bonusVal,
+            user: parsed.user
+          };
         }
       } catch (err: any) {
         console.warn(`[AuthApiService] ロード通信失敗 (${endpoint}):`, err.message);
       }
     }
 
-    return null;
+    return { data: null, received_initial_bonus: 0 };
   }
 }

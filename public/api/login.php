@@ -63,6 +63,9 @@ try {
     ");
     $stmt->execute([':google_id' => $googleId]);
     $user = $stmt->fetch();
+    if ($user) {
+        $user['received_initial_bonus'] = (int)$user['received_initial_bonus'];
+    }
 
     echo json_encode([
         "success" => true,

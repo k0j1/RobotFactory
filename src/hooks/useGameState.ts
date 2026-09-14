@@ -2,11 +2,13 @@ import { useEffect, useState, useRef } from 'react';
 import { GameEngine } from '../core/GameEngine';
 import { GameState } from '../core/models';
 import { AuthApiService } from '../services/AuthApiService';
+import { useAuth } from '../contexts/AuthContext';
 
 export function useGameState(userId?: string | null) {
   const [state, setState] = useState<GameState | null>(null);
   const engineRef = useRef<GameEngine | null>(null);
   const lastUserIdRef = useRef<string | null | undefined>(userId);
+  const { setUser } = useAuth();
 
   useEffect(() => {
     // 初期インスタンス化（userIdがある場合はローカルストレージのデータを一切読まない）
@@ -20,8 +22,13 @@ export function useGameState(userId?: string | null) {
 
     // 既にGoogleログイン状態の場合は、クラウドDBからデータをロードして適用
     if (userId) {
-      AuthApiService.getInstance().loadUserData(userId).then((cloudData) => {
-        engine.switchToGoogleUser(userId, cloudData);
+      AuthApiService.getInstance().loadUserData(userId).then((res) => {
+        engine.switchToGoogleUser(userId, res.data);
+        if (res.user) {
+          setUser(res.user);
+        } else if (res.received_initial_bonus !== undefined && res.received_initial_bonus !== null) {
+          setUser(prev => prev ? { ...prev, received_initial_bonus: res.received_initial_bonus } : null);
+        }
       }).catch((err) => {
         console.warn('[useGameState] 初回クラウドデータロード失敗（初期データ使用）:', err);
         engine.switchToGoogleUser(userId, null);
@@ -46,8 +53,13 @@ export function useGameState(userId?: string | null) {
       lastUserIdRef.current = userId;
       if (userId) {
         // Googleログイン時: クラウドDBからのみロードし、ローカルストレージは一切使用しない
-        AuthApiService.getInstance().loadUserData(userId).then((cloudData) => {
-          engine.switchToGoogleUser(userId, cloudData);
+        AuthApiService.getInstance().loadUserData(userId).then((res) => {
+          engine.switchToGoogleUser(userId, res.data);
+          if (res.user) {
+            setUser(res.user);
+          } else if (res.received_initial_bonus !== undefined && res.received_initial_bonus !== null) {
+            setUser(prev => prev ? { ...prev, received_initial_bonus: res.received_initial_bonus } : null);
+          }
         }).catch((err) => {
           console.warn('[useGameState] クラウドデータロード失敗（初期データ使用）:', err);
           engine.switchToGoogleUser(userId, null);
@@ -57,7 +69,7 @@ export function useGameState(userId?: string | null) {
         engine.switchToGuest();
       }
     }
-  }, [userId]);
+  }, [userId, setUser]);
 
   return { state, engine: engineRef.current };
 }

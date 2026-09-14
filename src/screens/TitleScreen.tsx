@@ -51,9 +51,12 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onStart, engine }) => 
         if (engine) {
           setStatusMessage('データベースからユーザー情報をロード中...');
           try {
-            const cloudData = await apiService.loadUserData(response.user.google_id);
+            const res = await apiService.loadUserData(response.user.google_id);
+            if (res.user) {
+              setUser(res.user);
+            }
             // ローカルストレージは一切使用・保存せず、クラウドDBデータ（新規の場合はクリーンな初期データ）で起動
-            await engine.switchToGoogleUser(response.user.google_id, cloudData);
+            await engine.switchToGoogleUser(response.user.google_id, res.data);
           } catch (syncErr) {
             console.warn('[TitleScreen] クラウドデータ取得エラー（初期データで開始）:', syncErr);
             await engine.switchToGoogleUser(response.user.google_id, null);
@@ -101,7 +104,23 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onStart, engine }) => 
               {user.picture && <img src={user.picture} alt="Profile" className="w-10 h-10 rounded-full border border-stone-500" referrerPolicy="no-referrer" />}
               <p className="text-stone-300 font-bold pr-2">おかえりなさい、{user.name}さん！</p>
             </div>
-            <Button size="lg" onClick={onStart} className="text-xl px-12 py-4 animate-bounce mt-4">
+            <Button size="lg" onClick={async () => {
+              if (user && engine) {
+                try {
+                  const targetId = user.google_id || String((user as any).id);
+                  const res = await AuthApiService.getInstance().loadUserData(targetId);
+                  if (res.user) {
+                    setUser(res.user);
+                  } else if (res.received_initial_bonus !== undefined && res.received_initial_bonus !== null) {
+                    setUser(prev => prev ? { ...prev, received_initial_bonus: res.received_initial_bonus } : null);
+                  }
+                  await engine.switchToGoogleUser(targetId, res.data);
+                } catch (e) {
+                  console.warn('[TitleScreen] onStart loadUserData error:', e);
+                }
+              }
+              onStart();
+            }} className="text-xl px-12 py-4 animate-bounce mt-4">
               工房を開く
             </Button>
             <button 
@@ -138,7 +157,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onStart, engine }) => 
           </div>
         )}
 
-        <p className="mt-12 text-stone-400">v1.0.345</p>
+        <p className="mt-12 text-stone-400">v1.0.346</p>
       </div>
       
       {/* Decorative background elements */}

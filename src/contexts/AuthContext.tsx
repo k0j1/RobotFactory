@@ -13,8 +13,9 @@ export interface User {
 
 interface AuthContextType {
   user: User | null;
-  setUser: (user: User | null) => void;
+  setUser: React.Dispatch<React.SetStateAction<User | null>>;
   markBonusClaimed: () => void;
+  updateBonusStatus: (received_initial_bonus: number | boolean) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -42,8 +43,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(prev => prev ? { ...prev, received_initial_bonus: 1 } : null);
   };
 
+  const updateBonusStatus = (received_initial_bonus: number | boolean) => {
+    const val = Number(received_initial_bonus) === 1 || received_initial_bonus === true ? 1 : 0;
+    setUser(prev => prev ? { ...prev, received_initial_bonus: val } : null);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, setUser, markBonusClaimed }}>
+    <AuthContext.Provider value={{ user, setUser, markBonusClaimed, updateBonusStatus }}>
       {children}
     </AuthContext.Provider>
   );

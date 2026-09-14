@@ -63,19 +63,30 @@ export const StarterBonusCard: React.FC<StarterBonusCardProps> = ({
     setIsClaiming(true);
     setErrorMessage(null);
 
-    try {
-      // APIに受取完了を通知（user_workshop_statusテーブルのreceived_initial_bonusを更新）
-      const apiService = AuthApiService.getInstance();
-      await apiService.claimInitialBonus(user.google_id);
+    const targetUserId = user?.google_id || (user as any)?.id || (user as any)?.sub;
 
-      // 成功時、コンテキストを更新してゲームエンジン側でもアイテムを付与
-      markBonusClaimed();
+    try {
+      if (targetUserId) {
+        // APIに受取完了を通知（user_workshop_statusテーブルのreceived_initial_bonusを更新）
+        const apiService = AuthApiService.getInstance();
+        const res = await apiService.claimInitialBonus(String(targetUserId));
+        if (res.user) {
+          // サーバーから返却された最新ユーザー情報があれば更新
+          markBonusClaimed();
+        } else {
+          markBonusClaimed();
+        }
+      } else {
+        markBonusClaimed();
+      }
+
+      // ゲームエンジン側で素材アイテムを確実に付与
       engine.claimStarterBonus();
       setJustClaimed(true);
       triggerBonusConfetti();
     } catch (err: any) {
       console.error('[StarterBonusCard] Error claiming starter bonus:', err);
-      // API通信エラー時のフォールバック: ユーザーがボーナスを受け取れるようにエンジンへの付与を行い、次回同期に委ねる
+      // 通信エラー時でも、ユーザーへのアイテム付与は確実にローカル適用して進行可能にする
       try {
         markBonusClaimed();
         engine.claimStarterBonus();

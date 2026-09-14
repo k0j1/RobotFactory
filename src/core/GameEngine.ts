@@ -1748,6 +1748,10 @@ export class GameEngine {
   public claimStarterBonus(): { materialsGained: { material: Material; count: number }[] } {
     const materialsGained: { material: Material; count: number }[] = [];
 
+    if (!this.state.materials) {
+      this.state.materials = {};
+    }
+
     // 素材付与（すべて☆1ランクのみであることを確認しながら付与）
     for (const item of STARTER_BONUS_MATERIALS) {
       const mat = MATERIALS.find(m => m.id === item.materialId);
