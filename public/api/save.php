@@ -75,9 +75,12 @@ try {
 
     // 2. save_data テーブルにゲーム全体のスナップショットを保存 (UPSERT)
     // 廃止された starterBonusClaimed などの変数は完全に除去して保存
-    unset($gameData['starterBonusClaimed']);
+    // active_robot_assemblies テーブルで管理・保存されるデータ（activeRobotAssembly）は save_data テーブルには追加・保存しない
+    $saveDataSnapshot = $gameData;
+    unset($saveDataSnapshot['starterBonusClaimed']);
+    unset($saveDataSnapshot['activeRobotAssembly']);
 
-    $jsonGameData = json_encode($gameData, JSON_UNESCAPED_UNICODE);
+    $jsonGameData = json_encode($saveDataSnapshot, JSON_UNESCAPED_UNICODE);
     $stmtSave = $pdo->prepare("
         INSERT INTO save_data (user_id, game_data) 
         VALUES (:user_id, :game_data)

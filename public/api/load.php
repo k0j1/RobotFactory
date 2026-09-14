@@ -77,6 +77,14 @@ try {
             received_initial_bonus BOOLEAN DEFAULT FALSE,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+        CREATE TABLE IF NOT EXISTS active_robot_assemblies (
+            user_id VARCHAR(255) PRIMARY KEY,
+            start_time BIGINT NOT NULL,
+            end_time BIGINT NOT NULL,
+            result_robot_data JSON NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ");
 
     // user_materialテーブルから最新の素材情報を取得 (google_idまたはusers.idのいずれかで登録されている可能性を網羅)
@@ -99,6 +107,25 @@ try {
         }
     }
 
+    // active_robot_assemblies テーブルから最新のロボット組立進行状態を取得
+    $assStmt = $pdo->prepare("
+        SELECT start_time, end_time, result_robot_data 
+        FROM active_robot_assemblies 
+        WHERE user_id IN ($inPlaceholders) 
+        LIMIT 1
+    ");
+    $assStmt->execute(array_values($candidateUserIds));
+    $assRow = $assStmt->fetch();
+    $activeAssembly = null;
+    if ($assRow) {
+        $resultRobot = json_decode($assRow['result_robot_data'], true);
+        $activeAssembly = [
+            'startTime' => (int)$assRow['start_time'],
+            'endTime' => (int)$assRow['end_time'],
+            'resultRobot' => is_array($resultRobot) ? $resultRobot : null
+        ];
+    }
+
     if ($row && !empty($row['game_data'])) {
         $gameData = json_decode($row['game_data'], true);
         if (!is_array($gameData)) {
@@ -116,6 +143,9 @@ try {
             $gameData['materials'][$mId] = $cnt;
         }
 
+        // active_robot_assemblies テーブルの組立データを設定
+        $gameData['activeRobotAssembly'] = $activeAssembly;
+
         echo json_encode([
             "success" => true, 
             "data" => $gameData,
@@ -126,7 +156,8 @@ try {
         ]);
     } else {
         $gameData = [
-            "materials" => $dbMaterials
+            "materials" => $dbMaterials,
+            "activeRobotAssembly" => $activeAssembly
         ];
         echo json_encode([
             "success" => true, 
