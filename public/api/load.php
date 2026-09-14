@@ -58,6 +58,15 @@ try {
         $userRecord['received_initial_bonus'] = (int)$userRecord['received_initial_bonus'];
     }
     
+    // user_materialテーブルから最新の素材情報を取得
+    $matStmt = $pdo->prepare("SELECT material_id, count FROM user_material WHERE user_id = :user_id");
+    $matStmt->execute([':user_id' => $actualUserId]);
+    $matRows = $matStmt->fetchAll();
+    $dbMaterials = [];
+    foreach ($matRows as $mRow) {
+        $dbMaterials[$mRow['material_id']] = (int)$mRow['count'];
+    }
+
     if ($row && !empty($row['game_data'])) {
         $gameData = json_decode($row['game_data'], true);
         if (!is_array($gameData)) {
@@ -67,18 +76,34 @@ try {
         // 廃止された starterBonusClaimed 変数は返却データからも完全に除外
         unset($gameData['starterBonusClaimed']);
 
+        // user_materialテーブルにデータが存在する場合はそちらの素材数を反映・マージ
+        if (!empty($dbMaterials)) {
+            if (!isset($gameData['materials']) || !is_array($gameData['materials'])) {
+                $gameData['materials'] = [];
+            }
+            foreach ($dbMaterials as $mId => $cnt) {
+                $gameData['materials'][$mId] = $cnt;
+            }
+        }
+
         echo json_encode([
             "success" => true, 
             "data" => $gameData,
             "received_initial_bonus" => $receivedBonusVal,
+            "materials" => $dbMaterials,
             "user" => $userRecord,
             "userId" => $actualUserId
         ]);
     } else {
+        $gameData = [
+            "materials" => $dbMaterials
+        ];
         echo json_encode([
             "success" => false, 
             "message" => "No saved data found for this user",
+            "data" => $gameData,
             "received_initial_bonus" => $receivedBonusVal,
+            "materials" => $dbMaterials,
             "user" => $userRecord,
             "userId" => $actualUserId
         ]);

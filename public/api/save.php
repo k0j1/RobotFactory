@@ -252,6 +252,29 @@ try {
         ':elements_up' => $elements
     ]);
 
+    // 11. user_material テーブルの同期（所持素材数）
+    $delMatStmt = $pdo->prepare("DELETE FROM user_material WHERE user_id = :user_id");
+    $delMatStmt->execute([':user_id' => $actualUserId]);
+
+    if (!empty($gameData['materials']) && is_array($gameData['materials'])) {
+        $stmtMat = $pdo->prepare("
+            INSERT INTO user_material (user_id, material_id, count)
+            VALUES (:user_id, :material_id, :count)
+            ON DUPLICATE KEY UPDATE count = :up_count
+        ");
+        foreach ($gameData['materials'] as $matId => $matCount) {
+            $countVal = (int)$matCount;
+            if ($countVal > 0) {
+                $stmtMat->execute([
+                    ':user_id' => $actualUserId,
+                    ':material_id' => (string)$matId,
+                    ':count' => $countVal,
+                    ':up_count' => $countVal
+                ]);
+            }
+        }
+    }
+
     $pdo->commit();
 
     echo json_encode([

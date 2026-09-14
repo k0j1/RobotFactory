@@ -134,6 +134,14 @@ try {
         deadline BIGINT NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    CREATE TABLE IF NOT EXISTS user_material (
+        user_id VARCHAR(255) NOT NULL,
+        material_id VARCHAR(255) NOT NULL,
+        count INT NOT NULL DEFAULT 0,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (user_id, material_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ";
     
     $pdo->exec($sql);

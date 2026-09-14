@@ -614,6 +614,12 @@ export class GameEngine {
     }
     this.state.materials[materialId] = (this.state.materials[materialId] || 0) + amount;
     this.saveState();
+
+    if (this.isCloudAccount && this.userId) {
+      AuthApiService.getInstance().addMaterial(this.userId, materialId, amount).catch((err) => {
+        console.warn('[GameEngine] user_material追加同期エラー:', err);
+      });
+    }
   }
 
   /**
@@ -1777,6 +1783,17 @@ export class GameEngine {
     }
 
     this.saveState();
+
+    if (this.isCloudAccount && this.userId && materialsGained.length > 0) {
+      const addedMap: Record<string, number> = {};
+      for (const item of materialsGained) {
+        addedMap[item.material.id] = item.count;
+      }
+      AuthApiService.getInstance().addMaterials(this.userId, addedMap).catch((err) => {
+        console.warn('[GameEngine] claimStarterBonus user_material同期エラー:', err);
+      });
+    }
+
     this.update();
     return { materialsGained };
   }

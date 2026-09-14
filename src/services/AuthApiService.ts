@@ -202,6 +202,118 @@ export class AuthApiService {
     throw lastError || new Error('ボーナス受取情報の通信に失敗しました。');
   }
 
+  /**
+   * 素材入手時にuser_materialテーブルへ素材数を追加
+   * @param userId usersテーブルのgoogle_idまたはid
+   * @param materialId 素材ID
+   * @param count 追加する素材個数
+   */
+  public async addMaterial(userId: string, materialId: string, count: number = 1): Promise<AuthApiResponse> {
+    if (!userId || !materialId || count <= 0) {
+      return { success: false, error: 'Invalid parameters' };
+    }
+
+    const endpoints = Array.from(new Set([
+      `${this.defaultBaseUrl}/api/add_material.php`,
+      'https://robotfactory.k0j1.v2002.coreserver.jp/api/add_material.php',
+      '/api/add_material.php'
+    ])).filter(Boolean);
+
+    let lastError: Error | null = null;
+
+    for (const endpoint of endpoints) {
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({
+            user_id: userId,
+            material_id: materialId,
+            count: count
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP Error ${response.status}`);
+        }
+
+        const rawText = await response.text();
+        if (rawText.trim().startsWith('<?php')) {
+          throw new Error('PHPが未実行です。');
+        }
+
+        const parsed = JSON.parse(rawText);
+        if (!parsed.success) {
+          throw new Error(parsed.error || '素材追加の記録に失敗しました。');
+        }
+
+        return parsed;
+      } catch (err: any) {
+        lastError = err;
+      }
+    }
+
+    throw lastError || new Error('素材追加APIへの通信に失敗しました。');
+  }
+
+  /**
+   * 複数素材をまとめてuser_materialテーブルへ追加
+   * @param userId usersテーブルのgoogle_idまたはid
+   * @param materials 素材IDと個数のマッピング
+   */
+  public async addMaterials(userId: string, materials: Record<string, number>): Promise<AuthApiResponse> {
+    if (!userId || !materials || Object.keys(materials).length === 0) {
+      return { success: false, error: 'Invalid parameters' };
+    }
+
+    const endpoints = Array.from(new Set([
+      `${this.defaultBaseUrl}/api/add_material.php`,
+      'https://robotfactory.k0j1.v2002.coreserver.jp/api/add_material.php',
+      '/api/add_material.php'
+    ])).filter(Boolean);
+
+    let lastError: Error | null = null;
+
+    for (const endpoint of endpoints) {
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({
+            user_id: userId,
+            materials: materials
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP Error ${response.status}`);
+        }
+
+        const rawText = await response.text();
+        if (rawText.trim().startsWith('<?php')) {
+          throw new Error('PHPが未実行です。');
+        }
+
+        const parsed = JSON.parse(rawText);
+        if (!parsed.success) {
+          throw new Error(parsed.error || '素材追加の記録に失敗しました。');
+        }
+
+        return parsed;
+      } catch (err: any) {
+        lastError = err;
+      }
+    }
+
+    throw lastError || new Error('素材追加APIへの通信に失敗しました。');
+  }
+
   // クラウド同期用デバウンスタイマー
   private syncTimer: any = null;
   private pendingStateToSync: GameState | null = null;
