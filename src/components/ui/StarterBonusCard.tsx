@@ -63,15 +63,14 @@ export const StarterBonusCard: React.FC<StarterBonusCardProps> = ({
     setIsClaiming(true);
     setErrorMessage(null);
 
-    const targetUserId = user?.google_id || (user as any)?.id || (user as any)?.sub;
+    const targetUserId = user?.google_id || (user as any)?.id || (user as any)?.sub || (engine as any)?.userId;
 
     try {
       if (targetUserId) {
-        // APIに受取完了を通知（user_workshop_statusテーブルのreceived_initial_bonusを更新）
+        // 1. APIに受取完了を通知（user_workshop_statusおよびuser_materialテーブルの更新）
         const apiService = AuthApiService.getInstance();
         const res = await apiService.claimInitialBonus(String(targetUserId));
         if (res.user) {
-          // サーバーから返却された最新ユーザー情報があれば更新
           markBonusClaimed();
         } else {
           markBonusClaimed();
@@ -80,8 +79,22 @@ export const StarterBonusCard: React.FC<StarterBonusCardProps> = ({
         markBonusClaimed();
       }
 
-      // ゲームエンジン側で素材アイテムを確実に付与
+      // 2. ゲームエンジン側で素材アイテムを確実に付与＆テーブル即時同期
       engine.claimStarterBonus();
+
+      // 3. user_materialテーブルへの直接加算エンドポイントも念のため呼んで二重保護
+      if (targetUserId) {
+        AuthApiService.getInstance().addMaterials(String(targetUserId), {
+          'm_e1_1': 6,
+          'm_e1_2': 4,
+          'm_f1_1': 5,
+          'm_w1_1': 5,
+          'm_a1_1': 4
+        }).catch(err => {
+          console.warn('[StarterBonusCard] user_material direct add error:', err);
+        });
+      }
+
       setJustClaimed(true);
       triggerBonusConfetti();
     } catch (err: any) {

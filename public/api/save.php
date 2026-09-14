@@ -41,6 +41,36 @@ try {
         $actualUserId = $userRecord['google_id'];
     }
 
+    // テーブルの存在を事前に保証
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS user_material (
+            user_id VARCHAR(255) NOT NULL,
+            material_id VARCHAR(255) NOT NULL,
+            count INT NOT NULL DEFAULT 0,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (user_id, material_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+        CREATE TABLE IF NOT EXISTS save_data (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id VARCHAR(255) NOT NULL UNIQUE,
+            game_data JSON NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+        CREATE TABLE IF NOT EXISTS user_workshop_status (
+            user_id VARCHAR(255) PRIMARY KEY,
+            fame INT DEFAULT 0,
+            gold INT DEFAULT 0,
+            consumed_gold INT DEFAULT 0,
+            storage_limit INT DEFAULT 0,
+            delivered_count INT DEFAULT 0,
+            received_initial_bonus BOOLEAN DEFAULT FALSE,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    ");
+
     $pdo->beginTransaction();
 
     // 2. save_data テーブルにゲーム全体のスナップショットを保存 (UPSERT)

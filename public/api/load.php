@@ -58,6 +58,27 @@ try {
         $userRecord['received_initial_bonus'] = (int)$userRecord['received_initial_bonus'];
     }
     
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS user_material (
+            user_id VARCHAR(255) NOT NULL,
+            material_id VARCHAR(255) NOT NULL,
+            count INT NOT NULL DEFAULT 0,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (user_id, material_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+        CREATE TABLE IF NOT EXISTS user_workshop_status (
+            user_id VARCHAR(255) PRIMARY KEY,
+            fame INT DEFAULT 0,
+            gold INT DEFAULT 0,
+            consumed_gold INT DEFAULT 0,
+            storage_limit INT DEFAULT 0,
+            delivered_count INT DEFAULT 0,
+            received_initial_bonus BOOLEAN DEFAULT FALSE,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    ");
+
     // user_materialテーブルから最新の素材情報を取得
     $matStmt = $pdo->prepare("SELECT material_id, count FROM user_material WHERE user_id = :user_id");
     $matStmt->execute([':user_id' => $actualUserId]);
