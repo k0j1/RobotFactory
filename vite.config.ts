@@ -4,11 +4,8 @@ import path from 'path';
 import {defineConfig} from 'vite';
 
 export default defineConfig(({ command }) => {
-  const isProd = command === 'build';
-  // GitHub Actions環境ではリポジトリ名をbaseに設定、本番ビルドは相対パス、開発サーバーはルートパス
-  const base = process.env.GITHUB_REPOSITORY 
-    ? `/${process.env.GITHUB_REPOSITORY.split('/')[1]}/` 
-    : (isProd ? './' : '/');
+  // CoreServerのドメイン直下に展開されるため、baseは'/'に設定します
+  const base = '/';
 
   return {
     base,
