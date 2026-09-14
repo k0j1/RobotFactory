@@ -32,21 +32,13 @@ export const StarterBonusCard: React.FC<StarterBonusCardProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [justClaimed, setJustClaimed] = useState(false);
 
-  // DB上の受取済み判定（received_initial_bonusが1またはtrueなら受取済み）
+  // DB上の受取済み判定（user_workshop_statusテーブルのreceived_initial_bonusが1またはtrueなら受取済み）
   const isClaimedInDb = user
     ? (Number(user.received_initial_bonus) === 1 || user.received_initial_bonus === true)
     : false;
 
-  // DB上は未受取（received_initial_bonus == 0）なのに、エンジンのstarterBonusClaimedがtrueになっている不整合を自動解消
-  React.useEffect(() => {
-    if (user && !isClaimedInDb && state.starterBonusClaimed) {
-      console.log('[StarterBonusCard] DB未受取(received_initial_bonus=0)に合わせてengineのstarterBonusClaimedをfalseにリセット');
-      engine.setStarterBonusClaimed(false);
-    }
-  }, [user, isClaimedInDb, state.starterBonusClaimed, engine]);
-
   // ログインしていない場合、またはすでに受け取り済みの場合は表示しない
-  // ※DB上で未受取（received_initial_bonusが0）であれば、過去のキャッシュ状態に関わらず必ず受け取りカードを表示する
+  // ※DB上のreceived_initial_bonus（user_workshop_status）のみを唯一の真実（Source of Truth）として判定
   if (!user || (isClaimedInDb && !justClaimed)) {
     return null;
   }
@@ -76,9 +68,9 @@ export const StarterBonusCard: React.FC<StarterBonusCardProps> = ({
       const apiService = AuthApiService.getInstance();
       await apiService.claimInitialBonus(user.google_id);
 
-      // 成功時、コンテキストを更新してゲームエンジン側でもアイテムを付与（force=trueで安全・確実に付与）
+      // 成功時、コンテキストを更新してゲームエンジン側でもアイテムを付与
       markBonusClaimed();
-      engine.claimStarterBonus(true);
+      engine.claimStarterBonus();
       setJustClaimed(true);
       triggerBonusConfetti();
     } catch (err: any) {
@@ -86,7 +78,7 @@ export const StarterBonusCard: React.FC<StarterBonusCardProps> = ({
       // API通信エラー時のフォールバック: ユーザーがボーナスを受け取れるようにエンジンへの付与を行い、次回同期に委ねる
       try {
         markBonusClaimed();
-        engine.claimStarterBonus(true);
+        engine.claimStarterBonus();
         setJustClaimed(true);
         triggerBonusConfetti();
       } catch (localErr: any) {

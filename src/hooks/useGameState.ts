@@ -3,7 +3,7 @@ import { GameEngine } from '../core/GameEngine';
 import { GameState } from '../core/models';
 import { AuthApiService } from '../services/AuthApiService';
 
-export function useGameState(userId?: string | null, receivedInitialBonus?: number | boolean | null) {
+export function useGameState(userId?: string | null) {
   const [state, setState] = useState<GameState | null>(null);
   const engineRef = useRef<GameEngine | null>(null);
   const lastUserIdRef = useRef<string | null | undefined>(userId);
@@ -21,10 +21,10 @@ export function useGameState(userId?: string | null, receivedInitialBonus?: numb
     // 既にGoogleログイン状態の場合は、クラウドDBからデータをロードして適用
     if (userId) {
       AuthApiService.getInstance().loadUserData(userId).then((cloudData) => {
-        engine.switchToGoogleUser(userId, cloudData, receivedInitialBonus);
+        engine.switchToGoogleUser(userId, cloudData);
       }).catch((err) => {
         console.warn('[useGameState] 初回クラウドデータロード失敗（初期データ使用）:', err);
-        engine.switchToGoogleUser(userId, null, receivedInitialBonus);
+        engine.switchToGoogleUser(userId, null);
       });
     }
 
@@ -47,25 +47,17 @@ export function useGameState(userId?: string | null, receivedInitialBonus?: numb
       if (userId) {
         // Googleログイン時: クラウドDBからのみロードし、ローカルストレージは一切使用しない
         AuthApiService.getInstance().loadUserData(userId).then((cloudData) => {
-          engine.switchToGoogleUser(userId, cloudData, receivedInitialBonus);
+          engine.switchToGoogleUser(userId, cloudData);
         }).catch((err) => {
           console.warn('[useGameState] クラウドデータロード失敗（初期データ使用）:', err);
-          engine.switchToGoogleUser(userId, null, receivedInitialBonus);
+          engine.switchToGoogleUser(userId, null);
         });
       } else {
         // ログアウト時: ゲスト用のローカルストレージへ切り替え
         engine.switchToGuest();
       }
     }
-  }, [userId, receivedInitialBonus]);
-
-  // received_initial_bonus の値とエンジンの starterBonusClaimed の不整合を検知して同期
-  useEffect(() => {
-    const engine = engineRef.current;
-    if (!engine || !userId || receivedInitialBonus === undefined || receivedInitialBonus === null) return;
-    const isClaimedInDb = Number(receivedInitialBonus) === 1 || receivedInitialBonus === true;
-    engine.setStarterBonusClaimed(isClaimedInDb);
-  }, [userId, receivedInitialBonus]);
+  }, [userId]);
 
   return { state, engine: engineRef.current };
 }

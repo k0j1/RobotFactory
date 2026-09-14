@@ -44,6 +44,9 @@ try {
     $pdo->beginTransaction();
 
     // 2. save_data テーブルにゲーム全体のスナップショットを保存 (UPSERT)
+    // 廃止された starterBonusClaimed などの変数は完全に除去して保存
+    unset($gameData['starterBonusClaimed']);
+
     $jsonGameData = json_encode($gameData, JSON_UNESCAPED_UNICODE);
     $stmtSave = $pdo->prepare("
         INSERT INTO save_data (user_id, game_data) 
@@ -61,17 +64,15 @@ try {
     $fame = isset($gameData['fame']) ? (int)$gameData['fame'] : 0;
     $storageLimit = isset($gameData['storageSize']) ? (int)$gameData['storageSize'] : 0;
     $deliveredCount = isset($gameData['deliveredRobotsCount']) ? (int)$gameData['deliveredRobotsCount'] : 0;
-    $receivedInitialBonus = !empty($gameData['starterBonusClaimed']) ? 1 : 0;
 
     $stmtWorkshop = $pdo->prepare("
-        INSERT INTO user_workshop_status (user_id, fame, gold, storage_limit, delivered_count, received_initial_bonus)
-        VALUES (:user_id, :fame, :gold, :storage_limit, :delivered_count, :received_initial_bonus)
+        INSERT INTO user_workshop_status (user_id, fame, gold, storage_limit, delivered_count)
+        VALUES (:user_id, :fame, :gold, :storage_limit, :delivered_count)
         ON DUPLICATE KEY UPDATE 
             fame = :up_fame,
             gold = :up_gold,
             storage_limit = :up_storage_limit,
-            delivered_count = :up_delivered_count,
-            received_initial_bonus = GREATEST(COALESCE(user_workshop_status.received_initial_bonus, 0), :up_received_initial_bonus)
+            delivered_count = :up_delivered_count
     ");
     $stmtWorkshop->execute([
         ':user_id' => $actualUserId,
@@ -79,12 +80,10 @@ try {
         ':gold' => $gold,
         ':storage_limit' => $storageLimit,
         ':delivered_count' => $deliveredCount,
-        ':received_initial_bonus' => $receivedInitialBonus,
         ':up_fame' => $fame,
         ':up_gold' => $gold,
         ':up_storage_limit' => $storageLimit,
         ':up_delivered_count' => $deliveredCount,
-        ':up_received_initial_bonus' => $receivedInitialBonus,
     ]);
 
     // 4. user_robots テーブルの同期

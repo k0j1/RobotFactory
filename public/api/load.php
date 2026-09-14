@@ -50,12 +50,8 @@ try {
             $gameData = [];
         }
 
-        // user_workshop_statusのreceived_initial_bonusが0または未設定なら、starterBonusClaimedは確実にfalseに補正
-        if ($receivedBonusVal === 0 || $receivedBonusVal === null) {
-            $gameData['starterBonusClaimed'] = false;
-        } elseif ($receivedBonusVal === 1) {
-            $gameData['starterBonusClaimed'] = true;
-        }
+        // 廃止された starterBonusClaimed 変数は返却データからも完全に除外
+        unset($gameData['starterBonusClaimed']);
 
         echo json_encode([
             "success" => true, 
