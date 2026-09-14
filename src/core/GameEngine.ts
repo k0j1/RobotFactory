@@ -1785,12 +1785,9 @@ export class GameEngine {
     this.saveState();
 
     if (this.isCloudAccount && this.userId && materialsGained.length > 0) {
-      const addedMap: Record<string, number> = {};
-      for (const item of materialsGained) {
-        addedMap[item.material.id] = item.count;
-      }
-      AuthApiService.getInstance().addMaterials(this.userId, addedMap).catch((err) => {
-        console.warn('[GameEngine] claimStarterBonus user_material同期エラー:', err);
+      // user_materialテーブルへの即時素材加算および全テーブル同期を実行
+      AuthApiService.getInstance().saveAllDataToTables(this.userId, this.state, true).catch((err) => {
+        console.warn('[GameEngine] claimStarterBonus 即時DB同期エラー:', err);
       });
     }
 
