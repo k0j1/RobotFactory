@@ -18,7 +18,23 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    try {
+      const savedUser = localStorage.getItem('workshop_user');
+      return savedUser ? JSON.parse(savedUser) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  // ユーザー情報が更新されたらローカルストレージにも保存する
+  React.useEffect(() => {
+    if (user) {
+      localStorage.setItem('workshop_user', JSON.stringify(user));
+    } else {
+      localStorage.removeItem('workshop_user');
+    }
+  }, [user]);
 
   const markBonusClaimed = () => {
     setUser(prev => prev ? { ...prev, received_initial_bonus: 1 } : null);

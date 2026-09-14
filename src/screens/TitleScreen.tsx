@@ -97,10 +97,16 @@ export const TitleScreen: React.FC<{ onStart: () => void }> = ({ onStart }) => {
           <p className="text-xl text-stone-300 animate-pulse">読み込み中...</p>
         ) : user ? (
           <div className="flex flex-col items-center gap-4">
-            <p className="text-stone-300">ようこそ、{user.name}さん！</p>
-            <Button size="lg" onClick={onStart} className="text-xl px-12 py-4 animate-bounce">
+            <div className="flex items-center gap-3 bg-stone-800/80 p-3 rounded-full border border-stone-600">
+              {user.picture && <img src={user.picture} alt="Profile" className="w-10 h-10 rounded-full border border-stone-500" referrerPolicy="no-referrer" />}
+              <p className="text-stone-300 font-bold pr-2">おかえりなさい、{user.name}さん！</p>
+            </div>
+            <Button size="lg" onClick={onStart} className="text-xl px-12 py-4 animate-bounce mt-4">
               工房を開く
             </Button>
+            <button onClick={() => setUser(null)} className="text-stone-500 text-sm underline mt-2 hover:text-stone-300">
+              別のアカウントでログイン
+            </button>
           </div>
         ) : (
           <div className="flex flex-col items-center gap-4">
