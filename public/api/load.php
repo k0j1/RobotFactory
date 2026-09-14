@@ -34,18 +34,40 @@ try {
     $stmt = $pdo->prepare("SELECT game_data FROM save_data WHERE user_id = :user_id");
     $stmt->execute([':user_id' => $actualUserId]);
     $row = $stmt->fetch();
+
+    // user_workshop_statusテーブルから最新のボーナス受取状況を取得
+    $wsStmt = $pdo->prepare("SELECT received_initial_bonus FROM user_workshop_status WHERE user_id = :user_id LIMIT 1");
+    $wsStmt->execute([':user_id' => $actualUserId]);
+    $wsRow = $wsStmt->fetch();
+    
+    $receivedBonusVal = ($wsRow !== false && isset($wsRow['received_initial_bonus'])) 
+        ? (int)$wsRow['received_initial_bonus'] 
+        : null;
     
     if ($row && !empty($row['game_data'])) {
         $gameData = json_decode($row['game_data'], true);
+        if (!is_array($gameData)) {
+            $gameData = [];
+        }
+
+        // user_workshop_statusのreceived_initial_bonusが0または未設定なら、starterBonusClaimedは確実にfalseに補正
+        if ($receivedBonusVal === 0 || $receivedBonusVal === null) {
+            $gameData['starterBonusClaimed'] = false;
+        } elseif ($receivedBonusVal === 1) {
+            $gameData['starterBonusClaimed'] = true;
+        }
+
         echo json_encode([
             "success" => true, 
             "data" => $gameData,
+            "received_initial_bonus" => $receivedBonusVal,
             "userId" => $actualUserId
         ]);
     } else {
         echo json_encode([
             "success" => false, 
             "message" => "No saved data found for this user",
+            "received_initial_bonus" => $receivedBonusVal,
             "userId" => $actualUserId
         ]);
     }

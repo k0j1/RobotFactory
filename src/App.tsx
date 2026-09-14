@@ -20,7 +20,7 @@ import { useAuth } from './contexts/AuthContext';
 
 export default function App() {
   const { user } = useAuth();
-  const { state, engine } = useGameState(user?.google_id);
+  const { state, engine } = useGameState(user?.google_id, user?.received_initial_bonus);
   const [view, setView] = useState('title');
 
   // アプリ起動時に背景画像をプリロードしてインメモリキャッシュに常駐（遠征で使用している背景画像のみに統一）

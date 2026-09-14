@@ -69,8 +69,9 @@ export class GameEngine {
    * クラウドデータのみを使用し、ローカルストレージのデータは一切使用・混入させません
    * @param userId usersテーブルのgoogle_id
    * @param cloudState サーバーDBから取得したセーブデータ（存在しない場合はnull）
+   * @param receivedInitialBonus user_workshop_statusテーブルのreceived_initial_bonus（未受取時は0）
    */
-  public async switchToGoogleUser(userId: string, cloudState: Partial<GameState> | null): Promise<void> {
+  public async switchToGoogleUser(userId: string, cloudState: Partial<GameState> | null, receivedInitialBonus?: number | boolean | null): Promise<void> {
     this.userId = userId;
     this.isCloudAccount = true;
     console.log(`[GameEngine] Googleアカウント (${userId}) に切り替えました。ローカルストレージのデータは完全に遮断されます。`);
@@ -81,6 +82,13 @@ export class GameEngine {
     } else {
       console.log('[GameEngine] サーバーDBにセーブデータが存在しないため、新規初期データから開始します。');
       this.state = JSON.parse(JSON.stringify(INITIAL_STATE));
+    }
+
+    // receivedInitialBonus が明示的に渡されている場合、DBの真実（user_workshop_status）を最優先反映
+    if (receivedInitialBonus !== undefined && receivedInitialBonus !== null) {
+      const isClaimed = Number(receivedInitialBonus) === 1 || receivedInitialBonus === true;
+      this.state.starterBonusClaimed = isClaimed;
+      console.log(`[GameEngine] DB上のreceived_initial_bonus (${receivedInitialBonus}) に基づき starterBonusClaimed = ${isClaimed} に設定しました。`);
     }
 
     // UIへ反映（ローカルストレージへは一切保存しない）
@@ -1745,6 +1753,18 @@ export class GameEngine {
   }
 
   /**
+   * 初回ロボット組み立てボーナス受取状態を明示的に設定（DBのreceived_initial_bonusと同期）
+   */
+  public setStarterBonusClaimed(claimed: boolean): void {
+    if (this.state.starterBonusClaimed !== claimed) {
+      this.state.starterBonusClaimed = claimed;
+      this.saveState();
+      this.update();
+      console.log(`[GameEngine] starterBonusClaimed を ${claimed} に更新しました`);
+    }
+  }
+
+  /**
    * 初回ロボット組み立てボーナスが受け取り可能か判定
    */
   public canClaimStarterBonus(): boolean {
@@ -1754,9 +1774,10 @@ export class GameEngine {
   /**
    * 新人技師応援！初回ロボット組み立て用ボーナス素材（すべて☆1ランクのみ）の受取
    * ヘッド・ボディ・アーム・レッグの全4部位（計20個必要）を組み立て可能な☆1素材24個セットを付与
+   * @param force trueの場合は万が一受取フラグが立っていても上書きして付与を実行
    */
-  public claimStarterBonus(): { materialsGained: { material: Material; count: number }[] } {
-    if (this.state.starterBonusClaimed) {
+  public claimStarterBonus(force: boolean = false): { materialsGained: { material: Material; count: number }[] } {
+    if (this.state.starterBonusClaimed && !force) {
       throw new Error("初回ボーナス素材はすでに受け取り済みです。");
     }
 

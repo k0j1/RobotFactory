@@ -53,10 +53,10 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onStart, engine }) => 
           try {
             const cloudData = await apiService.loadUserData(response.user.google_id);
             // ローカルストレージは一切使用・保存せず、クラウドDBデータ（新規の場合はクリーンな初期データ）で起動
-            await engine.switchToGoogleUser(response.user.google_id, cloudData);
+            await engine.switchToGoogleUser(response.user.google_id, cloudData, response.user.received_initial_bonus);
           } catch (syncErr) {
             console.warn('[TitleScreen] クラウドデータ取得エラー（初期データで開始）:', syncErr);
-            await engine.switchToGoogleUser(response.user.google_id, null);
+            await engine.switchToGoogleUser(response.user.google_id, null, response.user.received_initial_bonus);
           }
         }
 
@@ -138,7 +138,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onStart, engine }) => 
           </div>
         )}
 
-        <p className="mt-12 text-stone-400">v1.0.343</p>
+        <p className="mt-12 text-stone-400">v1.0.344</p>
       </div>
       
       {/* Decorative background elements */}

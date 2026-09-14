@@ -56,7 +56,7 @@ try {
     
     // 更新後のユーザーデータとステータスを結合して取得
     $stmt = $pdo->prepare("
-        SELECT u.*, s.received_initial_bonus 
+        SELECT u.*, COALESCE(s.received_initial_bonus, 0) AS received_initial_bonus 
         FROM users u 
         LEFT JOIN user_workshop_status s ON u.google_id = s.user_id 
         WHERE u.google_id = :google_id

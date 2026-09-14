@@ -22,8 +22,19 @@ if (!$googleId) {
 
 $pdo = getDB();
 try {
-    $stmt = $pdo->prepare("UPDATE user_workshop_status SET received_initial_bonus = TRUE WHERE user_id = :google_id");
-    $stmt->execute([':google_id' => $googleId]);
+    // usersテーブルから該当ユーザーのgoogle_idを特定
+    $uStmt = $pdo->prepare("SELECT google_id FROM users WHERE google_id = :u1 OR id = :u2 LIMIT 1");
+    $uStmt->execute([':u1' => $googleId, ':u2' => $googleId]);
+    $uRec = $uStmt->fetch();
+    $targetId = ($uRec && !empty($uRec['google_id'])) ? $uRec['google_id'] : $googleId;
+
+    // user_workshop_statusテーブルにUPSERT（存在しない場合は新規作成、存在する場合は更新）
+    $stmt = $pdo->prepare("
+        INSERT INTO user_workshop_status (user_id, received_initial_bonus)
+        VALUES (:google_id, 1)
+        ON DUPLICATE KEY UPDATE received_initial_bonus = 1
+    ");
+    $stmt->execute([':google_id' => $targetId]);
 
     echo json_encode([
         "success" => true,

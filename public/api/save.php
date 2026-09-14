@@ -71,7 +71,7 @@ try {
             gold = :up_gold,
             storage_limit = :up_storage_limit,
             delivered_count = :up_delivered_count,
-            received_initial_bonus = :up_received_initial_bonus
+            received_initial_bonus = GREATEST(COALESCE(user_workshop_status.received_initial_bonus, 0), :up_received_initial_bonus)
     ");
     $stmtWorkshop->execute([
         ':user_id' => $actualUserId,
