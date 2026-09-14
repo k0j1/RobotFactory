@@ -5,6 +5,12 @@ header('Content-Type: application/json; charset=utf-8');
 
 $pdo = getDB();
 
+if (!$pdo) {
+    http_response_code(500);
+    echo json_encode(["error" => "Failed to get database connection. Check DB credentials in GitHub Secrets."]);
+    exit;
+}
+
 try {
     // セーブデータを保存するテーブルの作成
     $sql = "

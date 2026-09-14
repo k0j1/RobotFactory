@@ -52,5 +52,24 @@ jobs:
       # アップロード完了後、DBマイグレーション（テーブル作成）用のPHPを叩いてDB構成を更新します
       - name: Run DB Setup Migration
         run: |
-          # 実際の公開URLに変更してください
-          curl -f "https://your-domain.com/api/setup.php"
+          # setup.phpを叩き、HTTPステータスコードをチェックします。エラーの場合はアクションを失敗(Fail)させます。
+          echo "Running Database Migration..."
+          RESPONSE=$(curl -s -w "\n%{http_code}" "https://robotfactory.k0j1.v2002.coreserver.jp/api/setup.php")
+          HTTP_STATUS=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+          
+          echo "Status Code: $HTTP_STATUS"
+          echo "Response Body: $BODY"
+          
+          if [ "$HTTP_STATUS" -ne 200 ]; then
+            echo "Error: Database setup failed with status $HTTP_STATUS"
+            exit 1
+          fi
+          
+          # 200 OKでも中身がエラー(例: {"error": "..."})の場合は失敗させる
+          if echo "$BODY" | grep -q '"error"'; then
+            echo "Error: Database setup returned an error inside the response"
+            exit 1
+          fi
+          
+          echo "Database migration completed successfully."

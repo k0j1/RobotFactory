@@ -37,6 +37,7 @@ export const TitleScreen: React.FC<{ onStart: () => void }> = ({ onStart }) => {
         // モックの遅延をシミュレート
         await new Promise(resolve => setTimeout(resolve, 500));
       } else {
+        console.log('[Prod Mode] Fetching /api/login.php...');
         const res = await fetch('/api/login.php', {
           method: 'POST',
           headers: {
@@ -50,8 +51,10 @@ export const TitleScreen: React.FC<{ onStart: () => void }> = ({ onStart }) => {
           })
         });
         
-        // PHPファイルがそのままテキストとして返ってきてしまう場合（環境エラー）のフォールバック
+        console.log('[Prod Mode] Response status:', res.status);
         const text = await res.text();
+        console.log('[Prod Mode] Response text:', text.substring(0, 200) + (text.length > 200 ? '...' : ''));
+        
         if (text.startsWith('<?php')) {
           throw new Error('PHP is not running on this server.');
         }
@@ -62,12 +65,12 @@ export const TitleScreen: React.FC<{ onStart: () => void }> = ({ onStart }) => {
         setUser(data.user);
         onStart();
       } else {
-        console.error('Login failed:', data);
-        alert('ログインに失敗しました');
+        console.error('Login failed data:', data);
+        alert(`ログイン処理に失敗しました: ${data.error || '不明なエラー'}`);
       }
-    } catch (err) {
-      console.error('Error during login:', err);
-      alert('エラーが発生しました');
+    } catch (err: any) {
+      console.error('Error during login try/catch:', err);
+      alert(`サーバー通信エラーが発生しました:\n${err.message}`);
     } finally {
       setLoading(false);
     }

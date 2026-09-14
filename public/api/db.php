@@ -23,8 +23,8 @@ function getDB() {
         ]);
         return $pdo;
     } catch (PDOException $e) {
-        http_response_code(500);
+        // http_response_code(500); 呼び出し元で設定させるためここは出力のみ
         echo json_encode(["error" => "Database connection failed: " . $e->getMessage()]);
-        exit;
+        return null;
     }
 }
