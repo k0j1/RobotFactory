@@ -7,8 +7,14 @@ import { GoogleLogin } from '@react-oauth/google';
 import { jwtDecode } from 'jwt-decode';
 import { useAuth } from '../contexts/AuthContext';
 import { AuthApiService } from '../services/AuthApiService';
+import { GameEngine } from '../core/GameEngine';
 
-export const TitleScreen: React.FC<{ onStart: () => void }> = ({ onStart }) => {
+interface TitleScreenProps {
+  onStart: () => void;
+  engine?: GameEngine;
+}
+
+export const TitleScreen: React.FC<TitleScreenProps> = ({ onStart, engine }) => {
   const { user, setUser } = useAuth();
   const [loading, setLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string>('読み込み中...');
@@ -40,6 +46,20 @@ export const TitleScreen: React.FC<{ onStart: () => void }> = ({ onStart }) => {
       if (response.success && response.user) {
         console.log('[TitleScreen] usersテーブル保存完了:', response.user);
         setUser(response.user);
+
+        // Googleログイン完了後: 端末のローカルストレージデータは一切使用せず、クラウドDB上のデータのみでエンジンを稼働
+        if (engine) {
+          setStatusMessage('データベースからユーザー情報をロード中...');
+          try {
+            const cloudData = await apiService.loadUserData(response.user.google_id);
+            // ローカルストレージは一切使用・保存せず、クラウドDBデータ（新規の場合はクリーンな初期データ）で起動
+            await engine.switchToGoogleUser(response.user.google_id, cloudData);
+          } catch (syncErr) {
+            console.warn('[TitleScreen] クラウドデータ取得エラー（初期データで開始）:', syncErr);
+            await engine.switchToGoogleUser(response.user.google_id, null);
+          }
+        }
+
         onStart();
       } else {
         console.error('Login failed response:', response);
@@ -84,8 +104,17 @@ export const TitleScreen: React.FC<{ onStart: () => void }> = ({ onStart }) => {
             <Button size="lg" onClick={onStart} className="text-xl px-12 py-4 animate-bounce mt-4">
               工房を開く
             </Button>
-            <button onClick={() => setUser(null)} className="text-stone-500 text-sm underline mt-2 hover:text-stone-300">
-              別のアカウントでログイン
+            <p className="text-xs text-emerald-400/90 bg-emerald-950/60 border border-emerald-700/50 px-3 py-1 rounded-full">
+              ☁️ クラウドDB専用モード（端末ローカルデータは使用していません）
+            </p>
+            <button 
+              onClick={() => {
+                setUser(null);
+                engine?.switchToGuest();
+              }} 
+              className="text-stone-500 text-sm underline mt-2 hover:text-stone-300"
+            >
+              ログアウト（ゲストモードに戻る）
             </button>
           </div>
         ) : (
@@ -98,14 +127,24 @@ export const TitleScreen: React.FC<{ onStart: () => void }> = ({ onStart }) => {
               }}
               useOneTap
             />
-            <p className="text-sm text-stone-400 mt-2">※ ゲストプレイをご希望の場合はログインせずに進めます</p>
-            <Button size="md" onClick={onStart} variant="secondary" className="px-8 mt-2 opacity-80">
-              ログインせずに始める
+            <p className="text-xs text-amber-400/90 max-w-xs text-center">
+              ※ Googleログイン時は端末のローカルストレージを使用せず、クラウドDB専用のセーブデータが適用されます
+            </p>
+            <Button 
+              size="md" 
+              onClick={() => {
+                engine?.switchToGuest();
+                onStart();
+              }} 
+              variant="secondary" 
+              className="px-8 mt-2 opacity-80"
+            >
+              ログインせずに始める（端末ローカル保存）
             </Button>
           </div>
         )}
 
-        <p className="mt-12 text-stone-400">v1.0.340</p>
+        <p className="mt-12 text-stone-400">v1.0.342</p>
       </div>
       
       {/* Decorative background elements */}

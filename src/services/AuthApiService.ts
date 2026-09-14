@@ -4,6 +4,8 @@
  * 厳格なオブジェクト指向プログラミング（OOP）原則に基づき、APIとの通信・永続化ロジックをカプセル化しています。
  */
 
+import { GameState } from '../core/models';
+
 export interface GoogleUserPayload {
   google_id: string;
   email?: string;
@@ -192,5 +194,160 @@ export class AuthApiService {
     }
 
     throw lastError || new Error('ボーナス受取情報の通信に失敗しました。');
+  }
+
+  // クラウド同期用デバウンスタイマー
+  private syncTimer: any = null;
+  private pendingStateToSync: GameState | null = null;
+  private isSyncing: boolean = false;
+
+  /**
+   * Googleログイン済みユーザーの全ゲーム情報（ステータス、ロボット、パーツ、遠征、製造、組立、依頼等）を
+   * usersテーブルに紐づく適切な各テーブルへ確実に保存
+   * @param userId usersテーブルのgoogle_idまたはid
+   * @param state 現在の完全なゲームステート
+   * @param immediate trueの場合はデバウンスを待たずに即時送信
+   */
+  public async saveAllDataToTables(userId: string, state: GameState, immediate: boolean = false): Promise<AuthApiResponse> {
+    if (!userId) {
+      throw new Error('userIdが指定されていません。');
+    }
+
+    this.pendingStateToSync = state;
+
+    if (immediate) {
+      if (this.syncTimer) {
+        clearTimeout(this.syncTimer);
+        this.syncTimer = null;
+      }
+      return this.executeSyncToTables(userId, state);
+    }
+
+    // デバウンス（連続更新時は1.5秒待機して最新データをまとめて送信）
+    return new Promise((resolve, reject) => {
+      if (this.syncTimer) {
+        clearTimeout(this.syncTimer);
+      }
+
+      this.syncTimer = setTimeout(async () => {
+        this.syncTimer = null;
+        if (!this.pendingStateToSync) return;
+        try {
+          const res = await this.executeSyncToTables(userId, this.pendingStateToSync);
+          resolve(res);
+        } catch (err) {
+          reject(err);
+        }
+      }, 1500);
+    });
+  }
+
+  /**
+   * 実データ送信実行処理
+   */
+  private async executeSyncToTables(userId: string, state: GameState): Promise<AuthApiResponse> {
+    if (this.isSyncing) {
+      // 既に通信中であれば次回のデバウンスで送られるよう保留
+      return { success: true, message: 'Sync queued' };
+    }
+
+    this.isSyncing = true;
+    console.log(`[AuthApiService] user_id: ${userId} の全データを適切なテーブルへ保存中...`);
+
+    const endpoints = Array.from(new Set([
+      `${this.defaultBaseUrl}/api/save.php`,
+      'https://robotfactory.k0j1.v2002.coreserver.jp/api/save.php',
+      '/api/save.php'
+    ])).filter(Boolean);
+
+    let lastError: Error | null = null;
+
+    for (const endpoint of endpoints) {
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({
+            userId: userId,
+            gameData: state
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP Error ${response.status}`);
+        }
+
+        const rawText = await response.text();
+        if (rawText.trim().startsWith('<?php')) {
+          throw new Error('PHPが未実行です。');
+        }
+
+        const parsed = JSON.parse(rawText);
+        if (!parsed.success) {
+          throw new Error(parsed.error || 'テーブルへの保存に失敗しました。');
+        }
+
+        console.log(`[AuthApiService] 全テーブル保存成功 (${endpoint}):`, parsed);
+        this.isSyncing = false;
+        return parsed;
+      } catch (err: any) {
+        console.warn(`[AuthApiService] 保存通信失敗 (${endpoint}):`, err.message);
+        lastError = err;
+      }
+    }
+
+    this.isSyncing = false;
+    throw lastError || new Error('適切なテーブルへの保存通信に失敗しました。');
+  }
+
+  /**
+   * データベース（save_dataおよび各テーブル）からユーザーのセーブデータを読み込み
+   * @param userId usersテーブルのgoogle_idまたはid
+   */
+  public async loadUserData(userId: string): Promise<GameState | null> {
+    if (!userId) {
+      return null;
+    }
+
+    console.log(`[AuthApiService] user_id: ${userId} のセーブデータを読み込み中...`);
+
+    const endpoints = Array.from(new Set([
+      `${this.defaultBaseUrl}/api/load.php?userId=${encodeURIComponent(userId)}`,
+      `https://robotfactory.k0j1.v2002.coreserver.jp/api/load.php?userId=${encodeURIComponent(userId)}`,
+      `/api/load.php?userId=${encodeURIComponent(userId)}`
+    ])).filter(Boolean);
+
+    for (const endpoint of endpoints) {
+      try {
+        const response = await fetch(endpoint, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          continue;
+        }
+
+        const rawText = await response.text();
+        if (rawText.trim().startsWith('<?php')) {
+          continue;
+        }
+
+        const parsed = JSON.parse(rawText);
+        if (parsed.success && parsed.data) {
+          console.log(`[AuthApiService] ユーザーデータを正常にロードしました:`, parsed.data);
+          return parsed.data as GameState;
+        }
+      } catch (err: any) {
+        console.warn(`[AuthApiService] ロード通信失敗 (${endpoint}):`, err.message);
+      }
+    }
+
+    return null;
   }
 }

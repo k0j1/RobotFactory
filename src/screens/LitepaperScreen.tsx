@@ -25,7 +25,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
         title="ポンコツロボット工房 公式仕様書"
         badge={
           <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300 font-mono font-bold px-1.5 py-0.2 rounded">
-            v1.0.340
+            v1.0.342
           </span>
         }
         rightElement={
@@ -227,7 +227,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                     <li><strong>新人技師初回ボーナス:</strong> 初期ユーザー向けに、ロボット1体を即座に組み立てられる☆1素材セット（全24個・すべて☆1ランクのみ）をプレゼント。ヘッド・ボディ・アーム・レッグの4部位（各5個＝計20個必要）を余すことなく組み立て可能です。</li>
                     <li><strong>図鑑登録・パーツ基準値一覧:</strong> 完成した新機体は自動的に図鑑へ記録されます。また、パーツ図鑑タブではすべてのパーツ形状と、耐久力(HP)・攻撃力(POW)・探索力(DEX)などの「基準値ステータス」を便利なテーブル（表）形式で一覧表示し、比較することができます。</li>
                     <li><strong>Google AdSense リワード広告時短:</strong> パーツ製造およびロボット組立の進行中に動画広告を視聴することで、完了までの所要時間を<strong>1回につき30分短縮</strong>できます。残り時間が30分以内の場合は即座に完成します。</li>
-                    <li><strong>Googleアカウント連携 &amp; usersテーブル保存:</strong> Google One Tap またはログインボタンによる認証後、ユーザー名・メールアドレス・Google ID・アイコン画像がデータベースのusersテーブルへ即時安全に登録・同期されます。</li>
+                    <li><strong>Googleアカウント連携 &amp; クラウドDB専用同期（ローカルストレージ完全遮断）:</strong> Googleアカウントでログインした場合、端末のローカルストレージのデータは一切使用・保存されず、データベース（save_dataおよび各個別テーブル）専用のデータのみが使用されます。usersテーブルに登録されたuser_idに紐づけて、工房ステータス（user_workshop_status）、所持機体（user_robots）、所持パーツ（user_parts）、進行中の遠征（active_expeditions）、パーツ製造（active_part_crafts）、ロボット組立（active_robot_assemblies）、受注依頼（active_requests）、ミニゲーム状況（user_minigame_status）の各テーブルへ自動同期されます。ゲストプレイ時は端末ローカルストレージにて独立管理されます。</li>
                     <li><strong>GSAPモーションスタジオ:</strong> 漆黒のグランドピアノによる華麗なピアノ協奏曲演奏をはじめ、各種戦闘・アクロバット・仕草など、多彩なモーションをロボットで鑑賞・動作検証できます。</li>
                   </ul>
                 </div>

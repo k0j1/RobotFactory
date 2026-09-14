@@ -23,24 +23,249 @@ if (!$userId || !$gameData) {
 }
 
 $pdo = getDB();
+if (!$pdo) {
+    http_response_code(500);
+    echo json_encode(["error" => "Database connection unavailable."]);
+    exit;
+}
+
 try {
-    // 既存データがあれば更新、なければ新規作成 (UPSERT)
-    $stmt = $pdo->prepare("
+    // 1. usersテーブルから該当ユーザーの存在を確認
+    // userIdとして google_id または users.id のどちらが渡されても解決できるようにする
+    $userStmt = $pdo->prepare("SELECT google_id, id FROM users WHERE google_id = :u1 OR id = :u2 LIMIT 1");
+    $userStmt->execute([':u1' => $userId, ':u2' => $userId]);
+    $userRecord = $userStmt->fetch();
+
+    $actualUserId = $userId;
+    if ($userRecord && !empty($userRecord['google_id'])) {
+        $actualUserId = $userRecord['google_id'];
+    }
+
+    $pdo->beginTransaction();
+
+    // 2. save_data テーブルにゲーム全体のスナップショットを保存 (UPSERT)
+    $jsonGameData = json_encode($gameData, JSON_UNESCAPED_UNICODE);
+    $stmtSave = $pdo->prepare("
         INSERT INTO save_data (user_id, game_data) 
         VALUES (:user_id, :game_data)
         ON DUPLICATE KEY UPDATE game_data = :update_data
     ");
-    
-    $jsonGameData = json_encode($gameData);
-    
-    $stmt->execute([
-        ':user_id' => $userId,
+    $stmtSave->execute([
+        ':user_id' => $actualUserId,
         ':game_data' => $jsonGameData,
         ':update_data' => $jsonGameData
     ]);
-    
-    echo json_encode(["success" => true, "message" => "Data saved successfully"]);
+
+    // 3. user_workshop_status テーブルに工房ステータスを保存 (UPSERT)
+    $gold = isset($gameData['gold']) ? (int)$gameData['gold'] : 0;
+    $fame = isset($gameData['fame']) ? (int)$gameData['fame'] : 0;
+    $storageLimit = isset($gameData['storageSize']) ? (int)$gameData['storageSize'] : 0;
+    $deliveredCount = isset($gameData['deliveredRobotsCount']) ? (int)$gameData['deliveredRobotsCount'] : 0;
+    $receivedInitialBonus = !empty($gameData['starterBonusClaimed']) ? 1 : 0;
+
+    $stmtWorkshop = $pdo->prepare("
+        INSERT INTO user_workshop_status (user_id, fame, gold, storage_limit, delivered_count, received_initial_bonus)
+        VALUES (:user_id, :fame, :gold, :storage_limit, :delivered_count, :received_initial_bonus)
+        ON DUPLICATE KEY UPDATE 
+            fame = :up_fame,
+            gold = :up_gold,
+            storage_limit = :up_storage_limit,
+            delivered_count = :up_delivered_count,
+            received_initial_bonus = :up_received_initial_bonus
+    ");
+    $stmtWorkshop->execute([
+        ':user_id' => $actualUserId,
+        ':fame' => $fame,
+        ':gold' => $gold,
+        ':storage_limit' => $storageLimit,
+        ':delivered_count' => $deliveredCount,
+        ':received_initial_bonus' => $receivedInitialBonus,
+        ':up_fame' => $fame,
+        ':up_gold' => $gold,
+        ':up_storage_limit' => $storageLimit,
+        ':up_delivered_count' => $deliveredCount,
+        ':up_received_initial_bonus' => $receivedInitialBonus,
+    ]);
+
+    // 4. user_robots テーブルの同期
+    // 既存ロボットデータを一旦クリアして最新の所持ロボットを挿入
+    $delRobotsStmt = $pdo->prepare("DELETE FROM user_robots WHERE user_id = :user_id");
+    $delRobotsStmt->execute([':user_id' => $actualUserId]);
+
+    if (!empty($gameData['robots']) && is_array($gameData['robots'])) {
+        $stmtRobot = $pdo->prepare("
+            INSERT INTO user_robots (
+                id, user_id, name, head_part_id, body_part_id, arms_part_id, legs_part_id,
+                total_hp, total_power, total_defense, total_agility, total_dexterity, total_int
+            ) VALUES (
+                :id, :user_id, :name, :head_id, :body_id, :arms_id, :legs_id,
+                :hp, :power, :defense, :agility, :dexterity, :intel
+            )
+        ");
+
+        foreach ($gameData['robots'] as $robot) {
+            if (empty($robot['id'])) continue;
+            $headId = $robot['parts']['head']['id'] ?? '';
+            $bodyId = $robot['parts']['body']['id'] ?? '';
+            $armsId = $robot['parts']['arms']['id'] ?? '';
+            $legsId = $robot['parts']['legs']['id'] ?? '';
+            $stats = $robot['stats'] ?? [];
+
+            $stmtRobot->execute([
+                ':id' => $robot['id'],
+                ':user_id' => $actualUserId,
+                ':name' => $robot['name'] ?? '名無しのロボット',
+                ':head_id' => $headId,
+                ':body_id' => $bodyId,
+                ':arms_id' => $armsId,
+                ':legs_id' => $legsId,
+                ':hp' => (int)($stats['hp'] ?? 0),
+                ':power' => (int)($stats['power'] ?? 0),
+                ':defense' => (int)($stats['defense'] ?? 0),
+                ':agility' => (int)($stats['agility'] ?? 0),
+                ':dexterity' => (int)($stats['dexterity'] ?? 0),
+                ':intel' => (int)($stats['intelligence'] ?? 0)
+            ]);
+        }
+    }
+
+    // 5. user_parts テーブルの同期
+    $delPartsStmt = $pdo->prepare("DELETE FROM user_parts WHERE user_id = :user_id");
+    $delPartsStmt->execute([':user_id' => $actualUserId]);
+
+    if (!empty($gameData['parts']) && is_array($gameData['parts'])) {
+        $stmtPart = $pdo->prepare("
+            INSERT INTO user_parts (id, user_id, master_part_id, is_equipped)
+            VALUES (:id, :user_id, :master_id, :is_equipped)
+        ");
+
+        // 装備中パーツのIDリストを収集
+        $equippedPartIds = [];
+        if (!empty($gameData['robots']) && is_array($gameData['robots'])) {
+            foreach ($gameData['robots'] as $r) {
+                if (!empty($r['parts'])) {
+                    foreach (['head', 'body', 'arms', 'legs'] as $pKey) {
+                        if (!empty($r['parts'][$pKey]['id'])) {
+                            $equippedPartIds[$r['parts'][$pKey]['id']] = true;
+                        }
+                    }
+                }
+            }
+        }
+
+        foreach ($gameData['parts'] as $part) {
+            if (empty($part['id'])) continue;
+            $isEquipped = isset($equippedPartIds[$part['id']]) ? 1 : 0;
+            $stmtPart->execute([
+                ':id' => $part['id'],
+                ':user_id' => $actualUserId,
+                ':master_id' => $part['name'] ?? $part['id'],
+                ':is_equipped' => $isEquipped
+            ]);
+        }
+    }
+
+    // 6. active_expeditions テーブルの同期
+    if (!empty($gameData['activeQuest']) && !empty($gameData['activeQuest']['locationId'])) {
+        $q = $gameData['activeQuest'];
+        $stmtExp = $pdo->prepare("
+            REPLACE INTO active_expeditions (user_id, location_id, start_time, end_time)
+            VALUES (:user_id, :location_id, :start_time, :end_time)
+        ");
+        $stmtExp->execute([
+            ':user_id' => $actualUserId,
+            ':location_id' => $q['locationId'],
+            ':start_time' => (int)($q['startTime'] ?? 0),
+            ':end_time' => (int)($q['endTime'] ?? 0)
+        ]);
+    } else {
+        $delExp = $pdo->prepare("DELETE FROM active_expeditions WHERE user_id = :user_id");
+        $delExp->execute([':user_id' => $actualUserId]);
+    }
+
+    // 7. active_part_crafts テーブルの同期
+    if (!empty($gameData['activePartCraft']) && !empty($gameData['activePartCraft']['partType'])) {
+        $c = $gameData['activePartCraft'];
+        $stmtCraft = $pdo->prepare("
+            REPLACE INTO active_part_crafts (user_id, part_type, main_material_id, sub_material_id, start_time, end_time)
+            VALUES (:user_id, :part_type, :main_id, :sub_id, :start_time, :end_time)
+        ");
+        $stmtCraft->execute([
+            ':user_id' => $actualUserId,
+            ':part_type' => $c['partType'],
+            ':main_id' => $c['mainMaterialId'] ?? '',
+            ':sub_id' => $c['subMaterialId'] ?? '',
+            ':start_time' => (int)($c['startTime'] ?? 0),
+            ':end_time' => (int)($c['endTime'] ?? 0)
+        ]);
+    } else {
+        $delCraft = $pdo->prepare("DELETE FROM active_part_crafts WHERE user_id = :user_id");
+        $delCraft->execute([':user_id' => $actualUserId]);
+    }
+
+    // 8. active_robot_assemblies テーブルの同期
+    if (!empty($gameData['activeRobotAssembly']) && !empty($gameData['activeRobotAssembly']['startTime'])) {
+        $a = $gameData['activeRobotAssembly'];
+        $stmtAss = $pdo->prepare("
+            REPLACE INTO active_robot_assemblies (user_id, start_time, end_time, result_robot_data)
+            VALUES (:user_id, :start_time, :end_time, :result_robot_data)
+        ");
+        $stmtAss->execute([
+            ':user_id' => $actualUserId,
+            ':start_time' => (int)($a['startTime'] ?? 0),
+            ':end_time' => (int)($a['endTime'] ?? 0),
+            ':result_robot_data' => json_encode($a['resultRobot'] ?? [], JSON_UNESCAPED_UNICODE)
+        ]);
+    } else {
+        $delAss = $pdo->prepare("DELETE FROM active_robot_assemblies WHERE user_id = :user_id");
+        $delAss->execute([':user_id' => $actualUserId]);
+    }
+
+    // 9. active_requests テーブルの同期
+    if (!empty($gameData['currentRequest']) && !empty($gameData['currentRequest']['id'])) {
+        $r = $gameData['currentRequest'];
+        $stmtReq = $pdo->prepare("
+            REPLACE INTO active_requests (user_id, request_id, rank, reward_g, deadline)
+            VALUES (:user_id, :request_id, :rank, :reward_g, :deadline)
+        ");
+        $stmtReq->execute([
+            ':user_id' => $actualUserId,
+            ':request_id' => $r['id'],
+            ':rank' => $r['rank'] ?? 'OldMan',
+            ':reward_g' => (int)($r['rewardG'] ?? 0),
+            ':deadline' => (int)($r['deadline'] ?? 0)
+        ]);
+    } else {
+        $delReq = $pdo->prepare("DELETE FROM active_requests WHERE user_id = :user_id");
+        $delReq->execute([':user_id' => $actualUserId]);
+    }
+
+    // 10. user_minigame_status テーブルの同期 (バトル演習エレメント等)
+    $elements = isset($gameData['battleElements']) ? (int)$gameData['battleElements'] : 0;
+    $stmtMini = $pdo->prepare("
+        INSERT INTO user_minigame_status (user_id, minigame_id, elements_count)
+        VALUES (:user_id, 'combat_training', :elements)
+        ON DUPLICATE KEY UPDATE elements_count = :elements_up
+    ");
+    $stmtMini->execute([
+        ':user_id' => $actualUserId,
+        ':elements' => $elements,
+        ':elements_up' => $elements
+    ]);
+
+    $pdo->commit();
+
+    echo json_encode([
+        "success" => true,
+        "message" => "All user data saved to appropriate database tables successfully.",
+        "userId" => $actualUserId
+    ]);
 } catch (PDOException $e) {
+    if ($pdo && $pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
     http_response_code(500);
-    echo json_encode(["error" => $e->getMessage()]);
+    echo json_encode([
+        "error" => "Database save error: " . $e->getMessage()
+    ]);
 }

@@ -1,17 +1,32 @@
 import { useEffect, useState, useRef } from 'react';
 import { GameEngine } from '../core/GameEngine';
 import { GameState } from '../core/models';
+import { AuthApiService } from '../services/AuthApiService';
 
-export function useGameState() {
+export function useGameState(userId?: string | null) {
   const [state, setState] = useState<GameState | null>(null);
   const engineRef = useRef<GameEngine | null>(null);
+  const lastUserIdRef = useRef<string | null | undefined>(userId);
 
   useEffect(() => {
-    engineRef.current = new GameEngine((newState) => {
+    // 初期インスタンス化（userIdがある場合はローカルストレージのデータを一切読まない）
+    const engine = new GameEngine((newState) => {
       setState(newState);
-    });
-    setState(engineRef.current.getState());
-    engineRef.current.generateRequestsIfNeeded();
+    }, userId);
+
+    engineRef.current = engine;
+    setState(engine.getState());
+    engine.generateRequestsIfNeeded();
+
+    // 既にGoogleログイン状態の場合は、クラウドDBからデータをロードして適用
+    if (userId) {
+      AuthApiService.getInstance().loadUserData(userId).then((cloudData) => {
+        engine.switchToGoogleUser(userId, cloudData);
+      }).catch((err) => {
+        console.warn('[useGameState] 初回クラウドデータロード失敗（初期データ使用）:', err);
+        engine.switchToGoogleUser(userId, null);
+      });
+    }
 
     // Loop to trigger re-renders for timers
     const interval = setInterval(() => {
@@ -21,6 +36,28 @@ export function useGameState() {
 
     return () => clearInterval(interval);
   }, []);
+
+  // ユーザーIDの変更（ログイン・ログアウト）を監視してエンジン側のアカウント状態を切り替え
+  useEffect(() => {
+    const engine = engineRef.current;
+    if (!engine) return;
+
+    if (lastUserIdRef.current !== userId) {
+      lastUserIdRef.current = userId;
+      if (userId) {
+        // Googleログイン時: クラウドDBからのみロードし、ローカルストレージは一切使用しない
+        AuthApiService.getInstance().loadUserData(userId).then((cloudData) => {
+          engine.switchToGoogleUser(userId, cloudData);
+        }).catch((err) => {
+          console.warn('[useGameState] クラウドデータロード失敗（初期データ使用）:', err);
+          engine.switchToGoogleUser(userId, null);
+        });
+      } else {
+        // ログアウト時: ゲスト用のローカルストレージへ切り替え
+        engine.switchToGuest();
+      }
+    }
+  }, [userId]);
 
   return { state, engine: engineRef.current };
 }

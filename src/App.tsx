@@ -16,9 +16,11 @@ import { theme } from './styles/theme';
 import { INTERIORS } from './core/interiors';
 import { AssetCacheService } from './core/AssetCacheService';
 import robotsWorkshopBg from './assets/images/robots_workshop_bg_1788411232885.jpg';
+import { useAuth } from './contexts/AuthContext';
 
 export default function App() {
-  const { state, engine } = useGameState();
+  const { user } = useAuth();
+  const { state, engine } = useGameState(user?.google_id);
   const [view, setView] = useState('title');
 
   // アプリ起動時に背景画像をプリロードしてインメモリキャッシュに常駐（遠征で使用している背景画像のみに統一）
@@ -43,7 +45,7 @@ export default function App() {
   }
 
   if (view === 'title') {
-    return <TitleScreen onStart={() => setView('dashboard')} />;
+    return <TitleScreen onStart={() => setView('dashboard')} engine={engine} />;
   }
 
   const currentInteriorData = INTERIORS.find(i => i.id === state.currentInterior);

@@ -3,6 +3,7 @@ import { MATERIALS, LOCATIONS, getMaterialCraftableVisuals, STARTER_BONUS_MATERI
 import { AttributeColors } from './models';
 import { getDefenseDailyResetInfo, DefenseResetInfo, getDailyResetDateKey } from '../components/minigames/Shared';
 import { CombatEquipmentType, CombatEquipmentRank, COMBAT_EQUIPMENT_RANKS, getNextEquipmentRank } from './combatEquipmentData';
+import { AuthApiService } from '../services/AuthApiService';
 
 const INITIAL_STATE: GameState = {
   gold: 0,
@@ -36,11 +37,102 @@ const STORAGE_KEY = 'ponkotsu_robot_save';
 export class GameEngine {
   private state: GameState;
   private onStateChange: (state: GameState) => void;
+  private userId: string | null = null;
+  private isCloudAccount: boolean = false;
 
-  constructor(onStateChange: (state: GameState) => void) {
+  constructor(onStateChange: (state: GameState) => void, initialUserId?: string | null) {
     this.onStateChange = onStateChange;
-    this.state = this.loadState();
+    if (initialUserId) {
+      // Googleログインユーザーの場合: ローカルストレージのデータは一切使用しない
+      this.userId = initialUserId;
+      this.isCloudAccount = true;
+      this.state = JSON.parse(JSON.stringify(INITIAL_STATE));
+      console.log(`[GameEngine] Googleユーザー (${initialUserId}) として初期化。ローカルストレージは使用しません。`);
+    } else {
+      // ゲストユーザーの場合のみローカルストレージから読み込み
+      this.userId = null;
+      this.isCloudAccount = false;
+      this.state = this.loadLocalStorageState();
+    }
     this.update();
+  }
+
+  /**
+   * 現在ローカルストレージを使用しているかどうか（Googleログイン時はfalse）
+   */
+  public isUsingLocalStorage(): boolean {
+    return !this.isCloudAccount;
+  }
+
+  /**
+   * GoogleログインしたユーザーID（usersテーブルのgoogle_id）へ切り替え
+   * クラウドデータのみを使用し、ローカルストレージのデータは一切使用・混入させません
+   * @param userId usersテーブルのgoogle_id
+   * @param cloudState サーバーDBから取得したセーブデータ（存在しない場合はnull）
+   */
+  public async switchToGoogleUser(userId: string, cloudState: Partial<GameState> | null): Promise<void> {
+    this.userId = userId;
+    this.isCloudAccount = true;
+    console.log(`[GameEngine] Googleアカウント (${userId}) に切り替えました。ローカルストレージのデータは完全に遮断されます。`);
+
+    if (cloudState && Object.keys(cloudState).length > 0) {
+      console.log('[GameEngine] サーバーDB上のユーザーデータを適用します。');
+      this.state = this.sanitizeAndMigrateState(cloudState);
+    } else {
+      console.log('[GameEngine] サーバーDBにセーブデータが存在しないため、新規初期データから開始します。');
+      this.state = JSON.parse(JSON.stringify(INITIAL_STATE));
+    }
+
+    // UIへ反映（ローカルストレージへは一切保存しない）
+    this.onStateChange(JSON.parse(JSON.stringify(this.state)));
+
+    // データベースの各適切テーブルへ即時初期保存
+    await this.syncToDatabaseNow();
+  }
+
+  /**
+   * ゲストアカウントへ切り替え（ローカルストレージのデータを使用）
+   */
+  public switchToGuest(): void {
+    this.userId = null;
+    this.isCloudAccount = false;
+    console.log('[GameEngine] ゲストアカウントへ切り替えました。ローカルストレージのデータを使用します。');
+    this.state = this.loadLocalStorageState();
+    this.onStateChange(JSON.parse(JSON.stringify(this.state)));
+  }
+
+  /**
+   * GoogleログインしたユーザーID（usersテーブルのgoogle_id）を設定
+   */
+  public setUserId(userId: string | null) {
+    if (userId) {
+      this.userId = userId;
+      this.isCloudAccount = true;
+    } else {
+      this.switchToGuest();
+    }
+  }
+
+  /**
+   * データベース（save_data）から取得したステートを安全に復元
+   */
+  public restoreServerState(serverState: Partial<GameState>) {
+    if (!serverState) return;
+    console.log('[GameEngine] サーバーのデータをローカルステートへ復元中...');
+    this.state = this.sanitizeAndMigrateState(serverState);
+    this.saveState();
+  }
+
+  /**
+   * データベースの各テーブルへ即時保存を実行
+   */
+  public async syncToDatabaseNow(): Promise<void> {
+    if (!this.userId) return;
+    try {
+      await AuthApiService.getInstance().saveAllDataToTables(this.userId, this.state, true);
+    } catch (err) {
+      console.warn('[GameEngine] 即時同期エラー:', err);
+    }
   }
 
   public getLocationWeather(locationId: string, timestamp: number = Date.now()): WeatherInfo {
@@ -57,187 +149,213 @@ export class GameEngine {
     return { type: 'HEAT_WAVE', name: '🔥 熱波', description: '探索時間1.5倍。火属性素材が出やすい。', timeMultiplier: 1.5, bonusAttribute: 'Fire' };
   }
 
-  private loadState(): GameState {
+  /**
+   * ゲスト用のローカルストレージデータを読み込み
+   */
+  private loadLocalStorageState(): GameState {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        
-        // Migrate old robots to new parts format
-        if (parsed.robots) {
-          parsed.robots.forEach((r: any) => {
-            
-            if (r.stats && r.stats.intelligence === undefined) {
-              r.stats.intelligence = 1;
-              if (r.parts) {
-                if (r.parts.head) r.parts.head.stats.intelligence = 1;
-                if (r.parts.body) r.parts.body.stats.intelligence = 1;
-                if (r.parts.arms) r.parts.arms.stats.intelligence = 1;
-                if (r.parts.legs) r.parts.legs.stats.intelligence = 1;
-              }
-            }
-            if (!r.parts && r.visuals) {
-              r.parts = {
-                head: { id: '', type: 'head', name: '旧ヘッド', attribute: r.attribute, rarity: 1, stats: {hp:0, power:0, defense:0, agility:0, dexterity:0, intelligence:1}, visualIndex: r.visuals.head },
-                body: { id: '', type: 'body', name: '旧ボディ', attribute: r.attribute, rarity: 1, stats: {hp:0, power:0, defense:0, agility:0, dexterity:0, intelligence:1}, visualIndex: r.visuals.body },
-                arms: { id: '', type: 'arms', name: '旧アーム', attribute: r.attribute, rarity: 1, stats: {hp:0, power:0, defense:0, agility:0, dexterity:0, intelligence:1}, visualIndex: r.visuals.arms },
-                legs: { id: '', type: 'legs', name: '旧レッグ', attribute: r.attribute, rarity: 1, stats: {hp:0, power:0, defense:0, agility:0, dexterity:0, intelligence:1}, visualIndex: r.visuals.legs }
-              };
-            }
-          });
-        }
-
-        // Clean up legacy weights
-        const cleanWeights = (part: any) => {
-          if (part && part.weight !== undefined) {
-            delete part.weight;
-          }
-        };
-
-        const cleanRobotWeights = (r: any) => {
-          if (r) {
-            if (r.weight !== undefined) delete r.weight;
-            if (r.parts) {
-              cleanWeights(r.parts.head);
-              cleanWeights(r.parts.body);
-              cleanWeights(r.parts.arms);
-              cleanWeights(r.parts.legs);
-            }
-          }
-        };
-
-        if (parsed.parts) {
-          parsed.parts.forEach(cleanWeights);
-        }
-        if (parsed.robots) {
-          parsed.robots.forEach(cleanRobotWeights);
-        }
-        if (parsed.craftedRobots) {
-          parsed.craftedRobots.forEach(cleanRobotWeights);
-        }
-        if (parsed.deliveredLogs) {
-          parsed.deliveredLogs.forEach(cleanRobotWeights);
-        }
-
-        // Migrate old deliveredLogs to new parts format
-        if (!parsed.seenTutorials) { parsed.seenTutorials = []; }
-        if (!parsed.autoDispatches) {
-          parsed.autoDispatches = [];
-        }
-        
-        if (parsed.deliveredLogs) {
-          parsed.deliveredLogs.forEach((l: any) => {
-            
-            if (l.stats && l.stats.intelligence === undefined) {
-              l.stats.intelligence = 1;
-            }
-            if (!l.parts && l.visuals) {
-              l.parts = {
-                head: { id: '', type: 'head', name: '旧ヘッド', attribute: l.attribute, rarity: 1, stats: {hp:0, power:0, defense:0, agility:0, dexterity:0, intelligence:1}, visualIndex: l.visuals.head },
-                body: { id: '', type: 'body', name: '旧ボディ', attribute: l.attribute, rarity: 1, stats: {hp:0, power:0, defense:0, agility:0, dexterity:0, intelligence:1}, visualIndex: l.visuals.body },
-                arms: { id: '', type: 'arms', name: '旧アーム', attribute: l.attribute, rarity: 1, stats: {hp:0, power:0, defense:0, agility:0, dexterity:0, intelligence:1}, visualIndex: l.visuals.arms },
-                legs: { id: '', type: 'legs', name: '旧レッグ', attribute: l.attribute, rarity: 1, stats: {hp:0, power:0, defense:0, agility:0, dexterity:0, intelligence:1}, visualIndex: l.visuals.legs }
-              };
-            }
-          });
-        }
-
-        // Ensure parts array exists
-        if (!parsed.clientAffection) { parsed.clientAffection = { King: 1, Noble: 1, OldMan: 1 }; }
-        if (!parsed.completedRequestDeadlines) { parsed.completedRequestDeadlines = {}; }
-        
-        if (parsed.parts) {
-          parsed.parts.forEach(p => {
-            if (p.stats && p.stats.intelligence === undefined) {
-              p.stats.intelligence = 1;
-            }
-          });
-        }
-        if (!parsed.parts) {
-          parsed.parts = [];
-        }
-
-        // Initialize and migrate craftedRobots gallery
-        if (!parsed.craftedRobots) {
-          parsed.craftedRobots = [];
-        }
-        const existingGallery: Robot[] = parsed.craftedRobots;
-        const seenIds = new Set(existingGallery.map((r: Robot) => r.id));
-
-        if (parsed.robots && Array.isArray(parsed.robots)) {
-          parsed.robots.forEach((r: Robot) => {
-            if (r && r.parts && !seenIds.has(r.id)) {
-              existingGallery.push(r);
-              seenIds.add(r.id);
-            }
-          });
-        }
-        if (parsed.deliveredLogs && Array.isArray(parsed.deliveredLogs)) {
-          parsed.deliveredLogs.forEach((l: any) => {
-            if (l && l.parts && !seenIds.has(l.id)) {
-              const headR = l.parts.head?.rarity || 1;
-              const bodyR = l.parts.body?.rarity || 1;
-              const armsR = l.parts.arms?.rarity || 1;
-              const legsR = l.parts.legs?.rarity || 1;
-              existingGallery.push({
-                id: l.id,
-                name: l.name,
-                parts: l.parts,
-                stats: l.stats,
-                createdAt: l.deliveredAt || Date.now(),
-                value: (headR + bodyR + armsR + legsR) * 20
-              });
-              seenIds.add(l.id);
-            }
-          });
-        }
-        if (parsed.craftedRobots) {
-          parsed.craftedRobots = existingGallery;
-        }
-
-        // Migrate fame if not present
-        if (parsed.fame === undefined) {
-          let calculatedFame = 0;
-          if (parsed.deliveredRobotsCount) {
-            calculatedFame += parsed.deliveredRobotsCount * 20;
-          }
-          if (parsed.minigameRecords) {
-            Object.values(parsed.minigameRecords).forEach((rec: any) => {
-              if (rec && typeof rec.wins === 'number') {
-                calculatedFame += rec.wins * 5;
-              }
-            });
-          }
-          parsed.fame = calculatedFame;
-        }
-
-        // Migrate combat equipment ranks (Default to 'common' for existing equipments)
-        if (!parsed.combatEquipmentRanks) {
-          parsed.combatEquipmentRanks = {};
-        }
-        if (parsed.combatEquipments?.beamSaber && !parsed.combatEquipmentRanks.beamSaber) {
-          parsed.combatEquipmentRanks.beamSaber = 'common';
-        }
-        if (parsed.combatEquipments?.beamShield && !parsed.combatEquipmentRanks.beamShield) {
-          parsed.combatEquipmentRanks.beamShield = 'common';
-        }
-
-        // Migrate starterBonusClaimed flag
-        if (parsed.starterBonusClaimed === undefined) {
-          parsed.starterBonusClaimed = false;
-        }
-
-        return { ...INITIAL_STATE, ...parsed };
+        return this.sanitizeAndMigrateState(parsed);
       } catch (e) {
+        console.warn('[GameEngine] ローカルストレージデータのパースエラー:', e);
         return { ...INITIAL_STATE };
       }
     }
     return { ...INITIAL_STATE };
   }
 
+  /**
+   * セーブデータ（ローカル・クラウド共通）のサニタイズ・マイグレーション処理
+   */
+  public sanitizeAndMigrateState(parsed: any): GameState {
+    if (!parsed || typeof parsed !== 'object') {
+      return JSON.parse(JSON.stringify(INITIAL_STATE));
+    }
+    try {
+      // Migrate old robots to new parts format
+      if (parsed.robots) {
+        parsed.robots.forEach((r: any) => {
+          
+          if (r.stats && r.stats.intelligence === undefined) {
+            r.stats.intelligence = 1;
+            if (r.parts) {
+              if (r.parts.head) r.parts.head.stats.intelligence = 1;
+              if (r.parts.body) r.parts.body.stats.intelligence = 1;
+              if (r.parts.arms) r.parts.arms.stats.intelligence = 1;
+              if (r.parts.legs) r.parts.legs.stats.intelligence = 1;
+            }
+          }
+          if (!r.parts && r.visuals) {
+            r.parts = {
+              head: { id: '', type: 'head', name: '旧ヘッド', attribute: r.attribute, rarity: 1, stats: {hp:0, power:0, defense:0, agility:0, dexterity:0, intelligence:1}, visualIndex: r.visuals.head },
+              body: { id: '', type: 'body', name: '旧ボディ', attribute: r.attribute, rarity: 1, stats: {hp:0, power:0, defense:0, agility:0, dexterity:0, intelligence:1}, visualIndex: r.visuals.body },
+              arms: { id: '', type: 'arms', name: '旧アーム', attribute: r.attribute, rarity: 1, stats: {hp:0, power:0, defense:0, agility:0, dexterity:0, intelligence:1}, visualIndex: r.visuals.arms },
+              legs: { id: '', type: 'legs', name: '旧レッグ', attribute: r.attribute, rarity: 1, stats: {hp:0, power:0, defense:0, agility:0, dexterity:0, intelligence:1}, visualIndex: r.visuals.legs }
+            };
+          }
+        });
+      }
+
+      // Clean up legacy weights
+      const cleanWeights = (part: any) => {
+        if (part && part.weight !== undefined) {
+          delete part.weight;
+        }
+      };
+
+      const cleanRobotWeights = (r: any) => {
+        if (r) {
+          if (r.weight !== undefined) delete r.weight;
+          if (r.parts) {
+            cleanWeights(r.parts.head);
+            cleanWeights(r.parts.body);
+            cleanWeights(r.parts.arms);
+            cleanWeights(r.parts.legs);
+          }
+        }
+      };
+
+      if (parsed.parts) {
+        parsed.parts.forEach(cleanWeights);
+      }
+      if (parsed.robots) {
+        parsed.robots.forEach(cleanRobotWeights);
+      }
+      if (parsed.craftedRobots) {
+        parsed.craftedRobots.forEach(cleanRobotWeights);
+      }
+      if (parsed.deliveredLogs) {
+        parsed.deliveredLogs.forEach(cleanRobotWeights);
+      }
+
+      // Migrate old deliveredLogs to new parts format
+      if (!parsed.seenTutorials) { parsed.seenTutorials = []; }
+      if (!parsed.autoDispatches) {
+        parsed.autoDispatches = [];
+      }
+      
+      if (parsed.deliveredLogs) {
+        parsed.deliveredLogs.forEach((l: any) => {
+          
+          if (l.stats && l.stats.intelligence === undefined) {
+            l.stats.intelligence = 1;
+          }
+          if (!l.parts && l.visuals) {
+            l.parts = {
+              head: { id: '', type: 'head', name: '旧ヘッド', attribute: l.attribute, rarity: 1, stats: {hp:0, power:0, defense:0, agility:0, dexterity:0, intelligence:1}, visualIndex: l.visuals.head },
+              body: { id: '', type: 'body', name: '旧ボディ', attribute: l.attribute, rarity: 1, stats: {hp:0, power:0, defense:0, agility:0, dexterity:0, intelligence:1}, visualIndex: l.visuals.body },
+              arms: { id: '', type: 'arms', name: '旧アーム', attribute: l.attribute, rarity: 1, stats: {hp:0, power:0, defense:0, agility:0, dexterity:0, intelligence:1}, visualIndex: l.visuals.arms },
+              legs: { id: '', type: 'legs', name: '旧レッグ', attribute: l.attribute, rarity: 1, stats: {hp:0, power:0, defense:0, agility:0, dexterity:0, intelligence:1}, visualIndex: l.visuals.legs }
+            };
+          }
+        });
+      }
+
+      // Ensure parts array exists
+      if (!parsed.clientAffection) { parsed.clientAffection = { King: 1, Noble: 1, OldMan: 1 }; }
+      if (!parsed.completedRequestDeadlines) { parsed.completedRequestDeadlines = {}; }
+      
+      if (parsed.parts) {
+        parsed.parts.forEach(p => {
+          if (p.stats && p.stats.intelligence === undefined) {
+            p.stats.intelligence = 1;
+          }
+        });
+      }
+      if (!parsed.parts) {
+        parsed.parts = [];
+      }
+
+      // Initialize and migrate craftedRobots gallery
+      if (!parsed.craftedRobots) {
+        parsed.craftedRobots = [];
+      }
+      const existingGallery: Robot[] = parsed.craftedRobots;
+      const seenIds = new Set(existingGallery.map((r: Robot) => r.id));
+
+      if (parsed.robots && Array.isArray(parsed.robots)) {
+        parsed.robots.forEach((r: Robot) => {
+          if (r && r.parts && !seenIds.has(r.id)) {
+            existingGallery.push(r);
+            seenIds.add(r.id);
+          }
+        });
+      }
+      if (parsed.deliveredLogs && Array.isArray(parsed.deliveredLogs)) {
+        parsed.deliveredLogs.forEach((l: any) => {
+          if (l && l.parts && !seenIds.has(l.id)) {
+            const headR = l.parts.head?.rarity || 1;
+            const bodyR = l.parts.body?.rarity || 1;
+            const armsR = l.parts.arms?.rarity || 1;
+            const legsR = l.parts.legs?.rarity || 1;
+            existingGallery.push({
+              id: l.id,
+              name: l.name,
+              parts: l.parts,
+              stats: l.stats,
+              createdAt: l.deliveredAt || Date.now(),
+              value: (headR + bodyR + armsR + legsR) * 20
+            });
+            seenIds.add(l.id);
+          }
+        });
+      }
+      if (parsed.craftedRobots) {
+        parsed.craftedRobots = existingGallery;
+      }
+
+      // Migrate fame if not present
+      if (parsed.fame === undefined) {
+        let calculatedFame = 0;
+        if (parsed.deliveredRobotsCount) {
+          calculatedFame += parsed.deliveredRobotsCount * 20;
+        }
+        if (parsed.minigameRecords) {
+          Object.values(parsed.minigameRecords).forEach((rec: any) => {
+            if (rec && typeof rec.wins === 'number') {
+              calculatedFame += rec.wins * 5;
+            }
+          });
+        }
+        parsed.fame = calculatedFame;
+      }
+
+      // Migrate combat equipment ranks (Default to 'common' for existing equipments)
+      if (!parsed.combatEquipmentRanks) {
+        parsed.combatEquipmentRanks = {};
+      }
+      if (parsed.combatEquipments?.beamSaber && !parsed.combatEquipmentRanks.beamSaber) {
+        parsed.combatEquipmentRanks.beamSaber = 'common';
+      }
+      if (parsed.combatEquipments?.beamShield && !parsed.combatEquipmentRanks.beamShield) {
+        parsed.combatEquipmentRanks.beamShield = 'common';
+      }
+
+      // Migrate starterBonusClaimed flag
+      if (parsed.starterBonusClaimed === undefined) {
+        parsed.starterBonusClaimed = false;
+      }
+
+      return { ...INITIAL_STATE, ...parsed };
+    } catch (e) {
+      console.warn('[GameEngine] データサニタイズ処理エラー:', e);
+      return { ...INITIAL_STATE };
+    }
+  }
+
   private saveState() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
     this.onStateChange(JSON.parse(JSON.stringify(this.state)));
+    if (this.isCloudAccount && this.userId) {
+      // Googleログイン時はローカルストレージを使用・保存せず、サーバーの各テーブルへ自動同期
+      AuthApiService.getInstance().saveAllDataToTables(this.userId, this.state).catch((err) => {
+        console.warn('[GameEngine] サーバーDBテーブル同期エラー:', err);
+      });
+    } else {
+      // ゲストユーザー時のみローカルストレージへ保存
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
+    }
   }
 
   public getState() {
