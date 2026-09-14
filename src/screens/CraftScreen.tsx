@@ -108,8 +108,20 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
     const interval = setInterval(() => {
       setTick(Date.now());
     }, 100);
+    // 製造画面表示時にuser_materialテーブルから最新素材情報をロード
+    engine.refreshMaterialsFromDatabase().catch((err) => {
+      console.warn('[CraftScreen] 素材テーブルロードエラー:', err);
+    });
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (tab === 'part') {
+      engine.refreshMaterialsFromDatabase().catch((err) => {
+        console.warn('[CraftScreen] パーツ製造タブ切替時ロードエラー:', err);
+      });
+    }
+  }, [tab]);
 
   const triggerConfetti = () => {
     confetti({

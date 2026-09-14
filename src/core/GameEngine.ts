@@ -82,11 +82,46 @@ export class GameEngine {
       this.state = JSON.parse(JSON.stringify(INITIAL_STATE));
     }
 
+    // user_materialテーブルから最新素材情報をロードして確実にマージ
+    try {
+      const matRes = await AuthApiService.getInstance().getMaterials(userId);
+      if (matRes && matRes.success && matRes.data) {
+        if (!this.state.materials) {
+          this.state.materials = {};
+        }
+        this.state.materials = { ...this.state.materials, ...matRes.data };
+      }
+    } catch (e) {
+      console.warn('[GameEngine] user_material読み込み警告:', e);
+    }
+
     // UIへ反映（ローカルストレージへは一切保存しない）
     this.onStateChange(JSON.parse(JSON.stringify(this.state)));
 
     // データベースの各適切テーブルへ即時初期保存
     await this.syncToDatabaseNow();
+  }
+
+  /**
+   * user_materialテーブルから最新の素材情報を再読み込みしてステートおよびUIに反映
+   */
+  public async refreshMaterialsFromDatabase(): Promise<Record<string, number> | null> {
+    if (!this.userId) return null;
+    try {
+      const apiService = AuthApiService.getInstance();
+      const res = await apiService.getMaterials(this.userId);
+      if (res && res.success && res.data) {
+        if (!this.state.materials) {
+          this.state.materials = {};
+        }
+        this.state.materials = { ...this.state.materials, ...res.data };
+        this.onStateChange(JSON.parse(JSON.stringify(this.state)));
+        return res.data;
+      }
+    } catch (err) {
+      console.warn('[GameEngine] refreshMaterialsFromDatabase error:', err);
+    }
+    return null;
   }
 
   /**

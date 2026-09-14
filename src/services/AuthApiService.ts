@@ -457,13 +457,23 @@ export class AuthApiService {
         }
 
         const parsed = JSON.parse(rawText);
-        if (parsed.success) {
+        if (parsed.success || parsed.data || parsed.materials) {
           console.log(`[AuthApiService] ユーザーデータを正常にロードしました:`, parsed);
           const bonusVal = parsed.received_initial_bonus !== undefined && parsed.received_initial_bonus !== null
             ? Number(parsed.received_initial_bonus)
             : 0;
+
+          let loadedData: Partial<GameState> = parsed.data || {};
+          // user_materialテーブル由来の素材データを最優先反映
+          if (parsed.materials && typeof parsed.materials === 'object') {
+            loadedData.materials = {
+              ...(loadedData.materials || {}),
+              ...parsed.materials
+            };
+          }
+
           return {
-            data: (parsed.data || null) as GameState | null,
+            data: (Object.keys(loadedData).length > 0 ? loadedData : null) as GameState | null,
             received_initial_bonus: bonusVal,
             user: parsed.user
           };
@@ -474,5 +484,58 @@ export class AuthApiService {
     }
 
     return { data: null, received_initial_bonus: 0 };
+  }
+
+  /**
+   * user_materialテーブルから最新の素材情報を取得
+   * @param userId usersテーブルのgoogle_idまたはid
+   */
+  public async getMaterials(userId: string): Promise<AuthApiResponse<Record<string, number>>> {
+    if (!userId) {
+      return { success: false, error: 'userId is required' };
+    }
+
+    const endpoints = Array.from(new Set([
+      `${this.defaultBaseUrl}/api/get_materials.php?userId=${encodeURIComponent(userId)}`,
+      `https://robotfactory.k0j1.v2002.coreserver.jp/api/get_materials.php?userId=${encodeURIComponent(userId)}`,
+      `/api/get_materials.php?userId=${encodeURIComponent(userId)}`
+    ])).filter(Boolean);
+
+    let lastError: Error | null = null;
+
+    for (const endpoint of endpoints) {
+      try {
+        const response = await fetch(endpoint, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          continue;
+        }
+
+        const rawText = await response.text();
+        if (rawText.trim().startsWith('<?php')) {
+          continue;
+        }
+
+        const parsed = JSON.parse(rawText);
+        if (parsed.success && parsed.materials) {
+          return {
+            success: true,
+            data: parsed.materials
+          };
+        }
+      } catch (err: any) {
+        lastError = err;
+      }
+    }
+
+    return {
+      success: false,
+      error: lastError ? lastError.message : '素材情報の取得に失敗しました。'
+    };
   }
 }

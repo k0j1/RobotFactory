@@ -79,13 +79,24 @@ try {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ");
 
-    // user_materialテーブルから最新の素材情報を取得
-    $matStmt = $pdo->prepare("SELECT material_id, count FROM user_material WHERE user_id = :user_id");
-    $matStmt->execute([':user_id' => $actualUserId]);
+    // user_materialテーブルから最新の素材情報を取得 (google_idまたはusers.idのいずれかで登録されている可能性を網羅)
+    $candidateUserIds = array_unique(array_filter([$actualUserId, $userId, $userRecord['id'] ?? null, $userRecord['google_id'] ?? null]));
+    $inPlaceholders = implode(',', array_fill(0, count($candidateUserIds), '?'));
+
+    $matStmt = $pdo->prepare("
+        SELECT material_id, SUM(count) AS total_count 
+        FROM user_material 
+        WHERE user_id IN ($inPlaceholders) 
+        GROUP BY material_id
+    ");
+    $matStmt->execute(array_values($candidateUserIds));
     $matRows = $matStmt->fetchAll();
     $dbMaterials = [];
     foreach ($matRows as $mRow) {
-        $dbMaterials[$mRow['material_id']] = (int)$mRow['count'];
+        $c = (int)$mRow['total_count'];
+        if ($c > 0) {
+            $dbMaterials[$mRow['material_id']] = $c;
+        }
     }
 
     if ($row && !empty($row['game_data'])) {
@@ -97,14 +108,12 @@ try {
         // 廃止された starterBonusClaimed 変数は返却データからも完全に除外
         unset($gameData['starterBonusClaimed']);
 
-        // user_materialテーブルにデータが存在する場合はそちらの素材数を反映・マージ
-        if (!empty($dbMaterials)) {
-            if (!isset($gameData['materials']) || !is_array($gameData['materials'])) {
-                $gameData['materials'] = [];
-            }
-            foreach ($dbMaterials as $mId => $cnt) {
-                $gameData['materials'][$mId] = $cnt;
-            }
+        // user_materialテーブルの素材数を確実に反映
+        if (!isset($gameData['materials']) || !is_array($gameData['materials'])) {
+            $gameData['materials'] = [];
+        }
+        foreach ($dbMaterials as $mId => $cnt) {
+            $gameData['materials'][$mId] = $cnt;
         }
 
         echo json_encode([
@@ -120,8 +129,8 @@ try {
             "materials" => $dbMaterials
         ];
         echo json_encode([
-            "success" => false, 
-            "message" => "No saved data found for this user",
+            "success" => true, 
+            "message" => "Initial user state with materials",
             "data" => $gameData,
             "received_initial_bonus" => $receivedBonusVal,
             "materials" => $dbMaterials,

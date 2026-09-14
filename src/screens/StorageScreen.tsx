@@ -68,8 +68,20 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
 
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 100);
+    // 倉庫画面表示時にuser_materialテーブルから最新素材情報をロード
+    engine.refreshMaterialsFromDatabase().catch((err) => {
+      console.warn('[StorageScreen] 素材テーブルロードエラー:', err);
+    });
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (tab === 'materials') {
+      engine.refreshMaterialsFromDatabase().catch((err) => {
+        console.warn('[StorageScreen] 素材タブ切替時ロードエラー:', err);
+      });
+    }
+  }, [tab]);
 
   const activeDisassembly = state.activeRobotDisassembly;
   const isDisassemblyDone = activeDisassembly ? activeDisassembly.endTime <= now : false;
