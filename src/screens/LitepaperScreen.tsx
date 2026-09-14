@@ -25,7 +25,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
         title="ポンコツロボット工房 公式仕様書"
         badge={
           <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300 font-mono font-bold px-1.5 py-0.2 rounded">
-            v1.0.331
+            v1.0.336
           </span>
         }
         rightElement={
@@ -224,7 +224,9 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                     <li><strong>修理キット:</strong> 破損した機体を即座に全回復。ミニゲーム勝利等で獲得。</li>
                     <li><strong>機体命名＆愛着度:</strong> 製造したロボットには自由に名前を付けられます。</li>
                     <li><strong>分解リサイクル:</strong> 不要になった機体やパーツを素材へと還元。</li>
+                    <li><strong>新人技師初回ボーナス:</strong> 初期ユーザー向けに、ロボット1体を即座に組み立てられる☆1素材セット（全24個・すべて☆1ランクのみ）をプレゼント。ヘッド・ボディ・アーム・レッグの4部位（各5個＝計20個必要）を余すことなく組み立て可能です。</li>
                     <li><strong>図鑑登録・パーツ基準値一覧:</strong> 完成した新機体は自動的に図鑑へ記録されます。また、パーツ図鑑タブではすべてのパーツ形状と、耐久力(HP)・攻撃力(POW)・探索力(DEX)などの「基準値ステータス」を便利なテーブル（表）形式で一覧表示し、比較することができます。</li>
+                    <li><strong>GSAPモーションスタジオ:</strong> 漆黒のグランドピアノによる華麗なピアノ協奏曲演奏をはじめ、各種戦闘・アクロバット・仕草など、多彩なモーションをロボットで鑑賞・動作検証できます。</li>
                   </ul>
                 </div>
               </div>
@@ -374,14 +376,14 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                 <div className="bg-white p-2.5 rounded-lg border border-stone-200">
                   <strong className="text-stone-900 block font-bold mb-1">🚀 弾幕サバイバル (Danmaku Survival)</strong>
                   <p className="text-stone-600">
-                    敵機から放たれる幾何学的な弾幕を回避するアクションシューティング。Easy / Normal / Hard の3段階難易度。名声の獲得はありませんが、生還成功時に<strong>専用のクリア宝箱がドロップ</strong>し、回収できます。倉庫で開封することで、ゴールド・クラフト素材・バトルエレメントなどを獲得できます。未生還時は何度でも再挑戦可能です。
+                    敵機から放たれる幾何学的な弾幕を回避するアクションシューティング。Easy / Normal / Hard の3段階難易度。<strong>飛行中はロボットがジェット噴射スラスターとマッハ衝撃波を放ち、左右回避時にはリアルタイムにバンク傾斜する高速ジェット飛行アニメーション</strong>が発動します。名声の獲得はありませんが、生還成功時に<strong>専用のクリア宝箱がドロップ</strong>し、回収できます。倉庫で開封することで、ゴールド・クラフト素材・バトルエレメントなどを獲得できます。未生還時は何度でも再挑戦可能です。
                   </p>
                 </div>
 
                 <div className="bg-white p-2.5 rounded-lg border border-stone-200">
                   <strong className="text-stone-900 block font-bold mb-1">🎹 ピアノ演奏会 (Piano Rhythm)</strong>
                   <p className="text-stone-600">
-                    「エリーゼのために」「トルコ行進曲」「ラ・カンパネラ」など名曲を完全演奏する鍵盤リズムゲーム。
+                    「エリーゼのために」「トルコ行進曲」「ラ・カンパネラ」など名曲を完全演奏する鍵盤リズムゲーム。演奏会場のバックグラウンドでは、ロボットが漆黒のグランドピアノを操る『ピアノ協奏曲・超絶技巧演奏』アニメーションをループ披露します（効果音なしで楽曲の美しい響きに集中できます）。
                   </p>
                 </div>
 

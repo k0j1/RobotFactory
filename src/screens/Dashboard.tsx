@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
 import { RobotRadarChart } from '../components/robot/RobotRadarChart';
 import { RepairAnimationModal } from '../components/effects/RepairAnimationModal';
+import { StarterBonusCard } from '../components/ui/StarterBonusCard';
 
 const formatTime = (ms: number) => {
   if (ms <= 0) return '00:00';
@@ -236,6 +237,9 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
           </button>
         </div>
       </div>
+
+      {/* 新人技師応援！初回ロボット組み立てボーナス（未受取時のみ表示） */}
+      <StarterBonusCard state={state} engine={engine} onNavigate={onNavigate} />
 
       {/* ========================================================================= */}
       {/* 1. コンパクトモード (Compact Mode: Icons, Badges & Minimal Essential Stats) */}

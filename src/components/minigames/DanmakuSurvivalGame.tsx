@@ -38,6 +38,7 @@ export const DanmakuSurvivalGame: React.FC<DanmakuProps> = ({
   const [knockback, setKnockback] = useState(0);
   const [playerPos, setPlayerPos] = useState({ x: 50, y: 80 });
   const [grazeCount, setGrazeCount] = useState(0);
+  const [bankAngle, setBankAngle] = useState(0);
   
   const hpRef = useRef(hp);
   const timeMsRef = useRef(timeMs);
@@ -411,6 +412,10 @@ export const DanmakuSurvivalGame: React.FC<DanmakuProps> = ({
         }
       }
 
+      // Calculate banking angle for dynamic jet flight visual
+      const targetBank = Math.max(-14, Math.min(14, actualDx * 12));
+      setBankAngle(prev => prev * 0.7 + targetBank * 0.3);
+
       bulletsRef.current = nextBullets;
 
       setBullets(nextBullets);
@@ -462,7 +467,15 @@ export const DanmakuSurvivalGame: React.FC<DanmakuProps> = ({
       <div className="flex justify-between items-center bg-stone-900 p-4 rounded-lg shadow-inner">
         <div className="flex gap-4 items-center">
           <div className="bg-white p-1 rounded-lg border border-stone-700">
-             <RobotVisual robot={activeRobot} size={32} animateVictory={battleResult === 'win'} hideBackground={true} hideBubble={true} />
+             <RobotVisual 
+               robot={activeRobot} 
+               size={32} 
+               animateVictory={battleResult === 'win'} 
+               emotion={battleResult === 'lose' ? 'troubled' : battleResult === 'win' ? 'happy' : 'flying'}
+               isFlying={!battleResult}
+               hideBackground={true} 
+               hideBubble={true} 
+             />
           </div>
           <div className="text-white font-mono text-sm">
             <div className="flex items-center gap-2 mb-1">
@@ -565,7 +578,7 @@ export const DanmakuSurvivalGame: React.FC<DanmakuProps> = ({
         >
           <motion.div
             animate={{ 
-              rotate: battleResult === 'lose' ? 90 : 0,
+              rotate: battleResult === 'lose' ? 90 : bankAngle,
               opacity: robotBlink ? [1, 0.2, 1, 0.3, 1] : 1,
               scale: robotBlink ? [1, 0.92, 1.08, 1] : 1,
               filter: robotBlink 
@@ -573,8 +586,8 @@ export const DanmakuSurvivalGame: React.FC<DanmakuProps> = ({
                 : 'brightness(1) contrast(1)'
             }}
             transition={{ 
-              duration: robotBlink ? 0.2 : 0.5,
-              ease: "easeInOut"
+              duration: robotBlink ? 0.2 : 0.1,
+              ease: "easeOut"
             }}
             className="relative"
           >
@@ -582,7 +595,8 @@ export const DanmakuSurvivalGame: React.FC<DanmakuProps> = ({
               robot={activeRobot} 
               size={46} 
               animateVictory={battleResult === 'win'}
-              emotion={battleResult === 'lose' ? 'troubled' : battleResult === 'win' ? 'happy' : 'normal'} 
+              emotion={battleResult === 'lose' ? 'troubled' : battleResult === 'win' ? 'happy' : 'flying'} 
+              isFlying={!battleResult}
               hideBackground={true} 
               hideBubble={true}
             />

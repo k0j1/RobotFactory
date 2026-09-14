@@ -13,6 +13,7 @@ import { TutorialPopup } from '../components/ui/TutorialPopup';
 import { MaterialIcon } from '../components/ui/MaterialIcon';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { PartSelectCarousel } from '../components/part/PartSelectCarousel';
+import { StarterBonusCard } from '../components/ui/StarterBonusCard';
 import * as Gi from 'react-icons/gi';
 import { motion } from 'motion/react';
 import confetti from 'canvas-confetti';
@@ -256,6 +257,9 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
         title="製造（クラフト）について" 
         description={"ここでは集めた素材を組み合わせてパーツやロボットを作ります。\n・パーツ製造は素材のレア度に応じて約10秒〜20秒で完成します。\n・ロボット組立はパーツ性能に応じて約1分〜1分半で組み立てられます。\n・製造中も他の画面で探索や依頼を進めることができます！"} 
       />
+
+      {/* 新人技師応援！初回ロボット組み立てボーナス（未受取時のみコンパクト表示） */}
+      <StarterBonusCard state={state} engine={engine} compact={true} />
   
       {/* タブ切り替え */}
       <div className="flex gap-2 relative z-10 border-b border-stone-300 pb-1">

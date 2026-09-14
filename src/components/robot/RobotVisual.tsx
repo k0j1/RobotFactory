@@ -18,12 +18,13 @@ interface RobotVisualProps {
   animateCrafting?: boolean;
   animateVictory?: boolean;
   animateExploration?: boolean;
-  emotion?: 'auto' | 'normal' | 'happy' | 'troubled' | 'searching' | 'skipping' | 'exploded';
+  emotion?: 'auto' | 'normal' | 'happy' | 'troubled' | 'searching' | 'skipping' | 'exploded' | 'flying';
   happyVariant?: 'banzai' | 'bounce' | 'auto';
   hasPendingDrops?: boolean;
   isTroubled?: boolean;
   isExplodedView?: boolean;
   isSkipping?: boolean;
+  isFlying?: boolean;
   locationId?: string; // 探索地に応じた背景・天気
   weatherType?: WeatherType;
   agility?: number; // ロボットの素早さ（歩行・アニメーション速度に反映）
@@ -86,6 +87,7 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
   isTroubled = false,
   isExplodedView = false,
   isSkipping = false,
+  isFlying = false,
   locationId,
   weatherType,
   agility,
@@ -158,11 +160,13 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
   const bgScrollDuration = Math.max(0.5, 1.5 / speedMultiplier);
 
   // Determine current emotion state
-  const currentEmotion: 'happy' | 'troubled' | 'searching' | 'skipping' | 'exploded' | 'normal' = 
+  const currentEmotion: 'happy' | 'troubled' | 'searching' | 'skipping' | 'exploded' | 'flying' | 'normal' = 
     isExplodedView || emotion === 'exploded'
       ? 'exploded'
       : isSkipping || emotion === 'skipping'
       ? 'skipping'
+      : isFlying || emotion === 'flying'
+      ? 'flying'
       : emotion && emotion !== 'auto'
       ? (emotion as any)
       : animateVictory || hasPendingDrops
@@ -242,6 +246,16 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
         },
         transition: { duration: 0.85, repeat: Infinity, ease: "easeInOut" }
       }
+    : currentEmotion === 'flying'
+    ? {
+        // 【超音速ジェット飛行】推進アフターバーナーで高速微振動ホバー＆推進前傾
+        animate: {
+          y: [0, -3.5, 0.5, -3, 0],
+          scale: [1, 1.02, 0.99, 1.01, 1],
+          rotate: [-1.5, 1.5, -1, 1, -1.5]
+        },
+        transition: { duration: 0.32, repeat: Infinity, ease: "easeInOut" }
+      }
     : currentEmotion === 'happy'
     ? activeHappyVariant === 'banzai'
       ? {
@@ -310,6 +324,16 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
           scale: [1, 1.12, 1, 1.15, 1]
         },
         transition: { duration: 0.85, repeat: Infinity, ease: "easeInOut" }
+      }
+    : currentEmotion === 'flying'
+    ? {
+        // 【超音速ジェット飛行】左腕を後方・斜め下にピンと伸ばし安定翼スタビライザー姿勢
+        animate: { 
+          rotate: [-30, -36, -28, -34, -30],
+          x: [-2, -4, -1, -3, -2],
+          y: [1, -1, 2, 0, 1]
+        },
+        transition: { duration: 0.35, repeat: Infinity, ease: "easeInOut" }
       }
     : currentEmotion === 'happy'
     ? activeHappyVariant === 'banzai'
@@ -382,6 +406,16 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
         },
         transition: { duration: 0.85, repeat: Infinity, ease: "easeInOut" }
       }
+    : currentEmotion === 'flying'
+    ? {
+        // 【超音速ジェット飛行】右腕を後方・斜め下にピンと伸ばし安定翼スタビライザー姿勢
+        animate: { 
+          rotate: [30, 36, 28, 34, 30],
+          x: [2, 4, 1, 3, 2],
+          y: [1, -1, 2, 0, 1]
+        },
+        transition: { duration: 0.35, repeat: Infinity, ease: "easeInOut" }
+      }
     : currentEmotion === 'happy'
     ? activeHappyVariant === 'banzai'
       ? {
@@ -451,6 +485,16 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
           scale: [1, 1.08, 0.98, 1.1, 1]
         },
         transition: { duration: 0.85, repeat: Infinity, ease: "easeInOut" }
+      }
+    : currentEmotion === 'flying'
+    ? {
+        // 【超音速ジェット飛行】鋭く前方・進行方向を見据え、気流・スラスター微振動に追従
+        animate: {
+          y: [-1, -3.5, -1, -2.5, -1],
+          rotate: [-1, 1, -1],
+          scale: [1, 1.02, 1]
+        },
+        transition: { duration: 0.32, repeat: Infinity, ease: "easeInOut" }
       }
     : currentEmotion === 'happy'
     ? activeHappyVariant === 'banzai'
@@ -523,6 +567,17 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
           scaleY: [1, 0.88, 1.04, 0.84, 1]
         },
         transition: { duration: 0.85, repeat: Infinity, ease: "easeInOut" }
+      }
+    : currentEmotion === 'flying'
+    ? {
+        // 【超音速ジェット飛行】左脚を後方・下方にピンと伸ばし足裏スラスター噴射姿勢
+        animate: {
+          rotate: [6, 3, 7, 4, 6],
+          skewX: [2, -2, 2],
+          y: [2, 4, 2, 3, 2],
+          scaleY: [1.08, 1.15, 1.08]
+        },
+        transition: { duration: 0.32, repeat: Infinity, ease: "easeInOut" }
       }
     : currentEmotion === 'happy'
     ? activeHappyVariant === 'banzai'
@@ -598,6 +653,17 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
           scaleY: [1.04, 0.84, 1, 0.88, 1]
         },
         transition: { duration: 0.85, repeat: Infinity, ease: "easeInOut" }
+      }
+    : currentEmotion === 'flying'
+    ? {
+        // 【超音速ジェット飛行】右脚を後方・下方にピンと伸ばし足裏スラスター噴射姿勢
+        animate: {
+          rotate: [-6, -3, -7, -4, -6],
+          skewX: [-2, 2, -2],
+          y: [2, 4, 2, 3, 2],
+          scaleY: [1.08, 1.15, 1.08]
+        },
+        transition: { duration: 0.32, repeat: Infinity, ease: "easeInOut" }
       }
     : currentEmotion === 'happy'
     ? activeHappyVariant === 'banzai'
@@ -789,6 +855,128 @@ export const RobotVisual: React.FC<RobotVisualProps> = ({
             transition={{ duration: 1.4, repeat: Infinity }}
           >
             <Gi.GiHelp className="inline text-indigo-300" />
+          </motion.div>
+        </>
+      )}
+
+      {/* 3. Jet Flight Thruster Plumes & Speed Streamers (ジェット飛行スラスター炎＆推進光粒子) */}
+      {currentEmotion === 'flying' && (
+        <>
+          {/* 背後推進グローオーラ */}
+          <motion.div 
+            className="absolute inset-0 pointer-events-none z-[-2] flex items-center justify-center"
+            animate={{ opacity: [0.5, 0.9, 0.5], scale: [0.95, 1.1, 0.95] }}
+            transition={{ duration: 0.25, repeat: Infinity, ease: "easeInOut" }}
+          >
+            <div className="w-[85%] h-[85%] rounded-full bg-cyan-400/20 blur-lg filter" />
+          </motion.div>
+
+          {/* 左脚スラスター噴射炎 (Left Thruster Plume) */}
+          <motion.div
+            id="robot-thruster-flame-left"
+            className="absolute pointer-events-none z-0 will-change-transform"
+            style={{
+              left: '32%',
+              top: '74%',
+              width: '16%',
+              height: '42%',
+              transformOrigin: '50% 0%',
+            }}
+            animate={{
+              scaleY: [1.0, 1.5, 0.9, 1.6, 1.1],
+              scaleX: [0.95, 1.15, 0.9, 1.2, 0.95],
+              opacity: [0.85, 1, 0.8, 1, 0.85],
+              y: [0, 2, -1, 3, 0]
+            }}
+            transition={{ duration: 0.16, repeat: Infinity, ease: "easeInOut" }}
+          >
+            <svg viewBox="0 0 60 140" className="w-full h-full overflow-visible drop-shadow-[0_0_10px_#38bdf8] drop-shadow-[0_0_18px_#0284c7]">
+              <defs>
+                <linearGradient id="jet-flame-grad-l" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#ffffff" stopOpacity="1" />
+                  <stop offset="20%" stopColor="#a5f3fc" stopOpacity="0.95" />
+                  <stop offset="55%" stopColor="#38bdf8" stopOpacity="0.85" />
+                  <stop offset="85%" stopColor="#0284c7" stopOpacity="0.5" />
+                  <stop offset="100%" stopColor="#0369a1" stopOpacity="0" />
+                </linearGradient>
+                <linearGradient id="jet-core-grad-l" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#ffffff" stopOpacity="1" />
+                  <stop offset="40%" stopColor="#e0f2fe" stopOpacity="0.95" />
+                  <stop offset="80%" stopColor="#38bdf8" stopOpacity="0.4" />
+                  <stop offset="100%" stopColor="#38bdf8" stopOpacity="0" />
+                </linearGradient>
+              </defs>
+              {/* アウター超音速ジェット噴射コーン */}
+              <polygon points="12,0 48,0 58,40 44,90 30,140 16,90 2,40" fill="url(#jet-flame-grad-l)" />
+              {/* インナー超高温プラズマコア */}
+              <polygon points="20,0 40,0 46,28 36,65 30,105 24,65 14,28" fill="url(#jet-core-grad-l)" />
+              {/* ショックダイヤモンド（超音速マッハ衝撃波リング） */}
+              <ellipse cx="30" cy="28" rx="14" ry="4" fill="none" stroke="#ffffff" strokeWidth="2" opacity="0.9" />
+              <ellipse cx="30" cy="62" rx="10" ry="3" fill="none" stroke="#a5f3fc" strokeWidth="1.5" opacity="0.8" />
+              <ellipse cx="30" cy="95" rx="6" ry="2" fill="none" stroke="#38bdf8" strokeWidth="1" opacity="0.6" />
+            </svg>
+          </motion.div>
+
+          {/* 右脚スラスター噴射炎 (Right Thruster Plume) */}
+          <motion.div
+            id="robot-thruster-flame-right"
+            className="absolute pointer-events-none z-0 will-change-transform"
+            style={{
+              left: '52%',
+              top: '74%',
+              width: '16%',
+              height: '42%',
+              transformOrigin: '50% 0%',
+            }}
+            animate={{
+              scaleY: [1.1, 0.9, 1.55, 1.0, 1.5],
+              scaleX: [1.1, 0.95, 1.2, 0.9, 1.05],
+              opacity: [1, 0.8, 1, 0.85, 1],
+              y: [1, -1, 3, 0, 2]
+            }}
+            transition={{ duration: 0.16, repeat: Infinity, ease: "easeInOut" }}
+          >
+            <svg viewBox="0 0 60 140" className="w-full h-full overflow-visible drop-shadow-[0_0_10px_#38bdf8] drop-shadow-[0_0_18px_#0284c7]">
+              <defs>
+                <linearGradient id="jet-flame-grad-r" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#ffffff" stopOpacity="1" />
+                  <stop offset="20%" stopColor="#a5f3fc" stopOpacity="0.95" />
+                  <stop offset="55%" stopColor="#38bdf8" stopOpacity="0.85" />
+                  <stop offset="85%" stopColor="#0284c7" stopOpacity="0.5" />
+                  <stop offset="100%" stopColor="#0369a1" stopOpacity="0" />
+                </linearGradient>
+                <linearGradient id="jet-core-grad-r" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#ffffff" stopOpacity="1" />
+                  <stop offset="40%" stopColor="#e0f2fe" stopOpacity="0.95" />
+                  <stop offset="80%" stopColor="#38bdf8" stopOpacity="0.4" />
+                  <stop offset="100%" stopColor="#38bdf8" stopOpacity="0" />
+                </linearGradient>
+              </defs>
+              {/* アウター超音速ジェット噴射コーン */}
+              <polygon points="12,0 48,0 58,40 44,90 30,140 16,90 2,40" fill="url(#jet-flame-grad-r)" />
+              {/* インナー超高温プラズマコア */}
+              <polygon points="20,0 40,0 46,28 36,65 30,105 24,65 14,28" fill="url(#jet-core-grad-r)" />
+              {/* ショックダイヤモンド（超音速マッハ衝撃波リング） */}
+              <ellipse cx="30" cy="28" rx="14" ry="4" fill="none" stroke="#ffffff" strokeWidth="2" opacity="0.9" />
+              <ellipse cx="30" cy="62" rx="10" ry="3" fill="none" stroke="#a5f3fc" strokeWidth="1.5" opacity="0.8" />
+              <ellipse cx="30" cy="95" rx="6" ry="2" fill="none" stroke="#38bdf8" strokeWidth="1" opacity="0.6" />
+            </svg>
+          </motion.div>
+
+          {/* 下方へ吹き飛ぶ高速推進スパーク光粒子 */}
+          <motion.div 
+            className="absolute top-[82%] left-[28%] text-cyan-200 text-xs pointer-events-none z-10"
+            animate={{ y: [0, 20, 40], opacity: [1, 0.6, 0], scale: [1, 0.8, 0.4] }}
+            transition={{ duration: 0.22, repeat: Infinity, ease: "linear" }}
+          >
+            <Gi.GiSparkles />
+          </motion.div>
+          <motion.div 
+            className="absolute top-[84%] right-[28%] text-sky-200 text-xs pointer-events-none z-10"
+            animate={{ y: [0, 24, 45], opacity: [1, 0.7, 0], scale: [1.1, 0.7, 0.3] }}
+            transition={{ duration: 0.26, repeat: Infinity, ease: "linear", delay: 0.1 }}
+          >
+            <Gi.GiSparkles />
           </motion.div>
         </>
       )}

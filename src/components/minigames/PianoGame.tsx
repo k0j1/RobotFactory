@@ -5,6 +5,7 @@ import Soundfont from 'soundfont-player';
 import { Robot } from '../../core/models';
 import { MinigameProps, PIANO_SONGS, PianoNoteData } from './Shared';
 import { RobotVisual } from '../robot/RobotVisual';
+import { GSAPRobotCanvas } from '../robot/GSAPRobotCanvas';
 import { savePianoScore, getPianoBestScore, PianoBestScore } from '../../core/pianoScoreManager';
 import * as Gi from 'react-icons/gi';
 
@@ -813,37 +814,43 @@ export const PianoGame: React.FC<PianoGameProps> = ({
         </div>
       </div>
 
-      {/* プレイエリア (フル鍵盤対応) */}
-      <div className="relative w-full h-64 bg-stone-950 rounded-2xl overflow-hidden border-4 border-stone-800 flex justify-center shadow-2xl">
+      {/* プレイエリア (演奏会場ステージ & フル鍵盤) */}
+      <div className="relative w-full h-72 sm:h-80 bg-stone-950 rounded-2xl overflow-hidden border-4 border-stone-800 flex justify-center shadow-2xl">
+        {/* コンサートホール・演奏会場バックグラウンド演出 */}
+        <div className="absolute inset-0 bg-radial from-amber-950/30 via-stone-950/80 to-stone-950 pointer-events-none z-0" />
+        
+        {/* ステージ背景のカーテン＆スポットライト */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-4/5 h-full bg-gradient-to-b from-amber-400/10 via-amber-500/5 to-transparent blur-md pointer-events-none z-0" />
+        <div className="absolute top-2 text-[10px] tracking-widest font-mono text-amber-500/30 uppercase pointer-events-none z-0 select-none">
+          GRAND RECITALS CONCERT HALL
+        </div>
+
         {/* 背景ライン (40鍵盤グリッド) */}
-        <div className="absolute inset-0 flex justify-between opacity-10 pointer-events-none">
+        <div className="absolute inset-0 flex justify-between opacity-10 pointer-events-none z-0">
           {whiteKeyDefs.map((_, i) => (
             <div key={i} className="h-full border-r border-stone-700" style={{ width: `${100 / TOTAL_WHITE_KEYS}%` }} />
           ))}
         </div>
         
-        {/* 背景ロボット演奏演出（ウォーターマーク） */}
+        {/* 背景：演奏会場でロボットがピアノ協奏曲・超絶技巧演奏のアニメーションをループ表示 (SEなし) */}
         {!isFinished && (
-          <div className="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none z-0 overflow-hidden">
-            <motion.div
-              animate={{
-                y: keysPressed.length > 0 ? [-5, 5, -5] : [0, -2, 0],
-                scale: keysPressed.length > 0 ? [1, 1.05, 1] : 1,
-                rotate: keysPressed.length > 0 ? (keysPressed.length % 2 === 0 ? [-2, 2, -2] : [2, -2, 2]) : 0,
-              }}
-              transition={{
-                duration: keysPressed.length > 0 ? 0.3 : 3,
-                repeat: Infinity,
-                ease: "easeInOut"
-              }}
-            >
-              <RobotVisual robot={activeRobot} size={280} hideBackground={true} hideBubble={true} />
-            </motion.div>
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden">
+            <div className="transform translate-y-1 sm:translate-y-3 scale-95 sm:scale-105 drop-shadow-[0_12px_24px_rgba(0,0,0,0.85)] opacity-90 transition-opacity duration-300">
+              <GSAPRobotCanvas
+                robot={activeRobot}
+                patternId="piano_performance"
+                loop={true}
+                speed={speed || 1.0}
+                isPaused={isPaused}
+                size={230}
+                hideStageDecorations={true}
+              />
+            </div>
           </div>
         )}
 
         {/* 落下するノーツ (時間ベースで位置を計算) */}
-        <div className="absolute inset-0 pt-2 pointer-events-none">
+        <div className="absolute inset-0 pt-2 pointer-events-none z-10">
           {currentNotes.map((note, idx) => {
             const timeUntilHit = note.time - elapsed;
             const noteDuration = note.duration || 208;
@@ -903,37 +910,8 @@ export const PianoGame: React.FC<PianoGameProps> = ({
           )}
         </AnimatePresence>
 
-        {/* 演奏ロボットアニメーション (アクティブな打鍵位置へ滑らかにスライド) */}
-        {!isFinished && (
-          <div className="absolute bottom-16 left-0 right-0 h-16 pointer-events-none z-20">
-            <motion.div
-              className="absolute bottom-0"
-              style={{ width: '64px', marginLeft: '-32px' }}
-              initial={{ left: '50%' }}
-              animate={{ 
-                left: keysPressed.length > 0 
-                  ? `${((keysPressed.reduce((acc, k) => acc + k.lane, 0) / keysPressed.length) / (TOTAL_WHITE_KEYS - 1)) * 100}%` 
-                  : '50%',
-                y: keysPressed.length > 0 ? 6 : 0,
-                rotate: keysPressed.length > 0 ? [-3, 3, 0] : 0,
-                scale: keysPressed.length > 0 ? 0.95 : 1
-              }}
-              transition={{
-                left: { type: 'spring', stiffness: 220, damping: 24 },
-                y: { type: 'spring', stiffness: 600, damping: 20 },
-                rotate: { duration: 0.12 },
-                scale: { duration: 0.08 }
-              }}
-            >
-              <div className="relative flex justify-center drop-shadow-lg">
-                <RobotVisual robot={activeRobot} size={64} hideBackground={true} hideBubble={true} />
-              </div>
-            </motion.div>
-          </div>
-        )}
-
         {/* 鍵盤エリア (40白鍵 ＋ 該当位置のリアル黒鍵) */}
-        <div className="absolute bottom-0 w-full h-16 bg-stone-900 flex items-end pb-1 border-t-2 border-stone-700 px-0.5 select-none">
+        <div className="absolute bottom-0 w-full h-16 bg-stone-900 flex items-end pb-1 border-t-2 border-stone-700 px-0.5 select-none z-20">
           {whiteKeyDefs.map((def, i) => {
             const isWhitePressed = keysPressed.some(k => !k.isBlack && Math.round(k.lane) === i);
             const isBlackPressed = keysPressed.some(k => k.isBlack && Math.abs(k.lane - (i + 0.5)) < 0.25);

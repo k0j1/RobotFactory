@@ -1203,3 +1203,18 @@ export function getMaterialCraftableVisuals(material: Material): CraftableVisual
 
 export const MAX_STORAGE_LEVELS = [5, 10, 15, 20, 30, 50, 100];
 export const STORAGE_UPGRADE_COST = [0, 500, 1500, 5000, 15000, 40000, 100000];
+
+// 新人技師応援！初回ロボット組み立て用ボーナス素材セット（すべて☆1ランクのみ）
+// 各部位（ヘッド・ボディ・アーム・レッグ）の製造に必要な「メイン素材3個＋サブ素材2個＝計5個」×4部位＝20個を完全にカバーする24個セット
+export interface StarterBonusMaterial {
+  materialId: string;
+  count: number;
+}
+
+export const STARTER_BONUS_MATERIALS: StarterBonusMaterial[] = [
+  { materialId: 'm_e1_1', count: 6 }, // さびた鉄くず (Earth, ★1)
+  { materialId: 'm_e1_2', count: 4 }, // 泥だらけのボルト (Earth, ★1)
+  { materialId: 'm_f1_1', count: 5 }, // 燃える歯車 (Fire, ★1)
+  { materialId: 'm_w1_1', count: 5 }, // 水冷チューブ (Water, ★1)
+  { materialId: 'm_a1_1', count: 4 }, // 軽いプロペラ (Wind, ★1)
+];

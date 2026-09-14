@@ -2167,7 +2167,509 @@ export function mountJetpackPlumeEffect(container: HTMLElement, mode: 'up' | 'fo
   };
 }
 
+/**
+ * 豪華グランドピアノ＆協奏曲エフェクトマウント
+ * ユーザー指定の高品質漆黒グランドピアノSVGと音符・光のパーティクル・スポットライト群
+ */
+export function mountGrandPianoPerformanceEffect(container: HTMLElement): {
+  wrapper: HTMLDivElement;
+  pianoGroup: SVGGElement;
+  spotlight: SVGGElement;
+  keyGlowL: SVGGElement;
+  keyGlowR: SVGGElement;
+  notesGroup: SVGGElement;
+  starBurst: SVGGElement;
+  cleanup: () => void;
+} {
+  const wrapper = document.createElement('div');
+  const uid = 'fp_' + Math.random().toString(36).substring(2, 7);
+  wrapper.className = 'absolute inset-0 pointer-events-none will-change-transform z-20 flex items-center justify-center';
+  wrapper.style.opacity = '1';
 
+  wrapper.innerHTML = `
+    <svg viewBox="0 0 340 260" class="w-full h-full overflow-visible">
+      <defs>
+        <!-- ピアノ本体（漆黒光沢グラデーション） -->
+        <linearGradient id="${uid}-fp-body" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="#374151"/>
+          <stop offset="40%" stop-color="#111827"/>
+          <stop offset="100%" stop-color="#030712"/>
+        </linearGradient>
+
+        <!-- 天板・鏡面反射ハイライト -->
+        <linearGradient id="${uid}-fp-glare" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.35"/>
+          <stop offset="50%" stop-color="#ffffff" stop-opacity="0.05"/>
+          <stop offset="100%" stop-color="#000000" stop-opacity="0.6"/>
+        </linearGradient>
+
+        <!-- 響板（高品質スプルース材グラデーション） -->
+        <linearGradient id="${uid}-fp-soundboard" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="#d97706"/>
+          <stop offset="50%" stop-color="#b45309"/>
+          <stop offset="100%" stop-color="#451a03"/>
+        </linearGradient>
+
+        <!-- 鋳鉄製金骨フレーム（ゴールド） -->
+        <linearGradient id="${uid}-fp-frame" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#fef08a"/>
+          <stop offset="35%" stop-color="#eab308"/>
+          <stop offset="70%" stop-color="#a16207"/>
+          <stop offset="100%" stop-color="#422006"/>
+        </linearGradient>
+
+        <!-- 鍵盤用レッドフェルト -->
+        <linearGradient id="${uid}-fp-felt" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#dc2626"/>
+          <stop offset="100%" stop-color="#7f1d1d"/>
+        </linearGradient>
+
+        <!-- 床の影 -->
+        <radialGradient id="${uid}-fp-shadow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#000000" stop-opacity="0.65"/>
+          <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+        </radialGradient>
+
+        <!-- 天井スポットライト -->
+        <linearGradient id="${uid}-fp-spotlight" x1="50%" y1="0%" x2="50%" y2="100%">
+          <stop offset="0%" stop-color="#fef08a" stop-opacity="0.4"/>
+          <stop offset="50%" stop-color="#f59e0b" stop-opacity="0.15"/>
+          <stop offset="100%" stop-color="#f59e0b" stop-opacity="0"/>
+        </linearGradient>
+
+        <!-- 鍵盤グロー -->
+        <radialGradient id="${uid}-key-glow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.9"/>
+          <stop offset="60%" stop-color="#0284c7" stop-opacity="0.4"/>
+          <stop offset="100%" stop-color="#0284c7" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="${uid}-key-glow-gold" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#fef08a" stop-opacity="0.95"/>
+          <stop offset="50%" stop-color="#f59e0b" stop-opacity="0.5"/>
+          <stop offset="100%" stop-color="#f59e0b" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+
+      <!-- 0. スポットライト光錐 -->
+      <g id="${uid}-spotlight" opacity="0">
+        <polygon points="170,-20 70,250 270,250" fill="url(#${uid}-fp-spotlight)"/>
+        <ellipse cx="170" cy="240" rx="90" ry="16" fill="#fef08a" opacity="0.12"/>
+      </g>
+
+      <!-- グランドピアノ本体グループ -->
+      <g id="${uid}-piano-group">
+        <!-- 1. 接地影 -->
+        <ellipse cx="170" cy="235" rx="130" ry="14" fill="url(#${uid}-fp-shadow)"/>
+
+        <g stroke="#030712" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+
+          <!-- 2. 脚部 & ペダル部（正面アングル） -->
+          <!-- 左脚 -->
+          <path d="M 45,160 L 41,225 L 49,225 L 53,160 Z" fill="url(#${uid}-fp-body)"/>
+          <circle cx="45" cy="227" r="2.5" fill="url(#${uid}-fp-frame)" stroke="none"/>
+
+          <!-- 右脚 -->
+          <path d="M 287,160 L 291,225 L 299,225 L 295,160 Z" fill="url(#${uid}-fp-body)"/>
+          <circle cx="295" cy="227" r="2.5" fill="url(#${uid}-fp-frame)" stroke="none"/>
+
+          <!-- 奥脚（中央奧） -->
+          <path d="M 185,130 L 187,205 L 193,205 L 195,130 Z" fill="#090d16"/>
+          <circle cx="190" cy="207" r="2.5" fill="url(#${uid}-fp-frame)" stroke="none"/>
+
+          <!-- ペダルリラ（正面中央） -->
+          <path d="M 162,170 L 160,215 L 180,215 L 178,170 Z" fill="url(#${uid}-fp-body)"/>
+          <path d="M 155,215 H 185 L 187,220 H 153 Z" fill="url(#${uid}-fp-frame)"/>
+
+          <!-- 3. 本体メインケース（正面・側面シルエット） -->
+          <!-- 左・右・奥へ伸びるケース外壁 -->
+          <path d="M 30,140 C 30,105 70,80 150,75 C 220,70 310,85 310,120 C 310,140 290,150 290,160 L 50,160 C 50,150 30,145 30,140 Z" fill="url(#${uid}-fp-body)"/>
+          <!-- リム下部の厚み部分 -->
+          <path d="M 30,140 L 30,152 C 30,157 50,172 50,172 L 290,172 C 290,172 310,157 310,152 L 310,120 L 310,120 C 310,140 290,150 290,160 L 50,160 C 50,150 30,145 30,140 Z" fill="#0b0f19"/>
+
+          <!-- 4. ★詳細内部構造（正面ハイアングル視点）★ -->
+          <!-- (1) 響板 -->
+          <path d="M 40,138 C 45,110 80,85 155,80 C 225,75 300,90 300,120 C 300,135 280,142 270,148 L 70,148 Z" fill="url(#${uid}-fp-soundboard)"/>
+
+          <!-- (2) 響板の目調スリット -->
+          <path d="M 60,145 L 110,88 M 85,146 L 140,84 M 115,147 L 175,82 M 145,147 L 210,81 M 175,147 L 245,82 M 205,147 L 275,86 M 235,147 L 295,95" stroke="#451a03" stroke-width="0.8" opacity="0.45"/>
+
+          <!-- (3) 駒（ブリッジ：長駒＆短駒） -->
+          <!-- 中〜高音用の湾曲した長駒 -->
+          <path d="M 120,145 C 170,140 240,130 285,105" stroke="#241304" stroke-width="5" fill="none"/>
+          <path d="M 120,145 C 170,140 240,130 285,105" stroke="#78350f" stroke-width="2.5" fill="none"/>
+          <!-- 低音用の短駒 -->
+          <path d="M 70,130 C 95,120 120,110 145,100" stroke="#241304" stroke-width="4" fill="none"/>
+
+          <!-- (4) 弦の束（スチール弦＆低音用銅線） -->
+          <g stroke="#f1f5f9" stroke-width="0.6" opacity="0.85">
+            <!-- 扇状に奥から手前へ並ぶ弦 -->
+            <line x1="85" y1="148" x2="260" y2="92"/>
+            <line x1="95" y1="148" x2="265" y2="93"/>
+            <line x1="105" y1="148" x2="270" y2="95"/>
+            <line x1="115" y1="148" x2="275" y2="97"/>
+            <line x1="125" y1="148" x2="280" y2="100"/>
+            <line x1="135" y1="148" x2="285" y2="103"/>
+            <line x1="145" y1="148" x2="290" y2="107"/>
+            <line x1="155" y1="148" x2="294" y2="112"/>
+            <!-- 交差する低音弦（巻き銅線） -->
+            <line x1="65" y1="138" x2="210" y2="80" stroke="#f97316" stroke-width="0.9"/>
+            <line x1="70" y1="140" x2="218" y2="81" stroke="#f97316" stroke-width="0.9"/>
+            <line x1="75" y1="142" x2="225" y2="82" stroke="#f97316" stroke-width="0.9"/>
+          </g>
+
+          <!-- (5) 鋳鉄製金骨フレーム（正面配置アーム＆ピン板） -->
+          <!-- チューニングピンエリア -->
+          <path d="M 50,145 L 85,130 L 92,138 L 58,148 Z" fill="url(#${uid}-fp-frame)"/>
+          <g fill="#0f172a" stroke="none">
+            <circle cx="58" cy="145" r="1.2"/> <circle cx="64" cy="142" r="1.2"/> <circle cx="70" cy="139" r="1.2"/>
+            <circle cx="76" cy="136" r="1.2"/> <circle cx="82" cy="133" r="1.2"/> <circle cx="88" cy="130" r="1.2"/>
+          </g>
+          <!-- フレーム補強放射状アーム -->
+          <path d="M 85,130 L 210,80 L 217,85 L 92,138 Z" fill="url(#${uid}-fp-frame)"/>
+          <path d="M 75,148 L 290,105 L 294,111 L 82,148 Z" fill="url(#${uid}-fp-frame)"/>
+          <path d="M 210,80 Q 260,80 295,95 L 291,101 Q 255,87 207,87 Z" fill="url(#${uid}-fp-frame)"/>
+          <!-- 肉抜き孔 -->
+          <circle cx="120" cy="132" r="4" fill="#451a03" stroke="url(#${uid}-fp-frame)" stroke-width="1.5"/>
+          <circle cx="155" cy="122" r="4" fill="#451a03" stroke="url(#${uid}-fp-frame)" stroke-width="1.5"/>
+          <circle cx="190" cy="112" r="3.5" fill="#451a03" stroke="url(#${uid}-fp-frame)" stroke-width="1.5"/>
+
+          <!-- 5. 鍵盤ユニット（正面手前から覗く白鍵と黒鍵） -->
+          <!-- 赤フェルトライン -->
+          <rect x="52" y="150" width="236" height="3" fill="url(#${uid}-fp-felt)" stroke="none"/>
+          
+          <!-- 白鍵（正面平行配置） -->
+          <rect x="52" y="153" width="236" height="12" rx="1" fill="#f8fafc"/>
+          <!-- 白鍵目地 -->
+          <g stroke="#cbd5e1" stroke-width="0.8">
+            <line x1="60" y1="153" x2="60" y2="165"/><line x1="68" y1="153" x2="68" y2="165"/>
+            <line x1="76" y1="153" x2="76" y2="165"/><line x1="84" y1="153" x2="84" y2="165"/>
+            <line x1="92" y1="153" x2="92" y2="165"/><line x1="100" y1="153" x2="100" y2="165"/>
+            <line x1="108" y1="153" x2="108" y2="165"/><line x1="116" y1="153" x2="116" y2="165"/>
+            <line x1="124" y1="153" x2="124" y2="165"/><line x1="132" y1="153" x2="132" y2="165"/>
+            <line x1="140" y1="153" x2="140" y2="165"/><line x1="148" y1="153" x2="148" y2="165"/>
+            <line x1="156" y1="153" x2="156" y2="165"/><line x1="164" y1="153" x2="164" y2="165"/>
+            <line x1="172" y1="153" x2="172" y2="165"/><line x1="180" y1="153" x2="180" y2="165"/>
+            <line x1="188" y1="153" x2="188" y2="165"/><line x1="196" y1="153" x2="196" y2="165"/>
+            <line x1="204" y1="153" x2="204" y2="165"/><line x1="212" y1="153" x2="212" y2="165"/>
+            <line x1="220" y1="153" x2="220" y2="165"/><line x1="228" y1="153" x2="228" y2="165"/>
+            <line x1="236" y1="153" x2="236" y2="165"/><line x1="244" y1="153" x2="244" y2="165"/>
+            <line x1="252" y1="153" x2="252" y2="165"/><line x1="260" y1="153" x2="260" y2="165"/>
+            <line x1="268" y1="153" x2="268" y2="165"/><line x1="276" y1="153" x2="276" y2="165"/>
+          </g>
+
+          <!-- 黒鍵（均等配置） -->
+          <g fill="#0f172a" stroke="none">
+            <rect x="65" y="153" width="5" height="7"/><rect x="73" y="153" width="5" height="7"/>
+            <rect x="89" y="153" width="5" height="7"/><rect x="97" y="153" width="5" height="7"/>
+            <rect x="105" y="153" width="5" height="7"/>
+            <rect x="121" y="153" width="5" height="7"/><rect x="129" y="153" width="5" height="7"/>
+            <rect x="145" y="153" width="5" height="7"/><rect x="153" y="153" width="5" height="7"/>
+            <rect x="161" y="153" width="5" height="7"/>
+            <rect x="177" y="153" width="5" height="7"/><rect x="185" y="153" width="5" height="7"/>
+            <rect x="201" y="153" width="5" height="7"/><rect x="209" y="153" width="5" height="7"/>
+            <rect x="217" y="153" width="5" height="7"/>
+            <rect x="233" y="153" width="5" height="7"/><rect x="241" y="153" width="5" height="7"/>
+            <rect x="257" y="153" width="5" height="7"/><rect x="265" y="153" width="5" height="7"/>
+            <rect x="273" y="153" width="5" height="7"/>
+          </g>
+
+          <!-- 鍵盤手前フロントレール（棚板） -->
+          <path d="M 45,160 L 52,165 H 288 L 295,160 L 290,172 H 50 Z" fill="url(#${uid}-fp-body)"/>
+
+          <!-- 6. 突き上げ棒（天板受け棒） -->
+          <line x1="230" y1="95" x2="275" y2="25" stroke="#090d16" stroke-width="3.5"/>
+
+          <!-- 7. 正面ハイアングルで開く大屋根（天板） -->
+          <polygon points="40,140 160,15 315,35 310,120" fill="url(#${uid}-fp-body)"/>
+          <polygon points="40,140 160,15 315,35 310,120" fill="url(#${uid}-fp-glare)" stroke="none"/>
+          <path d="M 40,140 L 160,15 L 163,17 L 43,142 Z" fill="#ffffff" opacity="0.4" stroke="none"/>
+
+        </g>
+
+        <!-- 鍵盤タッピング発光インジケーター（左手側 & 右手側） -->
+        <g id="${uid}-key-glow-l" opacity="0">
+          <ellipse cx="110" cy="158" rx="28" ry="8" fill="url(#${uid}-key-glow)"/>
+          <circle cx="105" cy="156" r="3" fill="#ffffff" opacity="0.9"/>
+        </g>
+        <g id="${uid}-key-glow-r" opacity="0">
+          <ellipse cx="230" cy="158" rx="28" ry="8" fill="url(#${uid}-key-glow-gold)"/>
+          <circle cx="235" cy="156" r="3" fill="#ffffff" opacity="0.9"/>
+        </g>
+      </g>
+
+      <!-- 響板・大屋根から舞い上がる音符＆星パーティクル群 -->
+      <g id="${uid}-notes-group">
+        <!-- 音符1 (♪ ゴールド) -->
+        <g id="${uid}-note-1" transform="translate(140, 100)" opacity="0">
+          <path d="M 5,0 L 5,16 A 3.5,3.5 0 1,1 0,16 A 3.5,3.5 0 0,1 5,16 Z M 5,3 Q 12,-2 12,6" fill="#facc15" stroke="#ca8a04" stroke-width="1.2"/>
+        </g>
+        <!-- 音符2 (♫ シアン) -->
+        <g id="${uid}-note-2" transform="translate(200, 85)" opacity="0">
+          <path d="M 3,0 L 3,14 A 3,3 0 1,1 -1,14 A 3,3 0 0,1 3,14 Z M 14,2 L 14,16 A 3,3 0 1,1 10,16 A 3,3 0 0,1 14,16 Z M 3,0 L 14,2 L 14,5 L 3,3 Z" fill="#38bdf8" stroke="#0284c7" stroke-width="1.2"/>
+        </g>
+        <!-- 音符3 (♬ ピンク) -->
+        <g id="${uid}-note-3" transform="translate(170, 70)" opacity="0">
+          <path d="M 3,0 L 3,14 A 3,3 0 1,1 -1,14 A 3,3 0 0,1 3,14 Z M 14,2 L 14,16 A 3,3 0 1,1 10,16 A 3,3 0 0,1 14,16 Z M 3,0 L 14,2 L 14,5 L 3,3 Z M 3,4 L 14,6 L 14,8 L 3,6 Z" fill="#f472b6" stroke="#db2777" stroke-width="1"/>
+        </g>
+        <!-- 音符4 (ト音記号 𝄞) -->
+        <g id="${uid}-note-4" transform="translate(240, 60)" opacity="0">
+          <text x="0" y="0" font-size="22" font-family="serif" font-weight="bold" fill="#fef08a" stroke="#ca8a04" stroke-width="0.5" filter="drop-shadow(0 0 6px #eab308)">𝄞</text>
+        </g>
+        <!-- 音符5 (ヘ音記号 𝄢) -->
+        <g id="${uid}-note-5" transform="translate(100, 75)" opacity="0">
+          <text x="0" y="0" font-size="18" font-family="serif" font-weight="bold" fill="#a7f3d0" stroke="#059669" stroke-width="0.5" filter="drop-shadow(0 0 6px #10b981)">𝄢</text>
+        </g>
+        <!-- 音符6 (♪ パープル) -->
+        <g id="${uid}-note-6" transform="translate(265, 45)" opacity="0">
+          <path d="M 4,0 L 4,14 A 3,3 0 1,1 0,14 A 3,3 0 0,1 4,14 Z M 4,2 Q 10,-2 10,6" fill="#c084fc" stroke="#7e22ce" stroke-width="1.2"/>
+        </g>
+      </g>
+
+      <!-- クライマックス用スターバースト -->
+      <g id="${uid}-starburst" opacity="0" transform="translate(170, 130)">
+        <circle cx="0" cy="0" r="45" fill="#fef08a" opacity="0.4" filter="blur(6px)"/>
+        <!-- 放射状スパーク -->
+        <path d="M 0,-40 L 5,-10 L 35,0 L 5,10 L 0,40 L -5,10 L -35,0 L -5,-10 Z" fill="#ffffff" filter="drop-shadow(0 0 10px #f59e0b)"/>
+        <circle cx="-30" cy="-25" r="3" fill="#fde047"/>
+        <circle cx="35" cy="-20" r="4" fill="#67e8f9"/>
+        <circle cx="-25" cy="25" r="3.5" fill="#f472b6"/>
+        <circle cx="30" cy="30" r="3" fill="#a7f3d0"/>
+      </g>
+    </svg>
+  `;
+
+  container.appendChild(wrapper);
+
+  const pianoGroup = wrapper.querySelector(`#${uid}-piano-group`) as SVGGElement;
+  const spotlight = wrapper.querySelector(`#${uid}-spotlight`) as SVGGElement;
+  const keyGlowL = wrapper.querySelector(`#${uid}-key-glow-l`) as SVGGElement;
+  const keyGlowR = wrapper.querySelector(`#${uid}-key-glow-r`) as SVGGElement;
+  const notesGroup = wrapper.querySelector(`#${uid}-notes-group`) as SVGGElement;
+  const starBurst = wrapper.querySelector(`#${uid}-starburst`) as SVGGElement;
+
+  return {
+    wrapper,
+    pianoGroup,
+    spotlight,
+    keyGlowL,
+    keyGlowR,
+    notesGroup,
+    starBurst,
+    cleanup: () => {
+      if (wrapper.parentNode) wrapper.parentNode.removeChild(wrapper);
+    }
+  };
+}
+
+/**
+ * ピアノ協奏曲・超絶技巧演奏 (Grand Piano Virtuoso)
+ * 漆黒の最高級グランドピアノが出現し、両腕を軽快かつ情熱的に操って名曲を奏でる。
+ */
+export class PianoPerformanceAnimation extends BaseRobotAnimation {
+  id = 'piano_performance';
+  seMarkers: AnimationSEMarker[] = [
+    { time: 0.2, label: 'スポットライト点灯・開演', type: 'charge' },
+    { time: 0.8, label: '軽快なアルペジオ＆タッピング', type: 'spark' },
+    { time: 2.0, label: '情熱の超絶技巧グリッサンド', type: 'fire' },
+    { time: 3.4, label: 'クライマックス渾身の和音打鍵！', type: 'explosion' },
+    { time: 4.4, label: '優雅なカーテンコール・お辞儀', type: 'slash' }
+  ];
+  name = 'ピアノ協奏曲・超絶技巧演奏 (Grand Piano Virtuoso)';
+  category = RobotAnimationCategory.ACROBATIC;
+  duration = 5.0;
+  loop = true;
+  description = '漆黒のグランドピアノを召喚し、アルペジオから超絶技巧グリッサンド、熱情のクライマックス和音まで奏で上げる華麗なコンサートモーション。';
+  technicalHighlights = [
+    '最高級グランドピアノSVGの召喚展開 (mountGrandPianoPerformanceEffect)',
+    '天井スポットライトと鍵盤タッピング発光インジケーター',
+    '左右腕の独立タッピング・アルペジオ・クロスハンド演奏シミュレーション',
+    '響板・大屋根から次々と舞い上がる音符（♪ ♫ ♬ 𝄞 𝄢）とクライマックスのスターバースト',
+    '曲調に合わせた頭部・上半身の情熱的なスイングと優雅なカーテンコール'
+  ];
+
+  build(refs: RobotDOMRefs, tl: gsap.core.Timeline): void {
+    this.resetElements(refs, tl);
+    const { container, head, body, arms, armLeft, armRight, legs, legLeft, legRight, fxContainer, auraOverlay } = refs;
+
+    let pianoFx: ReturnType<typeof mountGrandPianoPerformanceEffect> | null = null;
+    if (fxContainer && typeof document !== 'undefined') {
+      pianoFx = mountGrandPianoPerformanceEffect(fxContainer);
+      tl.eventCallback('onComplete', () => {
+        pianoFx?.cleanup();
+      });
+    }
+
+    if (!pianoFx) return;
+
+    const { wrapper, pianoGroup, spotlight, keyGlowL, keyGlowR, notesGroup, starBurst } = pianoFx;
+
+    // 初期配置: ピアノはロボットの前・腕の位置にフィットして常時表示
+    gsap.set(wrapper, { y: 28, scale: 0.95, opacity: 1 });
+    gsap.set(spotlight, { opacity: 0.85 });
+
+    // ----------------------------------------------------
+    // 0.0s - 0.5s : 呼吸 & 鍵盤への優雅な構え（ループ終端と完全に接続）
+    // ----------------------------------------------------
+    if (container) tl.to(container, { y: -4, scaleY: 1, scaleX: 1, duration: 0.5, ease: 'sine.inOut' }, 0);
+    if (head) tl.to(head, { y: -2, rotation: -4, duration: 0.5, ease: 'sine.inOut' }, 0);
+    if (body) tl.to(body, { y: 0, rotation: 0, duration: 0.5, ease: 'sine.inOut' }, 0);
+    if (armLeft) tl.to(armLeft, { rotation: -35, x: 4, y: 6, duration: 0.5, ease: 'sine.inOut' }, 0);
+    if (armRight) tl.to(armRight, { rotation: 35, x: -4, y: 6, duration: 0.5, ease: 'sine.inOut' }, 0);
+
+    // ----------------------------------------------------
+    // 0.5s - 1.8s : 第1楽章（軽快なアルペジオ・スタッカート）
+    // ----------------------------------------------------
+    // 左手: 低音部でリズミカルに打鍵
+    if (armLeft) {
+      tl.to(armLeft, { rotation: -20, y: 12, x: 2, duration: 0.12, ease: 'power3.in' }, '0.55');
+      tl.to(keyGlowL, { opacity: 0.9, scale: 1.2, duration: 0.06 }, '0.67');
+      tl.to(keyGlowL, { opacity: 0, scale: 0.8, duration: 0.12 }, '0.73');
+      tl.to(armLeft, { rotation: -38, y: 4, duration: 0.14, ease: 'power2.out' }, '0.69');
+      
+      tl.to(armLeft, { rotation: -18, y: 14, x: -2, duration: 0.12, ease: 'power3.in' }, '0.85');
+      tl.to(keyGlowL, { opacity: 0.9, scale: 1.1, duration: 0.06 }, '0.97');
+      tl.to(keyGlowL, { opacity: 0, duration: 0.12 }, '1.03');
+      tl.to(armLeft, { rotation: -35, y: 6, duration: 0.14, ease: 'power2.out' }, '0.99');
+
+      tl.to(armLeft, { rotation: -22, y: 12, duration: 0.12, ease: 'power3.in' }, '1.15');
+      tl.to(armLeft, { rotation: -36, y: 5, duration: 0.14, ease: 'power2.out' }, '1.27');
+
+      tl.to(armLeft, { rotation: -15, y: 15, duration: 0.12, ease: 'power3.in' }, '1.45');
+      tl.to(armLeft, { rotation: -30, y: 6, duration: 0.14, ease: 'power2.out' }, '1.57');
+    }
+
+    // 右手: 高音部で華麗なパッセージを演奏
+    if (armRight) {
+      tl.to(armRight, { rotation: 22, y: 12, x: -2, duration: 0.1, ease: 'power3.in' }, '0.6');
+      tl.to(keyGlowR, { opacity: 1, scale: 1.2, duration: 0.06 }, '0.7');
+      tl.to(keyGlowR, { opacity: 0, duration: 0.12 }, '0.76');
+      tl.to(armRight, { rotation: 40, y: 3, duration: 0.12, ease: 'power2.out' }, '0.72');
+
+      tl.to(armRight, { rotation: 28, y: 14, x: -6, duration: 0.1, ease: 'power3.in' }, '0.9');
+      tl.to(keyGlowR, { opacity: 1, duration: 0.06 }, '1.0');
+      tl.to(keyGlowR, { opacity: 0, duration: 0.12 }, '1.06');
+      tl.to(armRight, { rotation: 42, y: 2, duration: 0.12, ease: 'power2.out' }, '1.02');
+
+      tl.to(armRight, { rotation: 18, y: 12, x: 2, duration: 0.1, ease: 'power3.in' }, '1.2');
+      tl.to(armRight, { rotation: 38, y: 4, duration: 0.12, ease: 'power2.out' }, '1.3');
+
+      tl.to(armRight, { rotation: 25, y: 15, x: -4, duration: 0.1, ease: 'power3.in' }, '1.5');
+      tl.to(armRight, { rotation: 35, y: 6, duration: 0.12, ease: 'power2.out' }, '1.6');
+    }
+
+    // 頭部＆ボディのリズミカルな揺れ
+    if (head) {
+      tl.to(head, { rotation: 6, y: 1, duration: 0.28, yoyo: true, repeat: 3, ease: 'sine.inOut' }, '0.55');
+    }
+    if (body) {
+      tl.to(body, { y: 2, duration: 0.28, yoyo: true, repeat: 3, ease: 'sine.inOut' }, '0.55');
+    }
+
+    // 音符がポコポコと浮かび上がる
+    const note1 = notesGroup.querySelector('g:nth-child(1)');
+    const note2 = notesGroup.querySelector('g:nth-child(2)');
+    const note3 = notesGroup.querySelector('g:nth-child(3)');
+    if (note1) {
+      tl.fromTo(note1, { opacity: 0, y: 20, scale: 0.6 }, { opacity: 1, y: -25, scale: 1.1, duration: 0.7, ease: 'power1.out' }, '0.65');
+      tl.to(note1, { opacity: 0, y: -45, scale: 0.8, duration: 0.4 }, '1.25');
+    }
+    if (note2) {
+      tl.fromTo(note2, { opacity: 0, y: 20, scale: 0.6 }, { opacity: 1, y: -30, scale: 1.2, duration: 0.7, ease: 'power1.out' }, '0.95');
+      tl.to(note2, { opacity: 0, y: -55, scale: 0.8, duration: 0.4 }, '1.55');
+    }
+
+    // ----------------------------------------------------
+    // 1.8s - 3.2s : 第2楽章（情熱のグリッサンド＆クロスハンド）
+    // ----------------------------------------------------
+    // 右手が一気に左から右へ駆け抜けるグリッサンド！
+    if (armRight) {
+      tl.to(armRight, { rotation: -10, x: -16, y: 8, duration: 0.2, ease: 'power2.in' }, '1.8');
+      tl.to(armRight, { rotation: 55, x: 18, y: 10, duration: 0.45, ease: 'power2.out' }, '2.0');
+      // キーボード全体の光
+      tl.to(keyGlowR, { opacity: 0.9, x: 20, duration: 0.45, ease: 'power2.out' }, '2.0');
+      tl.to(keyGlowR, { opacity: 0, x: 0, duration: 0.2 }, '2.45');
+    }
+
+    // 左手が高音部へクロス（クロスハンド奏法！）
+    if (armLeft) {
+      tl.to(armLeft, { rotation: 25, x: 14, y: 4, duration: 0.35, ease: 'back.out(1.4)' }, '2.2');
+      tl.to(keyGlowL, { opacity: 1, x: 50, duration: 0.1 }, '2.55');
+      tl.to(keyGlowL, { opacity: 0, x: 0, duration: 0.2 }, '2.65');
+      tl.to(armLeft, { rotation: -40, x: -8, y: 2, duration: 0.35, ease: 'power2.out' }, '2.7');
+    }
+
+    // ロボットが情熱的にのけぞる
+    if (container) {
+      tl.to(container, { y: 4, scaleY: 0.96, rotation: -3, duration: 0.4, ease: 'power2.inOut' }, '1.9');
+      tl.to(container, { y: -8, scaleY: 1.04, rotation: 3, duration: 0.5, ease: 'power2.inOut' }, '2.4');
+    }
+    if (head) {
+      tl.to(head, { rotation: -12, y: -4, duration: 0.4 }, '1.9');
+      tl.to(head, { rotation: 10, y: 2, duration: 0.5 }, '2.4');
+    }
+
+    // ト音記号・ヘ音記号が舞い上がる
+    const note4 = notesGroup.querySelector('g:nth-child(4)');
+    const note5 = notesGroup.querySelector('g:nth-child(5)');
+    const note6 = notesGroup.querySelector('g:nth-child(6)');
+    if (note3) {
+      tl.fromTo(note3, { opacity: 0, y: 15, scale: 0.5 }, { opacity: 1, y: -40, scale: 1.3, duration: 0.8, ease: 'power2.out' }, '2.0');
+      tl.to(note3, { opacity: 0, duration: 0.3 }, '2.7');
+    }
+    if (note4) {
+      tl.fromTo(note4, { opacity: 0, y: 25, scale: 0.4 }, { opacity: 1, y: -50, scale: 1.4, rotation: 15, duration: 0.9, ease: 'back.out(1.5)' }, '2.2');
+      tl.to(note4, { opacity: 0, y: -70, duration: 0.4 }, '3.0');
+    }
+    if (note5) {
+      tl.fromTo(note5, { opacity: 0, y: 20, scale: 0.4 }, { opacity: 1, y: -45, scale: 1.3, rotation: -15, duration: 0.8, ease: 'back.out(1.5)' }, '2.4');
+      tl.to(note5, { opacity: 0, duration: 0.3 }, '3.1');
+    }
+
+    // ----------------------------------------------------
+    // 3.2s - 4.1s : 第3楽章（怒涛のフォルテッシモ・クライマックス和音）
+    // ----------------------------------------------------
+    // 両手を高く振り上げてタメ
+    if (armLeft) tl.to(armLeft, { rotation: -80, x: -10, y: -16, duration: 0.35, ease: 'power2.out' }, '3.0');
+    if (armRight) tl.to(armRight, { rotation: 80, x: 10, y: -16, duration: 0.35, ease: 'power2.out' }, '3.0');
+    if (head) tl.to(head, { rotation: 0, y: -8, duration: 0.35 }, '3.0');
+    if (container) tl.to(container, { y: -12, scaleY: 1.08, duration: 0.35 }, '3.0');
+
+    // 渾身の打鍵！「ジャン！！」
+    if (armLeft) tl.to(armLeft, { rotation: -15, x: 4, y: 16, duration: 0.12, ease: 'power4.in' }, '3.38');
+    if (armRight) tl.to(armRight, { rotation: 15, x: -4, y: 16, duration: 0.12, ease: 'power4.in' }, '3.38');
+    if (head) tl.to(head, { y: 6, rotation: 4, duration: 0.12, ease: 'power4.in' }, '3.38');
+    if (container) {
+      tl.to(container, { y: 6, scaleY: 0.92, scaleX: 1.05, duration: 0.12, ease: 'power4.in' }, '3.38');
+      // 打鍵後の振動
+      tl.to(container, { x: '+=2', y: '+=2', duration: 0.04, yoyo: true, repeat: 4 }, '3.5');
+    }
+
+    // クライマックスのスターバースト＆発光
+    tl.fromTo(starBurst, { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1.5, duration: 0.15, ease: 'back.out(2)' }, '3.4');
+    tl.to(starBurst, { opacity: 0, scale: 2.0, duration: 0.5, ease: 'power2.out' }, '3.6');
+    tl.to([keyGlowL, keyGlowR], { opacity: 1, scale: 1.6, duration: 0.1 }, '3.4');
+    tl.to([keyGlowL, keyGlowR], { opacity: 0, duration: 0.4 }, '3.55');
+
+    if (note6) {
+      tl.fromTo(note6, { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1.5, y: -60, duration: 0.7, ease: 'power2.out' }, '3.45');
+      tl.to(note6, { opacity: 0, duration: 0.3 }, '4.1');
+    }
+
+    // ----------------------------------------------------
+    // 4.1s - 5.0s : 余韻 & 次のループへシームレスに接続する構え（ピアノは常時表示）
+    // ----------------------------------------------------
+    // 両手を優雅に広げて余韻に浸る
+    if (armLeft) tl.to(armLeft, { rotation: -45, x: -8, y: 0, duration: 0.4, ease: 'power2.out' }, '3.9');
+    if (armRight) tl.to(armRight, { rotation: 45, x: 8, y: 0, duration: 0.4, ease: 'power2.out' }, '3.9');
+
+    // 息を吸い、自然に両手を鍵盤へ戻して次のフレーズ（0.0s）へ繋ぐ
+    if (armLeft) tl.to(armLeft, { rotation: -35, x: 4, y: 6, duration: 0.6, ease: 'sine.inOut' }, '4.4');
+    if (armRight) tl.to(armRight, { rotation: 35, x: -4, y: 6, duration: 0.6, ease: 'sine.inOut' }, '4.4');
+    if (head) tl.to(head, { rotation: -4, y: -2, duration: 0.6, ease: 'sine.inOut' }, '4.4');
+    if (body) tl.to(body, { y: 0, rotation: 0, duration: 0.6, ease: 'sine.inOut' }, '4.4');
+    if (container) tl.to(container, { y: -4, scale: 1, scaleX: 1, scaleY: 1, rotation: 0, duration: 0.6, ease: 'sine.inOut' }, '4.4');
+  }
+}
 
 /**
  * 1. がっかり・脱力ため息 (Disappointed Sigh)
@@ -2744,7 +3246,8 @@ export class GSAPRobotAnimationRegistry {
       new FlyingKickAnimation(),
       new JetDashAnimation(),
 
-      // 2. 特殊・機能 (Acrobatics & Flight)
+      // 2. 特殊・機能 (Acrobatics & Flight & Performance)
+      new PianoPerformanceAnimation(),
       new BreakdanceAnimation(),
       new ExplodedViewAnimation(),
       new MarchSprintAnimation(),

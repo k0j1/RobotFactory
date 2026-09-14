@@ -1,5 +1,5 @@
 import { GameState, Robot, ClientRequest, Attribute, RequestRank, RobotPart, PartType, AttributeNames, WeatherType, WeatherInfo, Material } from './models';
-import { MATERIALS, LOCATIONS, getMaterialCraftableVisuals } from './data';
+import { MATERIALS, LOCATIONS, getMaterialCraftableVisuals, STARTER_BONUS_MATERIALS } from './data';
 import { AttributeColors } from './models';
 import { getDefenseDailyResetInfo, DefenseResetInfo, getDailyResetDateKey } from '../components/minigames/Shared';
 import { CombatEquipmentType, CombatEquipmentRank, COMBAT_EQUIPMENT_RANKS, getNextEquipmentRank } from './combatEquipmentData';
@@ -28,6 +28,7 @@ const INITIAL_STATE: GameState = {
   clientAffection: { King: 1, Noble: 1, OldMan: 1 },
   completedRequestDeadlines: {},
   craftedRobots: [],
+  starterBonusClaimed: false,
 };
 
 const STORAGE_KEY = 'ponkotsu_robot_save';
@@ -219,6 +220,11 @@ export class GameEngine {
         }
         if (parsed.combatEquipments?.beamShield && !parsed.combatEquipmentRanks.beamShield) {
           parsed.combatEquipmentRanks.beamShield = 'common';
+        }
+
+        // Migrate starterBonusClaimed flag
+        if (parsed.starterBonusClaimed === undefined) {
+          parsed.starterBonusClaimed = false;
         }
 
         return { ...INITIAL_STATE, ...parsed };
@@ -1578,6 +1584,52 @@ export class GameEngine {
       this.state.currentInterior = interiorId;
       this.saveState();
     }
+  }
+
+  /**
+   * 初回ロボット組み立てボーナスが受け取り可能か判定
+   */
+  public canClaimStarterBonus(): boolean {
+    return !this.state.starterBonusClaimed;
+  }
+
+  /**
+   * 新人技師応援！初回ロボット組み立て用ボーナス素材（すべて☆1ランクのみ）の受取
+   * ヘッド・ボディ・アーム・レッグの全4部位（計20個必要）を組み立て可能な☆1素材24個セットを付与
+   */
+  public claimStarterBonus(): { materialsGained: { material: Material; count: number }[] } {
+    if (this.state.starterBonusClaimed) {
+      throw new Error("初回ボーナス素材はすでに受け取り済みです。");
+    }
+
+    const materialsGained: { material: Material; count: number }[] = [];
+
+    // 素材付与（すべて☆1ランクのみであることを確認しながら付与）
+    for (const item of STARTER_BONUS_MATERIALS) {
+      const mat = MATERIALS.find(m => m.id === item.materialId);
+      if (!mat) {
+        console.error(`[claimStarterBonus] Material not found: ${item.materialId}`);
+        continue;
+      }
+      if (mat.rarity !== 1) {
+        console.warn(`[claimStarterBonus] Material ${mat.id} is not rarity 1, skipping.`);
+        continue;
+      }
+
+      this.state.materials[item.materialId] = (this.state.materials[item.materialId] || 0) + item.count;
+      materialsGained.push({ material: mat, count: item.count });
+    }
+
+    this.state.starterBonusClaimed = true;
+
+    // チュートリアルが遠征段階（step 0 または 1）の場合、即座にロボット製造を楽しめるよう step 2 へ進める
+    if (this.state.tutorialStep < 2) {
+      this.state.tutorialStep = 2;
+    }
+
+    this.saveState();
+    this.update();
+    return { materialsGained };
   }
 }
 

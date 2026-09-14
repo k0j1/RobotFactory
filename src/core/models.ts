@@ -191,6 +191,7 @@ export interface GameState {
   activeCombatEquipments?: { beamSaber?: boolean; beamShield?: boolean }; // 戦闘出撃時に有効化する装備
   minigameRecords?: Record<string, { plays: number; wins: number; losses: number; draws: number }>;
   dailyBattleLimits?: Record<string, string[]>; // { "YYYY-MM-DD": ["robotId_categoryId_levelId", ...] }
+  starterBonusClaimed?: boolean; // 新人技師応援！初回ロボット組み立て用ボーナス素材受取フラグ
 }
 
 export interface FameRankInfo {
