@@ -138,6 +138,23 @@ try {
     
     $pdo->exec($sql);
     
+    // --- 追加のマイグレーション（既に存在するテーブルのスキーマ変更） ---
+    // CREATE TABLE IF NOT EXISTS では、既存テーブルのカラム追加・削除が行われないための対応
+
+    // users テーブルから received_initial_bonus を削除
+    try {
+        $pdo->exec("ALTER TABLE users DROP COLUMN received_initial_bonus");
+    } catch (PDOException $e) {
+        // 既に削除されているか、カラムが存在しない場合は無視
+    }
+
+    // user_workshop_status テーブルに received_initial_bonus を追加
+    try {
+        $pdo->exec("ALTER TABLE user_workshop_status ADD COLUMN received_initial_bonus BOOLEAN DEFAULT FALSE");
+    } catch (PDOException $e) {
+        // 既に追加されている場合は無視
+    }
+
     echo json_encode([
         "success" => true, 
         "message" => "Database tables setup successfully"
