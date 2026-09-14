@@ -59,26 +59,73 @@ try {
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-        CREATE TABLE IF NOT EXISTS user_workshop_status (
+        CREATE TABLE IF NOT EXISTS active_expeditions (
             user_id VARCHAR(255) PRIMARY KEY,
-            fame INT DEFAULT 0,
-            gold INT DEFAULT 0,
-            consumed_gold INT DEFAULT 0,
-            storage_limit INT DEFAULT 0,
-            delivered_count INT DEFAULT 0,
-            received_initial_bonus BOOLEAN DEFAULT FALSE,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            location_id VARCHAR(255) NOT NULL,
+            start_time BIGINT NOT NULL,
+            end_time BIGINT NOT NULL,
+            dispatched_robot_id VARCHAR(255),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+        CREATE TABLE IF NOT EXISTS active_part_crafts (
+            user_id VARCHAR(255) PRIMARY KEY,
+            part_type VARCHAR(50) NOT NULL,
+            main_material_id VARCHAR(255) NOT NULL,
+            sub_material_id VARCHAR(255) NOT NULL,
+            start_time BIGINT NOT NULL,
+            end_time BIGINT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+        CREATE TABLE IF NOT EXISTS active_robot_assemblies (
+            user_id VARCHAR(255) PRIMARY KEY,
+            start_time BIGINT NOT NULL,
+            end_time BIGINT NOT NULL,
+            result_robot_data JSON NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+        CREATE TABLE IF NOT EXISTS active_requests (
+            user_id VARCHAR(255) PRIMARY KEY,
+            request_id VARCHAR(255) NOT NULL,
+            rank VARCHAR(50) NOT NULL,
+            reward_g INT NOT NULL,
+            deadline BIGINT NOT NULL,
+            request_data JSON,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ");
+
+    try {
+        $pdo->exec("ALTER TABLE active_expeditions ADD COLUMN dispatched_robot_id VARCHAR(255)");
+    } catch (PDOException $e) {}
+
+    try {
+        $pdo->exec("ALTER TABLE active_requests ADD COLUMN request_data JSON");
+    } catch (PDOException $e) {}
 
     $pdo->beginTransaction();
 
     // 2. save_data テーブルにゲーム全体のスナップショットを保存 (UPSERT)
     // 廃止された starterBonusClaimed などの変数は完全に除去して保存
-    // active_robot_assemblies テーブルで管理・保存されるデータ（activeRobotAssembly）は save_data テーブルには追加・保存しない
+    // 他の個別テーブルで管理・保存されるデータ（active_* テーブルや個別テーブル）は save_data テーブルには重複して追加・保存しない
     $saveDataSnapshot = $gameData;
     unset($saveDataSnapshot['starterBonusClaimed']);
-    unset($saveDataSnapshot['activeRobotAssembly']);
+
+    // activeが付いたテーブルに保存される情報
+    unset($saveDataSnapshot['activeQuest']);            // active_expeditions
+    unset($saveDataSnapshot['activePartCraft']);        // active_part_crafts
+    unset($saveDataSnapshot['activeRobotAssembly']);    // active_robot_assemblies
+    unset($saveDataSnapshot['currentRequest']);         // active_requests
+
+    // その他の個別テーブルに保存される情報も重複排除
+    unset($saveDataSnapshot['materials']);              // user_material
+    unset($saveDataSnapshot['gold']);                   // user_workshop_status
+    unset($saveDataSnapshot['fame']);                   // user_workshop_status
+    unset($saveDataSnapshot['storageSize']);            // user_workshop_status
+    unset($saveDataSnapshot['deliveredRobotsCount']);   // user_workshop_status
+    unset($saveDataSnapshot['battleElements']);         // user_minigame_status
 
     $jsonGameData = json_encode($saveDataSnapshot, JSON_UNESCAPED_UNICODE);
     $stmtSave = $pdo->prepare("
@@ -201,14 +248,15 @@ try {
     if (!empty($gameData['activeQuest']) && !empty($gameData['activeQuest']['locationId'])) {
         $q = $gameData['activeQuest'];
         $stmtExp = $pdo->prepare("
-            REPLACE INTO active_expeditions (user_id, location_id, start_time, end_time)
-            VALUES (:user_id, :location_id, :start_time, :end_time)
+            REPLACE INTO active_expeditions (user_id, location_id, start_time, end_time, dispatched_robot_id)
+            VALUES (:user_id, :location_id, :start_time, :end_time, :dispatched_robot_id)
         ");
         $stmtExp->execute([
             ':user_id' => $actualUserId,
             ':location_id' => $q['locationId'],
             ':start_time' => (int)($q['startTime'] ?? 0),
-            ':end_time' => (int)($q['endTime'] ?? 0)
+            ':end_time' => (int)($q['endTime'] ?? 0),
+            ':dispatched_robot_id' => $q['dispatchedRobotId'] ?? null
         ]);
     } else {
         $delExp = $pdo->prepare("DELETE FROM active_expeditions WHERE user_id = :user_id");
@@ -257,15 +305,16 @@ try {
     if (!empty($gameData['currentRequest']) && !empty($gameData['currentRequest']['id'])) {
         $r = $gameData['currentRequest'];
         $stmtReq = $pdo->prepare("
-            REPLACE INTO active_requests (user_id, request_id, rank, reward_g, deadline)
-            VALUES (:user_id, :request_id, :rank, :reward_g, :deadline)
+            REPLACE INTO active_requests (user_id, request_id, rank, reward_g, deadline, request_data)
+            VALUES (:user_id, :request_id, :rank, :reward_g, :deadline, :request_data)
         ");
         $stmtReq->execute([
             ':user_id' => $actualUserId,
             ':request_id' => $r['id'],
             ':rank' => $r['rank'] ?? 'OldMan',
             ':reward_g' => (int)($r['rewardG'] ?? 0),
-            ':deadline' => (int)($r['deadline'] ?? 0)
+            ':deadline' => (int)($r['deadline'] ?? 0),
+            ':request_data' => json_encode($r, JSON_UNESCAPED_UNICODE)
         ]);
     } else {
         $delReq = $pdo->prepare("DELETE FROM active_requests WHERE user_id = :user_id");

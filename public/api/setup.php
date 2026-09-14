@@ -105,6 +105,7 @@ try {
         location_id VARCHAR(255) NOT NULL,
         start_time BIGINT NOT NULL,
         end_time BIGINT NOT NULL,
+        dispatched_robot_id VARCHAR(255),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -132,6 +133,7 @@ try {
         rank VARCHAR(50) NOT NULL,
         reward_g INT NOT NULL,
         deadline BIGINT NOT NULL,
+        request_data JSON,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -159,6 +161,20 @@ try {
     // user_workshop_status テーブルに received_initial_bonus を追加
     try {
         $pdo->exec("ALTER TABLE user_workshop_status ADD COLUMN received_initial_bonus BOOLEAN DEFAULT FALSE");
+    } catch (PDOException $e) {
+        // 既に追加されている場合は無視
+    }
+
+    // active_expeditions テーブルに dispatched_robot_id を追加
+    try {
+        $pdo->exec("ALTER TABLE active_expeditions ADD COLUMN dispatched_robot_id VARCHAR(255)");
+    } catch (PDOException $e) {
+        // 既に追加されている場合は無視
+    }
+
+    // active_requests テーブルに request_data を追加
+    try {
+        $pdo->exec("ALTER TABLE active_requests ADD COLUMN request_data JSON");
     } catch (PDOException $e) {
         // 既に追加されている場合は無視
     }
