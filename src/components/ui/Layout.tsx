@@ -73,25 +73,16 @@ export const Layout: React.FC<{
             {user ? (
               <div 
                 className="flex items-center gap-1.5 bg-stone-900/80 border border-emerald-500/60 px-2 py-0.5 rounded-full shadow-xs text-xs text-emerald-300"
-                title={`Google連携中 (ID: ${user.google_id.slice(0, 8)}... / クラウドDB専用同期・端末ローカルデータ遮断中)`}
+                title={`Google連携中: ${user.name || '技師'}`}
               >
                 {user.picture ? (
                   <img src={user.picture} alt="" className="w-4 h-4 rounded-full" referrerPolicy="no-referrer" />
                 ) : (
                   <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                 )}
-                <span className="hidden sm:inline font-bold truncate max-w-[80px]">{user.name || '技師'}</span>
-                <span className="text-[9px] bg-emerald-950 text-emerald-300 px-1 rounded border border-emerald-600/40">DB専用</span>
+                <span className="font-bold truncate max-w-[90px]">{user.name || '技師'}</span>
               </div>
-            ) : (
-              <div 
-                className="flex items-center gap-1 bg-stone-900/80 border border-stone-600/60 px-2 py-0.5 rounded-full shadow-xs text-[11px] text-stone-400"
-                title="ゲストプレイ中（端末ローカルストレージに保存）"
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-stone-400" />
-                <span className="hidden sm:inline">ゲスト</span>
-              </div>
-            )}
+            ) : null}
             <div className="flex items-center gap-1.5 bg-stone-900/80 border border-amber-500/50 px-2.5 py-1 rounded-full shadow-xs">
               <Gi.GiCoins className="text-amber-400" size={16} />
               <span className="font-mono font-bold text-amber-300 text-sm tracking-wide">

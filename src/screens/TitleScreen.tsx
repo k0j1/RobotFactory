@@ -104,9 +104,6 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onStart, engine }) => 
             <Button size="lg" onClick={onStart} className="text-xl px-12 py-4 animate-bounce mt-4">
               工房を開く
             </Button>
-            <p className="text-xs text-emerald-400/90 bg-emerald-950/60 border border-emerald-700/50 px-3 py-1 rounded-full">
-              ☁️ クラウドDB専用モード（端末ローカルデータは使用していません）
-            </p>
             <button 
               onClick={() => {
                 setUser(null);
@@ -127,9 +124,6 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onStart, engine }) => 
               }}
               useOneTap
             />
-            <p className="text-xs text-amber-400/90 max-w-xs text-center">
-              ※ Googleログイン時は端末のローカルストレージを使用せず、クラウドDB専用のセーブデータが適用されます
-            </p>
             <Button 
               size="md" 
               onClick={() => {
@@ -144,7 +138,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onStart, engine }) => 
           </div>
         )}
 
-        <p className="mt-12 text-stone-400">v1.0.342</p>
+        <p className="mt-12 text-stone-400">v1.0.343</p>
       </div>
       
       {/* Decorative background elements */}
