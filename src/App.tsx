@@ -11,6 +11,7 @@ import { TitleScreen } from './screens/TitleScreen';
 import { ShopScreen } from './screens/ShopScreen';
 import { EncyclopediaScreen } from './screens/EncyclopediaScreen';
 import { LitepaperScreen } from './screens/LitepaperScreen';
+import { RewardAdModal } from './components/ads/RewardAdModal';
 import { theme } from './styles/theme';
 import { INTERIORS } from './core/interiors';
 import { AssetCacheService } from './core/AssetCacheService';
@@ -59,6 +60,7 @@ export default function App() {
       {view === 'shop' && <ShopScreen state={state} engine={engine} onBack={() => setView('dashboard')} />}
       {view === 'encyclopedia' && <EncyclopediaScreen state={state} onBack={() => setView('dashboard')} />}
       {view === 'litepaper' && <LitepaperScreen onBack={() => setView('dashboard')} />}
+      <RewardAdModal />
     </Layout>
   );
 }

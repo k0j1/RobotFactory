@@ -1050,6 +1050,46 @@ export class GameEngine {
     this.saveState();
   }
 
+  /**
+   * リワード広告視聴等による進行中タスク（遠征・パーツ製造・ロボット組立）の完了時間短縮
+   * @param taskType 'quest' | 'partCraft' | 'robotAssembly'
+   * @param reduceMinutes 短縮する分数（デフォルト: 30分）
+   * @returns 実際に短縮されたミリ秒数
+   */
+  public reduceTaskTime(taskType: 'quest' | 'partCraft' | 'robotAssembly', reduceMinutes: number = 30): number {
+    const reduceMs = reduceMinutes * 60 * 1000;
+    const now = Date.now();
+    let actualReducedMs = 0;
+
+    if (taskType === 'quest' && this.state.activeQuest) {
+      const currentEnd = this.state.activeQuest.endTime;
+      if (currentEnd > now) {
+        const newEnd = Math.max(now, currentEnd - reduceMs);
+        actualReducedMs = currentEnd - newEnd;
+        this.state.activeQuest.endTime = newEnd;
+        this.saveState();
+      }
+    } else if (taskType === 'partCraft' && this.state.activePartCraft) {
+      const currentEnd = this.state.activePartCraft.endTime;
+      if (currentEnd > now) {
+        const newEnd = Math.max(now, currentEnd - reduceMs);
+        actualReducedMs = currentEnd - newEnd;
+        this.state.activePartCraft.endTime = newEnd;
+        this.saveState();
+      }
+    } else if (taskType === 'robotAssembly' && this.state.activeRobotAssembly) {
+      const currentEnd = this.state.activeRobotAssembly.endTime;
+      if (currentEnd > now) {
+        const newEnd = Math.max(now, currentEnd - reduceMs);
+        actualReducedMs = currentEnd - newEnd;
+        this.state.activeRobotAssembly.endTime = newEnd;
+        this.saveState();
+      }
+    }
+
+    return actualReducedMs;
+  }
+
   // Legacy immediate Crafting methods for backward compatibility
   public craftPart(type: PartType, mainMaterialId: string, subMaterialId: string) {
     if (!this.state.materials[mainMaterialId] || this.state.materials[mainMaterialId] < 3) {

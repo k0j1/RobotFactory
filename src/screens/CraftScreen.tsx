@@ -17,25 +17,34 @@ import { StarterBonusCard } from '../components/ui/StarterBonusCard';
 import * as Gi from 'react-icons/gi';
 import { motion } from 'motion/react';
 import confetti from 'canvas-confetti';
+import { RewardAdShortenButton } from '../components/ads/RewardAdShortenButton';
 
 const formatSeconds = (ms: number) => {
   if (ms <= 0) return '00:00';
   const totalSec = Math.ceil(ms / 1000);
-  const m = Math.floor(totalSec / 60);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
   const s = totalSec % 60;
+  if (h > 0) return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 };
 
 const formatRemainingSecondsText = (ms: number) => {
   if (ms <= 0) return '完成！';
-  const totalSec = Math.ceil(ms / 1000);
-  return `あと ${totalSec} 秒で完成`;
+  return `あと ${formatDurationLabel(ms)}で完成`;
 };
 
 const formatDurationLabel = (ms: number) => {
   const totalSec = Math.round(ms / 1000);
-  const m = Math.floor(totalSec / 60);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
   const s = totalSec % 60;
+  if (h > 0) {
+    if (m > 0 && s > 0) return `${h}時間${m}分${s}秒`;
+    if (m > 0) return `${h}時間${m}分`;
+    if (s > 0) return `${h}時間${s}秒`;
+    return `${h}時間`;
+  }
   if (m > 0 && s > 0) return `${m}分${s}秒`;
   if (m > 0) return `${m}分`;
   return `${s}秒`;
@@ -285,7 +294,7 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
             <Badge className="bg-amber-600 text-white text-[10px] sm:text-xs animate-bounce px-1.5 py-0.5 leading-none">受取可！</Badge>
           ) : isRobotAssembling ? (
             <Badge className="bg-blue-600 text-white text-[10px] sm:text-[11px] font-mono animate-pulse px-1.5 py-0.5 leading-none">
-              あと{robotRemainingSec}秒
+              あと{formatDurationLabel(robotRemainingMs)}
             </Badge>
           ) : null}
         </button>
@@ -505,6 +514,24 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                 )}
               </div>
 
+              {/* リワード広告による30分短縮 */}
+              {!isPartReady && (
+                <div className="mt-3 pt-2.5 border-t border-amber-200/80 flex items-center justify-between gap-2 flex-wrap bg-amber-50/60 p-2 rounded-lg border">
+                  <div className="text-[11px] text-stone-700 flex items-center gap-1.5 min-w-0">
+                    <span className="w-5 h-5 rounded-md bg-amber-200/80 text-amber-900 flex items-center justify-center shrink-0">
+                      <Gi.GiFilmProjector size={13} />
+                    </span>
+                    <span className="truncate">動画広告視聴で製造時間を<strong>30分短縮</strong></span>
+                  </div>
+                  <RewardAdShortenButton
+                    engine={engine}
+                    taskType="partCraft"
+                    taskName="パーツ製造"
+                    size="sm"
+                  />
+                </div>
+              )}
+
               {/* フル幅受取ボタン */}
               {isPartReady && (
                 <div className="mt-3">
@@ -723,14 +750,14 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                     </motion.div>
 
                     <div className="mt-3 font-bold text-xs tracking-wider text-amber-900 animate-pulse font-mono bg-amber-100 px-3 py-1 rounded-full border border-amber-300 relative z-20">
-                      <Gi.GiSpanner className="inline mr-1" /> 接合・動作テスト中... あと {robotRemainingSec} 秒
+                      <Gi.GiSpanner className="inline mr-1" /> 接合・動作テスト中... {formatRemainingSecondsText(robotRemainingMs)}
                     </div>
                   </>
                 )}
               </div>
 
               {/* アクションボタン */}
-              <div className="mt-4 flex gap-3">
+              <div className="mt-4 flex flex-col gap-3">
                 {isRobotReady ? (
                   <Button 
                     className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 text-base shadow-md animate-pulse"
@@ -739,8 +766,28 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                     <Gi.GiPartyPopper className="inline mr-1" /> 完成したロボットを受け取る！
                   </Button>
                 ) : (
-                  <div className="w-full text-center py-2 text-xs text-stone-500 font-bold">
-                    完了するまでしばらくお待ちください（他の画面に移動しても進行します）
+                  <div className="w-full space-y-2">
+                    {/* リワード広告による30分短縮 */}
+                    <div className="p-3 bg-amber-50/90 rounded-xl border border-amber-300 flex items-center justify-between gap-2 flex-wrap shadow-2xs">
+                      <div className="text-xs text-stone-700 flex items-center gap-1.5 min-w-0">
+                        <span className="w-6 h-6 rounded-lg bg-amber-200 text-amber-900 flex items-center justify-center shrink-0">
+                          <Gi.GiFilmProjector size={15} />
+                        </span>
+                        <div>
+                          <div className="font-bold text-stone-900">Google AdSense リワード広告</div>
+                          <div className="text-[10px] text-stone-600">動画広告の視聴で組立時間を<strong>30分短縮</strong></div>
+                        </div>
+                      </div>
+                      <RewardAdShortenButton
+                        engine={engine}
+                        taskType="robotAssembly"
+                        taskName="ロボット組立"
+                        size="md"
+                      />
+                    </div>
+                    <div className="text-center py-1 text-xs text-stone-500 font-medium">
+                      ※ 完了するまでしばらくお待ちください（他の画面に移動しても進行します）
+                    </div>
                   </div>
                 )}
               </div>

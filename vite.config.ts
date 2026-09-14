@@ -23,6 +23,13 @@ export default defineConfig(({ command }) => {
       hmr: process.env.DISABLE_HMR !== 'true',
       // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
+      proxy: {
+        '/api': {
+          target: 'https://robotfactory.k0j1.v2002.coreserver.jp',
+          changeOrigin: true,
+          secure: false,
+        },
+      },
     },
   };
 });

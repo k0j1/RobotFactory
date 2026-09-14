@@ -25,7 +25,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
         title="ポンコツロボット工房 公式仕様書"
         badge={
           <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300 font-mono font-bold px-1.5 py-0.2 rounded">
-            v1.0.336
+            v1.0.340
           </span>
         }
         rightElement={
@@ -226,6 +226,8 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                     <li><strong>分解リサイクル:</strong> 不要になった機体やパーツを素材へと還元。</li>
                     <li><strong>新人技師初回ボーナス:</strong> 初期ユーザー向けに、ロボット1体を即座に組み立てられる☆1素材セット（全24個・すべて☆1ランクのみ）をプレゼント。ヘッド・ボディ・アーム・レッグの4部位（各5個＝計20個必要）を余すことなく組み立て可能です。</li>
                     <li><strong>図鑑登録・パーツ基準値一覧:</strong> 完成した新機体は自動的に図鑑へ記録されます。また、パーツ図鑑タブではすべてのパーツ形状と、耐久力(HP)・攻撃力(POW)・探索力(DEX)などの「基準値ステータス」を便利なテーブル（表）形式で一覧表示し、比較することができます。</li>
+                    <li><strong>Google AdSense リワード広告時短:</strong> パーツ製造およびロボット組立の進行中に動画広告を視聴することで、完了までの所要時間を<strong>1回につき30分短縮</strong>できます。残り時間が30分以内の場合は即座に完成します。</li>
+                    <li><strong>Googleアカウント連携 &amp; usersテーブル保存:</strong> Google One Tap またはログインボタンによる認証後、ユーザー名・メールアドレス・Google ID・アイコン画像がデータベースのusersテーブルへ即時安全に登録・同期されます。</li>
                     <li><strong>GSAPモーションスタジオ:</strong> 漆黒のグランドピアノによる華麗なピアノ協奏曲演奏をはじめ、各種戦闘・アクロバット・仕草など、多彩なモーションをロボットで鑑賞・動作検証できます。</li>
                   </ul>
                 </div>
@@ -250,6 +252,12 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                   <strong className="text-stone-900">主要遠征エリア:</strong>
                   <div className="text-stone-600 mt-1">
                     「近所のスクラップ場 (初級)」から「廃墟工場」「電脳樹海」「古代遺跡」「終末の宇宙ステーション (最上級)」まで多彩なロケーションが存在します。
+                  </div>
+                </div>
+                <div className="bg-white p-2.5 rounded-lg border border-stone-200">
+                  <strong className="text-stone-900">遠征所要時間・短縮システム:</strong>
+                  <div className="text-stone-600 mt-1">
+                    各エリアの所要時間は「30分」「1時間」のように分秒または時分秒で分かりやすく表示されます。同行させるロボットの敏捷性（AGI）や天候倍率による変動時間もリアルタイムに反映され、どれだけ時間短縮されたかが直感的に把握できます。また、遠征中に<strong>Google AdSense リワード広告</strong>を視聴することで、遠征の帰還完了時間を<strong>30分短縮</strong>することが可能です。
                   </div>
                 </div>
                 <div className="bg-white p-2.5 rounded-lg border border-stone-200">
@@ -410,7 +418,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                 <div className="bg-white p-2.5 rounded-lg border border-stone-200">
                   <strong className="text-stone-900 block font-bold mb-1">📦 倉庫・保管庫システム</strong>
                   <p className="text-stone-600">
-                    「ロボット」「パーツ」「アイテム」「素材」の4分類で管理。アイテムタブでは未開封宝箱の即時開封や、修理キットによる機体HP回復・素材からのキット作成、エレメント・演習武装の保管状況を確認できます。
+                    「ロボット」「パーツ」「素材」「アイテム」の4分類で管理。アイテムタブでは未開封宝箱の即時開封や、修理キットによる機体HP回復・素材からのキット作成、エレメント・演習武装の保管状況を確認できます。
                   </p>
                 </div>
                 <div className="bg-white p-2.5 rounded-lg border border-stone-200">

@@ -9,6 +9,7 @@ import { MaterialIcon } from './MaterialIcon';
 import confetti from 'canvas-confetti';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../../contexts/AuthContext';
+import { AuthApiService } from '../../services/AuthApiService';
 
 interface StarterBonusCardProps {
   state: GameState;
@@ -57,31 +58,9 @@ export const StarterBonusCard: React.FC<StarterBonusCardProps> = ({
     setErrorMessage(null);
 
     try {
-      // APIに受取完了を通知
-      if (import.meta.env.DEV) {
-        console.log('[Dev Mode] Mocking claim_bonus.php response');
-        await new Promise(resolve => setTimeout(resolve, 300));
-      } else {
-        const res = await fetch('/api/claim_bonus.php', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            google_id: user.google_id
-          })
-        });
-        
-        const text = await res.text();
-        if (text.startsWith('<?php')) {
-          throw new Error('PHP is not running on this server.');
-        }
-        
-        const data = JSON.parse(text);
-        if (!data.success) {
-          throw new Error(data.error || '通信エラー');
-        }
-      }
+      // APIに受取完了を通知（user_workshop_statusテーブルのreceived_initial_bonusを更新）
+      const apiService = AuthApiService.getInstance();
+      await apiService.claimInitialBonus(user.google_id);
 
       // 成功時、コンテキストを更新してゲームエンジン側でもアイテムを付与
       markBonusClaimed();

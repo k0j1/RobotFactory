@@ -14,6 +14,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { RobotRadarChart } from '../components/robot/RobotRadarChart';
 import confetti from 'canvas-confetti';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
+import { RewardAdShortenButton } from '../components/ads/RewardAdShortenButton';
 
 const formatTime = (ms: number) => {
   if (ms <= 0) return '00:00';
@@ -23,6 +24,34 @@ const formatTime = (ms: number) => {
   const s = totalSec % 60;
   if (h > 0) return `${h}h${m}m`;
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+};
+
+/**
+ * 秒数を「時分秒」「分秒」「秒」のフォーマットに変換するユーティリティ
+ * 例: 1800秒 -> 30分
+ *     1845秒 -> 30分45秒
+ *     3600秒 -> 1時間
+ *     3660秒 -> 1時間1分
+ *     3665秒 -> 1時間1分5秒
+ *     45秒   -> 45秒
+ */
+export const formatDurationText = (totalSec: number): string => {
+  const sec = Math.max(0, Math.floor(totalSec));
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = sec % 60;
+
+  if (h > 0) {
+    if (m > 0 && s > 0) return `${h}時間${m}分${s}秒`;
+    if (m > 0) return `${h}時間${m}分`;
+    if (s > 0) return `${h}時間${s}秒`;
+    return `${h}時間`;
+  }
+  if (m > 0) {
+    if (s > 0) return `${m}分${s}秒`;
+    return `${m}分`;
+  }
+  return `${s}秒`;
 };
 
 export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNavigate?: (v: string) => void }> = ({ state, engine, onNavigate }) => {
@@ -432,6 +461,22 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
                     </div>
                   </div>
                 </div>
+
+                {/* リワード広告による30分短縮バー */}
+                <div className="mt-3 pt-2.5 border-t border-[#dfcfbd]/80 flex items-center justify-between gap-2 flex-wrap bg-amber-50/60 p-2 rounded-xl border">
+                  <div className="text-[11px] text-stone-700 flex items-center gap-1.5 min-w-0">
+                    <span className="w-5 h-5 rounded-md bg-amber-200/80 text-amber-900 flex items-center justify-center shrink-0">
+                      <Gi.GiFilmProjector size={13} />
+                    </span>
+                    <span className="truncate">動画広告の視聴で完了時間を<strong>30分短縮</strong></span>
+                  </div>
+                  <RewardAdShortenButton
+                    engine={engine}
+                    taskType="quest"
+                    taskName="遠征"
+                    size="sm"
+                  />
+                </div>
               </>
             )}
           </div>
@@ -657,11 +702,11 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
                 
                 <div className="flex items-center gap-2 mb-3">
                   <p className={`${theme.typography.small} text-stone-200 bg-stone-800/80 px-2 py-0.5 rounded font-medium border border-stone-700/50`}>
-                    所要時間: <span className={selectedRobot && agiReductionSec > 0 ? "line-through text-stone-400" : "font-mono font-bold text-white"}>{baseFinalSec}秒</span>
+                    所要時間: <span className={selectedRobot && agiReductionSec > 0 ? "line-through text-stone-400" : "font-mono font-bold text-white"}>{formatDurationText(baseFinalSec)}</span>
                   </p>
                   {selectedRobot && agiReductionSec > 0 && (
                     <span className="text-xs font-mono font-bold text-blue-300 bg-blue-900/60 px-2 py-0.5 rounded border border-blue-700/50 shadow-sm">
-                      ➔ {finalSec}秒<Gi.GiLightningTrio className="inline text-yellow-500" />
+                      ➔ {formatDurationText(finalSec)}<Gi.GiLightningTrio className="inline text-yellow-500" />
                     </span>
                   )}
                 </div>

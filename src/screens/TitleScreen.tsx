@@ -6,71 +6,48 @@ import robotsWorkshopBg from '../assets/images/robots_workshop_bg_1788411232885.
 import { GoogleLogin } from '@react-oauth/google';
 import { jwtDecode } from 'jwt-decode';
 import { useAuth } from '../contexts/AuthContext';
+import { AuthApiService } from '../services/AuthApiService';
 
 export const TitleScreen: React.FC<{ onStart: () => void }> = ({ onStart }) => {
   const { user, setUser } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string>('読み込み中...');
 
   const handleLoginSuccess = async (credentialResponse: any) => {
     if (!credentialResponse.credential) return;
     
     setLoading(true);
+    setStatusMessage('Googleアカウントを認証中...');
     try {
       const decoded: any = jwtDecode(credentialResponse.credential);
       
-      let data;
+      setStatusMessage('usersテーブルにユーザー情報を保存中...');
+      console.log('[TitleScreen] Googleログイン成功、usersテーブルへの保存を開始します:', {
+        sub: decoded.sub,
+        email: decoded.email,
+        name: decoded.name
+      });
+
+      // AuthApiServiceを通じてMySQLのusersテーブルへ保存（INSERT / UPDATE）
+      const apiService = AuthApiService.getInstance();
+      const response = await apiService.saveUserToDatabase({
+        google_id: decoded.sub,
+        email: decoded.email,
+        name: decoded.name,
+        picture: decoded.picture
+      });
       
-      // 開発環境（AI Studioのプレビューなど、PHPが動かない環境）向けのモック処理
-      if (import.meta.env.DEV) {
-        console.log('[Dev Mode] Mocking login.php response');
-        data = {
-          success: true,
-          user: {
-            id: 1,
-            google_id: decoded.sub,
-            email: decoded.email,
-            name: decoded.name,
-            picture: decoded.picture,
-            received_initial_bonus: false
-          }
-        };
-        // モックの遅延をシミュレート
-        await new Promise(resolve => setTimeout(resolve, 500));
-      } else {
-        console.log('[Prod Mode] Fetching /api/login.php...');
-        const res = await fetch('/api/login.php', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            google_id: decoded.sub,
-            email: decoded.email,
-            name: decoded.name,
-            picture: decoded.picture
-          })
-        });
-        
-        console.log('[Prod Mode] Response status:', res.status);
-        const text = await res.text();
-        console.log('[Prod Mode] Response text:', text.substring(0, 200) + (text.length > 200 ? '...' : ''));
-        
-        if (text.startsWith('<?php')) {
-          throw new Error('PHP is not running on this server.');
-        }
-        data = JSON.parse(text);
-      }
-      
-      if (data.success && data.user) {
-        setUser(data.user);
+      if (response.success && response.user) {
+        console.log('[TitleScreen] usersテーブル保存完了:', response.user);
+        setUser(response.user);
         onStart();
       } else {
-        console.error('Login failed data:', data);
-        alert(`ログイン処理に失敗しました: ${data.error || '不明なエラー'}`);
+        console.error('Login failed response:', response);
+        alert(`usersテーブルへの保存に失敗しました: ${response.error || '不明なエラー'}`);
       }
     } catch (err: any) {
       console.error('Error during login try/catch:', err);
-      alert(`サーバー通信エラーが発生しました:\n${err.message}`);
+      alert(`ユーザー情報の保存・通信エラーが発生しました:\n${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -94,7 +71,10 @@ export const TitleScreen: React.FC<{ onStart: () => void }> = ({ onStart }) => {
         <p className={`${theme.typography.h3} mb-12 text-stone-300`}>ガラクタ集めて、夢をつくる。</p>
         
         {loading ? (
-          <p className="text-xl text-stone-300 animate-pulse">読み込み中...</p>
+          <div className="flex flex-col items-center gap-2">
+            <Gi.GiGears className="text-4xl text-amber-400 animate-spin" />
+            <p className="text-lg text-stone-300 animate-pulse">{statusMessage}</p>
+          </div>
         ) : user ? (
           <div className="flex flex-col items-center gap-4">
             <div className="flex items-center gap-3 bg-stone-800/80 p-3 rounded-full border border-stone-600">
@@ -125,7 +105,7 @@ export const TitleScreen: React.FC<{ onStart: () => void }> = ({ onStart }) => {
           </div>
         )}
 
-        <p className="mt-12 text-stone-400">v1.0.336</p>
+        <p className="mt-12 text-stone-400">v1.0.340</p>
       </div>
       
       {/* Decorative background elements */}

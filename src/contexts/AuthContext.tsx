@@ -7,6 +7,8 @@ export interface User {
   name: string;
   picture: string;
   received_initial_bonus: number | boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface AuthContextType {

@@ -183,6 +183,10 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
             <span className="text-xs font-bold text-stone-600 bg-stone-100 px-2 py-0.5 rounded border border-stone-200">
               保管パーツ: <span className="text-amber-800 font-mono font-bold">{state.parts?.length || 0}</span> 個
             </span>
+          ) : tab === 'materials' ? (
+            <span className="text-xs font-bold text-stone-600 bg-stone-100 px-2 py-0.5 rounded border border-stone-200">
+              全素材: <span className="text-amber-800 font-mono font-bold">{totalMaterialsCount}</span>個
+            </span>
           ) : tab === 'items' ? (
             <div className="flex items-center gap-1.5 text-xs font-bold text-stone-600">
               <span className="bg-amber-100 text-amber-900 px-2 py-0.5 rounded border border-amber-300">
@@ -192,10 +196,6 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                 修理キット: <span className="font-mono">{state.repairKits || 0}</span>個
               </span>
             </div>
-          ) : tab === 'materials' ? (
-            <span className="text-xs font-bold text-stone-600 bg-stone-100 px-2 py-0.5 rounded border border-stone-200">
-              全素材: <span className="text-amber-800 font-mono font-bold">{totalMaterialsCount}</span>個
-            </span>
           ) : undefined
         }
       />
@@ -228,6 +228,13 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
           )}
         </Button>
         <Button 
+          variant={tab === 'materials' ? 'primary' : 'secondary'} 
+          className="text-xs sm:text-sm px-1 sm:px-2 py-2" 
+          onClick={() => setTab('materials')}
+        >
+          素材
+        </Button>
+        <Button 
           variant={tab === 'items' ? 'primary' : 'secondary'} 
           className="relative text-xs sm:text-sm px-1 sm:px-2 py-2" 
           onClick={() => setTab('items')}
@@ -239,13 +246,6 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
               <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
             </span>
           )}
-        </Button>
-        <Button 
-          variant={tab === 'materials' ? 'primary' : 'secondary'} 
-          className="text-xs sm:text-sm px-1 sm:px-2 py-2" 
-          onClick={() => setTab('materials')}
-        >
-          素材
         </Button>
       </div>
 
