@@ -45,6 +45,11 @@ export interface DatabaseSyncError {
   timestamp: number;
 }
 
+export interface ActiveCountsData {
+  expeditions: Record<string, number>;
+  robotAssemblies: number;
+}
+
 export class AuthApiService {
   private static instance: AuthApiService | null = null;
   private readonly defaultBaseUrl: string;
@@ -598,4 +603,62 @@ export class AuthApiService {
       error: lastError ? lastError.message : '素材情報の取得に失敗しました。'
     };
   }
+
+  /**
+   * active_expeditions および active_robot_assemblies テーブルから他のユーザーのアクティブ人数を取得
+   * @param userId 自身のuserId（指定した場合は自分以外のユーザーが集計される）
+   */
+  public async getActiveCounts(userId?: string): Promise<AuthApiResponse<ActiveCountsData>> {
+    const queryParam = userId ? `?user_id=${encodeURIComponent(userId)}` : '';
+    const endpoints = Array.from(new Set([
+      `${this.defaultBaseUrl}/api/active_counts.php${queryParam}`,
+      `https://robotfactory.k0j1.v2002.coreserver.jp/api/active_counts.php${queryParam}`,
+      `/api/active_counts.php${queryParam}`
+    ])).filter(Boolean);
+
+    let lastError: Error | null = null;
+
+    for (const endpoint of endpoints) {
+      try {
+        const response = await fetch(endpoint, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          continue;
+        }
+
+        const rawText = await response.text();
+        if (rawText.trim().startsWith('<?php')) {
+          continue;
+        }
+
+        const parsed = JSON.parse(rawText);
+        if (parsed.success) {
+          return {
+            success: true,
+            data: {
+              expeditions: parsed.expeditions || {},
+              robotAssemblies: Number(parsed.robotAssemblies || 0)
+            }
+          };
+        }
+      } catch (err: any) {
+        lastError = err;
+      }
+    }
+
+    return {
+      success: false,
+      error: lastError ? lastError.message : 'アクティブ人数の取得に失敗しました。',
+      data: {
+        expeditions: {},
+        robotAssemblies: 0
+      }
+    };
+  }
 }
+

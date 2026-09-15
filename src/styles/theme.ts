@@ -72,6 +72,12 @@ export const theme = {
     fameProgressBg: "h-2.5 rounded-full bg-stone-200/90 overflow-hidden border border-[#d6beaa] p-0.5",
     fameProgressFill: "h-full bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 rounded-full transition-all duration-500 shadow-xs",
   },
+  activeCountBadge: {
+    expedition: "bg-sky-950/85 text-sky-200 border border-sky-400/60 shadow-xs font-mono text-[11px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 backdrop-blur-xs",
+    assembly: "bg-amber-950/85 text-amber-200 border border-amber-400/60 shadow-xs font-mono text-[11px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 backdrop-blur-xs",
+    pulseDotSky: "w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse",
+    pulseDotAmber: "w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse",
+  },
   studio: {
     viewportBg: "bg-stone-900 border-2 border-stone-700 shadow-inner rounded-2xl relative overflow-hidden",
     viewportLight: "bg-stone-100 border-2 border-stone-300 shadow-inner rounded-2xl relative overflow-hidden",

@@ -18,6 +18,7 @@ import * as Gi from 'react-icons/gi';
 import { motion } from 'motion/react';
 import confetti from 'canvas-confetti';
 import { RewardAdShortenButton } from '../components/ads/RewardAdShortenButton';
+import { ActiveUserCountBadge } from '../components/ui/ActiveUserCountBadge';
 
 const formatSeconds = (ms: number) => {
   if (ms <= 0) return '00:00';
@@ -67,6 +68,29 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
   const [selectedArms, setSelectedArms] = useState<string>('');
   const [selectedLegs, setSelectedLegs] = useState<string>('');
   const [lastCraftedRobot, setLastCraftedRobot] = useState<Robot | null>(null);
+  const [activeAssemblyCount, setActiveAssemblyCount] = useState<number>(0);
+
+  // activeテーブルから他ユーザーのロボット組立人数を取得
+  useEffect(() => {
+    let isMounted = true;
+    const fetchCounts = async () => {
+      try {
+        const counts = await engine.getActiveCounts();
+        if (isMounted && counts) {
+          setActiveAssemblyCount(Number(counts.robotAssemblies || 0));
+        }
+      } catch (err) {
+        console.warn('[CraftScreen] activeCounts取得エラー:', err);
+      }
+    };
+
+    fetchCounts();
+    const interval = setInterval(fetchCounts, 15000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [engine]);
 
   // Parts accordion collapse state (各パーツ選択箇所の折りたたみ管理)
   const [collapsedParts, setCollapsedParts] = useState<Record<PartType, boolean>>({
@@ -309,6 +333,7 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
               あと{formatDurationLabel(robotRemainingMs)}
             </Badge>
           ) : null}
+          <ActiveUserCountBadge type="assembly" count={activeAssemblyCount} />
         </button>
       </div>
 
@@ -687,10 +712,13 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
             <div className="bg-white border-2 border-amber-300 text-stone-800 p-6 shadow-md rounded-xl relative overflow-hidden">
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <Badge className={isRobotReady ? "bg-emerald-600 text-white text-xs px-2.5 py-1" : "bg-blue-600 text-white text-xs px-2.5 py-1"}>
-                    {isRobotReady ? "組立完了" : "ロボット組立中..."}
-                  </Badge>
-                  <h3 className="text-lg font-bold text-stone-900 mt-2">
+                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                    <Badge className={isRobotReady ? "bg-emerald-600 text-white text-xs px-2.5 py-1" : "bg-blue-600 text-white text-xs px-2.5 py-1"}>
+                      {isRobotReady ? "組立完了" : "ロボット組立中..."}
+                    </Badge>
+                    <ActiveUserCountBadge type="assembly" count={activeAssemblyCount} />
+                  </div>
+                  <h3 className="text-lg font-bold text-stone-900 mt-1">
                     「{activeRobot.resultRobot.name}」を組立中
                   </h3>
                   <p className="text-xs text-stone-500 mt-0.5">
@@ -761,8 +789,11 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                       />
                     </motion.div>
 
-                    <div className="mt-3 font-bold text-xs tracking-wider text-amber-900 animate-pulse font-mono bg-amber-100 px-3 py-1 rounded-full border border-amber-300 relative z-20">
-                      <Gi.GiSpanner className="inline mr-1" /> 接合・動作テスト中... {formatRemainingSecondsText(robotRemainingMs)}
+                    <div className="mt-3 flex items-center justify-center gap-2 flex-wrap">
+                      <div className="font-bold text-xs tracking-wider text-amber-900 animate-pulse font-mono bg-amber-100 px-3 py-1 rounded-full border border-amber-300 relative z-20">
+                        <Gi.GiSpanner className="inline mr-1" /> 接合・動作テスト中... {formatRemainingSecondsText(robotRemainingMs)}
+                      </div>
+                      <ActiveUserCountBadge type="assembly" count={activeAssemblyCount} />
                     </div>
                   </>
                 )}
@@ -807,6 +838,17 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
           ) : (
             /* 組立フォーム */
             <div className="space-y-4">
+              {/* 他プレイヤーの組立進行状況バナー */}
+              {activeAssemblyCount > 0 && (
+                <div className="flex items-center justify-between gap-2 p-2.5 bg-amber-50/90 border border-amber-300 rounded-xl shadow-2xs">
+                  <span className="text-xs text-amber-950 font-bold flex items-center gap-1.5">
+                    <Gi.GiSpanner className="text-amber-700" />
+                    ロボット組立工房の稼働状況
+                  </span>
+                  <ActiveUserCountBadge type="assembly" count={activeAssemblyCount} />
+                </div>
+              )}
+
               {/* 倉庫ロボット保管数ステータス & 満杯警告 */}
               <div className={`p-2.5 rounded-xl border-2 transition-colors ${
                 isStorageFull 

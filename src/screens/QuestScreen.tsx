@@ -15,6 +15,7 @@ import { RobotRadarChart } from '../components/robot/RobotRadarChart';
 import confetti from 'canvas-confetti';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { RewardAdShortenButton } from '../components/ads/RewardAdShortenButton';
+import { ActiveUserCountBadge } from '../components/ui/ActiveUserCountBadge';
 
 const formatTime = (ms: number) => {
   if (ms <= 0) return '00:00';
@@ -64,7 +65,31 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
   const [lootResult, setLootResult] = useState<{ title: string; subtitle?: string; drops: string[] } | null>(null);
   const [isAnimating, setIsAnimating] = useState<boolean>(false);
   const [now, setNow] = useState<number>(Date.now());
+  const [activeExpeditionCounts, setActiveExpeditionCounts] = useState<Record<string, number>>({});
   const topSelectionRef = useRef<HTMLDivElement>(null);
+
+  // activeテーブルから他ユーザーの遠征人数を取得
+  useEffect(() => {
+    let isMounted = true;
+    const fetchCounts = async () => {
+      try {
+        const counts = await engine.getActiveCounts();
+        if (isMounted && counts && counts.expeditions) {
+          setActiveExpeditionCounts(counts.expeditions);
+        }
+      } catch (err) {
+        console.warn('[QuestScreen] activeCounts取得エラー:', err);
+      }
+    };
+
+    fetchCounts();
+    // 15秒ごとにアクティブ人数を最新化
+    const interval = setInterval(fetchCounts, 15000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [engine]);
 
   // リアルタイム秒針タイマー
   useEffect(() => {
@@ -682,7 +707,7 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
 
               <div className="relative z-10">
                 <div className="flex justify-between items-start mb-2">
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1.5 flex-wrap">
                     <h3 className="text-xl font-bold text-white drop-shadow-md">{loc.name}</h3>
                     {isCurrentQuestLoc && (
                       <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold shadow-xs ${
@@ -691,6 +716,10 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
                         {questDone ? '受取可能' : '遠征中'}
                       </span>
                     )}
+                    <ActiveUserCountBadge
+                      type="expedition"
+                      count={activeExpeditionCounts[loc.id] || 0}
+                    />
                   </div>
                   <button 
                     onClick={() => setShowDropsForLoc(showDropsForLoc === loc.id ? null : loc.id)}

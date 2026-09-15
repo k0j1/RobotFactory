@@ -25,7 +25,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
         title="ポンコツロボット工房 公式仕様書"
         badge={
           <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300 font-mono font-bold px-1.5 py-0.2 rounded">
-            v1.0.383
+            v1.0.384
           </span>
         }
         rightElement={
@@ -228,6 +228,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                     <li><strong>図鑑登録・パーツ基準値一覧:</strong> 完成した新機体は自動的に図鑑へ記録されます。また、パーツ図鑑タブではすべてのパーツ形状と、耐久力(HP)・攻撃力(POW)・探索力(DEX)などの「基準値ステータス」を便利なテーブル（表）形式で一覧表示し、比較することができます。</li>
                     <li><strong>Google AdSense リワード広告時短:</strong> パーツ製造およびロボット組立の進行中に動画広告を視聴することで、完了までの所要時間を<strong>1回につき30分短縮</strong>できます。残り時間が30分以内の場合は即座に完成します。</li>
                     <li><strong>Googleアカウント連携 &amp; クラウドデータ同期:</strong> Googleアカウントでログインした場合、オンライン上にゲームデータ（工房ステータス、所持機体、パーツ、遠征、ミニゲーム成績等）が自動的に保存・同期されます。別の端末からでも同じアカウントで続きからプレイが可能です。ゲストプレイ時は端末内に独立してデータが保護されます。</li>
+                    <li><strong>他プレイヤーのリアルタイム組立状況表示:</strong> active_robot_assembliesテーブルを参照し、現在他のプレイヤーがロボットを組み立てている場合、組立タブや作業ドックに「〇〇人組立中」バッジがリアルタイムに表示されます。</li>
                     <li><strong>GSAPモーションスタジオ:</strong> 漆黒のグランドピアノによる華麗なピアノ協奏曲演奏をはじめ、各種戦闘・アクロバット・仕草など、多彩なモーションをロボットで鑑賞・動作検証できます。</li>
                   </ul>
                 </div>
@@ -252,6 +253,12 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                   <strong className="text-stone-900">主要遠征エリア:</strong>
                   <div className="text-stone-600 mt-1">
                     「近所のスクラップ場 (初級)」から「廃墟工場」「電脳樹海」「古代遺跡」「終末の宇宙ステーション (最上級)」まで多彩なロケーションが存在します。
+                  </div>
+                </div>
+                <div className="bg-white p-2.5 rounded-lg border border-stone-200">
+                  <strong className="text-stone-900">他プレイヤーの遠征状況（リアルタイムactive人数）表示:</strong>
+                  <div className="text-stone-600 mt-1">
+                    サーバーのactive_expeditionsテーブルと同期し、各遠征エリアに他のプレイヤーが派遣されている場合、ロケーションカード上に「〇〇人遠征中」のステータスバッジがリアルタイムに点灯・表示されます。
                   </div>
                 </div>
                 <div className="bg-white p-2.5 rounded-lg border border-stone-200">

@@ -157,6 +157,32 @@ export class GameEngine {
   }
 
   /**
+   * 現在ログイン中のユーザーIDを取得
+   */
+  public getUserId(): string | null {
+    return this.userId;
+  }
+
+  /**
+   * active_expeditions および active_robot_assemblies テーブルから他のユーザーのアクティブ人数を取得
+   */
+  public async getActiveCounts() {
+    try {
+      const apiService = AuthApiService.getInstance();
+      const res = await apiService.getActiveCounts(this.userId || undefined);
+      if (res && res.success && res.data) {
+        return res.data;
+      }
+    } catch (err) {
+      console.warn('[GameEngine] getActiveCounts error:', err);
+    }
+    return {
+      expeditions: {},
+      robotAssemblies: 0
+    };
+  }
+
+  /**
    * データベース（save_data）から取得したステートを安全に復元
    */
   public restoreServerState(serverState: Partial<GameState>) {
