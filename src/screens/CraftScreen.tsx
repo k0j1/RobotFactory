@@ -716,9 +716,6 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                   <h3 className="text-lg font-bold text-stone-900 mt-1">
                     「{activeRobot.resultRobot.name}」を組立中
                   </h3>
-                  <p className="text-xs text-stone-500 mt-0.5">
-                    パーツ性能に応じた組立時間（所要時間: {formatDurationLabel(activeRobot.durationMs)}）
-                  </p>
                 </div>
                 <div className="text-right">
                   {isRobotReady && (
@@ -786,11 +783,10 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                       />
                     </motion.div>
 
-                    <div className="mt-3 flex items-center justify-center gap-2 flex-wrap">
+                    <div className="mt-3">
                       <div className="font-bold text-xs tracking-wider text-amber-900 animate-pulse font-mono bg-amber-100 px-3 py-1 rounded-full border border-amber-300 relative z-20">
                         <Gi.GiSpanner className="inline mr-1" /> 接合・動作テスト中...
                       </div>
-                      <ActiveUserCountBadge type="assembly" count={activeAssemblyCount} />
                     </div>
                   </>
                 )}
@@ -809,14 +805,11 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                   <div className="w-full space-y-2">
                     {/* リワード広告による30分短縮 */}
                     <div className="p-3 bg-amber-50/90 rounded-xl border border-amber-300 flex items-center justify-between gap-2 flex-wrap shadow-2xs">
-                      <div className="text-xs text-stone-700 flex items-center gap-1.5 min-w-0">
+                      <div className="text-xs text-stone-800 font-bold flex items-center gap-2 min-w-0">
                         <span className="w-6 h-6 rounded-lg bg-amber-200 text-amber-900 flex items-center justify-center shrink-0">
                           <Gi.GiFilmProjector size={15} />
                         </span>
-                        <div>
-                          <div className="font-bold text-stone-900">Google AdSense リワード広告</div>
-                          <div className="text-[10px] text-stone-600">動画広告の視聴で組立時間を<strong>30分短縮</strong></div>
-                        </div>
+                        <span>動画広告の視聴で組立時間を<strong>30分短縮</strong></span>
                       </div>
                       <RewardAdShortenButton
                         engine={engine}
