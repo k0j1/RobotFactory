@@ -59,6 +59,24 @@ try {
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+        CREATE TABLE IF NOT EXISTS completed_robots (
+            id VARCHAR(255) PRIMARY KEY,
+            user_id VARCHAR(255) NOT NULL,
+            name VARCHAR(255) NOT NULL,
+            head_part_id VARCHAR(255),
+            body_part_id VARCHAR(255),
+            arms_part_id VARCHAR(255),
+            legs_part_id VARCHAR(255),
+            total_hp INT DEFAULT 0,
+            total_power INT DEFAULT 0,
+            total_defense INT DEFAULT 0,
+            total_agility INT DEFAULT 0,
+            total_dexterity INT DEFAULT 0,
+            total_int INT DEFAULT 0,
+            robot_data JSON,
+            completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
         CREATE TABLE IF NOT EXISTS active_expeditions (
             user_id VARCHAR(255) PRIMARY KEY,
             location_id VARCHAR(255) NOT NULL,
@@ -363,6 +381,44 @@ try {
         }
     }
 
+    if (!empty($gameData['deliveredLogs']) && is_array($gameData['deliveredLogs'])) {
+        $stmtDeliveredRobot = $pdo->prepare("
+            INSERT IGNORE INTO completed_robots (
+                id, user_id, name, head_part_id, body_part_id, arms_part_id, legs_part_id,
+                total_hp, total_power, total_defense, total_agility, total_dexterity, total_int, robot_data, completed_at
+            ) VALUES (
+                :id, :user_id, :name, :head_id, :body_id, :arms_id, :legs_id,
+                :hp, :power, :defense, :agility, :dexterity, :intel, :robot_data, FROM_UNIXTIME(:completed_at)
+            )
+        ");
+        foreach ($gameData['deliveredLogs'] as $log) {
+            if (empty($log['id'])) continue;
+            $headId = $log['parts']['head']['id'] ?? '';
+            $bodyId = $log['parts']['body']['id'] ?? '';
+            $armsId = $log['parts']['arms']['id'] ?? '';
+            $legsId = $log['parts']['legs']['id'] ?? '';
+            $stats = $log['stats'] ?? [];
+            $completedAt = isset($log['deliveredAt']) ? floor($log['deliveredAt'] / 1000) : time();
+            $stmtDeliveredRobot->execute([
+                ':id' => $log['id'],
+                ':user_id' => $actualUserId,
+                ':name' => $log['name'] ?? '名無しのロボット',
+                ':head_id' => $headId,
+                ':body_id' => $bodyId,
+                ':arms_id' => $armsId,
+                ':legs_id' => $legsId,
+                ':hp' => (int)($stats['hp'] ?? 0),
+                ':power' => (int)($stats['power'] ?? 0),
+                ':defense' => (int)($stats['defense'] ?? 0),
+                ':agility' => (int)($stats['agility'] ?? 0),
+                ':dexterity' => (int)($stats['dexterity'] ?? 0),
+                ':intel' => (int)($stats['intelligence'] ?? 0),
+                ':robot_data' => json_encode($log, JSON_UNESCAPED_UNICODE),
+                ':completed_at' => $completedAt
+            ]);
+        }
+    }
+
     // =========================================================================
     // 6. 遠征（Expeditions）: 完了時は complete_expeditions に追加後に active_expeditions から削除
     // =========================================================================
@@ -634,6 +690,26 @@ try {
                 ':cutoff_id' => $cutoffId
             ]);
         }
+    }
+
+    // completed_robots テーブルの保存上限ローテーション (id が文字列なので completed_at を使用)
+    $cutoffRobotStmt = $pdo->prepare("
+        SELECT completed_at FROM completed_robots
+        WHERE user_id = :user_id
+        ORDER BY completed_at DESC
+        LIMIT 1 OFFSET 1000
+    ");
+    $cutoffRobotStmt->execute([':user_id' => $actualUserId]);
+    $cutoffTime = $cutoffRobotStmt->fetchColumn();
+    if ($cutoffTime !== false && $cutoffTime !== null) {
+        $pruneRobotStmt = $pdo->prepare("
+            DELETE FROM completed_robots
+            WHERE user_id = :user_id AND completed_at <= :cutoff_time
+        ");
+        $pruneRobotStmt->execute([
+            ':user_id' => $actualUserId,
+            ':cutoff_time' => $cutoffTime
+        ]);
     }
 
     // 10. user_minigame_status テーブルの同期 (ミニゲーム毎の遊んだ数、勝利数、獲得エレメント数)

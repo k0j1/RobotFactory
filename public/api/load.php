@@ -64,6 +64,24 @@ try {
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+        CREATE TABLE IF NOT EXISTS completed_robots (
+            id VARCHAR(255) PRIMARY KEY,
+            user_id VARCHAR(255) NOT NULL,
+            name VARCHAR(255) NOT NULL,
+            head_part_id VARCHAR(255),
+            body_part_id VARCHAR(255),
+            arms_part_id VARCHAR(255),
+            legs_part_id VARCHAR(255),
+            total_hp INT DEFAULT 0,
+            total_power INT DEFAULT 0,
+            total_defense INT DEFAULT 0,
+            total_agility INT DEFAULT 0,
+            total_dexterity INT DEFAULT 0,
+            total_int INT DEFAULT 0,
+            robot_data JSON,
+            completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
         CREATE TABLE IF NOT EXISTS active_expeditions (
             user_id VARCHAR(255) PRIMARY KEY,
             location_id VARCHAR(255) NOT NULL,
@@ -225,7 +243,7 @@ try {
 
     $goldVal = $wsRow ? (int)($wsRow['gold'] ?? 0) : 0;
     $fameVal = $wsRow ? (int)($wsRow['fame'] ?? 0) : 0;
-    $storageLimitVal = ($wsRow && !empty($wsRow['storage_limit'])) ? (int)$wsRow['storage_limit'] : 20;
+    $storageLimitVal = ($wsRow && !empty($wsRow['storage_limit'])) ? (int)$wsRow['storage_limit'] : 5;
     $deliveredCountVal = $wsRow ? (int)($wsRow['delivered_count'] ?? 0) : 0;
     $receivedBonusVal = ($wsRow && isset($wsRow['received_initial_bonus'])) ? (int)$wsRow['received_initial_bonus'] : 0;
 
@@ -395,6 +413,24 @@ try {
         }
     }
 
+    // 10. completed_robots テーブルから納品履歴を取得
+    $deliveredStmt = $pdo->prepare("
+        SELECT robot_data 
+        FROM completed_robots 
+        WHERE user_id IN ($inPlaceholders)
+        ORDER BY completed_at DESC
+    ");
+    $deliveredStmt->execute(array_values($candidateUserIds));
+    $dbDeliveredLogs = [];
+    while ($dRow = $deliveredStmt->fetch()) {
+        if (!empty($dRow['robot_data'])) {
+            $dData = json_decode($dRow['robot_data'], true);
+            if (is_array($dData)) {
+                $dbDeliveredLogs[] = $dData;
+            }
+        }
+    }
+
     if ($row && !empty($row['game_data'])) {
         $gameData = json_decode($row['game_data'], true);
         if (!is_array($gameData)) {
@@ -431,6 +467,7 @@ try {
         $gameData['materials'] = $dbMaterials;
         $gameData['parts'] = $dbParts;
         $gameData['robots'] = $dbRobots;
+        $gameData['deliveredLogs'] = $dbDeliveredLogs;
         $gameData['gold'] = $goldVal;
         $gameData['fame'] = $fameVal;
         $gameData['storageSize'] = $storageLimitVal;
@@ -455,6 +492,7 @@ try {
             "materials" => $dbMaterials,
             "parts" => $dbParts,
             "robots" => $dbRobots,
+            "deliveredLogs" => $dbDeliveredLogs,
             "gold" => $goldVal,
             "fame" => $fameVal,
             "storageSize" => $storageLimitVal,

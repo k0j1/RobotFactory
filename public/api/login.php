@@ -49,8 +49,8 @@ try {
             ':picture' => $picture
         ]);
         
-        // 新規ユーザーの場合は初期ステータスも作成
-        $insertStatusStmt = $pdo->prepare("INSERT IGNORE INTO user_workshop_status (user_id) VALUES (:google_id)");
+        // 新規ユーザーの場合は初期ステータスも作成（初回倉庫上限は5）
+        $insertStatusStmt = $pdo->prepare("INSERT IGNORE INTO user_workshop_status (user_id, storage_limit) VALUES (:google_id, 5)");
         $insertStatusStmt->execute([':google_id' => $googleId]);
     }
     

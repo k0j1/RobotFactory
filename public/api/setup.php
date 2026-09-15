@@ -107,6 +107,24 @@ try {
         CONSTRAINT fk_legs_part FOREIGN KEY (legs_part_id) REFERENCES user_parts(id) ON DELETE SET NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+    CREATE TABLE IF NOT EXISTS completed_robots (
+        id VARCHAR(255) PRIMARY KEY,
+        user_id VARCHAR(255) NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        head_part_id VARCHAR(255),
+        body_part_id VARCHAR(255),
+        arms_part_id VARCHAR(255),
+        legs_part_id VARCHAR(255),
+        total_hp INT DEFAULT 0,
+        total_power INT DEFAULT 0,
+        total_defense INT DEFAULT 0,
+        total_agility INT DEFAULT 0,
+        total_dexterity INT DEFAULT 0,
+        total_int INT DEFAULT 0,
+        robot_data JSON,
+        completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
     CREATE TABLE IF NOT EXISTS active_expeditions (
         user_id VARCHAR(255) PRIMARY KEY,
         location_id VARCHAR(255) NOT NULL,

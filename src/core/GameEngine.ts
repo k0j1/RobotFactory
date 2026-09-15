@@ -338,9 +338,12 @@ export class GameEngine {
         parsed.parts = [];
       }
 
-      // Clear craftedRobots and deliveredLogs to not keep/display past or unowned robots
+      // Clear craftedRobots to not keep/display past or unowned robots
       parsed.craftedRobots = [];
-      parsed.deliveredLogs = [];
+      
+      if (!parsed.deliveredLogs) {
+        parsed.deliveredLogs = [];
+      }
 
       // Migrate fame if not present
       if (parsed.fame === undefined) {
