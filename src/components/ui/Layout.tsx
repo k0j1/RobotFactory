@@ -40,8 +40,8 @@ export const Layout: React.FC<{
       id: 'quest', 
       label: '遠征',
       icon: <Gi.GiWalkingScout size={22} />,
-      badge: isQuestDone ? '完了' : undefined,
-      badgeColor: 'bg-amber-500 text-white animate-bounce'
+      badge: isQuestDone ? '完了' : (state?.activeQuest ? '遠征中' : undefined),
+      badgeColor: isQuestDone ? 'bg-amber-500 text-white animate-bounce' : 'bg-blue-600 text-white animate-pulse'
     },
     { 
       id: 'craft', 

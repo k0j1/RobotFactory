@@ -721,9 +721,11 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                   </p>
                 </div>
                 <div className="text-right">
-                  <div className="text-xs text-amber-700 font-bold font-mono flex items-center justify-end gap-1">
-                    {isRobotReady ? <><Gi.GiSparkles className="inline text-amber-500" /> 完成！</> : formatRemainingSecondsText(robotRemainingMs)}
-                  </div>
+                  {isRobotReady && (
+                    <div className="text-xs text-amber-700 font-bold font-mono flex items-center justify-end gap-1">
+                      <Gi.GiSparkles className="inline text-amber-500" /> 完成！
+                    </div>
+                  )}
                   <span className="text-2xl font-mono font-bold text-amber-600">
                     {isRobotReady ? '00:00' : formatSeconds(robotRemainingMs)}
                   </span>
