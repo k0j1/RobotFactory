@@ -25,7 +25,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
         title="ポンコツロボット工房 公式仕様書"
         badge={
           <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300 font-mono font-bold px-1.5 py-0.2 rounded">
-            v1.0.378
+            v1.0.379
           </span>
         }
         rightElement={
@@ -424,7 +424,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                 <div className="bg-white p-2.5 rounded-lg border border-stone-200">
                   <strong className="text-stone-900 block font-bold mb-1">📦 倉庫・保管庫システム</strong>
                   <p className="text-stone-600">
-                    「ロボット」「パーツ」「素材」「アイテム」の4分類で管理。アイテムタブでは未開封宝箱の即時開封や、修理キットによる機体HP回復・素材からのキット作成、エレメント・演習武装の保管状況を確認できます。
+                    「ロボット」「パーツ」「素材」「アイテム」の4分類で管理。アイテムタブでは未開封宝箱の即時開封や、修理キットによる機体HP回復・素材からのキット作成、エレメント・演習武装の保管状況を確認できます。ロボットタブの倉庫容量拡張ボタンには誤操作を防ぐ確認ダイアログが導入されており、拡張後の上限や残高を事前に確認できます（工房称号は工房ダッシュボードに統合され常時確認可能）。
                   </p>
                 </div>
                 <div className="bg-white p-2.5 rounded-lg border border-stone-200">

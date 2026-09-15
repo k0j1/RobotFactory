@@ -33,6 +33,7 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
   const [isExchangeKitOpen, setIsExchangeKitOpen] = useState(false);
   const [exchangeMaterialId, setExchangeMaterialId] = useState<string>(MATERIALS[0]?.id || '');
   const [exchangeCount, setExchangeCount] = useState<number>(1);
+  const [isStorageUpgradeModalOpen, setIsStorageUpgradeModalOpen] = useState(false);
 
   const handleOpenChest = (chestTier: string) => {
     if (engine.removeChest(chestTier, 1)) {
@@ -363,20 +364,23 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
           )}
 
           {nextSize && (
-            <Card className="flex justify-between items-center bg-stone-100">
+            <Card className="flex justify-between items-center bg-stone-100 p-3.5 border border-stone-300 rounded-xl shadow-2xs">
               <div>
-                <p className="font-bold">倉庫を拡張する</p>
-                <p className="text-sm text-stone-600">最大容量: {nextSize}</p>
+                <p className="font-bold text-stone-900 text-sm flex items-center gap-1.5">
+                  <Gi.GiCardboardBox className="text-amber-700" size={16} />
+                  <span>倉庫を拡張する</span>
+                </p>
+                <p className="text-xs text-stone-600 mt-0.5">
+                  最大保管容量: <span className="font-mono font-bold text-stone-800">{state.storageSize}</span> → <span className="font-mono font-bold text-amber-700">{nextSize}</span> 機体 (+{nextSize - state.storageSize})
+                </p>
               </div>
               <Button 
                 size="sm" 
                 disabled={state.gold < upgradeCost}
-                onClick={() => {
-                  try { engine.upgradeStorage(upgradeCost, nextSize); } 
-                  catch(e: any) { alert(e.message); }
-                }}
+                onClick={() => setIsStorageUpgradeModalOpen(true)}
+                className="font-bold text-xs"
               >
-                {upgradeCost} G
+                {upgradeCost.toLocaleString()} G
               </Button>
             </Card>
           )}
@@ -1115,31 +1119,6 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
               })()}
             </div>
           </div>
-
-          {/* 4. 工房名声・称号セクション */}
-          {(() => {
-            const fameRank = getFameRank(state.fame || 0);
-            return (
-              <div className="bg-amber-50/60 p-3.5 rounded-xl border border-amber-200 shadow-xs flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center text-2xl shrink-0 border border-amber-300">
-                    <Gi.GiLaurelsTrophy />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-stone-600">工房称号:</span>
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded border ${fameRank.badgeBg} ${fameRank.badgeBorder} ${fameRank.textColor}`}>
-                        {fameRank.title}
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-stone-500 mt-0.5">
-                      名声値: <strong className="font-mono text-amber-800">{state.fame || 0}</strong> pt — {fameRank.desc}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
         </div>
       )}
 
@@ -1538,6 +1517,94 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                 onClick={() => setIsExchangeKitOpen(false)}
               >
                 閉じる
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 倉庫拡張確認モーダル */}
+      {isStorageUpgradeModalOpen && nextSize && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/80 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setIsStorageUpgradeModalOpen(false)}
+        >
+          <div 
+            className="bg-stone-50 border-2 border-stone-300 rounded-2xl p-5 w-full max-w-sm flex flex-col shadow-2xl space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3 pb-3 border-b border-stone-200">
+              <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 border border-amber-300 flex items-center justify-center text-2xl shrink-0 shadow-2xs">
+                <Gi.GiCardboardBox />
+              </div>
+              <div>
+                <h3 className="font-bold text-base text-stone-900 leading-tight">倉庫の拡張確認</h3>
+                <p className="text-xs text-stone-500">保管できる機体の上限を拡張します</p>
+              </div>
+            </div>
+
+            <div className="space-y-2.5 bg-white p-3.5 rounded-xl border border-stone-200 text-sm">
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-stone-600 font-bold">保管機体数上限</span>
+                <div className="flex items-center gap-1.5 font-mono font-bold text-sm">
+                  <span className="text-stone-700">{state.storageSize} 体</span>
+                  <span className="text-stone-400">→</span>
+                  <span className="text-emerald-700 font-bold">
+                    +{nextSize - state.storageSize} (計 {nextSize} 体)
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center text-xs pt-2 border-t border-stone-100">
+                <span className="text-stone-600 font-bold">必要ゴールド</span>
+                <span className="font-mono font-black text-amber-700 text-sm">
+                  {upgradeCost.toLocaleString()} G
+                </span>
+              </div>
+
+              <div className="flex justify-between items-center text-xs pt-1 border-t border-dashed border-stone-200">
+                <span className="text-stone-500">現在の所持ゴールド</span>
+                <span className="font-mono font-bold text-stone-700">
+                  {state.gold.toLocaleString()} G
+                </span>
+              </div>
+
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-stone-500">拡張後の残額</span>
+                <span className={`font-mono font-bold ${state.gold >= upgradeCost ? 'text-stone-700' : 'text-rose-600'}`}>
+                  {(state.gold - upgradeCost).toLocaleString()} G
+                </span>
+              </div>
+            </div>
+
+            {state.gold < upgradeCost && (
+              <div className="p-2 bg-rose-50 border border-rose-200 rounded-lg text-rose-700 text-xs font-bold text-center">
+                ゴールドが不足しているため拡張できません
+              </div>
+            )}
+
+            <div className="flex items-center gap-2 pt-1">
+              <Button
+                variant="secondary"
+                className="flex-1 py-2 text-xs font-bold"
+                onClick={() => setIsStorageUpgradeModalOpen(false)}
+              >
+                キャンセル
+              </Button>
+              <Button
+                variant="primary"
+                className="flex-1 py-2 text-xs font-bold"
+                disabled={state.gold < upgradeCost}
+                onClick={() => {
+                  try {
+                    engine.upgradeStorage(upgradeCost, nextSize);
+                    setIsStorageUpgradeModalOpen(false);
+                  } catch (e: any) {
+                    alert(e.message);
+                  }
+                }}
+              >
+                拡張する ({upgradeCost.toLocaleString()} G)
               </Button>
             </div>
           </div>

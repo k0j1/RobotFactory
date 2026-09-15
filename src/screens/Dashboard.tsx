@@ -258,17 +258,18 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
 
             return (
               <Card className="bg-[#fcf8f2] border-2 border-[#c29b77] p-2.5 shadow-2xs">
-                {/* 1行目: 名声ランク & 所持金 */}
+                {/* 1行目: 工房称号 & 所持金 */}
                 <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
                   <div className="flex items-center gap-1.5">
                     <span className="w-6 h-6 rounded-md bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-800 shrink-0">
-                      <Gi.GiTrophyCup size={14} />
+                      <Gi.GiLaurelsTrophy size={14} />
                     </span>
+                    <span className="text-[10px] font-bold text-stone-600">工房称号:</span>
                     <span className={`text-[11px] px-2 py-0.5 rounded-full border font-bold ${fameRank.badgeBg} ${fameRank.badgeBorder} ${fameRank.textColor}`}>
-                      Rank {fameRank.level} : {fameRank.title}
+                      {fameRank.title}
                     </span>
                     <span className="text-[10px] font-mono text-stone-500 font-bold">
-                      ({currentFame} 名声)
+                      ({currentFame} pt)
                     </span>
                   </div>
 
@@ -649,7 +650,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
           </div>
         </div>
 
-        {/* 工房名声・ランクバナー (Fame & Workshop Rank Banner) */}
+        {/* 工房称号・名声ランクバナー (Workshop Title & Fame Banner) */}
         {(() => {
           const currentFame = state.fame || 0;
           const fameRank = getFameRank(currentFame);
@@ -661,31 +662,34 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
 
           return (
             <div className={`${theme.workshop.fameCard} mb-3.5`}>
-              <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-amber-100/90 border border-amber-300 flex items-center justify-center text-amber-700 shadow-2xs shrink-0">
-                    <Gi.GiTrophyCup size={20} />
+              <div className="flex items-center justify-between gap-2.5 flex-wrap mb-2.5">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-2xl shrink-0 border border-amber-300 shadow-2xs">
+                    <Gi.GiLaurelsTrophy />
                   </div>
                   <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-amber-950 tracking-wider">工房名声</span>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full border font-bold ${fameRank.badgeBg} ${fameRank.badgeBorder} ${fameRank.textColor} shadow-2xs`}>
-                        Rank {fameRank.level} : {fameRank.title}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs font-bold text-stone-600">工房称号:</span>
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded border ${fameRank.badgeBg} ${fameRank.badgeBorder} ${fameRank.textColor} shadow-2xs`}>
+                        {fameRank.title}
+                      </span>
+                      <span className="text-[10px] font-bold text-amber-800 bg-amber-100/80 px-1.5 py-0.2 rounded border border-amber-200">
+                        Rank {fameRank.level}
                       </span>
                     </div>
-                    <div className="text-[10px] text-stone-500 mt-0.5">
-                      {fameRank.desc}
-                    </div>
+                    <p className="text-[11px] text-stone-600 mt-0.5">
+                      名声値: <strong className="font-mono text-amber-800">{currentFame.toLocaleString()}</strong> pt — {fameRank.desc}
+                    </p>
                   </div>
                 </div>
 
                 <div className="text-right ml-auto sm:ml-0">
                   <div className="text-base sm:text-lg font-black font-mono text-amber-800 leading-none">
-                    {currentFame.toLocaleString()} <span className="text-xs font-sans text-stone-500 font-normal">名声</span>
+                    {currentFame.toLocaleString()} <span className="text-xs font-sans text-stone-500 font-normal">pt</span>
                   </div>
                   <div className="text-[10px] font-mono text-stone-500 mt-0.5">
                     {nextRankFame ? (
-                      <span>次ランクまで <span className="font-bold text-amber-900 font-mono">{(nextRankFame - currentFame).toLocaleString()}</span></span>
+                      <span>次ランクまで <span className="font-bold text-amber-900 font-mono">{(nextRankFame - currentFame).toLocaleString()}</span> pt</span>
                     ) : (
                       <span className="text-amber-800 font-bold">★最高名声ランク到達！</span>
                     )}
@@ -694,7 +698,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
               </div>
 
               {/* 名声進行度プログレスバー */}
-              <div className="space-y-1">
+              <div className="space-y-1 pt-1 border-t border-amber-200/60">
                 <div className={theme.workshop.fameProgressBg}>
                   <div 
                     className={theme.workshop.fameProgressFill}
@@ -702,9 +706,9 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                   />
                 </div>
                 <div className="flex justify-between items-center text-[9px] text-stone-500 font-mono">
-                  <span>Rank {fameRank.level} ({prevRankFame} 名声)</span>
+                  <span>Rank {fameRank.level} ({prevRankFame} pt)</span>
                   <span className="font-bold text-amber-900">{progressPercent}%</span>
-                  <span>{nextRankFame ? `Rank ${fameRank.level + 1} (${nextRankFame} 名声)` : 'MAX'}</span>
+                  <span>{nextRankFame ? `Rank ${fameRank.level + 1} (${nextRankFame} pt)` : 'MAX'}</span>
                 </div>
               </div>
             </div>
