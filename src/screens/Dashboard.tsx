@@ -560,11 +560,14 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
           {/* クイックリンクバー (商店・図鑑・仕様書) */}
           <div className="grid grid-cols-3 gap-1.5">
             <button
-              onClick={() => onNavigate('shop')}
-              className="flex items-center justify-center gap-1.5 p-2 bg-[#fffdfa] hover:bg-[#f5ede3] border border-[#dcc5b0] rounded-lg text-xs font-bold text-[#482b17] shadow-2xs cursor-pointer"
+              disabled
+              className="flex items-center justify-center gap-1 p-2 bg-stone-200/70 border border-stone-300 rounded-lg text-xs font-bold text-stone-400 shadow-2xs cursor-not-allowed opacity-80"
             >
-              <Gi.GiShop size={15} className="text-amber-700" />
+              <Gi.GiShop size={15} className="text-stone-400" />
               <span>素材商店</span>
+              <span className="text-[9px] bg-stone-500 text-white font-bold px-1 py-0.2 rounded font-mono">
+                準備中
+              </span>
             </button>
             <button
               onClick={() => onNavigate('encyclopedia')}
@@ -1062,29 +1065,28 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
 
       {/* Shop & Material Trade Feature Card (商店・素材売買・交換所) */}
       <div 
-        onClick={() => onNavigate('shop')}
-        className="bg-gradient-to-r from-[#fcf7ee] via-[#f7eee2] to-[#f2e4d2] border-2 border-[#c29b77] hover:border-[#9c6a46] rounded-xl px-3.5 py-2.5 shadow-2xs hover:shadow-md transition-all cursor-pointer group flex items-center justify-between gap-3"
+        className="bg-stone-200/70 border-2 border-stone-300 rounded-xl px-3.5 py-2.5 shadow-2xs cursor-not-allowed group flex items-center justify-between gap-3 opacity-75 relative"
       >
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#aa6e45] to-[#784824] text-white flex items-center justify-center text-lg shadow-2xs border border-[#c4936d] shrink-0 group-hover:scale-105 transition-transform">
+          <div className="w-8 h-8 rounded-lg bg-stone-400 text-stone-100 flex items-center justify-center text-lg shadow-2xs border border-stone-300 shrink-0">
             <Gi.GiShop size={20} />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <h3 className="font-black text-xs sm:text-sm text-[#482b17] truncate">
+              <h3 className="font-black text-xs sm:text-sm text-stone-600 truncate">
                 素材商店・交換所
               </h3>
-              <span className="text-[10px] bg-[#ead9c8] text-[#6b3e1f] font-bold px-1.5 py-0.2 rounded border border-[#c9ab8d] hidden sm:inline whitespace-nowrap">
-                素材売買・修理キット
+              <span className="text-[10px] bg-stone-500 text-white font-bold font-mono px-1.5 py-0.2 rounded border border-stone-600 whitespace-nowrap">
+                準備中
               </span>
             </div>
-            <p className="text-[11px] text-[#70523e] truncate mt-0.5">
-              素材の購入/売却 ｜ 修理キット交換 ｜ 内装変更
+            <p className="text-[11px] text-stone-500 truncate mt-0.5">
+              素材の購入/売却 ｜ 修理キット交換 ｜ 内装変更（準備中）
             </p>
           </div>
         </div>
-        <span className="text-[#a6866b] group-hover:text-[#784824] group-hover:translate-x-0.5 transition-all text-sm shrink-0 font-bold">
-          ›
+        <span className="text-[10px] bg-stone-300 text-stone-600 font-bold px-2 py-0.5 rounded border border-stone-400 shrink-0 font-mono">
+          準備中
         </span>
       </div>
 

@@ -28,12 +28,27 @@ export const ShopScreen: React.FC<{ state: GameState, engine: GameEngine, onBack
       <ScreenHeader
         icon={<Gi.GiShop size={16} />}
         title="ジャンク商店・資材交換所"
+        badge={
+          <span className="text-[10px] bg-stone-500 text-white font-mono font-bold px-1.5 py-0.2 rounded">
+            準備中
+          </span>
+        }
         rightElement={
           <Button size="sm" variant="secondary" onClick={onBack} className="text-xs py-1 px-2.5">
             ← 工房へ戻る
           </Button>
         }
       />
+
+      <div className="p-3 bg-stone-200 border border-stone-300 text-stone-700 rounded-xl text-xs font-bold flex items-center justify-between gap-2 shadow-xs">
+        <span className="flex items-center gap-1.5">
+          <Gi.GiShop className="text-stone-500 text-base" />
+          <span>素材商店・資材交換所は現在準備中です。機能公開まで今しばらくお待ちください。</span>
+        </span>
+        <span className="text-[10px] bg-stone-600 text-white font-mono font-bold px-2 py-0.5 rounded shrink-0">
+          準備中
+        </span>
+      </div>
 
       <div className="flex gap-2">
         <button 
