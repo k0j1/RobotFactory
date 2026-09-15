@@ -13,7 +13,7 @@ interface RobotGalleryCardProps {
 }
 
 const STAT_CONFIG: { key: keyof RobotPart['stats']; label: string; icon: React.ReactNode; color: string }[] = [
-  { key: 'hp', label: 'HP', icon: <Gi.GiHeartPlus size={13} />, color: 'text-rose-600' },
+  { key: 'hp', label: '耐久値', icon: <Gi.GiHeartPlus size={13} />, color: 'text-rose-600' },
   { key: 'power', label: '攻撃', icon: <Gi.GiBroadsword size={13} />, color: 'text-amber-600' },
   { key: 'defense', label: '防御', icon: <Gi.GiShield size={13} />, color: 'text-blue-600' },
   { key: 'agility', label: '素早さ', icon: <Gi.GiSprint size={13} />, color: 'text-emerald-600' },

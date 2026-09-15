@@ -63,25 +63,7 @@ interface CatalogPartItem {
   isNew?: boolean;
 }
 
-  const getBaselineStatsForCatalogItem = (item: CatalogPartItem, attribute: string) => {
-    if (dbPartStats && dbPartStats[item.id]) {
-      const stats = dbPartStats[item.id];
-      // Apply attribute multiplier or scaling if needed, or use base stats from DB directly
-      return { stats: { hp: stats.hp, power: stats.power, defense: stats.defense, agility: stats.agility, dexterity: stats.dexterity, intelligence: stats.intelligence } };
-    }
-    const dummyPart: any = {
-      id: item.id,
-      type: item.type,
-      name: item.name,
-      attribute: attribute,
-      rarity: item.rarity,
-      visualIndex: item.visualIndex,
-      stats: { hp: 0, power: 0, defense: 0, agility: 0, dexterity: 0, intelligence: 0 }
-    };
-    const result = calculatePartBaseline(dummyPart);
-    return { stats: result.baselineStats };
-  };
-
+// getBaselineStatsForCatalogItem moved inside component
 const ALL_PARTS_CATALOG: CatalogPartItem[] = [
   // Head
   { id: 'h1_0', type: 'head', rarity: 1, visualIndex: 0, name: 'ベーシックヘッド' },
@@ -160,6 +142,24 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
   const [filterPartType, setFilterPartType] = useState<string>('All');
   const [catalogParts, setCatalogParts] = useState<CatalogPartItem[]>(ALL_PARTS_CATALOG);
   const [dbPartStats, setDbPartStats] = useState<Record<string, any>>({});
+
+  const getBaselineStatsForCatalogItem = (item: CatalogPartItem, attribute: string) => {
+    if (dbPartStats && dbPartStats[item.id]) {
+      const stats = dbPartStats[item.id];
+      return { stats: { hp: stats.hp, power: stats.power, defense: stats.defense, agility: stats.agility, dexterity: stats.dexterity, intelligence: stats.intelligence } };
+    }
+    const dummyPart: any = {
+      id: item.id,
+      type: item.type,
+      name: item.name,
+      attribute: attribute,
+      rarity: item.rarity,
+      visualIndex: item.visualIndex,
+      stats: { hp: 0, power: 0, defense: 0, agility: 0, dexterity: 0, intelligence: 0 }
+    };
+    const result = calculatePartBaseline(dummyPart);
+    return { stats: result.baselineStats };
+  };
 
   React.useEffect(() => {
     fetch('/api/parts-master.php')
@@ -510,7 +510,7 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
                     <th className="px-3 py-2.5">パーツ名</th>
                     <th className="px-3 py-2.5">部位</th>
                     <th className="px-2 py-2.5 text-center">レア度</th>
-                    <th className="px-2 py-2.5 text-right" title="耐久力">HP</th>
+                    <th className="px-2 py-2.5 text-right" title="Vitality">VIT</th>
                     <th className="px-2 py-2.5 text-right" title="攻撃力">POW</th>
                     <th className="px-2 py-2.5 text-right" title="防御力">DEF</th>
                     <th className="px-2 py-2.5 text-right" title="速度">AGI</th>
@@ -611,7 +611,7 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
                   
                   <div className="w-full grid grid-cols-2 gap-1 text-[9px] mb-1">
                     <div className="flex justify-between bg-stone-100 px-1 py-0.5 rounded">
-                      <span className="text-stone-500">HP</span>
+                      <span className="text-stone-500">VIT</span>
                       <span className="font-bold text-stone-700">{baselineStats.hp}</span>
                     </div>
                     <div className="flex justify-between bg-stone-100 px-1 py-0.5 rounded">
