@@ -25,7 +25,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
         title="ポンコツロボット工房 公式仕様書"
         badge={
           <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300 font-mono font-bold px-1.5 py-0.2 rounded">
-            v1.0.371
+            v1.0.373
           </span>
         }
         rightElement={
@@ -391,7 +391,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                 <div className="bg-white p-2.5 rounded-lg border border-stone-200">
                   <strong className="text-stone-900 block font-bold mb-1">🎹 ピアノ演奏会 (Piano Rhythm)</strong>
                   <p className="text-stone-600">
-                    「エリーゼのために」「トルコ行進曲」「ラ・カンパネラ」など名曲を完全演奏する鍵盤リズムゲーム。演奏会場のバックグラウンドでは、ロボットが漆黒のグランドピアノを操る『ピアノ協奏曲・超絶技巧演奏』アニメーションをループ披露します（効果音なしで楽曲の美しい響きに集中できます）。
+                    難易度順（Lv.5 エリーゼのために → Lv.8 トルコ行進曲 → Lv.10 ラ・カンパネラ）に並んだ名曲を完全演奏する鍵盤リズムゲーム。演奏クリア（精度90%以上）時には大量の<strong>工房名声</strong>を獲得でき、あわせて低ランクの<strong>古びた鉄の宝箱がドロップ</strong>します。演奏会場のバックグラウンドでは、ロボットが漆黒のグランドピアノを操る『ピアノ協奏曲・超絶技巧演奏』アニメーションを披露します。
                   </p>
                 </div>
 

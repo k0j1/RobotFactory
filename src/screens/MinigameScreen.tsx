@@ -261,11 +261,9 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
         else { chestTier = 'mythic'; chestTitle = '神話のプリズム宝箱'; }
       } else if (selectedGame === 'piano') {
         stageName = `ピアノ演奏 (${activePianoSong.title})`;
-        const lvl = activePianoSong.level;
-        if (lvl <= 2) { chestTier = 'bronze'; chestTitle = '古びた鉄の宝箱'; }
-        else if (lvl <= 4) { chestTier = 'silver'; chestTitle = '堅牢な銀の宝箱'; }
-        else if (lvl <= 8) { chestTier = 'gold'; chestTitle = '燦然たる黄金の宝箱'; }
-        else { chestTier = 'mythic'; chestTitle = '神話のプリズム宝箱'; }
+        // ピアノ演奏は工房名声を多く獲得できるため、宝箱は低ランク（古びた鉄の宝箱）固定ドロップ
+        chestTier = 'bronze';
+        chestTitle = '古びた鉄の宝箱';
 
         if (activePianoSong.rewardFame > 0) {
           (engine as any).addFame(activePianoSong.rewardFame, `ピアノ演奏クリア: ${activePianoSong.title}`);
@@ -920,8 +918,8 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                           }`}
                         >
                           <div className="flex justify-between items-center mb-0.5">
-                            <div className="flex items-center gap-1.5 truncate">
-                              <span className="font-bold text-sm text-stone-900 truncate">{song.title}</span>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-bold text-sm text-stone-900">{song.title}</span>
                               {isClearedToday && (
                                 <span className="text-[10px] bg-emerald-600 text-white border border-emerald-400 font-bold font-mono px-1.5 py-0.5 rounded shrink-0 flex items-center gap-0.5 shadow-xs">
                                   <Gi.GiCheckMark className="text-[8px]" /> 本日クリア済
@@ -932,9 +930,12 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                                   CLEAR歴あり
                                 </span>
                               )}
+                              <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300 font-bold px-1.5 py-0.5 rounded shrink-0 flex items-center gap-0.5">
+                                <Gi.GiLockedChest className="inline text-amber-600 text-xs" /> 鉄の宝箱
+                              </span>
                               {song.rewardFame > 0 && (
-                                <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300 font-bold font-mono px-1.5 py-0.2 rounded shrink-0">
-                                  名声 +{song.rewardFame}
+                                <span className="text-[10px] bg-yellow-100 text-yellow-900 border border-yellow-300 font-bold font-mono px-1.5 py-0.5 rounded shrink-0 flex items-center gap-0.5">
+                                  <Gi.GiTrophyCup className="inline text-amber-600 text-xs" /> 名声 +{song.rewardFame}
                                 </span>
                               )}
                             </div>
