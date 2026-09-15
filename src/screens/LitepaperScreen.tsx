@@ -25,7 +25,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
         title="ポンコツロボット工房 公式仕様書"
         badge={
           <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300 font-mono font-bold px-1.5 py-0.2 rounded">
-            v1.0.357
+            v1.0.358
           </span>
         }
         rightElement={
@@ -415,6 +415,12 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
             </div>
             <div className="space-y-3 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <div className="bg-white p-2.5 rounded-lg border border-stone-200">
+                  <strong className="text-stone-900 block font-bold mb-1">☁️ クラウド同期とデータ整合性</strong>
+                  <p className="text-stone-600">
+                    Googleログイン時はサーバーの各正規個別テーブル（user_robots, user_parts, user_material等）とリアルタイムに自動同期します。万が一 save_data スナップショットに所有していないロボット（依頼納品済み・解体済み機体）や古いパーツデータが含まれていた場合でも、システム側で完全に破棄され、正規テーブルのデータのみが正として扱われます（save_data 側にも一切保存されません）。
+                  </p>
+                </div>
                 <div className="bg-white p-2.5 rounded-lg border border-stone-200">
                   <strong className="text-stone-900 block font-bold mb-1">📦 倉庫・保管庫システム</strong>
                   <p className="text-stone-600">
