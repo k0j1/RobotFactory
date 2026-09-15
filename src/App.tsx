@@ -17,14 +17,18 @@ import { INTERIORS } from './core/interiors';
 import { AssetCacheService } from './core/AssetCacheService';
 import robotsWorkshopBg from './assets/images/robots_workshop_bg_1788411232885.jpg';
 import { useAuth } from './contexts/AuthContext';
+import { fetchPartsMaster } from './data/partsMaster';
 
 export default function App() {
   const { user } = useAuth();
   const { state, engine } = useGameState(user?.google_id);
   const [view, setView] = useState('title');
 
-  // アプリ起動時に背景画像をプリロードしてインメモリキャッシュに常駐（遠征で使用している背景画像のみに統一）
+  // アプリ起動時に背景画像をプリロード & parts-masterからm_parts_encyclopedia基準値をフェッチ
   useEffect(() => {
+    fetchPartsMaster().catch((err) => {
+      console.warn('[App] fetchPartsMaster notice:', err);
+    });
     AssetCacheService.getInstance().preloadImages([
       robotsWorkshopBg
     ]).catch((err) => {

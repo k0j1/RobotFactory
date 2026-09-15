@@ -4,6 +4,7 @@ import { AttributeColors } from './models';
 import { getDefenseDailyResetInfo, DefenseResetInfo, getDailyResetDateKey } from '../components/minigames/Shared';
 import { CombatEquipmentType, CombatEquipmentRank, COMBAT_EQUIPMENT_RANKS, getNextEquipmentRank } from './combatEquipmentData';
 import { AuthApiService } from '../services/AuthApiService';
+import { findMasterPartData } from '../data/partsMaster';
 
 const INITIAL_STATE: GameState = {
   gold: 0,
@@ -976,29 +977,55 @@ export class GameEngine {
     return 7200000;
   }
 
-  private _generatePartStats(type: PartType, mainMat: Material, subMat: Material) {
-    const typeMultipliers = {
-      head: { hp: 0.5, power: 0.2, defense: 0.5, agility: 0.5, dexterity: 0.8, intelligence: 2.0 },
-      body: { hp: 2.0, power: 0.8, defense: 2.0, agility: 0.3, dexterity: 0.5, intelligence: 0.5 },
-      arms: { hp: 0.8, power: 2.0, defense: 0.8, agility: 0.8, dexterity: 1.5, intelligence: 0.5 },
-      legs: { hp: 1.0, power: 1.0, defense: 1.0, agility: 2.0, dexterity: 1.2, intelligence: 0.5 },
-    };
+  private _generatePartStats(type: PartType, mainMat: Material, subMat: Material, rarity: number = 1, visualIndex: number = 0) {
+    // m_parts_encyclopedia テーブルのマスター基準値を取得
+    const masterData = findMasterPartData(type, rarity, visualIndex);
 
-    const matHp = mainMat.baseStats.hp + Math.floor(subMat.baseStats.hp * 0.5);
-    const matPow = mainMat.baseStats.power + Math.floor(subMat.baseStats.power * 0.5);
-    const matDef = mainMat.baseStats.defense + Math.floor(subMat.baseStats.defense * 0.5);
-    const matAgi = mainMat.baseStats.agility + Math.floor(subMat.baseStats.agility * 0.5);
-    const matDex = mainMat.baseStats.dexterity + Math.floor(subMat.baseStats.dexterity * 0.5);
-    const matInt = mainMat.baseStats.intelligence + Math.floor(subMat.baseStats.intelligence * 0.5);
+    let baseHp = 0;
+    let basePower = 0;
+    let baseDefense = 0;
+    let baseAgility = 0;
+    let baseDexterity = 0;
+    let baseIntelligence = 0;
 
-    const multi = typeMultipliers[type];
+    if (masterData) {
+      baseHp = masterData.stats.hp;
+      basePower = masterData.stats.power;
+      baseDefense = masterData.stats.defense;
+      baseAgility = masterData.stats.agility;
+      baseDexterity = masterData.stats.dexterity;
+      baseIntelligence = masterData.stats.intelligence;
+    } else {
+      // フォールバック計算
+      const typeMultipliers = {
+        head: { hp: 0.3, power: 0.1, defense: 0.3, agility: 0.4, dexterity: 0.5, intelligence: 3.5 },
+        body: { hp: 2.5, power: 0.3, defense: 2.5, agility: 0.1, dexterity: 0.2, intelligence: 0.2 },
+        arms: { hp: 0.4, power: 3.0, defense: 0.4, agility: 0.4, dexterity: 2.5, intelligence: 0.2 },
+        legs: { hp: 0.6, power: 0.4, defense: 0.6, agility: 3.0, dexterity: 2.5, intelligence: 0.2 },
+      };
+      const matHp = mainMat.baseStats.hp + Math.floor(subMat.baseStats.hp * 0.5);
+      const matPow = mainMat.baseStats.power + Math.floor(subMat.baseStats.power * 0.5);
+      const matDef = mainMat.baseStats.defense + Math.floor(subMat.baseStats.defense * 0.5);
+      const matAgi = mainMat.baseStats.agility + Math.floor(subMat.baseStats.agility * 0.5);
+      const matDex = mainMat.baseStats.dexterity + Math.floor(subMat.baseStats.dexterity * 0.5);
+      const matInt = mainMat.baseStats.intelligence + Math.floor(subMat.baseStats.intelligence * 0.5);
 
-    let hp = Math.floor(matHp * multi.hp) + Math.floor(Math.random() * 5);
-    let power = Math.floor(matPow * multi.power) + Math.floor(Math.random() * 5);
-    let defense = Math.floor(matDef * multi.defense) + Math.floor(Math.random() * 5);
-    let agility = Math.floor(matAgi * multi.agility) + Math.floor(Math.random() * 5);
-    let dexterity = Math.floor(matDex * multi.dexterity) + Math.floor(Math.random() * 5);
-    let intelligence = Math.floor(matInt * multi.intelligence) + Math.floor(Math.random() * 5);
+      const multi = typeMultipliers[type];
+      baseHp = Math.floor(matHp * multi.hp);
+      basePower = Math.floor(matPow * multi.power);
+      baseDefense = Math.floor(matDef * multi.defense);
+      baseAgility = Math.floor(matAgi * multi.agility);
+      baseDexterity = Math.floor(matDex * multi.dexterity);
+      baseIntelligence = Math.floor(matInt * multi.intelligence);
+    }
+
+    // 基準値をベースに製造ブレ乱数（0〜4）を加算
+    let hp = baseHp + Math.floor(Math.random() * 5);
+    let power = basePower + Math.floor(Math.random() * 5);
+    let defense = baseDefense + Math.floor(Math.random() * 5);
+    let agility = baseAgility + Math.floor(Math.random() * 5);
+    let dexterity = baseDexterity + Math.floor(Math.random() * 5);
+    let intelligence = baseIntelligence + Math.floor(Math.random() * 5);
 
     return {
       stats: { hp, power, defense, agility, dexterity, intelligence }
@@ -1033,7 +1060,7 @@ export class GameEngine {
     // Add star mark to name based on rarity to distinguish
     const name = `${mainMat.name}の${typeNames[type]}`;
 
-    const generatedStats = this._generatePartStats(type, mainMat, subMat);
+    const generatedStats = this._generatePartStats(type, mainMat, subMat, craftRarity, chosenCraft.visualIndex);
 
     const newPart: RobotPart = {
       id: `part_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
@@ -1274,7 +1301,7 @@ export class GameEngine {
     
     const name = `${mainMat.name}の${typeNames[type]}`;
 
-    const generatedStats = this._generatePartStats(type, mainMat, subMat);
+    const generatedStats = this._generatePartStats(type, mainMat, subMat, craftRarity, chosenCraft.visualIndex);
 
     const newPart: RobotPart = {
       id: `part_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,

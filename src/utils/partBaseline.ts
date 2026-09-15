@@ -1,5 +1,6 @@
 import { RobotPart, PartType, Material } from '../core/models';
 import { MATERIALS } from '../core/data';
+import { findMasterPartData, findMasterPartByNameOrId } from '../data/partsMaster';
 
 export const PART_TYPE_MULTIPLIERS: Record<PartType, {
   hp: number;
@@ -64,35 +65,53 @@ export function findMainMaterialForPart(part: RobotPart): Material {
 }
 
 /**
- * パーツの基準値（標準設計値）および実測値との差分を計算する
+ * パーツの基準値（m_parts_encyclopediaテーブル標準設計値）および実測値との差分を計算する
  */
 export function calculatePartBaseline(part: RobotPart): PartBaselineReport {
   const mainMat = findMainMaterialForPart(part);
-  // サブ素材は同レア度・同属性の代表素材（標準は同素材）を想定
-  const subMat = mainMat;
 
-  const multi = PART_TYPE_MULTIPLIERS[part.type] || PART_TYPE_MULTIPLIERS.head;
+  // m_parts_encyclopedia のマスターデータから基準値を取得
+  const masterData = findMasterPartData(part.type, part.rarity, part.visualIndex) || findMasterPartByNameOrId(part.name);
 
-  const matHp = mainMat.baseStats.hp + Math.floor(subMat.baseStats.hp * 0.5);
-  const matPow = mainMat.baseStats.power + Math.floor(subMat.baseStats.power * 0.5);
-  const matDef = mainMat.baseStats.defense + Math.floor(subMat.baseStats.defense * 0.5);
-  const matAgi = mainMat.baseStats.agility + Math.floor(subMat.baseStats.agility * 0.5);
-  const matDex = mainMat.baseStats.dexterity + Math.floor(subMat.baseStats.dexterity * 0.5);
-  const matInt = mainMat.baseStats.intelligence + Math.floor(subMat.baseStats.intelligence * 0.5);
+  let baseHp = 0;
+  let basePow = 0;
+  let baseDef = 0;
+  let baseAgi = 0;
+  let baseDex = 0;
+  let baseInt = 0;
 
-  // 乱数0〜4の中央値・期待値は2
-  const baseHp = Math.floor(matHp * multi.hp) + 2;
-  const basePow = Math.floor(matPow * multi.power) + 2;
-  const baseDef = Math.floor(matDef * multi.defense) + 2;
-  const baseAgi = Math.floor(matAgi * multi.agility) + 2;
-  const baseDex = Math.floor(matDex * multi.dexterity) + 2;
-  const baseInt = Math.floor(matInt * multi.intelligence) + 2;
+  if (masterData) {
+    baseHp = masterData.stats.hp;
+    basePow = masterData.stats.power;
+    baseDef = masterData.stats.defense;
+    baseAgi = masterData.stats.agility;
+    baseDex = masterData.stats.dexterity;
+    baseInt = masterData.stats.intelligence;
+  } else {
+    // フォールバック（マスターデータ未定義時）
+    const subMat = mainMat;
+    const multi = PART_TYPE_MULTIPLIERS[part.type] || PART_TYPE_MULTIPLIERS.head;
+
+    const matHp = mainMat.baseStats.hp + Math.floor(subMat.baseStats.hp * 0.5);
+    const matPow = mainMat.baseStats.power + Math.floor(subMat.baseStats.power * 0.5);
+    const matDef = mainMat.baseStats.defense + Math.floor(subMat.baseStats.defense * 0.5);
+    const matAgi = mainMat.baseStats.agility + Math.floor(subMat.baseStats.agility * 0.5);
+    const matDex = mainMat.baseStats.dexterity + Math.floor(subMat.baseStats.dexterity * 0.5);
+    const matInt = mainMat.baseStats.intelligence + Math.floor(subMat.baseStats.intelligence * 0.5);
+
+    baseHp = Math.floor(matHp * multi.hp);
+    basePow = Math.floor(matPow * multi.power);
+    baseDef = Math.floor(matDef * multi.defense);
+    baseAgi = Math.floor(matAgi * multi.agility);
+    baseDex = Math.floor(matDex * multi.dexterity);
+    baseInt = Math.floor(matInt * multi.intelligence);
+  }
 
   const items: StatBaselineItem[] = [
     {
       key: 'hp',
       label: '耐久力',
-      shortLabel: 'HP',
+      shortLabel: 'VIT',
       base: baseHp,
       actual: part.stats.hp,
       diff: part.stats.hp - baseHp,
@@ -145,13 +164,13 @@ export function calculatePartBaseline(part: RobotPart): PartBaselineReport {
   let qualityRank: 'S' | 'A' | 'B' | 'C' = 'B';
   let qualityLabel = '標準個体 (標準的な仕上がり)';
 
-  if (totalStatsDiff >= 6) {
+  if (totalStatsDiff >= 12) {
     qualityRank = 'S';
     qualityLabel = '特上級・超上振れ個体！';
-  } else if (totalStatsDiff >= 2) {
+  } else if (totalStatsDiff >= 5) {
     qualityRank = 'A';
     qualityLabel = '優秀・上振れ個体';
-  } else if (totalStatsDiff <= -3) {
+  } else if (totalStatsDiff <= -5) {
     qualityRank = 'C';
     qualityLabel = 'やや低水準な個体';
   }
@@ -173,3 +192,4 @@ export function calculatePartBaseline(part: RobotPart): PartBaselineReport {
     qualityLabel,
   };
 }
+
