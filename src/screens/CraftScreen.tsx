@@ -333,7 +333,6 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
               あと{formatDurationLabel(robotRemainingMs)}
             </Badge>
           ) : null}
-          <ActiveUserCountBadge type="assembly" count={activeAssemblyCount} />
         </button>
       </div>
 
