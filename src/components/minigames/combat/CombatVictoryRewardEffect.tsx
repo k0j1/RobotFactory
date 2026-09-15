@@ -209,31 +209,17 @@ export const CombatVictoryRewardEffect: React.FC<CombatVictoryRewardEffectProps>
         className="absolute top-1/3 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5 pointer-events-none z-50"
       >
         <div className="bg-stone-950/90 border-2 border-amber-400/90 rounded-2xl px-4 py-2 shadow-[0_0_25px_rgba(245,158,11,0.6)] backdrop-blur-md flex items-center gap-3">
-          <div className="flex items-center gap-1 text-amber-300 font-black text-xs sm:text-sm drop-shadow-sm">
-            <Gi.GiTrophyCup className="text-base text-amber-400 animate-bounce" />
-            <span>名声 {rewardFame > 0 ? `+${rewardFame}` : 'GET!'}</span>
-          </div>
-
-          {rewardElements > 0 && (
-            <div className="h-4 w-px bg-stone-700" />
-          )}
-
-          {rewardElements > 0 && (
-            <div className="flex items-center gap-1 text-cyan-300 font-black text-xs sm:text-sm drop-shadow-sm">
-              <Gi.GiCrystalBars className="text-base text-cyan-400 animate-pulse" />
-              <span>エレメント +{rewardElements}</span>
+          {rewardFame > 0 && (
+            <div className="flex items-center gap-1 text-amber-300 font-black text-xs sm:text-sm drop-shadow-sm">
+              <Gi.GiTrophyCup className="text-base text-amber-400 animate-bounce" />
+              <span>名声 +{rewardFame}</span>
             </div>
           )}
-
-          {rewardKits > 0 && (
-            <>
-              <div className="h-4 w-px bg-stone-700" />
-              <div className="flex items-center gap-1 text-stone-200 font-bold text-xs sm:text-sm">
-                <Gi.GiSpanner className="text-sm text-stone-400" />
-                <span>キット +{rewardKits}</span>
-              </div>
-            </>
-          )}
+          {rewardFame > 0 && <div className="h-4 w-px bg-stone-700" />}
+          <div className="flex items-center gap-1 text-amber-200 font-black text-xs sm:text-sm drop-shadow-sm">
+            <Gi.GiLockedChest className="text-base text-amber-400 animate-pulse" />
+            <span>宝箱ドロップ！</span>
+          </div>
         </div>
 
         {/* 光のリングエフェクト */}

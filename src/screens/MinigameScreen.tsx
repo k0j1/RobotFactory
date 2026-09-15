@@ -156,15 +156,17 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
     const int = robot.stats.intelligence || 10;
     const dex = robot.stats.dexterity || 10;
     
-    // Int（楽譜理解・リズム把握）と Dex（運指・鍵盤打鍵精度）による演奏総合力
-    const statBonus = (dex * 1.5) + (int * 1.5);
+    // Int（楽譜理解・リズム把握）を軸とした演奏総合力 (INT 50前後でエリーゼのためにクリア可)
+    const statBonus = (int * 2.0) + (dex * 1.2);
     const song = PIANO_SONGS.find(s => s.id === songId) || PIANO_SONGS[0];
-    const diffPenalty = song.level * 4;
+    const diffPenalty = (song?.level || 5) * 3;
     
-    // クリア条件「演奏精度90.0%以上」を達成できる推定確率
-    const expectedRoll = 50 + statBonus - diffPenalty;
-    const rate = Math.round((expectedRoll - 65) * 1.6);
+    // ロール基本シフト値
+    const base = statBonus - diffPenalty;
+    if (base >= 100) return 99;
     
+    // base 100でクリア率約99%、base 33 (INT 15) で約 16%、base 20以下で 5%
+    const rate = Math.round((base - 20) * 1.25);
     return Math.max(5, Math.min(99, rate));
   };
 
@@ -648,9 +650,6 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                                 <Gi.GiTrophyCup className="inline text-amber-600" /> 名声 +{stage.rewardFame}
                               </span>
                             )}
-                            <span className="text-[10px] bg-teal-100 text-teal-800 border border-teal-300 px-1.5 py-0.5 rounded flex items-center gap-0.5 font-bold">
-                              <Gi.GiHealing className="inline text-teal-600" /> {stage.rewardRegenHours || 12}hリジェネ
-                            </span>
                           </div>
                         </button>
                       );
@@ -861,11 +860,10 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                                 </span>
                               )}
                             </div>
-                            <div className="text-right font-mono text-xs text-amber-800 font-bold bg-amber-100/80 px-2 py-0.5 rounded border border-amber-300 flex flex-col items-end gap-0.5">
+                            <div className="text-right font-mono text-xs text-amber-800 font-bold bg-amber-100/80 px-2 py-0.5 rounded border border-amber-300 flex items-center gap-1">
                               <span className="flex items-center gap-1 text-[11px] text-amber-900 font-bold">
                                 <Gi.GiLockedChest className="inline text-amber-600" /> 宝箱ドロップ
                               </span>
-                              <span className="text-[10px] text-stone-600 font-medium">キット×{diff.rewardKits}他</span>
                             </div>
                           </div>
                           <div className="text-[11px] text-stone-500 leading-tight">
@@ -1051,16 +1049,11 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                             <div className="text-[10px] text-stone-400 mt-0.5">{o.org}</div>
                           </div>
                           <div className="text-right flex flex-col items-end gap-1">
-                            <span className="text-[10px] text-stone-700 font-bold bg-amber-50 px-2 py-0.5 rounded border border-amber-300 block shadow-2xs font-mono flex items-center gap-1">
-                              <Gi.GiSpanner className="text-amber-600" /> キット×{o.rewardKits}
+                            <span className="text-[10px] text-amber-900 font-bold bg-amber-100/90 px-2 py-0.5 rounded border border-amber-300 shadow-2xs font-mono flex items-center gap-1">
+                              <Gi.GiLockedChest className="text-amber-600" /> 宝箱ドロップ
                             </span>
-                            {o.rewardElements > 0 && (
-                              <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 flex items-center gap-1">
-                                <Gi.GiEnergyArrow className="text-emerald-600" /> E +{o.rewardElements}
-                              </span>
-                            )}
                             {o.rewardFame > 0 && (
-                              <span className="text-[10px] text-amber-900 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 flex items-center gap-1">
+                              <span className="text-[10px] text-amber-900 font-bold bg-yellow-100/90 px-1.5 py-0.5 rounded border border-yellow-300 flex items-center gap-1">
                                 <Gi.GiTrophyCup className="text-amber-600" /> 名声 +{o.rewardFame}
                               </span>
                             )}

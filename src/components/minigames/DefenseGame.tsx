@@ -1281,19 +1281,26 @@ export const DefenseGame: React.FC<DefenseGameProps> = ({
               </div>
               {battleResult === 'win' && (
                 <div className="pt-2 border-t border-stone-200 space-y-2">
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-amber-700 font-bold">獲得修理キット</span>
-                    <span className="font-mono font-black text-amber-600 text-base">
-                      +{stage.rewardKits}個
+                  <div className="flex justify-between items-center text-xs bg-amber-50 border border-amber-300 rounded-lg p-2">
+                    <div className="flex items-center gap-1.5 font-bold text-amber-900">
+                      <Gi.GiLockedChest className="text-amber-600 text-base" />
+                      <span>勝利クリア報酬</span>
+                    </div>
+                    <span className="font-bold text-xs text-amber-700 font-mono">
+                      宝箱ドロップ獲得！
                     </span>
                   </div>
-                  <div className="flex items-center justify-between text-xs bg-emerald-50 border border-emerald-400 rounded-lg p-2 text-emerald-800">
-                    <div className="flex items-center gap-1.5 font-bold">
-                      <Gi.GiHealing className="text-emerald-600 text-base animate-pulse" />
-                      <span>防衛リジェネ効果付与！</span>
+                  {stage.rewardFame > 0 && (
+                    <div className="flex justify-between items-center text-xs bg-yellow-50 border border-yellow-300 rounded-lg p-2">
+                      <div className="flex items-center gap-1.5 font-bold text-yellow-900">
+                        <Gi.GiTrophyCup className="text-amber-600 text-base" />
+                        <span>工房名声</span>
+                      </div>
+                      <span className="font-bold text-xs text-amber-800 font-mono">
+                        +{stage.rewardFame}
+                      </span>
                     </div>
-                    <span className="font-bold text-[11px] text-emerald-700">{stage.rewardRegenHours || 12}時間 (1h毎HP+1)</span>
-                  </div>
+                  )}
                   <div className="text-[11px] text-stone-700 bg-stone-100 rounded-lg p-2 border border-stone-300 text-center leading-snug">
                     <span className="font-bold text-stone-900">本日の防衛任務達成！</span>
                     <div className="text-[10px] text-stone-500 mt-0.5">

@@ -322,11 +322,12 @@ export const PianoGame: React.FC<PianoGameProps> = ({
         // Int: 楽譜理解・旋律・リズム把握
         // Dex: 運指の滑らかさ・正確な鍵盤打鍵
         let accuracyRoll = Math.random() * 100;
-        const statBonus = (activeRobot.stats.dexterity * 1.5) + (activeRobot.stats.intelligence * 1.5);
+        // Int(楽譜・旋律把握)を主軸に、INT 50前後で「エリーゼのために(Lv.5)」をクリア可能にする調整
+        const statBonus = (activeRobot.stats.intelligence * 2.0) + (activeRobot.stats.dexterity * 1.2);
         accuracyRoll += statBonus;
         
-        // 楽曲難易度ペナルティ
-        const diffPenalty = song.level * 4;
+        // 楽曲難易度ペナルティ (Lv.5で-15)
+        const diffPenalty = song.level * 3;
         accuracyRoll -= diffPenalty;
 
         let noteScore = 0;
