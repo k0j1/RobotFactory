@@ -519,7 +519,6 @@ export const PianoGame: React.FC<PianoGameProps> = ({
   // 演奏結果画面（リザルト画面）: 全ての情報を綺麗に配置した専用カルテビュー
   if (isFinished) {
     const isWin = accuracyPercent >= 90;
-    const rewardKits = Math.max(1, Math.ceil(song.level / 2));
     const prevBest = saveResult.previousRecord;
 
     return (
@@ -592,12 +591,23 @@ export const PianoGame: React.FC<PianoGameProps> = ({
 
             {/* 報酬表示 */}
             {isWin && (
-              <div className="bg-amber-500/20 px-3.5 py-1.5 rounded-xl border border-amber-400/50 flex items-center gap-2 shrink-0">
-                <Gi.GiSpanner className="text-amber-400 text-lg" />
-                <div className="text-left font-mono">
-                  <div className="text-[10px] text-amber-300 font-sans font-bold">クリア報酬獲得</div>
-                  <div className="text-sm font-black text-amber-200">修理キット +{rewardKits}個</div>
+              <div className="bg-amber-500/20 px-3.5 py-1.5 rounded-xl border border-amber-400/50 flex items-center gap-3 shrink-0">
+                <div className="flex items-center gap-1.5 font-mono text-left">
+                  <Gi.GiLockedChest className="text-amber-400 text-xl" />
+                  <div>
+                    <div className="text-[10px] text-amber-300 font-sans font-bold">クリアドロップ</div>
+                    <div className="text-xs sm:text-sm font-black text-amber-200">古びた鉄の宝箱 ×1</div>
+                  </div>
                 </div>
+                {song.rewardFame > 0 && (
+                  <div className="flex items-center gap-1.5 font-mono text-left pl-2 border-l border-amber-400/30">
+                    <Gi.GiTrophyCup className="text-amber-400 text-xl" />
+                    <div>
+                      <div className="text-[10px] text-amber-300 font-sans font-bold">工房名声</div>
+                      <div className="text-xs sm:text-sm font-black text-amber-200">+{song.rewardFame}</div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
