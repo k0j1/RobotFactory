@@ -272,6 +272,10 @@ try {
         }
     }
 
+    // 9. m_parts_encyclopedia テーブルからパーツ基準値マスターデータを取得
+    $partsMasterStmt = $pdo->query("SELECT * FROM m_parts_encyclopedia");
+    $dbPartsMaster = $partsMasterStmt ? $partsMasterStmt->fetchAll(PDO::FETCH_ASSOC) : [];
+
     // 9. user_robots テーブルから所持ロボット一覧を取得
     $robotsStmt = $pdo->prepare("
         SELECT robot_data 
@@ -338,6 +342,7 @@ try {
             "data" => $gameData,
             "received_initial_bonus" => $receivedBonusVal,
             "materials" => $dbMaterials,
+            "parts_master" => $dbPartsMaster,
             "user" => $userRecord,
             "userId" => $actualUserId
         ]);
@@ -362,6 +367,7 @@ try {
             "data" => $gameData,
             "received_initial_bonus" => $receivedBonusVal,
             "materials" => $dbMaterials,
+            "parts_master" => $dbPartsMaster,
             "user" => $userRecord,
             "userId" => $actualUserId
         ]);
