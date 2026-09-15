@@ -302,43 +302,9 @@ export class GameEngine {
         parsed.parts = [];
       }
 
-      // Initialize and migrate craftedRobots gallery
-      if (!parsed.craftedRobots) {
-        parsed.craftedRobots = [];
-      }
-      const existingGallery: Robot[] = parsed.craftedRobots;
-      const seenIds = new Set(existingGallery.map((r: Robot) => r.id));
-
-      if (parsed.robots && Array.isArray(parsed.robots)) {
-        parsed.robots.forEach((r: Robot) => {
-          if (r && r.parts && !seenIds.has(r.id)) {
-            existingGallery.push(r);
-            seenIds.add(r.id);
-          }
-        });
-      }
-      if (parsed.deliveredLogs && Array.isArray(parsed.deliveredLogs)) {
-        parsed.deliveredLogs.forEach((l: any) => {
-          if (l && l.parts && !seenIds.has(l.id)) {
-            const headR = l.parts.head?.rarity || 1;
-            const bodyR = l.parts.body?.rarity || 1;
-            const armsR = l.parts.arms?.rarity || 1;
-            const legsR = l.parts.legs?.rarity || 1;
-            existingGallery.push({
-              id: l.id,
-              name: l.name,
-              parts: l.parts,
-              stats: l.stats,
-              createdAt: l.deliveredAt || Date.now(),
-              value: (headR + bodyR + armsR + legsR) * 20
-            });
-            seenIds.add(l.id);
-          }
-        });
-      }
-      if (parsed.craftedRobots) {
-        parsed.craftedRobots = existingGallery;
-      }
+      // Clear craftedRobots and deliveredLogs to not keep/display past or unowned robots
+      parsed.craftedRobots = [];
+      parsed.deliveredLogs = [];
 
       // Migrate fame if not present
       if (parsed.fame === undefined) {

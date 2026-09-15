@@ -130,6 +130,8 @@ try {
     // その他の個別テーブルに保存される情報も重複排除
     unset($saveDataSnapshot['robots']);                 // user_robots
     unset($saveDataSnapshot['parts']);                  // user_parts
+    unset($saveDataSnapshot['craftedRobots']);          // craftedRobots
+    unset($saveDataSnapshot['deliveredLogs']);          // deliveredLogs
     unset($saveDataSnapshot['materials']);              // user_material
     unset($saveDataSnapshot['gold']);                   // user_workshop_status
     unset($saveDataSnapshot['fame']);                   // user_workshop_status

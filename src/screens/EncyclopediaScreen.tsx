@@ -174,25 +174,8 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
       }
     };
 
-    if (state.craftedRobots && Array.isArray(state.craftedRobots)) {
-      state.craftedRobots.forEach(addIfValid);
-    }
     if (state.robots && Array.isArray(state.robots)) {
       state.robots.forEach(addIfValid);
-    }
-    if (state.deliveredLogs && Array.isArray(state.deliveredLogs)) {
-      state.deliveredLogs.forEach(l => {
-        if (l && l.parts) {
-          addIfValid({
-            id: l.id,
-            name: l.name,
-            parts: l.parts,
-            stats: l.stats,
-            createdAt: l.deliveredAt || Date.now(),
-            value: (l.parts.head?.rarity || 1) + (l.parts.body?.rarity || 1) + (l.parts.arms?.rarity || 1) + (l.parts.legs?.rarity || 1) * 20
-          });
-        }
-      });
     }
 
     let list = allList.slice();
@@ -243,34 +226,8 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
   }, [state.craftedRobots, state.robots, state.deliveredLogs, searchQuery, filterAttribute, filterRarity, sortOrder]);
 
   const filteredHistory = useMemo(() => {
-    let list = state.deliveredLogs.slice();
-    
-    // Search
-    if (searchQuery) {
-      list = list.filter(log => log.name.toLowerCase().includes(searchQuery.toLowerCase()));
-    }
-    
-    // Attribute
-    if (filterAttribute !== 'All') {
-      list = list.filter(log => {
-        const parts = [log.parts.head, log.parts.body, log.parts.arms, log.parts.legs];
-        return parts.some(p => p && p.attribute === filterAttribute);
-      });
-    }
-    
-    // Sort
-    list.sort((a, b) => {
-      if (sortOrder === 'newest') return b.deliveredAt - a.deliveredAt;
-      if (sortOrder === 'oldest') return a.deliveredAt - b.deliveredAt;
-      const priceA = a.stats ? a.stats.hp : 0; // Using hp as base for price roughly, actually the total stats
-      const priceB = b.stats ? b.stats.hp : 0;
-      if (sortOrder === 'price_desc') return priceB - priceA;
-      if (sortOrder === 'price_asc') return priceA - priceB;
-      return 0;
-    });
-    
-    return list;
-  }, [state.deliveredLogs, searchQuery, filterAttribute, sortOrder]);
+    return [];
+  }, []);
 
   
   const filteredMaterials = useMemo(() => {

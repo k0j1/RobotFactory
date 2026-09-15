@@ -299,6 +299,8 @@ try {
         unset($gameData['starterBonusClaimed']);
         unset($gameData['parts']);
         unset($gameData['robots']);
+        unset($gameData['craftedRobots']);
+        unset($gameData['deliveredLogs']);
         unset($gameData['materials']);
         unset($gameData['gold']);
         unset($gameData['fame']);
