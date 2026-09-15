@@ -63,19 +63,24 @@ interface CatalogPartItem {
   isNew?: boolean;
 }
 
-const getBaselineStatsForCatalogItem = (item: CatalogPartItem, attribute: string) => {
-  const dummyPart: any = {
-    id: item.id,
-    type: item.type,
-    name: item.name,
-    attribute: attribute,
-    rarity: item.rarity,
-    visualIndex: item.visualIndex,
-    stats: { hp: 0, power: 0, defense: 0, agility: 0, dexterity: 0, intelligence: 0 }
+  const getBaselineStatsForCatalogItem = (item: CatalogPartItem, attribute: string) => {
+    if (dbPartStats && dbPartStats[item.id]) {
+      const stats = dbPartStats[item.id];
+      // Apply attribute multiplier or scaling if needed, or use base stats from DB directly
+      return { stats: { hp: stats.hp, power: stats.power, defense: stats.defense, agility: stats.agility, dexterity: stats.dexterity, intelligence: stats.intelligence } };
+    }
+    const dummyPart: any = {
+      id: item.id,
+      type: item.type,
+      name: item.name,
+      attribute: attribute,
+      rarity: item.rarity,
+      visualIndex: item.visualIndex,
+      stats: { hp: 0, power: 0, defense: 0, agility: 0, dexterity: 0, intelligence: 0 }
+    };
+    const result = calculatePartBaseline(dummyPart);
+    return { stats: result.baselineStats };
   };
-  const result = calculatePartBaseline(dummyPart);
-  return { stats: result.baselineStats };
-};
 
 const ALL_PARTS_CATALOG: CatalogPartItem[] = [
   // Head
@@ -153,6 +158,39 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
   const [filterRarity, setFilterRarity] = useState<number | 'All'>('All');
   const [sortOrder, setSortOrder] = useState<'newest'|'oldest'|'price_desc'|'price_asc'>('newest');
   const [filterPartType, setFilterPartType] = useState<string>('All');
+  const [catalogParts, setCatalogParts] = useState<CatalogPartItem[]>(ALL_PARTS_CATALOG);
+  const [dbPartStats, setDbPartStats] = useState<Record<string, any>>({});
+
+  React.useEffect(() => {
+    fetch('/api/parts-master.php')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.success && Array.isArray(data.parts) && data.parts.length > 0) {
+          const fetchedCatalog: CatalogPartItem[] = data.parts.map((p: any) => ({
+            id: p.id,
+            type: p.part_type,
+            rarity: Number(p.rarity),
+            visualIndex: Number(p.visual_index ?? 0),
+            name: p.name,
+            isNew: p.rarity >= 2
+          }));
+          const statsMap: Record<string, any> = {};
+          data.parts.forEach((p: any) => {
+            statsMap[p.id] = {
+              hp: Number(p.base_hp || 0),
+              power: Number(p.base_power || 0),
+              defense: Number(p.base_defense || 0),
+              agility: Number(p.base_agility || 0),
+              dexterity: Number(p.base_dexterity || 0),
+              intelligence: Number(p.base_int || 0)
+            };
+          });
+          setCatalogParts(fetchedCatalog);
+          setDbPartStats(statsMap);
+        }
+      })
+      .catch(err => console.error("Failed to load m_parts_encyclopedia:", err));
+  }, []);
 
   // GSAP モーションスタジオのモーダル状態
   const [isMotionStudioOpen, setIsMotionStudioOpen] = useState<boolean>(false);
@@ -242,7 +280,7 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
   }, [searchQuery, filterAttribute]);
 
   const filteredCatalogParts = useMemo(() => {
-    let list = ALL_PARTS_CATALOG.slice();
+    let list = catalogParts.slice();
     if (filterPartType !== 'All') {
       list = list.filter(p => p.type === filterPartType);
     }
@@ -253,7 +291,7 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
       list = list.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()));
     }
     return list;
-  }, [filterPartType, filterRarity, searchQuery]);
+  }, [catalogParts, filterPartType, filterRarity, searchQuery]);
 
   const activeColor = filterAttribute === 'All' ? AttributeColors['Water'] : (AttributeColors[filterAttribute] || AttributeColors['Water']);
   const activeAttr = filterAttribute === 'All' ? 'Earth' : filterAttribute;

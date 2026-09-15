@@ -73,26 +73,3 @@ jobs:
           fi
           
           echo "Database migration completed successfully."
-
-      # m_parts_encyclopedia にパーツ基準値データを登録(Seed)します
-      - name: Seed Parts Encyclopedia Master Data
-        run: |
-          echo "Seeding Parts Encyclopedia..."
-          RESPONSE=$(curl -s -w "\n%{http_code}" "https://robotfactory.k0j1.v2002.coreserver.jp/api/seed_parts.php")
-          HTTP_STATUS=$(echo "$RESPONSE" | tail -n1)
-          BODY=$(echo "$RESPONSE" | sed '$d')
-          
-          echo "Status Code: $HTTP_STATUS"
-          echo "Response Body: $BODY"
-          
-          if [ "$HTTP_STATUS" -ne 200 ]; then
-            echo "Error: Parts seeding failed with status $HTTP_STATUS"
-            exit 1
-          fi
-          
-          if echo "$BODY" | grep -q '"error"'; then
-            echo "Error: Parts seeding returned an error inside the response"
-            exit 1
-          fi
-          
-          echo "Parts encyclopedia seeding completed successfully."

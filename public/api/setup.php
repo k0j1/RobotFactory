@@ -38,6 +38,7 @@ try {
         part_type VARCHAR(50) NOT NULL,
         attribute VARCHAR(50) NOT NULL,
         rarity INT NOT NULL,
+        visual_index INT DEFAULT 0,
         base_hp INT DEFAULT 0,
         base_power INT DEFAULT 0,
         base_defense INT DEFAULT 0,
@@ -193,7 +194,87 @@ try {
         $pdo->exec("ALTER TABLE user_robots ADD COLUMN robot_data JSON");
     } catch (PDOException $e) {}
 
-    // 外部キー制約の追加（既存データがある場合は無視される可能性があるためtry-catch）
+    try {
+        $pdo->exec("ALTER TABLE m_parts_encyclopedia ADD COLUMN visual_index INT DEFAULT 0");
+    } catch (PDOException $e) {}
+
+    // m_parts_encyclopedia のマスターデータ挿入・シード
+    $catalogParts = [
+        // Head: INT特化、他低め
+        ['h1_0', 'ベーシックヘッド', 'head', 'neutral', 1, 0, 15, 3, 10, 10, 10, 35],
+        ['h1_1', 'ラウンドヘッド', 'head', 'neutral', 1, 1, 16, 2, 11, 11, 10, 38],
+        ['h1_2', 'バイザーヘッド', 'head', 'neutral', 1, 2, 14, 4, 9, 12, 12, 36],
+        ['h1_3', 'ボックスヘッド', 'head', 'neutral', 1, 3, 18, 3, 12, 9, 8, 40],
+        ['h1_4', 'クラウンヘッド', 'head', 'neutral', 1, 4, 12, 5, 8, 14, 14, 42],
+        ['h1_5', 'コーンヘッド', 'head', 'neutral', 1, 5, 13, 5, 7, 15, 13, 45],
+        ['h1_6', 'シリンダーヘッド', 'head', 'neutral', 1, 6, 15, 3, 10, 10, 11, 39],
+        ['h1_7', 'ホーンヘッド', 'head', 'neutral', 1, 7, 14, 6, 9, 11, 12, 41],
+        ['h2_0', 'デュアルアイヘッド', 'head', 'neutral', 2, 0, 25, 8, 16, 18, 18, 65],
+        ['h2_1', 'センサーヘッド', 'head', 'neutral', 2, 1, 22, 6, 14, 22, 20, 70],
+        ['h2_2', 'コマンドヘッド', 'head', 'neutral', 2, 2, 28, 10, 18, 17, 19, 75],
+        ['h2_3', 'バトルヘッド', 'head', 'neutral', 2, 3, 26, 11, 15, 20, 18, 72],
+        ['h2_4', 'ポッドツインヘッド', 'head', 'neutral', 2, 4, 24, 9, 15, 21, 20, 70],
+        ['h2_5', 'フィントライヘッド', 'head', 'neutral', 2, 5, 23, 8, 14, 24, 19, 73],
+        ['h2_6', 'デルタイヤーヘッド', 'head', 'neutral', 2, 6, 25, 9, 16, 19, 18, 71],
+        ['h2_7', 'ラウンドバイザーヘッド', 'head', 'neutral', 2, 7, 26, 8, 17, 18, 20, 74],
+        ['h3_0', 'パラディンヘッド', 'head', 'neutral', 3, 0, 40, 15, 28, 28, 28, 110],
+        ['h3_1', 'エンジェルヘッド', 'head', 'neutral', 3, 1, 38, 14, 25, 32, 32, 120],
+        ['h3_2', 'ドラゴンヘッド', 'head', 'neutral', 3, 2, 42, 18, 26, 30, 26, 115],
+        ['h3_3', 'サイクロプスヘッド', 'head', 'neutral', 3, 3, 41, 17, 25, 29, 27, 118],
+        ['h3_4', 'トライアングルヘッド', 'head', 'neutral', 3, 4, 39, 16, 24, 33, 29, 116],
+        ['h3_5', 'デルタサイクロプスヘッド', 'head', 'neutral', 3, 5, 42, 17, 27, 30, 28, 119],
+        ['h3_6', 'オーブサイクロプスヘッド', 'head', 'neutral', 3, 6, 40, 16, 26, 31, 30, 117],
+
+        // Body: HP(Vit)/Def高、他低め
+        ['b1_0', 'ベーシックボディ', 'body', 'neutral', 1, 0, 70, 5, 25, 4, 4, 5],
+        ['b1_1', 'ラウンドボディ', 'body', 'neutral', 1, 1, 75, 4, 28, 3, 4, 5],
+        ['b1_2', 'ヘビーボディ', 'body', 'neutral', 1, 2, 85, 6, 35, 2, 3, 4],
+        ['b1_3', 'バレルボディ', 'body', 'neutral', 1, 3, 80, 5, 32, 3, 3, 4],
+        ['b1_4', 'スリムボディ', 'body', 'neutral', 1, 4, 55, 5, 18, 8, 6, 6],
+        ['b1_5', 'ファーネスボディ', 'body', 'neutral', 1, 5, 78, 7, 30, 3, 4, 6],
+        ['b1_6', 'ダイヤボディ', 'body', 'neutral', 1, 6, 72, 4, 38, 4, 5, 5],
+        ['b1_7', 'エンジンボディ', 'body', 'neutral', 1, 7, 76, 8, 28, 5, 5, 5],
+        ['b2_0', 'ハイテクコアボディ', 'body', 'neutral', 2, 0, 120, 10, 50, 8, 9, 10],
+        ['b2_1', 'バイザーコアボディ', 'body', 'neutral', 2, 1, 115, 9, 48, 10, 10, 11],
+        ['b3_0', 'トライアングルコアボディ', 'body', 'neutral', 3, 0, 190, 16, 85, 14, 15, 16],
+
+        // Arms: Pow/Dex高、他低め
+        ['a1_0', 'ベーシックアーム', 'arms', 'neutral', 1, 0, 20, 25, 10, 8, 20, 5],
+        ['a1_1', 'ラウンドアーム', 'arms', 'neutral', 1, 1, 22, 28, 11, 7, 22, 5],
+        ['a1_2', 'ヘビーアーム', 'arms', 'neutral', 1, 2, 28, 35, 14, 5, 18, 4],
+        ['a1_3', 'クローアーム', 'arms', 'neutral', 1, 3, 21, 32, 9, 9, 25, 5],
+        ['a1_4', 'レンチアーム', 'arms', 'neutral', 1, 4, 24, 30, 12, 6, 22, 6],
+        ['a1_5', 'キャノンアーム', 'arms', 'neutral', 1, 5, 25, 38, 8, 4, 28, 7],
+        ['a1_6', 'ブレードアーム', 'arms', 'neutral', 1, 6, 19, 36, 9, 10, 30, 5],
+        ['a1_7', 'シールドアーム', 'arms', 'neutral', 1, 7, 30, 22, 22, 4, 16, 5],
+        ['a2_0', 'ナックルアーム', 'arms', 'neutral', 2, 0, 35, 55, 18, 12, 45, 10],
+        ['a2_1', 'サイバーアーム', 'arms', 'neutral', 2, 1, 32, 50, 16, 15, 48, 11],
+        ['a2_2', 'ヘビーアーム', 'arms', 'neutral', 2, 2, 42, 62, 24, 8, 40, 8],
+        ['a2_3', 'バスターアーム', 'arms', 'neutral', 2, 3, 38, 70, 15, 10, 55, 12],
+
+        // Legs: Agi/Dex高、他低め
+        ['l1_0', 'ベーシックレッグ', 'legs', 'neutral', 1, 0, 25, 8, 12, 25, 20, 5],
+        ['l1_1', 'ホイールレッグ', 'legs', 'neutral', 1, 1, 20, 6, 10, 32, 22, 5],
+        ['l1_2', 'ヘビーレッグ', 'legs', 'neutral', 1, 2, 40, 14, 22, 15, 12, 4],
+        ['l1_3', 'ホバーレッグ', 'legs', 'neutral', 1, 3, 18, 5, 9, 36, 26, 6],
+        ['l1_4', '一輪ホイール', 'legs', 'neutral', 1, 4, 22, 7, 11, 30, 23, 5],
+        ['l1_5', 'トライポッド', 'legs', 'neutral', 1, 5, 32, 10, 18, 22, 18, 5],
+        ['l1_6', 'スプリングレッグ', 'legs', 'neutral', 1, 6, 20, 8, 10, 28, 24, 5],
+        ['l1_7', 'クアッドレッグ', 'legs', 'neutral', 1, 7, 35, 12, 20, 20, 16, 5],
+        ['l2_0', 'サイバーツインレッグ', 'legs', 'neutral', 2, 0, 45, 18, 25, 45, 40, 10],
+        ['l2_1', 'サイバーレッグ', 'legs', 'neutral', 2, 1, 40, 16, 22, 52, 44, 11],
+        ['l2_2', 'スプリングガード', 'legs', 'neutral', 2, 2, 50, 20, 30, 38, 35, 9],
+        ['l2_3', 'シリンダーレッグ', 'legs', 'neutral', 2, 3, 44, 17, 28, 48, 42, 10]
+    ];
+
+    $stmtInsert = $pdo->prepare("
+        INSERT INTO m_parts_encyclopedia (id, name, part_type, attribute, rarity, visual_index, base_hp, base_power, base_defense, base_agility, base_dexterity, base_int)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE name=VALUES(name), part_type=VALUES(part_type), attribute=VALUES(attribute), rarity=VALUES(rarity), visual_index=VALUES(visual_index), base_hp=VALUES(base_hp), base_power=VALUES(base_power), base_defense=VALUES(base_defense), base_agility=VALUES(base_agility), base_dexterity=VALUES(base_dexterity), base_int=VALUES(base_int)
+    ");
+    foreach ($catalogParts as $p) {
+        $stmtInsert->execute($p);
+    }
     try {
         $pdo->exec("ALTER TABLE user_robots ADD CONSTRAINT fk_head_part FOREIGN KEY (head_part_id) REFERENCES user_parts(id) ON DELETE SET NULL");
         $pdo->exec("ALTER TABLE user_robots ADD CONSTRAINT fk_body_part FOREIGN KEY (body_part_id) REFERENCES user_parts(id) ON DELETE SET NULL");

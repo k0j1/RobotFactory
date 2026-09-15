@@ -9,10 +9,10 @@ export const PART_TYPE_MULTIPLIERS: Record<PartType, {
   dexterity: number;
   intelligence: number;
 }> = {
-  head: { hp: 0.5, power: 0.2, defense: 0.5, agility: 0.5, dexterity: 0.8, intelligence: 2.0 },
-  body: { hp: 2.0, power: 0.8, defense: 2.0, agility: 0.3, dexterity: 0.5, intelligence: 0.5 },
-  arms: { hp: 0.8, power: 2.0, defense: 0.8, agility: 0.8, dexterity: 1.5, intelligence: 0.5 },
-  legs: { hp: 1.0, power: 1.0, defense: 1.0, agility: 2.0, dexterity: 1.2, intelligence: 0.5 },
+  head: { hp: 0.3, power: 0.1, defense: 0.3, agility: 0.4, dexterity: 0.5, intelligence: 3.5 }, // INT特化、他低め
+  body: { hp: 2.5, power: 0.3, defense: 2.5, agility: 0.1, dexterity: 0.2, intelligence: 0.2 }, // HP(Vit)/Def高、他低め
+  arms: { hp: 0.4, power: 3.0, defense: 0.4, agility: 0.4, dexterity: 2.5, intelligence: 0.2 }, // Pow/Dex高、他低め
+  legs: { hp: 0.6, power: 0.4, defense: 0.6, agility: 3.0, dexterity: 2.5, intelligence: 0.2 }, // Agi/Dex高、他低め
 };
 
 export interface StatBaselineItem {
