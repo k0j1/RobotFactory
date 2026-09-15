@@ -319,34 +319,35 @@ export const PianoGame: React.FC<PianoGameProps> = ({
         const noteDuration = note.duration || 208;
         
         // ロボットの賢さ(Int)と器用さ(Dex)による判定ロール
-        // Int: 楽譜理解・旋律・リズム把握
-        // Dex: 運指の滑らかさ・正確な鍵盤打鍵
-        let accuracyRoll = Math.random() * 100;
-        // Int(楽譜・旋律把握)を主軸に、INT 50前後で「エリーゼのために(Lv.5)」をクリア可能にする調整
-        const statBonus = (activeRobot.stats.intelligence * 2.0) + (activeRobot.stats.dexterity * 1.2);
-        accuracyRoll += statBonus;
-        
-        // 楽曲難易度ペナルティ (Lv.5で-15)
-        const diffPenalty = song.level * 3;
-        accuracyRoll -= diffPenalty;
+        // Int: 楽譜理解・旋律・リズム把握 (主軸)
+        // Dex: 運指の滑らかさ・正確な鍵盤打鍵 (補助)
+        // 難易度目標: エリーゼのために(Lv.5)が「INT 50」でクリア（精度90%以上）できるバランス
+        const targetInt = song.id === 'fur_elise' ? 50 : song.id === 'turkish_march' ? 75 : 100;
+        const intVal = activeRobot.stats.intelligence || 10;
+        const dexVal = activeRobot.stats.dexterity || 10;
+        const effectiveScore = (intVal * 0.95) + (dexVal * 0.1);
+        const statDelta = effectiveScore - targetInt;
+
+        // roll値算出: INT 50で精度90%超えを狙える調整
+        const accuracyRoll = 86 + (Math.random() * 32) + (statDelta * 1.6);
 
         let noteScore = 0;
         let judgeStr = '';
         let vol = 1.0;
 
-        if (accuracyRoll >= 110) { 
+        if (accuracyRoll >= 95) { 
           noteScore = 300; 
           judgeStr = 'EXCELLENT'; 
           vol = 1.0;
-        } else if (accuracyRoll >= 80) { 
+        } else if (accuracyRoll >= 85) { 
           noteScore = 150; 
           judgeStr = 'GOOD'; 
           vol = 0.95;
-        } else if (accuracyRoll >= 50) { 
+        } else if (accuracyRoll >= 70) { 
           noteScore = 50; 
           judgeStr = 'SOSO'; 
           vol = 0.88;
-        } else if (accuracyRoll >= 20) { 
+        } else if (accuracyRoll >= 45) { 
           noteScore = 10; 
           judgeStr = 'NOT GOOD'; 
           vol = 0.75;

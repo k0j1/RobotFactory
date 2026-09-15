@@ -116,6 +116,18 @@ try {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+    CREATE TABLE IF NOT EXISTS complete_expeditions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id VARCHAR(255) NOT NULL,
+        location_id VARCHAR(255) NOT NULL,
+        start_time BIGINT NOT NULL,
+        end_time BIGINT NOT NULL,
+        dispatched_robot_id VARCHAR(255),
+        reward_data JSON,
+        completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_comp_exp_user (user_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
     CREATE TABLE IF NOT EXISTS active_part_crafts (
         user_id VARCHAR(255) PRIMARY KEY,
         part_type VARCHAR(50) NOT NULL,
@@ -126,12 +138,35 @@ try {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+    CREATE TABLE IF NOT EXISTS complete_part_crafts (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id VARCHAR(255) NOT NULL,
+        part_type VARCHAR(50) NOT NULL,
+        main_material_id VARCHAR(255) NOT NULL,
+        sub_material_id VARCHAR(255) NOT NULL,
+        start_time BIGINT NOT NULL,
+        end_time BIGINT NOT NULL,
+        result_part_data JSON,
+        completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_comp_craft_user (user_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
     CREATE TABLE IF NOT EXISTS active_robot_assemblies (
         user_id VARCHAR(255) PRIMARY KEY,
         start_time BIGINT NOT NULL,
         end_time BIGINT NOT NULL,
         result_robot_data JSON NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    CREATE TABLE IF NOT EXISTS complete_robot_assemblies (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id VARCHAR(255) NOT NULL,
+        start_time BIGINT NOT NULL,
+        end_time BIGINT NOT NULL,
+        result_robot_data JSON NOT NULL,
+        completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_comp_ass_user (user_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
     CREATE TABLE IF NOT EXISTS active_requests (
@@ -142,6 +177,59 @@ try {
         deadline BIGINT NOT NULL,
         request_data JSON,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    CREATE TABLE IF NOT EXISTS complete_requests (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id VARCHAR(255) NOT NULL,
+        request_id VARCHAR(255) NOT NULL,
+        rank VARCHAR(50) NOT NULL,
+        reward_g INT NOT NULL,
+        deadline BIGINT NOT NULL,
+        delivered_robot_id VARCHAR(255),
+        request_data JSON,
+        completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_comp_req_user (user_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    CREATE TABLE IF NOT EXISTS active_robot_disassemblies (
+        user_id VARCHAR(255) PRIMARY KEY,
+        robot_id VARCHAR(255),
+        start_time BIGINT NOT NULL,
+        end_time BIGINT NOT NULL,
+        result_parts_data JSON,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    CREATE TABLE IF NOT EXISTS complete_robot_disassemblies (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id VARCHAR(255) NOT NULL,
+        robot_id VARCHAR(255),
+        start_time BIGINT NOT NULL,
+        end_time BIGINT NOT NULL,
+        result_parts_data JSON,
+        completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_comp_disass_user (user_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    CREATE TABLE IF NOT EXISTS active_part_recycles (
+        user_id VARCHAR(255) PRIMARY KEY,
+        part_id VARCHAR(255),
+        start_time BIGINT NOT NULL,
+        end_time BIGINT NOT NULL,
+        result_materials_data JSON,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    CREATE TABLE IF NOT EXISTS complete_part_recycles (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id VARCHAR(255) NOT NULL,
+        part_id VARCHAR(255),
+        start_time BIGINT NOT NULL,
+        end_time BIGINT NOT NULL,
+        result_materials_data JSON,
+        completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_comp_recyc_user (user_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
     CREATE TABLE IF NOT EXISTS user_material (
@@ -192,6 +280,16 @@ try {
 
     try {
         $pdo->exec("ALTER TABLE user_robots ADD COLUMN robot_data JSON");
+    } catch (PDOException $e) {}
+
+    // activeテーブルと対となるcompleteテーブルの互換性用ビュー（completed_*）
+    try {
+        $pdo->exec("CREATE OR REPLACE VIEW completed_expeditions AS SELECT * FROM complete_expeditions");
+        $pdo->exec("CREATE OR REPLACE VIEW completed_part_crafts AS SELECT * FROM complete_part_crafts");
+        $pdo->exec("CREATE OR REPLACE VIEW completed_robot_assemblies AS SELECT * FROM complete_robot_assemblies");
+        $pdo->exec("CREATE OR REPLACE VIEW completed_requests AS SELECT * FROM complete_requests");
+        $pdo->exec("CREATE OR REPLACE VIEW completed_robot_disassemblies AS SELECT * FROM complete_robot_disassemblies");
+        $pdo->exec("CREATE OR REPLACE VIEW completed_part_recycles AS SELECT * FROM complete_part_recycles");
     } catch (PDOException $e) {}
 
     try {

@@ -17,6 +17,14 @@ const INITIAL_STATE: GameState = {
   activeQuest: null,
   activePartCraft: null,
   activeRobotAssembly: null,
+  activeRobotDisassembly: null,
+  activePartRecycle: null,
+  completeQuest: null,
+  completePartCraft: null,
+  completeRobotAssembly: null,
+  completeRobotDisassembly: null,
+  completePartRecycle: null,
+  completeRequest: null,
   currentRequest: null,
   deliveredRobotsCount: 0,
   deliveredLogs: [],
@@ -167,6 +175,7 @@ export class GameEngine {
       await AuthApiService.getInstance().saveAllDataToTables(this.userId, this.state, true);
     } catch (err) {
       console.warn('[GameEngine] 即時同期エラー:', err);
+      throw err;
     }
   }
 
@@ -959,6 +968,17 @@ export class GameEngine {
       this.state.materials[dropId] = (this.state.materials[dropId] || 0) + 1;
     }
 
+    // active_expeditions から complete_expeditions への移行
+    const compQuest: import('./models').CompleteQuest = {
+      locationId: this.state.activeQuest.locationId,
+      startTime: this.state.activeQuest.startTime,
+      endTime: this.state.activeQuest.endTime,
+      dispatchedRobotId: this.state.activeQuest.dispatchedRobotId,
+      completedAt: Date.now(),
+      rewardData: { drops: obtained }
+    };
+    this.state.completeQuest = compQuest;
+    this.state.completedQuest = compQuest;
     this.state.activeQuest = null;
     if (this.state.tutorialStep === 1) this.advanceTutorial();
     this.saveState();
@@ -1105,15 +1125,24 @@ export class GameEngine {
   }
 
   public claimCraftedPart(): RobotPart {
-    if (!this.state.activePartCraft) {
-      throw new Error("製造中のパーツはありません");
+    const target = this.state.activePartCraft || this.state.completePartCraft;
+    if (!target) {
+      throw new Error("製造中または受取待ちのパーツはありません");
     }
-    if (Date.now() < this.state.activePartCraft.endTime) {
+    if (Date.now() < target.endTime) {
       throw new Error("パーツ製造はまだ完了していません");
     }
 
-    const craftedPart = this.state.activePartCraft.resultPart;
+    const craftedPart = target.resultPart;
     this.state.parts.push(craftedPart);
+
+    // active_part_crafts から complete_part_crafts への移行
+    const compPartCraft: import('./models').CompletePartCraft = {
+      ...target,
+      completedAt: Date.now()
+    };
+    this.state.completePartCraft = compPartCraft;
+    this.state.completedPartCraft = compPartCraft;
     this.state.activePartCraft = null;
 
     if (this.state.tutorialStep === 2) this.advanceTutorial();
@@ -1192,16 +1221,25 @@ export class GameEngine {
   }
 
   public claimAssembledRobot(): Robot {
-    if (!this.state.activeRobotAssembly) {
-      throw new Error("組立中のロボットはありません");
+    const target = this.state.activeRobotAssembly || this.state.completeRobotAssembly;
+    if (!target) {
+      throw new Error("組立中または受取待ちのロボットはありません");
     }
-    if (Date.now() < this.state.activeRobotAssembly.endTime) {
+    if (Date.now() < target.endTime) {
       throw new Error("ロボットの組立はまだ完了していません");
     }
 
-    const assembledRobot = this.state.activeRobotAssembly.resultRobot;
+    const assembledRobot = target.resultRobot;
     this.state.robots.push(assembledRobot);
     this.recordCraftedRobot(assembledRobot);
+
+    // active_robot_assemblies から complete_robot_assemblies への移行
+    const compAss: import('./models').CompleteRobotAssembly = {
+      ...target,
+      completedAt: Date.now()
+    };
+    this.state.completeRobotAssembly = compAss;
+    this.state.completedRobotAssembly = compAss;
     this.state.activeRobotAssembly = null;
 
     if (this.state.tutorialStep === 2) this.advanceTutorial();
@@ -1645,6 +1683,19 @@ export class GameEngine {
     this.state.parts = this.state.parts.filter(p => !partIds.includes(p.id));
     this.state.robots.splice(robotIdx, 1);
     this.state.deliveredRobotsCount += 1;
+
+    // active_requests から complete_requests への移行
+    const compReq: import('./models').CompleteClientRequest = {
+      requestId: req.id,
+      rank: req.rank,
+      rewardG,
+      deadline: req.deadline,
+      deliveredRobotId: robot.id,
+      completedAt: Date.now(),
+      requestData: req
+    };
+    this.state.completeRequest = compReq;
+    this.state.completedRequest = compReq;
     this.state.currentRequest = null;
     if (this.state.tutorialStep === 4) this.advanceTutorial();
     this.generateRequestsIfNeeded(); // Instantly replenish the board
@@ -1757,14 +1808,22 @@ export class GameEngine {
   }
 
   public claimRobotDisassembly() {
-    if (!this.state.activeRobotDisassembly) throw new Error("解体中のロボットがありません");
-    if (this.state.activeRobotDisassembly.endTime > Date.now()) throw new Error("解体がまだ完了していません");
+    const target = this.state.activeRobotDisassembly || this.state.completeRobotDisassembly;
+    if (!target) throw new Error("解体中のロボットがありません");
+    if (target.endTime > Date.now()) throw new Error("解体がまだ完了していません");
 
-    for (const part of this.state.activeRobotDisassembly.resultParts) {
+    for (const part of target.resultParts) {
       const p = this.state.parts.find(x => x.id === part.id);
       if (p) p.isEquipped = false;
     }
     
+    // active_robot_disassemblies から complete_robot_disassemblies への移行
+    const compDisass: import('./models').CompleteRobotDisassembly = {
+      ...target,
+      completedAt: Date.now()
+    };
+    this.state.completeRobotDisassembly = compDisass;
+    this.state.completedRobotDisassembly = compDisass;
     this.state.activeRobotDisassembly = null;
     this.saveState();
   }
@@ -1795,13 +1854,21 @@ export class GameEngine {
   }
 
   public claimPartRecycle() {
-    if (!this.state.activePartRecycle) throw new Error("解体中のパーツがありません");
-    if (this.state.activePartRecycle.endTime > Date.now()) throw new Error("解体がまだ完了していません");
+    const target = this.state.activePartRecycle || this.state.completePartRecycle;
+    if (!target) throw new Error("解体中のパーツがありません");
+    if (target.endTime > Date.now()) throw new Error("解体がまだ完了していません");
 
-    for (const res of this.state.activePartRecycle.resultMaterials) {
+    for (const res of target.resultMaterials) {
       this.state.materials[res.materialId] = (this.state.materials[res.materialId] || 0) + res.count;
     }
     
+    // active_part_recycles から complete_part_recycles への移行
+    const compRecycle: import('./models').CompletePartRecycle = {
+      ...target,
+      completedAt: Date.now()
+    };
+    this.state.completePartRecycle = compRecycle;
+    this.state.completedPartRecycle = compRecycle;
     this.state.activePartRecycle = null;
     this.saveState();
   }

@@ -466,16 +466,7 @@ export const CombatSetupCard: React.FC<CombatSetupCardProps> = ({
                   <div className="text-[11px] font-bold bg-amber-50/90 p-1.5 rounded-lg border border-amber-300 flex flex-col gap-1 items-end shadow-2xs">
                     <span className="text-amber-950 flex items-center gap-1 font-bold">
                       <Gi.GiLockedChest className="text-amber-600 text-sm" />
-                      <span>勝利報酬: 宝箱</span>
-                    </span>
-                    <span className="text-[9px] text-stone-600 flex items-center gap-1">
-                      <span>🧰 修理</span>
-                      <span>•</span>
-                      <span>⚙️ 素材</span>
-                      <span>•</span>
-                      <span>🪙 G</span>
-                      <span>•</span>
-                      <span>💎 E</span>
+                      <span>勝利報酬: 宝箱ドロップ</span>
                     </span>
                     {activeOpponent.rewardFame > 0 && (
                       <span className="text-amber-900 text-[10px] flex items-center gap-1 font-bold">

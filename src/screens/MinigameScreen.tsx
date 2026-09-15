@@ -156,18 +156,35 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
     const int = robot.stats.intelligence || 10;
     const dex = robot.stats.dexterity || 10;
     
-    // Int（楽譜理解・リズム把握）を軸とした演奏総合力 (INT 50前後でエリーゼのためにクリア可)
-    const statBonus = (int * 2.0) + (dex * 1.2);
+    // 各曲の推奨クリア基準INT
+    // エリーゼのために(Lv.5): INT 50
+    // トルコ行進曲(Lv.8): INT 75
+    // ラ・カンパネラ(Lv.10): INT 100
     const song = PIANO_SONGS.find(s => s.id === songId) || PIANO_SONGS[0];
-    const diffPenalty = (song?.level || 5) * 3;
+    const targetInt = song.id === 'fur_elise' ? 50 : song.id === 'turkish_march' ? 75 : 100;
     
-    // ロール基本シフト値
-    const base = statBonus - diffPenalty;
-    if (base >= 100) return 99;
+    // ロボットの演奏適性値 (Int主軸 + Dex補助)
+    const effectiveStat = (int * 0.95) + (dex * 0.1);
+    const diff = effectiveStat - targetInt;
     
-    // base 100でクリア率約99%、base 33 (INT 15) で約 16%、base 20以下で 5%
-    const rate = Math.round((base - 20) * 1.25);
-    return Math.max(5, Math.min(99, rate));
+    // 滑らかな勝率算出カーブ
+    // diff = 0 (INT 50) のとき 約85〜88%
+    // diff = -15 のとき 約50%
+    // diff = -35 (INT 15) のとき 約5%
+    let rate = 0;
+    if (diff >= 10) {
+      rate = 95 + Math.min(4, (diff - 10) * 0.2);
+    } else if (diff >= 0) {
+      rate = 85 + diff * 1.0;
+    } else if (diff >= -20) {
+      rate = 35 + ((diff + 20) / 20) * 50;
+    } else if (diff >= -35) {
+      rate = 5 + ((diff + 35) / 15) * 30;
+    } else {
+      rate = Math.max(1, 5 + (diff + 35) * 0.2);
+    }
+    
+    return Math.max(1, Math.min(99, Math.round(rate)));
   };
 
   const selectedGameDef = GAMES.find(g => g.id === selectedGame);
@@ -957,10 +974,18 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                               )}
                             </div>
                             <div className="bg-stone-100/90 p-1.5 rounded-lg border border-stone-200 flex items-center justify-between">
-                              <span className="text-stone-500 font-bold">予想クリア率(精度90%~):</span>
-                              <span className="font-bold font-mono text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded border border-amber-300">
-                                約{getEstimatedPianoWinRate(song.id, activeRobot)}%
-                              </span>
+                              <span className="text-stone-500 font-bold">予想クリア率:</span>
+                              {activeRobot ? (
+                                <span className={`font-bold font-mono px-1.5 py-0.5 rounded border ${
+                                  (getEstimatedPianoWinRate(song.id, activeRobot) as number) >= 50
+                                    ? 'text-emerald-800 bg-emerald-100 border-emerald-300'
+                                    : 'text-rose-700 bg-rose-50 border-rose-200'
+                                }`}>
+                                  約{getEstimatedPianoWinRate(song.id, activeRobot)}%
+                                </span>
+                              ) : (
+                                <span className="font-mono text-stone-400">--%</span>
+                              )}
                             </div>
                           </div>
                         </button>

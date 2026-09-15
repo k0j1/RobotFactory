@@ -25,7 +25,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
         title="ポンコツロボット工房 公式仕様書"
         badge={
           <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300 font-mono font-bold px-1.5 py-0.2 rounded">
-            v1.0.379
+            v1.0.383
           </span>
         }
         rightElement={
@@ -391,7 +391,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                 <div className="bg-white p-2.5 rounded-lg border border-stone-200">
                   <strong className="text-stone-900 block font-bold mb-1">🎹 ピアノ演奏会 (Piano Rhythm)</strong>
                   <p className="text-stone-600">
-                    難易度順（Lv.5 エリーゼのために → Lv.8 トルコ行進曲 → Lv.10 ラ・カンパネラ）に並んだ名曲を完全演奏する鍵盤リズムゲーム。演奏クリア（精度90%以上）時には大量の<strong>工房名声</strong>を獲得でき、あわせて低ランクの<strong>古びた鉄の宝箱がドロップ</strong>します。演奏会場のバックグラウンドでは、ロボットが漆黒のグランドピアノを操る『ピアノ協奏曲・超絶技巧演奏』アニメーションを披露します。
+                    難易度順（Lv.5 エリーゼのために［推奨INT 50前後］ → Lv.8 トルコ行進曲［推奨INT 75前後］ → Lv.10 ラ・カンパネラ［推奨INT 100前後］）に並んだ名曲を完全演奏する鍵盤リズムゲーム。演奏クリア（精度90%以上）時には大量の<strong>工房名声</strong>を獲得でき、あわせて低ランクの<strong>古びた鉄の宝箱がドロップ</strong>します。演奏会場のバックグラウンドでは、ロボットが漆黒のグランドピアノを操る『ピアノ協奏曲・超絶技巧演奏』アニメーションを披露します。
                   </p>
                 </div>
 
@@ -416,9 +416,9 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
             <div className="space-y-3 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                 <div className="bg-white p-2.5 rounded-lg border border-stone-200">
-                  <strong className="text-stone-900 block font-bold mb-1">☁️ クラウド同期とデータ保護</strong>
+                  <strong className="text-stone-900 block font-bold mb-1">☁️ クラウド同期と単一トランザクション保護</strong>
                   <p className="text-stone-600">
-                    Googleログイン時はサーバーとリアルタイムに自動同期し、所持しているロボットやパーツ、素材、遠征の進捗状況を安全に保護・保持します。
+                    Googleログイン時はサーバーとリアルタイムに自動同期。進行中（active）および完了（complete）テーブルを含む関連全テーブルの更新は完全な単一トランザクションで実行され、万が一更新エラーが発生した場合は即座に全変更がロールバックされ、画面上に通知と再試行案内が表示されます。
                   </p>
                 </div>
                 <div className="bg-white p-2.5 rounded-lg border border-stone-200">

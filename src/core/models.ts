@@ -157,6 +157,69 @@ export interface ActivePartRecycle {
   resultMaterials: { materialId: string, count: number }[];
 }
 
+// activeテーブルと対となるcompleteテーブル用インターフェース
+export interface CompleteQuest {
+  locationId: string;
+  startTime: number;
+  endTime: number;
+  dispatchedRobotId?: string;
+  completedAt?: number;
+  rewardData?: any;
+}
+export type CompletedQuest = CompleteQuest;
+
+export interface CompletePartCraft {
+  partType: PartType;
+  mainMaterialId: string;
+  subMaterialId: string;
+  startTime: number;
+  endTime: number;
+  durationMs?: number;
+  resultPart: RobotPart;
+  completedAt?: number;
+}
+export type CompletedPartCraft = CompletePartCraft;
+
+export interface CompleteRobotAssembly {
+  startTime: number;
+  endTime: number;
+  durationMs?: number;
+  resultRobot: Robot;
+  completedAt?: number;
+}
+export type CompletedRobotAssembly = CompleteRobotAssembly;
+
+export interface CompleteRobotDisassembly {
+  robotClone: Robot;
+  startTime: number;
+  endTime: number;
+  durationMs?: number;
+  resultParts: RobotPart[];
+  completedAt?: number;
+}
+export type CompletedRobotDisassembly = CompleteRobotDisassembly;
+
+export interface CompletePartRecycle {
+  partClone: RobotPart;
+  startTime: number;
+  endTime: number;
+  durationMs?: number;
+  resultMaterials: { materialId: string, count: number }[];
+  completedAt?: number;
+}
+export type CompletedPartRecycle = CompletePartRecycle;
+
+export interface CompleteClientRequest {
+  requestId: string;
+  rank: string;
+  rewardG: number;
+  deadline: number;
+  deliveredRobotId?: string;
+  completedAt?: number;
+  requestData?: ClientRequest;
+}
+export type CompletedClientRequest = CompleteClientRequest;
+
 export interface GameState {
   gold: number;
   fame?: number; // 工房の名声値 (依頼達成や高難度バトル勝利で増加)
@@ -171,6 +234,23 @@ export interface GameState {
   activeRobotAssembly?: ActiveRobotAssembly | null;
   activeRobotDisassembly?: ActiveRobotDisassembly | null;
   activePartRecycle?: ActivePartRecycle | null;
+
+  // activeテーブルと対となるcompleteテーブル（作業完了時に移行）
+  completeQuest?: CompleteQuest | null;
+  completePartCraft?: CompletePartCraft | null;
+  completeRobotAssembly?: CompleteRobotAssembly | null;
+  completeRobotDisassembly?: CompleteRobotDisassembly | null;
+  completePartRecycle?: CompletePartRecycle | null;
+  completeRequest?: CompleteClientRequest | null;
+
+  // 互換性のためのcompleted_*表記
+  completedQuest?: CompletedQuest | null;
+  completedPartCraft?: CompletedPartCraft | null;
+  completedRobotAssembly?: CompletedRobotAssembly | null;
+  completedRobotDisassembly?: CompletedRobotDisassembly | null;
+  completedPartRecycle?: CompletedPartRecycle | null;
+  completedRequest?: CompletedClientRequest | null;
+
   currentRequest: ClientRequest | null;
   deliveredRobotsCount: number;
   deliveredLogs: DeliveredLog[];

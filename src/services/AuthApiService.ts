@@ -36,11 +36,19 @@ export interface AuthApiResponse<T = any> {
   error?: string;
   message?: string;
   data?: T;
+  rolledBack?: boolean;
+}
+
+export interface DatabaseSyncError {
+  message: string;
+  rolledBack: boolean;
+  timestamp: number;
 }
 
 export class AuthApiService {
   private static instance: AuthApiService | null = null;
   private readonly defaultBaseUrl: string;
+  private errorListeners: ((error: DatabaseSyncError) => void)[] = [];
 
   private constructor() {
     // 環境変数があれば最優先、なければ本番CoreServerのURLを定義
@@ -387,6 +395,7 @@ export class AuthApiService {
     ])).filter(Boolean);
 
     let lastError: Error | null = null;
+    let lastSyncError: DatabaseSyncError | null = null;
 
     for (const endpoint of endpoints) {
       try {
@@ -402,18 +411,30 @@ export class AuthApiService {
           })
         });
 
-        if (!response.ok) {
-          throw new Error(`HTTP Error ${response.status}`);
-        }
-
         const rawText = await response.text();
         if (rawText.trim().startsWith('<?php')) {
           throw new Error('PHPが未実行です。');
         }
 
-        const parsed = JSON.parse(rawText);
-        if (!parsed.success) {
-          throw new Error(parsed.error || 'テーブルへの保存に失敗しました。');
+        let parsed: any = null;
+        try {
+          parsed = JSON.parse(rawText);
+        } catch (_) {
+          if (!response.ok) {
+            throw new Error(`サーバー通信エラー (HTTP ${response.status})`);
+          }
+        }
+
+        if (!response.ok || (parsed && !parsed.success)) {
+          const errMsg = parsed?.error || `データベース保存エラー (HTTP ${response.status})`;
+          const isRolledBack = Boolean(parsed?.rolledBack);
+          const syncErr: DatabaseSyncError = {
+            message: errMsg,
+            rolledBack: isRolledBack,
+            timestamp: Date.now()
+          };
+          lastSyncError = syncErr;
+          throw new Error(errMsg);
         }
 
         console.log(`[AuthApiService] 全テーブル保存成功 (${endpoint}):`, parsed);
@@ -426,7 +447,38 @@ export class AuthApiService {
     }
 
     this.isSyncing = false;
+    const finalError = lastSyncError || {
+      message: lastError?.message || '適切なテーブルへの保存通信に失敗しました。',
+      rolledBack: lastSyncError?.rolledBack ?? false,
+      timestamp: Date.now()
+    };
+    this.notifySyncError(finalError);
     throw lastError || new Error('適切なテーブルへの保存通信に失敗しました。');
+  }
+
+  /**
+   * データベース同期エラーリスナーの登録
+   * @param listener エラー受信コールバック
+   * @returns リスナー解除関数
+   */
+  public onSyncError(listener: (error: DatabaseSyncError) => void): () => void {
+    this.errorListeners.push(listener);
+    return () => {
+      this.errorListeners = this.errorListeners.filter(l => l !== listener);
+    };
+  }
+
+  /**
+   * 登録されたエラーリスナーへエラーを通知
+   */
+  private notifySyncError(error: DatabaseSyncError): void {
+    this.errorListeners.forEach(listener => {
+      try {
+        listener(error);
+      } catch (e) {
+        console.error('[AuthApiService] エラーリスナー実行例外:', e);
+      }
+    });
   }
 
   /**

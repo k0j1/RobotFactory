@@ -68,6 +68,18 @@ try {
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+        CREATE TABLE IF NOT EXISTS complete_expeditions (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id VARCHAR(255) NOT NULL,
+            location_id VARCHAR(255) NOT NULL,
+            start_time BIGINT NOT NULL,
+            end_time BIGINT NOT NULL,
+            dispatched_robot_id VARCHAR(255),
+            reward_data JSON,
+            completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_comp_exp_user (user_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
         CREATE TABLE IF NOT EXISTS active_part_crafts (
             user_id VARCHAR(255) PRIMARY KEY,
             part_type VARCHAR(50) NOT NULL,
@@ -78,12 +90,35 @@ try {
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+        CREATE TABLE IF NOT EXISTS complete_part_crafts (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id VARCHAR(255) NOT NULL,
+            part_type VARCHAR(50) NOT NULL,
+            main_material_id VARCHAR(255) NOT NULL,
+            sub_material_id VARCHAR(255) NOT NULL,
+            start_time BIGINT NOT NULL,
+            end_time BIGINT NOT NULL,
+            result_part_data JSON,
+            completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_comp_craft_user (user_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
         CREATE TABLE IF NOT EXISTS active_robot_assemblies (
             user_id VARCHAR(255) PRIMARY KEY,
             start_time BIGINT NOT NULL,
             end_time BIGINT NOT NULL,
             result_robot_data JSON NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+        CREATE TABLE IF NOT EXISTS complete_robot_assemblies (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id VARCHAR(255) NOT NULL,
+            start_time BIGINT NOT NULL,
+            end_time BIGINT NOT NULL,
+            result_robot_data JSON NOT NULL,
+            completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_comp_ass_user (user_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
         CREATE TABLE IF NOT EXISTS active_requests (
@@ -94,6 +129,59 @@ try {
             deadline BIGINT NOT NULL,
             request_data JSON,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+        CREATE TABLE IF NOT EXISTS complete_requests (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id VARCHAR(255) NOT NULL,
+            request_id VARCHAR(255) NOT NULL,
+            rank VARCHAR(50) NOT NULL,
+            reward_g INT NOT NULL,
+            deadline BIGINT NOT NULL,
+            delivered_robot_id VARCHAR(255),
+            request_data JSON,
+            completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_comp_req_user (user_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+        CREATE TABLE IF NOT EXISTS active_robot_disassemblies (
+            user_id VARCHAR(255) PRIMARY KEY,
+            robot_id VARCHAR(255),
+            start_time BIGINT NOT NULL,
+            end_time BIGINT NOT NULL,
+            result_parts_data JSON,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+        CREATE TABLE IF NOT EXISTS complete_robot_disassemblies (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id VARCHAR(255) NOT NULL,
+            robot_id VARCHAR(255),
+            start_time BIGINT NOT NULL,
+            end_time BIGINT NOT NULL,
+            result_parts_data JSON,
+            completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_comp_disass_user (user_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+        CREATE TABLE IF NOT EXISTS active_part_recycles (
+            user_id VARCHAR(255) PRIMARY KEY,
+            part_id VARCHAR(255),
+            start_time BIGINT NOT NULL,
+            end_time BIGINT NOT NULL,
+            result_materials_data JSON,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+        CREATE TABLE IF NOT EXISTS complete_part_recycles (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id VARCHAR(255) NOT NULL,
+            part_id VARCHAR(255),
+            start_time BIGINT NOT NULL,
+            end_time BIGINT NOT NULL,
+            result_materials_data JSON,
+            completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_comp_recyc_user (user_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ");
 
@@ -125,7 +213,23 @@ try {
     unset($saveDataSnapshot['activeQuest']);            // active_expeditions
     unset($saveDataSnapshot['activePartCraft']);        // active_part_crafts
     unset($saveDataSnapshot['activeRobotAssembly']);    // active_robot_assemblies
+    unset($saveDataSnapshot['activeRobotDisassembly']); // active_robot_disassemblies
+    unset($saveDataSnapshot['activePartRecycle']);       // active_part_recycles
     unset($saveDataSnapshot['currentRequest']);         // active_requests
+
+    // completeが付いたテーブルに保存される情報
+    unset($saveDataSnapshot['completeQuest']);          // complete_expeditions
+    unset($saveDataSnapshot['completedQuest']);
+    unset($saveDataSnapshot['completePartCraft']);      // complete_part_crafts
+    unset($saveDataSnapshot['completedPartCraft']);
+    unset($saveDataSnapshot['completeRobotAssembly']);  // complete_robot_assemblies
+    unset($saveDataSnapshot['completedRobotAssembly']);
+    unset($saveDataSnapshot['completeRobotDisassembly']); // complete_robot_disassemblies
+    unset($saveDataSnapshot['completedRobotDisassembly']);
+    unset($saveDataSnapshot['completePartRecycle']);     // complete_part_recycles
+    unset($saveDataSnapshot['completedPartRecycle']);
+    unset($saveDataSnapshot['completeRequest']);        // complete_requests
+    unset($saveDataSnapshot['completedRequest']);
 
     // その他の個別テーブルに保存される情報も重複排除
     unset($saveDataSnapshot['robots']);                 // user_robots
@@ -259,8 +363,29 @@ try {
         }
     }
 
-    // 6. active_expeditions テーブルの同期
-    if (!empty($gameData['activeQuest']) && !empty($gameData['activeQuest']['locationId'])) {
+    // =========================================================================
+    // 6. 遠征（Expeditions）: 完了時は complete_expeditions に追加後に active_expeditions から削除
+    // =========================================================================
+    $compQ = $gameData['completeQuest'] ?? $gameData['completedQuest'] ?? null;
+    if (!empty($compQ) && !empty($compQ['locationId'])) {
+        // 1. complete_expeditions テーブルに完了レコードを追加
+        $stmtCompExp = $pdo->prepare("
+            INSERT INTO complete_expeditions (user_id, location_id, start_time, end_time, dispatched_robot_id, reward_data)
+            VALUES (:user_id, :location_id, :start_time, :end_time, :dispatched_robot_id, :reward_data)
+        ");
+        $stmtCompExp->execute([
+            ':user_id' => $actualUserId,
+            ':location_id' => $compQ['locationId'],
+            ':start_time' => (int)($compQ['startTime'] ?? 0),
+            ':end_time' => (int)($compQ['endTime'] ?? 0),
+            ':dispatched_robot_id' => $compQ['dispatchedRobotId'] ?? null,
+            ':reward_data' => json_encode($compQ['rewardData'] ?? [], JSON_UNESCAPED_UNICODE)
+        ]);
+        // 2. complete に追加完了後、対となる active_expeditions から確実に削除
+        $delExp = $pdo->prepare("DELETE FROM active_expeditions WHERE user_id = :user_id");
+        $delExp->execute([':user_id' => $actualUserId]);
+    } elseif (!empty($gameData['activeQuest']) && !empty($gameData['activeQuest']['locationId'])) {
+        // 進行中の場合は active_expeditions テーブルを同期
         $q = $gameData['activeQuest'];
         $stmtExp = $pdo->prepare("
             REPLACE INTO active_expeditions (user_id, location_id, start_time, end_time, dispatched_robot_id)
@@ -278,8 +403,30 @@ try {
         $delExp->execute([':user_id' => $actualUserId]);
     }
 
-    // 7. active_part_crafts テーブルの同期
-    if (!empty($gameData['activePartCraft']) && !empty($gameData['activePartCraft']['partType'])) {
+    // =========================================================================
+    // 7. パーツ製造（Part Crafts）: 完了時は complete_part_crafts に追加後に active_part_crafts から削除
+    // =========================================================================
+    $compC = $gameData['completePartCraft'] ?? $gameData['completedPartCraft'] ?? null;
+    if (!empty($compC) && !empty($compC['partType'])) {
+        // 1. complete_part_crafts テーブルに完了レコードを追加
+        $stmtCompCraft = $pdo->prepare("
+            INSERT INTO complete_part_crafts (user_id, part_type, main_material_id, sub_material_id, start_time, end_time, result_part_data)
+            VALUES (:user_id, :part_type, :main_id, :sub_id, :start_time, :end_time, :result_part_data)
+        ");
+        $stmtCompCraft->execute([
+            ':user_id' => $actualUserId,
+            ':part_type' => $compC['partType'],
+            ':main_id' => $compC['mainMaterialId'] ?? '',
+            ':sub_id' => $compC['subMaterialId'] ?? '',
+            ':start_time' => (int)($compC['startTime'] ?? 0),
+            ':end_time' => (int)($compC['endTime'] ?? 0),
+            ':result_part_data' => json_encode($compC['resultPart'] ?? [], JSON_UNESCAPED_UNICODE)
+        ]);
+        // 2. complete に追加完了後、対となる active_part_crafts から確実に削除
+        $delCraft = $pdo->prepare("DELETE FROM active_part_crafts WHERE user_id = :user_id");
+        $delCraft->execute([':user_id' => $actualUserId]);
+    } elseif (!empty($gameData['activePartCraft']) && !empty($gameData['activePartCraft']['partType'])) {
+        // 進行中の場合は active_part_crafts テーブルを同期
         $c = $gameData['activePartCraft'];
         $stmtCraft = $pdo->prepare("
             REPLACE INTO active_part_crafts (user_id, part_type, main_material_id, sub_material_id, start_time, end_time)
@@ -298,8 +445,27 @@ try {
         $delCraft->execute([':user_id' => $actualUserId]);
     }
 
-    // 8. active_robot_assemblies テーブルの同期
-    if (!empty($gameData['activeRobotAssembly']) && !empty($gameData['activeRobotAssembly']['startTime'])) {
+    // =========================================================================
+    // 8. ロボット組立（Robot Assemblies）: 完了時は complete_robot_assemblies に追加後に active_robot_assemblies から削除
+    // =========================================================================
+    $compA = $gameData['completeRobotAssembly'] ?? $gameData['completedRobotAssembly'] ?? null;
+    if (!empty($compA) && !empty($compA['startTime'])) {
+        // 1. complete_robot_assemblies テーブルに完了レコードを追加
+        $stmtCompAss = $pdo->prepare("
+            INSERT INTO complete_robot_assemblies (user_id, start_time, end_time, result_robot_data)
+            VALUES (:user_id, :start_time, :end_time, :result_robot_data)
+        ");
+        $stmtCompAss->execute([
+            ':user_id' => $actualUserId,
+            ':start_time' => (int)($compA['startTime'] ?? 0),
+            ':end_time' => (int)($compA['endTime'] ?? 0),
+            ':result_robot_data' => json_encode($compA['resultRobot'] ?? [], JSON_UNESCAPED_UNICODE)
+        ]);
+        // 2. complete に追加完了後、対となる active_robot_assemblies から確実に削除
+        $delAss = $pdo->prepare("DELETE FROM active_robot_assemblies WHERE user_id = :user_id");
+        $delAss->execute([':user_id' => $actualUserId]);
+    } elseif (!empty($gameData['activeRobotAssembly']) && !empty($gameData['activeRobotAssembly']['startTime'])) {
+        // 進行中の場合は active_robot_assemblies テーブルを同期
         $a = $gameData['activeRobotAssembly'];
         $stmtAss = $pdo->prepare("
             REPLACE INTO active_robot_assemblies (user_id, start_time, end_time, result_robot_data)
@@ -316,8 +482,30 @@ try {
         $delAss->execute([':user_id' => $actualUserId]);
     }
 
-    // 9. active_requests テーブルの同期
-    if (!empty($gameData['currentRequest']) && !empty($gameData['currentRequest']['id'])) {
+    // =========================================================================
+    // 9. 依頼納品（Requests）: 完了時は complete_requests に追加後に active_requests から削除
+    // =========================================================================
+    $compR = $gameData['completeRequest'] ?? $gameData['completedRequest'] ?? null;
+    if (!empty($compR) && !empty($compR['requestId'])) {
+        // 1. complete_requests テーブルに完了レコードを追加
+        $stmtCompReq = $pdo->prepare("
+            INSERT INTO complete_requests (user_id, request_id, rank, reward_g, deadline, delivered_robot_id, request_data)
+            VALUES (:user_id, :request_id, :rank, :reward_g, :deadline, :delivered_robot_id, :request_data)
+        ");
+        $stmtCompReq->execute([
+            ':user_id' => $actualUserId,
+            ':request_id' => $compR['requestId'],
+            ':rank' => $compR['rank'] ?? 'OldMan',
+            ':reward_g' => (int)($compR['rewardG'] ?? 0),
+            ':deadline' => (int)($compR['deadline'] ?? 0),
+            ':delivered_robot_id' => $compR['deliveredRobotId'] ?? null,
+            ':request_data' => json_encode($compR['requestData'] ?? [], JSON_UNESCAPED_UNICODE)
+        ]);
+        // 2. complete に追加完了後、対となる active_requests から確実に削除
+        $delReq = $pdo->prepare("DELETE FROM active_requests WHERE user_id = :user_id");
+        $delReq->execute([':user_id' => $actualUserId]);
+    } elseif (!empty($gameData['currentRequest']) && !empty($gameData['currentRequest']['id'])) {
+        // 進行中の場合は active_requests テーブルを同期
         $r = $gameData['currentRequest'];
         $stmtReq = $pdo->prepare("
             REPLACE INTO active_requests (user_id, request_id, rank, reward_g, deadline, request_data)
@@ -334,6 +522,118 @@ try {
     } else {
         $delReq = $pdo->prepare("DELETE FROM active_requests WHERE user_id = :user_id");
         $delReq->execute([':user_id' => $actualUserId]);
+    }
+
+    // =========================================================================
+    // 10. ロボット解体（Robot Disassemblies）: 完了時は complete_robot_disassemblies に追加後に active_robot_disassemblies から削除
+    // =========================================================================
+    $compD = $gameData['completeRobotDisassembly'] ?? $gameData['completedRobotDisassembly'] ?? null;
+    if (!empty($compD) && !empty($compD['startTime'])) {
+        // 1. complete_robot_disassemblies テーブルに完了レコードを追加
+        $stmtCompDis = $pdo->prepare("
+            INSERT INTO complete_robot_disassemblies (user_id, robot_id, start_time, end_time, result_parts_data)
+            VALUES (:user_id, :robot_id, :start_time, :end_time, :result_parts_data)
+        ");
+        $stmtCompDis->execute([
+            ':user_id' => $actualUserId,
+            ':robot_id' => $compD['robotClone']['id'] ?? '',
+            ':start_time' => (int)($compD['startTime'] ?? 0),
+            ':end_time' => (int)($compD['endTime'] ?? 0),
+            ':result_parts_data' => json_encode($compD['resultParts'] ?? [], JSON_UNESCAPED_UNICODE)
+        ]);
+        // 2. complete に追加完了後、対となる active_robot_disassemblies から確実に削除
+        $delDisass = $pdo->prepare("DELETE FROM active_robot_disassemblies WHERE user_id = :user_id");
+        $delDisass->execute([':user_id' => $actualUserId]);
+    } elseif (!empty($gameData['activeRobotDisassembly']) && !empty($gameData['activeRobotDisassembly']['startTime'])) {
+        // 進行中の場合は active_robot_disassemblies テーブルを同期
+        $ad = $gameData['activeRobotDisassembly'];
+        $stmtDisass = $pdo->prepare("
+            REPLACE INTO active_robot_disassemblies (user_id, robot_id, start_time, end_time, result_parts_data)
+            VALUES (:user_id, :robot_id, :start_time, :end_time, :result_parts_data)
+        ");
+        $stmtDisass->execute([
+            ':user_id' => $actualUserId,
+            ':robot_id' => $ad['robotClone']['id'] ?? '',
+            ':start_time' => (int)($ad['startTime'] ?? 0),
+            ':end_time' => (int)($ad['endTime'] ?? 0),
+            ':result_parts_data' => json_encode($ad['resultParts'] ?? [], JSON_UNESCAPED_UNICODE)
+        ]);
+    } else {
+        $delDisass = $pdo->prepare("DELETE FROM active_robot_disassemblies WHERE user_id = :user_id");
+        $delDisass->execute([':user_id' => $actualUserId]);
+    }
+
+    // =========================================================================
+    // 11. パーツリサイクル（Part Recycles）: 完了時は complete_part_recycles に追加後に active_part_recycles から削除
+    // =========================================================================
+    $compRec = $gameData['completePartRecycle'] ?? $gameData['completedPartRecycle'] ?? null;
+    if (!empty($compRec) && !empty($compRec['startTime'])) {
+        // 1. complete_part_recycles テーブルに完了レコードを追加
+        $stmtCompRec = $pdo->prepare("
+            INSERT INTO complete_part_recycles (user_id, part_id, start_time, end_time, result_materials_data)
+            VALUES (:user_id, :part_id, :start_time, :end_time, :result_materials_data)
+        ");
+        $stmtCompRec->execute([
+            ':user_id' => $actualUserId,
+            ':part_id' => $compRec['partClone']['id'] ?? '',
+            ':start_time' => (int)($compRec['startTime'] ?? 0),
+            ':end_time' => (int)($compRec['endTime'] ?? 0),
+            ':result_materials_data' => json_encode($compRec['resultMaterials'] ?? [], JSON_UNESCAPED_UNICODE)
+        ]);
+        // 2. complete に追加完了後、対となる active_part_recycles から確実に削除
+        $delRec = $pdo->prepare("DELETE FROM active_part_recycles WHERE user_id = :user_id");
+        $delRec->execute([':user_id' => $actualUserId]);
+    } elseif (!empty($gameData['activePartRecycle']) && !empty($gameData['activePartRecycle']['startTime'])) {
+        // 進行中の場合は active_part_recycles テーブルを同期
+        $ar = $gameData['activePartRecycle'];
+        $stmtRec = $pdo->prepare("
+            REPLACE INTO active_part_recycles (user_id, part_id, start_time, end_time, result_materials_data)
+            VALUES (:user_id, :part_id, :start_time, :end_time, :result_materials_data)
+        ");
+        $stmtRec->execute([
+            ':user_id' => $actualUserId,
+            ':part_id' => $ar['partClone']['id'] ?? '',
+            ':start_time' => (int)($ar['startTime'] ?? 0),
+            ':end_time' => (int)($ar['endTime'] ?? 0),
+            ':result_materials_data' => json_encode($ar['resultMaterials'] ?? [], JSON_UNESCAPED_UNICODE)
+        ]);
+    } else {
+        $delRec = $pdo->prepare("DELETE FROM active_part_recycles WHERE user_id = :user_id");
+        $delRec->execute([':user_id' => $actualUserId]);
+    }
+
+    // completeテーブル群の保存上限ローテーション（ユーザー毎に最大1000件保持、1000件を超過した古いレコードから自動削除）
+    $completeTables = [
+        'complete_expeditions',
+        'complete_part_crafts',
+        'complete_robot_assemblies',
+        'complete_requests',
+        'complete_robot_disassemblies',
+        'complete_part_recycles'
+    ];
+
+    foreach ($completeTables as $tbl) {
+        // user_idごとに降順で1000件目の境界IDを取得（1000件以内ならNULL/falseが返る）
+        $cutoffStmt = $pdo->prepare("
+            SELECT id FROM {$tbl} 
+            WHERE user_id = :user_id 
+            ORDER BY id DESC 
+            LIMIT 1 OFFSET 1000
+        ");
+        $cutoffStmt->execute([':user_id' => $actualUserId]);
+        $cutoffId = $cutoffStmt->fetchColumn();
+
+        if ($cutoffId !== false && $cutoffId !== null) {
+            // 境界ID以下の古いレコードを削除（失敗時は例外発生により単一トランザクション全体がロールバック）
+            $pruneStmt = $pdo->prepare("
+                DELETE FROM {$tbl} 
+                WHERE user_id = :user_id AND id <= :cutoff_id
+            ");
+            $pruneStmt->execute([
+                ':user_id' => $actualUserId,
+                ':cutoff_id' => $cutoffId
+            ]);
+        }
     }
 
     // 10. user_minigame_status テーブルの同期 (ミニゲーム毎の遊んだ数、勝利数、獲得エレメント数)
@@ -402,11 +702,16 @@ try {
         "userId" => $actualUserId
     ]);
 } catch (PDOException $e) {
+    $wasInTransaction = false;
     if ($pdo && $pdo->inTransaction()) {
+        $wasInTransaction = true;
         $pdo->rollBack();
     }
+    error_log("[save.php] Database save transaction failed: " . $e->getMessage());
     http_response_code(500);
     echo json_encode([
-        "error" => "Database save error: " . $e->getMessage()
-    ]);
+        "success" => false,
+        "rolledBack" => $wasInTransaction,
+        "error" => "データベース更新に失敗したため、すべてのテーブル変更をロールバックしました: " . $e->getMessage()
+    ], JSON_UNESCAPED_UNICODE);
 }
