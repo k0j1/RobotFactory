@@ -739,11 +739,11 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
               <Card className="bg-stone-50 border-2 border-amber-300 mb-4 p-4 shadow-sm relative overflow-hidden">
                 <div className="flex justify-between items-center mb-2 relative z-10">
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-stone-700"><Gi.GiRecycle className="inline text-emerald-500" />️ パーツ還元中...</span>
+                    <span className="font-bold text-stone-700"><Gi.GiRecycle className="inline text-emerald-500" />️ パーツ解体中...</span>
                     <span className="text-sm font-bold text-amber-700">{activeRecycle.partClone.name}</span>
                   </div>
                   {isRecycleDone ? (
-                    <Badge className="bg-emerald-500 text-white animate-bounce text-xs px-2.5 py-1 leading-none font-bold">還元完了！</Badge>
+                    <Badge className="bg-emerald-500 text-white animate-bounce text-xs px-2.5 py-1 leading-none font-bold">解体完了！</Badge>
                   ) : (
                     <Badge className="bg-blue-600 text-white font-mono text-xs px-2.5 py-1 leading-none font-bold">
                       あと {Math.ceil(Math.max(0, activeRecycle.endTime - now) / 1000)}秒
@@ -761,12 +761,12 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                     </div>
                     <div className="flex items-center justify-between gap-2 flex-wrap pt-1">
                       <p className="text-[11px] text-stone-500 font-mono">
-                        素材抽出中: メイン素材2個に還元しています...
+                        素材抽出中: メイン素材2個に解体しています...
                       </p>
                       <RewardAdShortenButton
                         engine={engine}
                         taskType="partRecycle"
-                        taskName="パーツ還元"
+                        taskName="パーツ解体"
                         size="sm"
                       />
                     </div>
@@ -835,11 +835,11 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                   {confirmPartId === p.id ? (
                     <>
                       <div className="text-[10px] sm:text-xs text-rose-600 font-bold bg-rose-50 p-1.5 sm:p-2 rounded border border-rose-200 leading-tight">
-                        ※還元するとメイン素材2個に戻ります（所要時間：10秒）
+                        ※解体するとメイン素材2個に戻ります（所要時間：10秒）
                       </div>
                       <div className="flex justify-end gap-2">
                         <Button size="sm" variant="secondary" onClick={() => setConfirmPartId(null)}>やめる</Button>
-                        <Button size="sm" variant="danger" onClick={() => handleRecyclePart(p.id)}>還元する</Button>
+                        <Button size="sm" variant="danger" onClick={() => handleRecyclePart(p.id)}>解体する</Button>
                       </div>
                     </>
                   ) : (
@@ -853,7 +853,7 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                         <span>基準値比較</span>
                       </button>
                       <Button size="sm" variant="danger" disabled={!!activeRecycle} onClick={() => setConfirmPartId(p.id)}>
-                        {activeRecycle ? '還元中' : '素材に戻す'}
+                        {activeRecycle ? '解体中' : '素材に戻す'}
                       </Button>
                     </div>
                   )}

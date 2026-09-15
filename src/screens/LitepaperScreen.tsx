@@ -25,7 +25,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
         title="ポンコツロボット工房 公式仕様書"
         badge={
           <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300 font-mono font-bold px-1.5 py-0.2 rounded">
-            v1.0.366
+            v1.0.371
           </span>
         }
         rightElement={
@@ -223,11 +223,11 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                   <ul className="list-disc list-inside space-y-1 text-stone-600">
                     <li><strong>修理キット:</strong> 破損した機体を即座に全回復。ミニゲーム勝利等で獲得。</li>
                     <li><strong>機体命名＆愛着度:</strong> 製造したロボットには自由に名前を付けられます。</li>
-                    <li><strong>分解リサイクル:</strong> 不要になった機体やパーツを素材へと還元。</li>
-                    <li><strong>新人技師初回ボーナス:</strong> 初期ユーザー向けに、ロボット1体を即座に組み立てられる☆1素材セット（全24個・すべて☆1ランクのみ）をプレゼント。ヘッド・ボディ・アーム・レッグの4部位（各5個＝計20個必要）を余すことなく組み立て可能です。データベースのuser_workshop_statusテーブルのreceived_initial_bonusフラグと完全連動し、未受取（0）の場合は確実に受取カードが表示され受け取ることができます。</li>
+                    <li><strong>分解リサイクル:</strong> 不要になった機体やパーツを素材へと解体。</li>
+                    <li><strong>新人技師初回ボーナス:</strong> 初期ユーザー向けに、ロボット1体を即座に組み立てられる☆1素材セット（全24個・すべて☆1ランクのみ）をプレゼント。ヘッド・ボディ・アーム・レッグの4部位（各5個＝計20個必要）を余すことなく組み立て可能です。初回登録時に確実に受取カードが表示され受け取ることができます。</li>
                     <li><strong>図鑑登録・パーツ基準値一覧:</strong> 完成した新機体は自動的に図鑑へ記録されます。また、パーツ図鑑タブではすべてのパーツ形状と、耐久力(HP)・攻撃力(POW)・探索力(DEX)などの「基準値ステータス」を便利なテーブル（表）形式で一覧表示し、比較することができます。</li>
                     <li><strong>Google AdSense リワード広告時短:</strong> パーツ製造およびロボット組立の進行中に動画広告を視聴することで、完了までの所要時間を<strong>1回につき30分短縮</strong>できます。残り時間が30分以内の場合は即座に完成します。</li>
-                    <li><strong>Googleアカウント連携 &amp; クラウドDB専用同期（ローカルストレージ完全遮断）:</strong> Googleアカウントでログインした場合、端末のローカルストレージのデータは一切使用・保存されず、データベース（save_dataおよび各個別テーブル）専用のデータのみが使用されます。usersテーブルに登録されたuser_idに紐づけて、工房ステータス（user_workshop_status）、所持機体（user_robots）、所持パーツ（user_parts）、進行中の遠征（active_expeditions）、パーツ製造（active_part_crafts）、ロボット組立（active_robot_assemblies）、受注依頼（active_requests）、ミニゲーム状況（user_minigame_status）の各テーブルへ自動同期されます。ゲストプレイ時は端末ローカルストレージにて独立管理されます。</li>
+                    <li><strong>Googleアカウント連携 &amp; クラウドデータ同期:</strong> Googleアカウントでログインした場合、オンライン上にゲームデータ（工房ステータス、所持機体、パーツ、遠征、ミニゲーム成績等）が自動的に保存・同期されます。別の端末からでも同じアカウントで続きからプレイが可能です。ゲストプレイ時は端末内に独立してデータが保護されます。</li>
                     <li><strong>GSAPモーションスタジオ:</strong> 漆黒のグランドピアノによる華麗なピアノ協奏曲演奏をはじめ、各種戦闘・アクロバット・仕草など、多彩なモーションをロボットで鑑賞・動作検証できます。</li>
                   </ul>
                 </div>
@@ -346,7 +346,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                 <p className="text-[10px] text-stone-500 font-sans">
                   ※ 各カテゴリーカードで次ランク昇格までの残り必要勝利数がリアルタイムに表示されます。
                   <br />
-                  ※ <strong>挑戦回数・クリア制限ルール:</strong> すべてのバトル（戦闘演習・オセロ・チェス・弾幕よけ・ピアノ演奏）は、<strong>未勝利であれば1日何回でも再挑戦可能</strong>です。勝利（クリア）したバトル・難易度は「本日クリア済」と表示され、翌朝9:00のリセットまで出撃ボタンが無効化されます。防衛戦も同様に当日クリア後は翌朝9:00までボタンが無効化されます。
+                  ※ <strong>挑戦回数・クリア制限ルール:</strong> すべてのバトル（戦闘演習・オセロ・チェス・弾幕よけ・ピアノ演奏・拠点防衛戦）は、<strong>未勝利であれば1日何回でも再挑戦可能</strong>です。勝利（クリア）したバトル・項目・レベルはロボットごとに「本日クリア済」として自動記録され、翌朝9:00のリセットまで出撃ボタンが無効化されます。また、各ミニゲームの挑戦数・勝利数・獲得エレメント数もリアルタイムで自動記録・同期されます。
                 </p>
               </div>
 
@@ -416,9 +416,9 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
             <div className="space-y-3 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                 <div className="bg-white p-2.5 rounded-lg border border-stone-200">
-                  <strong className="text-stone-900 block font-bold mb-1">☁️ クラウド同期とデータ整合性</strong>
+                  <strong className="text-stone-900 block font-bold mb-1">☁️ クラウド同期とデータ保護</strong>
                   <p className="text-stone-600">
-                    Googleログイン時はサーバーの各正規個別テーブル（user_robots, user_parts, user_material等）とリアルタイムに自動同期します。万が一 save_data スナップショットに所有していないロボット（依頼納品済み・解体済み機体）や古いパーツデータが含まれていた場合でも、システム側で完全に破棄され、正規テーブルのデータのみが正として扱われます（save_data 側にも一切保存されません）。
+                    Googleログイン時はサーバーとリアルタイムに自動同期し、所持しているロボットやパーツ、素材、遠征の進捗状況を安全に保護・保持します。
                   </p>
                 </div>
                 <div className="bg-white p-2.5 rounded-lg border border-stone-200">

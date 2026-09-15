@@ -243,16 +243,34 @@ try {
         }
     }
 
-    // 7. user_minigame_status テーブルからミニゲーム/バトル演習エレメント数を取得
+    // 7. user_minigame_status テーブルからミニゲーム/バトル演習成績・エレメント数を取得
     $miniStmt = $pdo->prepare("
-        SELECT elements_count 
+        SELECT minigame_id, play_count, wins, elements_count 
         FROM user_minigame_status 
-        WHERE user_id IN ($inPlaceholders) AND minigame_id = 'combat_training' 
-        LIMIT 1
+        WHERE user_id IN ($inPlaceholders)
     ");
     $miniStmt->execute(array_values($candidateUserIds));
-    $miniRow = $miniStmt->fetch();
-    $battleElements = $miniRow ? (int)$miniRow['elements_count'] : 0;
+    $dbMinigameRecords = [];
+    $battleElements = 0;
+
+    while ($mRow = $miniStmt->fetch()) {
+        $mId = $mRow['minigame_id'];
+        $plays = (int)$mRow['play_count'];
+        $wins = (int)$mRow['wins'];
+        $elems = (int)$mRow['elements_count'];
+
+        $dbMinigameRecords[$mId] = [
+            'plays' => $plays,
+            'wins' => $wins,
+            'losses' => 0,
+            'draws' => 0,
+            'elements' => $elems
+        ];
+
+        if ($elems > $battleElements) {
+            $battleElements = $elems;
+        }
+    }
 
     // 8. user_parts テーブルから所持パーツ一覧を取得
     $partsStmt = $pdo->prepare("
@@ -306,6 +324,8 @@ try {
         unset($gameData['fame']);
         unset($gameData['storageSize']);
         unset($gameData['deliveredRobotsCount']);
+        unset($gameData['battleElements']);
+        unset($gameData['minigameRecords']);
 
         // user_robots 内のパーツが user_parts に無い場合は復元する
         $existingPartIds = array_column($dbParts, 'id');
@@ -332,6 +352,7 @@ try {
         $gameData['activeRobotAssembly'] = $activeAssembly;
         $gameData['currentRequest'] = $currentRequest;
         $gameData['battleElements'] = $battleElements;
+        $gameData['minigameRecords'] = $dbMinigameRecords;
 
         echo json_encode([
             "success" => true, 
@@ -354,7 +375,8 @@ try {
             "activePartCraft" => $activePartCraft,
             "activeRobotAssembly" => $activeAssembly,
             "currentRequest" => $currentRequest,
-            "battleElements" => $battleElements
+            "battleElements" => $battleElements,
+            "minigameRecords" => $dbMinigameRecords
         ];
         echo json_encode([
             "success" => true, 

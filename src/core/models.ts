@@ -190,7 +190,7 @@ export interface GameState {
   combatEquipments?: { beamSaber?: boolean; beamShield?: boolean }; // 交換済み戦闘専用装備
   combatEquipmentRanks?: { beamSaber?: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'; beamShield?: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary' }; // 各戦闘専用装備のランク (Common -> Uncommon -> Rare -> Epic -> Legendary)
   activeCombatEquipments?: { beamSaber?: boolean; beamShield?: boolean }; // 戦闘出撃時に有効化する装備
-  minigameRecords?: Record<string, { plays: number; wins: number; losses: number; draws: number }>;
+  minigameRecords?: Record<string, { plays: number; wins: number; losses: number; draws: number; elements?: number }>;
   dailyBattleLimits?: Record<string, string[]>; // { "YYYY-MM-DD": ["robotId_categoryId_levelId", ...] }
 }
 

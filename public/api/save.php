@@ -138,6 +138,7 @@ try {
     unset($saveDataSnapshot['storageSize']);            // user_workshop_status
     unset($saveDataSnapshot['deliveredRobotsCount']);   // user_workshop_status
     unset($saveDataSnapshot['battleElements']);         // user_minigame_status
+    unset($saveDataSnapshot['minigameRecords']);        // user_minigame_status
 
     $jsonGameData = json_encode($saveDataSnapshot, JSON_UNESCAPED_UNICODE);
     $stmtSave = $pdo->prepare("
@@ -335,18 +336,40 @@ try {
         $delReq->execute([':user_id' => $actualUserId]);
     }
 
-    // 10. user_minigame_status テーブルの同期 (バトル演習エレメント等)
+    // 10. user_minigame_status テーブルの同期 (ミニゲーム毎の遊んだ数、勝利数、獲得エレメント数)
     $elements = isset($gameData['battleElements']) ? (int)$gameData['battleElements'] : 0;
+    $minigameRecords = (isset($gameData['minigameRecords']) && is_array($gameData['minigameRecords'])) ? $gameData['minigameRecords'] : [];
+
+    // もし minigameRecords に combat_training または combat が無ければ初期化
+    if (!isset($minigameRecords['combat_training']) && !isset($minigameRecords['combat'])) {
+        $minigameRecords['combat_training'] = ['plays' => 0, 'wins' => 0, 'elements' => $elements];
+    }
+
     $stmtMini = $pdo->prepare("
-        INSERT INTO user_minigame_status (user_id, minigame_id, elements_count)
-        VALUES (:user_id, 'combat_training', :elements)
-        ON DUPLICATE KEY UPDATE elements_count = :elements_up
+        INSERT INTO user_minigame_status (user_id, minigame_id, play_count, wins, elements_count)
+        VALUES (:user_id, :minigame_id, :play_count, :wins, :elements_count)
+        ON DUPLICATE KEY UPDATE 
+            play_count = :play_count_up,
+            wins = :wins_up,
+            elements_count = :elements_count_up
     ");
-    $stmtMini->execute([
-        ':user_id' => $actualUserId,
-        ':elements' => $elements,
-        ':elements_up' => $elements
-    ]);
+
+    foreach ($minigameRecords as $mId => $mRec) {
+        $plays = isset($mRec['plays']) ? (int)$mRec['plays'] : 0;
+        $wins = isset($mRec['wins']) ? (int)$mRec['wins'] : 0;
+        $elem = isset($mRec['elements']) ? (int)$mRec['elements'] : (($mId === 'combat_training' || $mId === 'combat') ? $elements : 0);
+
+        $stmtMini->execute([
+            ':user_id' => $actualUserId,
+            ':minigame_id' => (string)$mId,
+            ':play_count' => $plays,
+            ':wins' => $wins,
+            ':elements_count' => $elem,
+            ':play_count_up' => $plays,
+            ':wins_up' => $wins,
+            ':elements_count_up' => $elem
+        ]);
+    }
 
     // 11. user_material テーブルの同期（所持素材数）
     $delMatStmt = $pdo->prepare("DELETE FROM user_material WHERE user_id = :user_id");

@@ -699,6 +699,12 @@ export class GameEngine {
     if (!this.state.dailyBattleLimits) {
       this.state.dailyBattleLimits = {};
     }
+    const keys = Object.keys(this.state.dailyBattleLimits);
+    for (const k of keys) {
+      if (k !== today) {
+        delete this.state.dailyBattleLimits[k];
+      }
+    }
     const todayRecords = this.state.dailyBattleLimits[today] || [];
     const key = `${robotId}_${categoryId}_${levelId}`;
     return todayRecords.includes(key);
@@ -709,9 +715,14 @@ export class GameEngine {
     if (!this.state.dailyBattleLimits) {
       this.state.dailyBattleLimits = {};
     }
+    const keys = Object.keys(this.state.dailyBattleLimits);
+    for (const k of keys) {
+      if (k !== today) {
+        delete this.state.dailyBattleLimits[k];
+      }
+    }
     if (!this.state.dailyBattleLimits[today]) {
-      // 過去の記録をクリーンアップ
-      this.state.dailyBattleLimits = { [today]: [] };
+      this.state.dailyBattleLimits[today] = [];
     }
     const key = `${robotId}_${categoryId}_${levelId}`;
     if (!this.state.dailyBattleLimits[today].includes(key)) {
@@ -720,18 +731,22 @@ export class GameEngine {
     }
   }
 
-  public recordMinigameResult(gameId: string, result: 'win' | 'lose' | 'draw') {
+  public recordMinigameResult(gameId: string, result: 'win' | 'lose' | 'draw', elementsObtained: number = 0) {
     if (!this.state.minigameRecords) {
       this.state.minigameRecords = {};
     }
     if (!this.state.minigameRecords[gameId]) {
-      this.state.minigameRecords[gameId] = { plays: 0, wins: 0, losses: 0, draws: 0 };
+      this.state.minigameRecords[gameId] = { plays: 0, wins: 0, losses: 0, draws: 0, elements: 0 };
     }
     const record = this.state.minigameRecords[gameId];
     record.plays += 1;
     if (result === 'win') record.wins += 1;
     else if (result === 'lose') record.losses += 1;
     else record.draws += 1;
+
+    if (elementsObtained > 0) {
+      record.elements = (record.elements || 0) + elementsObtained;
+    }
     this.saveState();
   }
   public recordBattleResult(robotId: string, result: 'win' | 'lose' | 'draw') {
@@ -1218,7 +1233,7 @@ export class GameEngine {
   }
 
   /**
-   * Google AdSense オファーウォール/リワード広告視聴等による進行中タスク（遠征・パーツ製造・ロボット組立・解体・還元）の完了時間30分短縮
+   * Google AdSense オファーウォール/リワード広告視聴等による進行中タスク（遠征・パーツ製造・ロボット組立・パーツ解体）の完了時間30分短縮
    * @param taskType 'quest' | 'partCraft' | 'robotAssembly' | 'robotDisassembly' | 'partRecycle'
    * @param reduceMinutes 短縮する分数（デフォルト: 30分）
    * @returns 実際に短縮されたミリ秒数
@@ -1755,7 +1770,7 @@ export class GameEngine {
   }
 
   public recyclePart(partId: string) {
-    if (this.state.activePartRecycle) throw new Error("既に還元中のパーツがあります");
+    if (this.state.activePartRecycle) throw new Error("既に解体中のパーツがあります");
     const idx = this.state.parts.findIndex(p => p.id === partId);
     if (idx === -1) return;
     const part = this.state.parts[idx];
@@ -1780,8 +1795,8 @@ export class GameEngine {
   }
 
   public claimPartRecycle() {
-    if (!this.state.activePartRecycle) throw new Error("還元中のパーツがありません");
-    if (this.state.activePartRecycle.endTime > Date.now()) throw new Error("還元がまだ完了していません");
+    if (!this.state.activePartRecycle) throw new Error("解体中のパーツがありません");
+    if (this.state.activePartRecycle.endTime > Date.now()) throw new Error("解体がまだ完了していません");
 
     for (const res of this.state.activePartRecycle.resultMaterials) {
       this.state.materials[res.materialId] = (this.state.materials[res.materialId] || 0) + res.count;

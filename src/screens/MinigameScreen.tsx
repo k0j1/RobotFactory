@@ -82,6 +82,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
   const [pianoSongId, setPianoSongId] = useState<string>(PIANO_SONGS[0]?.id || 'fur_elise');
   const [pianoBestScores, setPianoBestScores] = useState<Record<string, PianoBestScore>>(() => getPianoBestScores());
   const [isBattleActive, setIsBattleActive] = useState(false);
+  const [acquiredChestInfo, setAcquiredChestInfo] = useState<{ tier: 'bronze' | 'silver' | 'gold' | 'mythic'; title: string; stageName: string } | null>(null);
   const [battleResult, setBattleResult] = useState<'win' | 'lose' | 'draw' | null>(null);
   const [currentChestDrop, setCurrentChestDrop] = useState<BattleChestDropResult | null>(null);
   const [isChestModalOpen, setIsChestModalOpen] = useState<boolean>(false);
@@ -193,12 +194,12 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
     } else if (activeRobot) {
       (engine as any).recordBattleResult(activeRobot.id, result);
     }
-    (engine as any).recordMinigameResult(selectedGame, result);
     setBattleResult(result);
     // ピアノ演奏のベストスコアを再読み込みして最新化
     if (selectedGame === 'piano') {
       setPianoBestScores(getPianoBestScores());
     }
+    let obtainedElements = 0;
     if (result === 'win') {
       // 勝利時：本日のクリア制限を記録
       if (activeRobot) {
@@ -211,33 +212,38 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
         } else if (selectedGame === 'piano') {
           (engine as any).recordDailyBattleLimit(activeRobot.id, selectedGame, activePianoSong.id);
         }
+      } else if (selectedGame === 'defense') {
+        for (const robotId of selectedDefenseRobotIds) {
+          (engine as any).recordDailyBattleLimit(robotId, 'defense', activeDefenseStage.id);
+        }
       }
 
-      if ((selectedGame === 'combat' || selectedGame === 'othello' || selectedGame === 'chess') && activeOpponent) {
-        // バトル演習 (Combat), オセロ, チェス: レベル別宝箱報酬
-        const chestDrop = BattleChestRewardService.rollCombatChest(
-          activeOpponent.level,
-          activeOpponent.name,
-          activeOpponent.rewardFame
-        );
-        setCurrentChestDrop(chestDrop);
+      // 宝箱獲得情報の決定＆直接名声報酬等の適用
+      let chestTier: 'bronze' | 'silver' | 'gold' | 'mythic' = 'bronze';
+      let chestTitle = '古びた鉄の宝箱';
+      let stageName = '演習';
 
-        (engine as any).addChest(chestDrop.chestTier, 1);
-        if (chestDrop.fame > 0) {
-          (engine as any).addFame(chestDrop.fame, `${selectedGame === 'othello' ? 'オセロ' : selectedGame === 'chess' ? 'チェス' : '演習'}勝利: ${activeOpponent.name}`);
+      if ((selectedGame === 'combat' || selectedGame === 'othello' || selectedGame === 'chess') && activeOpponent) {
+        stageName = `${activeOpponent.name} 戦`;
+        const lvl = activeOpponent.level;
+        if (lvl <= 2) { chestTier = 'bronze'; chestTitle = '古びた鉄の宝箱'; }
+        else if (lvl <= 4) { chestTier = 'silver'; chestTitle = '堅牢な銀の宝箱'; }
+        else if (lvl <= 8) { chestTier = 'gold'; chestTitle = '燦然たる黄金の宝箱'; }
+        else { chestTier = 'mythic'; chestTitle = '神話のプリズム宝箱'; }
+
+        if (activeOpponent.rewardFame > 0) {
+          (engine as any).addFame(activeOpponent.rewardFame, `${selectedGame === 'othello' ? 'オセロ' : selectedGame === 'chess' ? 'チェス' : '演習'}勝利: ${activeOpponent.name}`);
         }
       } else if (selectedGame === 'defense') {
-        // 拠点防衛戦 (Defense): レベル別宝箱報酬
-        const chestDrop = BattleChestRewardService.rollDefenseChest(
-          activeDefenseStage.level,
-          activeDefenseStage.name
-        );
-        setCurrentChestDrop(chestDrop);
+        stageName = activeDefenseStage.name;
+        const lvl = activeDefenseStage.level;
+        if (lvl <= 2) { chestTier = 'bronze'; chestTitle = '古びた鉄の宝箱'; }
+        else if (lvl <= 4) { chestTier = 'silver'; chestTitle = '堅牢な銀の宝箱'; }
+        else if (lvl <= 8) { chestTier = 'gold'; chestTitle = '燦然たる黄金の宝箱'; }
+        else { chestTier = 'mythic'; chestTitle = '神話のプリズム宝箱'; }
 
-        (engine as any).addChest(chestDrop.chestTier, 1);
-        if (chestDrop.fame > 0) {
-          (engine as any).addFame(chestDrop.fame, `拠点防衛成功: ${activeDefenseStage.name}`);
-        }
+        const fame = 10 * lvl;
+        (engine as any).addFame(fame, `拠点防衛成功: ${activeDefenseStage.name}`);
 
         const selectedDefenseRobots = selectedDefenseRobotIds.map(id => state.robots.find(r => r.id === id)!).filter(Boolean);
         const regenHours = activeDefenseStage.rewardRegenHours || 12;
@@ -247,61 +253,46 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
         // 当日の防衛戦成功を記録（朝9:00まで再挑戦不可）
         (engine as any).recordDefenseVictory();
       } else if (selectedGame === 'danmaku') {
-        // 弾幕よけ: 名声獲得なし、専用宝箱ドロップ＆開封
-        const chestDrop = BattleChestRewardService.rollDanmakuChest(
-          activeDanmakuDiff.id,
-          activeDanmakuDiff.name
-        );
-        setCurrentChestDrop(chestDrop);
-        if (chestDrop.repairKits > 0) (engine as any).addRepairKits(chestDrop.repairKits);
-        if (chestDrop.gold > 0) (engine as any).addGold(chestDrop.gold);
-        if (chestDrop.elements > 0) (engine as any).addBattleElements(chestDrop.elements);
-        for (const mat of chestDrop.materials) {
-          (engine as any).addMaterial(mat.material.id, mat.count);
-        }
+        stageName = `弾幕サバイバル (${activeDanmakuDiff.name})`;
+        const diffId = activeDanmakuDiff.id;
+        if (diffId === 'easy') { chestTier = 'bronze'; chestTitle = '古びた鉄の宝箱'; }
+        else if (diffId === 'normal') { chestTier = 'silver'; chestTitle = '堅牢な銀の宝箱'; }
+        else if (diffId === 'hard') { chestTier = 'gold'; chestTitle = '燦然たる黄金の宝箱'; }
+        else { chestTier = 'mythic'; chestTitle = '神話のプリズム宝箱'; }
       } else if (selectedGame === 'piano') {
-        const kits = Math.max(1, Math.ceil(activePianoSong.level / 2));
-        const chestDrop = BattleChestRewardService.rollGenericChest(
-          'piano',
-          activePianoSong.level,
-          `ピアノ演奏 (${activePianoSong.title})`,
-          kits,
-          activePianoSong.rewardFame
-        );
-        setCurrentChestDrop(chestDrop);
-        if (chestDrop.repairKits > 0) (engine as any).addRepairKits(chestDrop.repairKits);
-        if (chestDrop.fame > 0) {
-          (engine as any).addFame(chestDrop.fame, `ピアノ演奏クリア: ${activePianoSong.title}`);
+        stageName = `ピアノ演奏 (${activePianoSong.title})`;
+        const lvl = activePianoSong.level;
+        if (lvl <= 2) { chestTier = 'bronze'; chestTitle = '古びた鉄の宝箱'; }
+        else if (lvl <= 4) { chestTier = 'silver'; chestTitle = '堅牢な銀の宝箱'; }
+        else if (lvl <= 8) { chestTier = 'gold'; chestTitle = '燦然たる黄金の宝箱'; }
+        else { chestTier = 'mythic'; chestTitle = '神話のプリズム宝箱'; }
+
+        if (activePianoSong.rewardFame > 0) {
+          (engine as any).addFame(activePianoSong.rewardFame, `ピアノ演奏クリア: ${activePianoSong.title}`);
         }
       } else if (requiresOpponent && activeOpponent) {
-        // 他の対戦ゲーム（オセロ・チェス）
-        const chestDrop = BattleChestRewardService.rollGenericChest(
-          'other',
-          activeOpponent.level,
-          activeOpponent.name,
-          activeOpponent.rewardKits,
-          activeOpponent.rewardFame
-        );
-        setCurrentChestDrop(chestDrop);
-        if (chestDrop.repairKits > 0) (engine as any).addRepairKits(chestDrop.repairKits);
-        if (chestDrop.fame > 0) {
-          (engine as any).addFame(chestDrop.fame, `演習勝利: ${activeOpponent.name}`);
+        stageName = activeOpponent.name;
+        const lvl = activeOpponent.level;
+        if (lvl <= 2) { chestTier = 'bronze'; chestTitle = '古びた鉄の宝箱'; }
+        else if (lvl <= 4) { chestTier = 'silver'; chestTitle = '堅牢な銀の宝箱'; }
+        else if (lvl <= 8) { chestTier = 'gold'; chestTitle = '燦然たる黄金の宝箱'; }
+        else { chestTier = 'mythic'; chestTitle = '神話のプリズム宝箱'; }
+
+        if (activeOpponent.rewardFame > 0) {
+          (engine as any).addFame(activeOpponent.rewardFame, `演習勝利: ${activeOpponent.name}`);
         }
-      } else if (!requiresOpponent) {
-        // Flat reward for solo games
-        const chestDrop = BattleChestRewardService.rollGenericChest(
-          'other',
-          1,
-          selectedGameDef?.name || '演習',
-          1,
-          0
-        );
-        setCurrentChestDrop(chestDrop);
-        (engine as any).addRepairKits(1);
+      } else {
+        stageName = selectedGameDef?.name || '演習';
+        chestTier = 'bronze';
+        chestTitle = '古びた鉄の宝箱';
       }
-      // 勝利時は宝箱開封モーダルを自動ポップアップ
-      setIsChestModalOpen(true);
+
+      // 未開封の宝箱として所持アイテムに追加
+      (engine as any).addChest(chestTier, 1);
+      setAcquiredChestInfo({ tier: chestTier, title: chestTitle, stageName });
     }
+
+    (engine as any).recordMinigameResult(selectedGame, result, obtainedElements);
   };
 
   const handleStartBattle = () => {
@@ -1443,46 +1434,19 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                 {battleResult === 'win' && (
                   <div className="w-full max-w-lg mx-auto space-y-3">
                     {/* 宝箱獲得サマリーカード */}
-                    {currentChestDrop ? (
-                      <div className="bg-amber-50/90 border-2 border-amber-400 p-4 rounded-2xl shadow-sm text-center space-y-2">
+                    {acquiredChestInfo ? (
+                      <div className="bg-amber-50/90 border-2 border-amber-400 p-4 rounded-2xl shadow-xs text-center space-y-2">
                         <div className="flex items-center justify-center gap-2">
                           <Gi.GiLockedChest className="text-2xl text-amber-600 animate-bounce" />
                           <span className="font-mono font-black text-amber-950 text-base">
-                            【{currentChestDrop.chestTier.toUpperCase()} CHEST】 獲得！
+                            【{acquiredChestInfo.title}】 1個 獲得！
                           </span>
                         </div>
-                        <p className="text-xs text-stone-600">
-                          {currentChestDrop.stageName} の勝利報酬宝箱を獲得しました。
+                        <p className="text-xs text-stone-700 leading-relaxed">
+                          <strong>{acquiredChestInfo.stageName}</strong> の勝利報酬として「<strong>{acquiredChestInfo.title}</strong>」を獲得し、インベントリに格納しました。
                         </p>
-
-                        {/* 獲得アイテム一覧のミニバッジ */}
-                        <div className="flex flex-wrap items-center justify-center gap-1.5 pt-1">
-                          {currentChestDrop.items.map((item, idx) => (
-                            <span 
-                              key={idx}
-                              className="text-[11px] font-bold px-2 py-0.5 rounded-lg bg-white border border-stone-300 text-stone-800 shadow-2xs flex items-center gap-1 font-mono"
-                            >
-                              {item.type === 'repairKit' && <Gi.GiSpanner className="text-amber-600" />}
-                              {item.type === 'gold' && <Gi.GiGoldBar className="text-yellow-600" />}
-                              {item.type === 'element' && <Gi.GiCrystalBars className="text-blue-500" />}
-                              {item.type === 'fame' && <Gi.GiTrophyCup className="text-amber-500" />}
-                              <span>{item.name}</span>
-                              <span className="text-amber-700 font-black">+{item.count}</span>
-                            </span>
-                          ))}
-                        </div>
-
-                        {/* 宝箱モーダル再表示ボタン */}
-                        <div className="pt-2">
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => setIsChestModalOpen(true)}
-                            className="text-xs font-bold border-amber-300 text-amber-900 bg-amber-100/80 hover:bg-amber-200 shadow-2xs"
-                          >
-                            <Gi.GiChest className="inline text-amber-700 mr-1 text-sm" />
-                            宝箱の開封演出をもう一度見る
-                          </Button>
+                        <div className="pt-1 text-[11px] font-bold text-amber-900 bg-amber-100/80 py-1.5 px-3 rounded-lg border border-amber-300 inline-block">
+                          📦 獲得した宝箱は工房の【倉庫】＞【宝箱】タブからいつでも開封できます
                         </div>
                       </div>
                     ) : null}
@@ -1500,6 +1464,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                         onClick={() => { 
                           setIsBattleActive(false); 
                           setBattleResult(null); 
+                          setAcquiredChestInfo(null);
                           setCurrentChestDrop(null); 
                           setIsChestModalOpen(false);
                         }}
