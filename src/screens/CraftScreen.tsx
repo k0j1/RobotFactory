@@ -326,13 +326,9 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
           onClick={() => setTab('robot')}
         >
           <span className="flex items-center gap-1"><Gi.GiSpanner className="text-amber-700" /> ロボット組立</span>
-          {isRobotReady ? (
+          {isRobotReady && (
             <Badge className="bg-amber-600 text-white text-[10px] sm:text-xs animate-bounce px-1.5 py-0.5 leading-none">受取可！</Badge>
-          ) : isRobotAssembling ? (
-            <Badge className="bg-blue-600 text-white text-[10px] sm:text-[11px] font-mono animate-pulse px-1.5 py-0.5 leading-none">
-              あと{formatDurationLabel(robotRemainingMs)}
-            </Badge>
-          ) : null}
+          )}
         </button>
       </div>
 
@@ -790,7 +786,7 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
 
                     <div className="mt-3 flex items-center justify-center gap-2 flex-wrap">
                       <div className="font-bold text-xs tracking-wider text-amber-900 animate-pulse font-mono bg-amber-100 px-3 py-1 rounded-full border border-amber-300 relative z-20">
-                        <Gi.GiSpanner className="inline mr-1" /> 接合・動作テスト中... {formatRemainingSecondsText(robotRemainingMs)}
+                        <Gi.GiSpanner className="inline mr-1" /> 接合・動作テスト中...
                       </div>
                       <ActiveUserCountBadge type="assembly" count={activeAssemblyCount} />
                     </div>
