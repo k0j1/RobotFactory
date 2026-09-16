@@ -426,6 +426,13 @@ try {
         $stmtInsert->execute($p);
     }
     try {
+        $pdo->exec("UPDATE user_robots SET head_part_id = NULL WHERE head_part_id IS NOT NULL AND head_part_id NOT IN (SELECT id FROM user_parts)");
+        $pdo->exec("UPDATE user_robots SET body_part_id = NULL WHERE body_part_id IS NOT NULL AND body_part_id NOT IN (SELECT id FROM user_parts)");
+        $pdo->exec("UPDATE user_robots SET arms_part_id = NULL WHERE arms_part_id IS NOT NULL AND arms_part_id NOT IN (SELECT id FROM user_parts)");
+        $pdo->exec("UPDATE user_robots SET legs_part_id = NULL WHERE legs_part_id IS NOT NULL AND legs_part_id NOT IN (SELECT id FROM user_parts)");
+    } catch (PDOException $e) {}
+
+    try {
         $pdo->exec("ALTER TABLE user_robots ADD CONSTRAINT fk_head_part FOREIGN KEY (head_part_id) REFERENCES user_parts(id) ON DELETE SET NULL");
         $pdo->exec("ALTER TABLE user_robots ADD CONSTRAINT fk_body_part FOREIGN KEY (body_part_id) REFERENCES user_parts(id) ON DELETE SET NULL");
         $pdo->exec("ALTER TABLE user_robots ADD CONSTRAINT fk_arms_part FOREIGN KEY (arms_part_id) REFERENCES user_parts(id) ON DELETE SET NULL");

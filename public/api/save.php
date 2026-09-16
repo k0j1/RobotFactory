@@ -82,11 +82,7 @@ try {
             total_dexterity INT DEFAULT 0,
             total_int INT DEFAULT 0,
             robot_data JSON,
-            completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            CONSTRAINT fk_comp_head FOREIGN KEY (head_part_id) REFERENCES complete_parts(id) ON DELETE SET NULL,
-            CONSTRAINT fk_comp_body FOREIGN KEY (body_part_id) REFERENCES complete_parts(id) ON DELETE SET NULL,
-            CONSTRAINT fk_comp_arms FOREIGN KEY (arms_part_id) REFERENCES complete_parts(id) ON DELETE SET NULL,
-            CONSTRAINT fk_comp_legs FOREIGN KEY (legs_part_id) REFERENCES complete_parts(id) ON DELETE SET NULL
+            completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
         CREATE TABLE IF NOT EXISTS complete_deliveries (
@@ -229,18 +225,6 @@ try {
     } catch (PDOException $e) {}
 
     try {
-        $pdo->exec("UPDATE completed_robots SET head_part_id = NULL WHERE head_part_id IS NOT NULL AND head_part_id NOT IN (SELECT id FROM complete_parts)");
-        $pdo->exec("UPDATE completed_robots SET body_part_id = NULL WHERE body_part_id IS NOT NULL AND body_part_id NOT IN (SELECT id FROM complete_parts)");
-        $pdo->exec("UPDATE completed_robots SET arms_part_id = NULL WHERE arms_part_id IS NOT NULL AND arms_part_id NOT IN (SELECT id FROM complete_parts)");
-        $pdo->exec("UPDATE completed_robots SET legs_part_id = NULL WHERE legs_part_id IS NOT NULL AND legs_part_id NOT IN (SELECT id FROM complete_parts)");
-    } catch (PDOException $e) {}
-
-    try { $pdo->exec("ALTER TABLE completed_robots ADD CONSTRAINT fk_comp_head FOREIGN KEY (head_part_id) REFERENCES complete_parts(id) ON DELETE SET NULL"); } catch (PDOException $e) {}
-    try { $pdo->exec("ALTER TABLE completed_robots ADD CONSTRAINT fk_comp_body FOREIGN KEY (body_part_id) REFERENCES complete_parts(id) ON DELETE SET NULL"); } catch (PDOException $e) {}
-    try { $pdo->exec("ALTER TABLE completed_robots ADD CONSTRAINT fk_comp_arms FOREIGN KEY (arms_part_id) REFERENCES complete_parts(id) ON DELETE SET NULL"); } catch (PDOException $e) {}
-    try { $pdo->exec("ALTER TABLE completed_robots ADD CONSTRAINT fk_comp_legs FOREIGN KEY (legs_part_id) REFERENCES complete_parts(id) ON DELETE SET NULL"); } catch (PDOException $e) {}
-
-    try {
         $pdo->exec("ALTER TABLE active_requests ADD COLUMN request_data JSON");
     } catch (PDOException $e) {}
 
@@ -378,6 +362,29 @@ try {
     $delRobotsStmt->execute([':user_id' => $actualUserId]);
 
     if (!empty($gameData['robots']) && is_array($gameData['robots'])) {
+        // ロボットが装備しているパーツも確実に user_parts に存在させる
+        $stmtEnsurePart = $pdo->prepare("
+            INSERT INTO user_parts (id, user_id, master_part_id, is_equipped, part_data)
+            VALUES (:id, :user_id, :master_id, 1, :part_data)
+            ON DUPLICATE KEY UPDATE is_equipped = 1, part_data = VALUES(part_data)
+        ");
+
+        foreach ($gameData['robots'] as $robot) {
+            if (!empty($robot['parts'])) {
+                foreach (['head', 'body', 'arms', 'legs'] as $pKey) {
+                    if (!empty($robot['parts'][$pKey]['id'])) {
+                        $p = $robot['parts'][$pKey];
+                        $stmtEnsurePart->execute([
+                            ':id' => $p['id'],
+                            ':user_id' => $actualUserId,
+                            ':master_id' => $p['name'] ?? $p['id'],
+                            ':part_data' => json_encode($p, JSON_UNESCAPED_UNICODE)
+                        ]);
+                    }
+                }
+            }
+        }
+
         $stmtRobot = $pdo->prepare("
             INSERT INTO user_robots (
                 id, user_id, name, head_part_id, body_part_id, arms_part_id, legs_part_id,
@@ -390,10 +397,10 @@ try {
 
         foreach ($gameData['robots'] as $robot) {
             if (empty($robot['id'])) continue;
-            $headId = $robot['parts']['head']['id'] ?? '';
-            $bodyId = $robot['parts']['body']['id'] ?? '';
-            $armsId = $robot['parts']['arms']['id'] ?? '';
-            $legsId = $robot['parts']['legs']['id'] ?? '';
+            $headId = !empty($robot['parts']['head']['id']) ? $robot['parts']['head']['id'] : null;
+            $bodyId = !empty($robot['parts']['body']['id']) ? $robot['parts']['body']['id'] : null;
+            $armsId = !empty($robot['parts']['arms']['id']) ? $robot['parts']['arms']['id'] : null;
+            $legsId = !empty($robot['parts']['legs']['id']) ? $robot['parts']['legs']['id'] : null;
             $stats = $robot['stats'] ?? [];
             $stmtRobot->execute([
                 ':id' => $robot['id'],
@@ -443,10 +450,10 @@ try {
 
         foreach ($gameData['deliveredLogs'] as $log) {
             if (empty($log['id'])) continue;
-            $headId = $log['parts']['head']['id'] ?? '';
-            $bodyId = $log['parts']['body']['id'] ?? '';
-            $armsId = $log['parts']['arms']['id'] ?? '';
-            $legsId = $log['parts']['legs']['id'] ?? '';
+            $headId = !empty($log['parts']['head']['id']) ? $log['parts']['head']['id'] : null;
+            $bodyId = !empty($log['parts']['body']['id']) ? $log['parts']['body']['id'] : null;
+            $armsId = !empty($log['parts']['arms']['id']) ? $log['parts']['arms']['id'] : null;
+            $legsId = !empty($log['parts']['legs']['id']) ? $log['parts']['legs']['id'] : null;
             $stats = $log['stats'] ?? [];
             $completedAt = isset($log['deliveredAt']) ? floor($log['deliveredAt'] / 1000) : time();
             

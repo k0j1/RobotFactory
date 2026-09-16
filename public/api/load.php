@@ -25,11 +25,12 @@ if (!$pdo) {
 }
 
 try {
-    // usersテーブルから該当ユーザーのgoogle_idを特定
-    $userStmt = $pdo->prepare("SELECT google_id FROM users WHERE google_id = :u1 OR id = :u2 LIMIT 1");
+    // usersテーブルから該当ユーザーのgoogle_idおよびidを特定
+    $userStmt = $pdo->prepare("SELECT id, google_id FROM users WHERE google_id = :u1 OR id = :u2 LIMIT 1");
     $userStmt->execute([':u1' => $userId, ':u2' => $userId]);
     $uRec = $userStmt->fetch();
     $actualUserId = ($uRec && !empty($uRec['google_id'])) ? $uRec['google_id'] : $userId;
+    $numericId = ($uRec && !empty($uRec['id'])) ? (string)$uRec['id'] : null;
 
     $stmt = $pdo->prepare("SELECT game_data FROM save_data WHERE user_id = :user_id");
     $stmt->execute([':user_id' => $actualUserId]);
@@ -87,11 +88,7 @@ try {
             total_dexterity INT DEFAULT 0,
             total_int INT DEFAULT 0,
             robot_data JSON,
-            completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            CONSTRAINT fk_comp_head FOREIGN KEY (head_part_id) REFERENCES complete_parts(id) ON DELETE SET NULL,
-            CONSTRAINT fk_comp_body FOREIGN KEY (body_part_id) REFERENCES complete_parts(id) ON DELETE SET NULL,
-            CONSTRAINT fk_comp_arms FOREIGN KEY (arms_part_id) REFERENCES complete_parts(id) ON DELETE SET NULL,
-            CONSTRAINT fk_comp_legs FOREIGN KEY (legs_part_id) REFERENCES complete_parts(id) ON DELETE SET NULL
+            completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
         CREATE TABLE IF NOT EXISTS complete_deliveries (
@@ -244,23 +241,11 @@ try {
     } catch (PDOException $e) {}
 
     try {
-        $pdo->exec("UPDATE completed_robots SET head_part_id = NULL WHERE head_part_id IS NOT NULL AND head_part_id NOT IN (SELECT id FROM complete_parts)");
-        $pdo->exec("UPDATE completed_robots SET body_part_id = NULL WHERE body_part_id IS NOT NULL AND body_part_id NOT IN (SELECT id FROM complete_parts)");
-        $pdo->exec("UPDATE completed_robots SET arms_part_id = NULL WHERE arms_part_id IS NOT NULL AND arms_part_id NOT IN (SELECT id FROM complete_parts)");
-        $pdo->exec("UPDATE completed_robots SET legs_part_id = NULL WHERE legs_part_id IS NOT NULL AND legs_part_id NOT IN (SELECT id FROM complete_parts)");
-    } catch (PDOException $e) {}
-
-    try { $pdo->exec("ALTER TABLE completed_robots ADD CONSTRAINT fk_comp_head FOREIGN KEY (head_part_id) REFERENCES complete_parts(id) ON DELETE SET NULL"); } catch (PDOException $e) {}
-    try { $pdo->exec("ALTER TABLE completed_robots ADD CONSTRAINT fk_comp_body FOREIGN KEY (body_part_id) REFERENCES complete_parts(id) ON DELETE SET NULL"); } catch (PDOException $e) {}
-    try { $pdo->exec("ALTER TABLE completed_robots ADD CONSTRAINT fk_comp_arms FOREIGN KEY (arms_part_id) REFERENCES complete_parts(id) ON DELETE SET NULL"); } catch (PDOException $e) {}
-    try { $pdo->exec("ALTER TABLE completed_robots ADD CONSTRAINT fk_comp_legs FOREIGN KEY (legs_part_id) REFERENCES complete_parts(id) ON DELETE SET NULL"); } catch (PDOException $e) {}
-
-    try {
         $pdo->exec("ALTER TABLE active_requests ADD COLUMN request_data JSON");
     } catch (PDOException $e) {}
 
     // ユーザー識別子の候補リスト（google_id または users.id）
-    $candidateUserIds = array_unique(array_filter([$actualUserId, $userId, $userRecord['id'] ?? null, $userRecord['google_id'] ?? null]));
+    $candidateUserIds = array_unique(array_filter([$actualUserId, $userId, $numericId]));
     $inPlaceholders = implode(',', array_fill(0, count($candidateUserIds), '?'));
 
     // 1. user_workshop_status テーブルから工房ステータスを取得

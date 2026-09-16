@@ -10,7 +10,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 // 動的生成された設定ファイルを読み込む
-require_once 'config.php';
+if (file_exists(__DIR__ . '/config.php')) {
+    require_once __DIR__ . '/config.php';
+} else {
+    // デフォルト・環境変数からのフォールバック
+    if (!defined('DB_HOST')) define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
+    if (!defined('DB_NAME')) define('DB_NAME', getenv('DB_NAME') ?: '');
+    if (!defined('DB_USER')) define('DB_USER', getenv('DB_USER') ?: '');
+    if (!defined('DB_PASS')) define('DB_PASS', getenv('DB_PASS') ?: '');
+}
 
 // PDOオブジェクトの取得
 function getDB() {
@@ -23,8 +31,7 @@ function getDB() {
         ]);
         return $pdo;
     } catch (PDOException $e) {
-        // http_response_code(500); 呼び出し元で設定させるためここは出力のみ
-        echo json_encode(["error" => "Database connection failed: " . $e->getMessage()]);
+        error_log("Database connection failed: " . $e->getMessage());
         return null;
     }
 }
