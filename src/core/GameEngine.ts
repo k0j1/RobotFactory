@@ -164,7 +164,7 @@ export class GameEngine {
   }
 
   /**
-   * active_expeditions および active_robot_assemblies テーブルから他のユーザーのアクティブ人数を取得
+   * active_expeditions, active_robot_assemblies, active_requests テーブルから他のユーザーのアクティブ人数を取得
    */
   public async getActiveCounts() {
     try {
@@ -178,7 +178,9 @@ export class GameEngine {
     }
     return {
       expeditions: {},
-      robotAssemblies: 0
+      robotAssemblies: 0,
+      requests: {},
+      requestsByRank: {}
     };
   }
 

@@ -141,7 +141,6 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onStart, engine }) => 
                 console.log('Login Failed');
                 alert('ログインに失敗しました');
               }}
-              useOneTap
             />
             <Button 
               size="md" 
@@ -157,7 +156,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onStart, engine }) => 
           </div>
         )}
 
-        <p className="mt-12 text-stone-400">v0.1.11</p>
+        <p className="mt-12 text-stone-400">v0.1.13</p>
       </div>
       
       {/* Decorative background elements */}

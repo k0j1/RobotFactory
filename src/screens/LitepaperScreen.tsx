@@ -25,7 +25,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
         title="ポンコツロボット工房 公式仕様書"
         badge={
           <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300 font-mono font-bold px-1.5 py-0.2 rounded">
-            v0.1.8
+            v0.1.13
           </span>
         }
         rightElement={
@@ -308,6 +308,12 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                     日常的な作業機要求。成功で手頃なゴールドと<strong>名声 +10</strong>を獲得。
                   </div>
                 </div>
+              </div>
+              <div className="bg-white p-2.5 rounded-lg border border-stone-200">
+                <strong className="text-stone-900">他プレイヤーの依頼受注状況（リアルタイムactive人数）表示:</strong>
+                <span className="text-stone-600 ml-1">
+                  サーバーのactive_requestsテーブルと同期し、各クライアントの依頼を他のプレイヤーが受注している場合、依頼カード右上に「〇〇人受注中」のインジケーターバッジがリアルタイムに点灯・表示されます。
+                </span>
               </div>
               <div className="bg-white p-2.5 rounded-lg border border-stone-200">
                 <strong className="text-stone-900">クライアント好感度システム:</strong>

@@ -41,6 +41,16 @@ try {
             result_robot_data JSON NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+        CREATE TABLE IF NOT EXISTS active_requests (
+            user_id VARCHAR(255) PRIMARY KEY,
+            request_id VARCHAR(255) NOT NULL,
+            rank VARCHAR(50) NOT NULL,
+            reward_g INT NOT NULL,
+            deadline BIGINT NOT NULL,
+            request_data JSON,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ");
 
     // 1. active_expeditions テーブルから場所別の人数を集計
@@ -88,11 +98,41 @@ try {
         $robotAssemblies = (int)($stmtAss->fetchColumn() ?: 0);
     }
 
+    // 3. active_requests テーブルから依頼受注中の人数を集計
+    // （ほかのユーザーが登録されている場合は user_id != :user_id）
+    $requests = [];
+    $requestsByRank = [];
+    if (!empty($userId)) {
+        $stmtReq = $pdo->prepare("
+            SELECT request_id, rank, COUNT(DISTINCT user_id) as cnt 
+            FROM active_requests 
+            WHERE user_id != :user_id 
+            GROUP BY request_id, rank
+        ");
+        $stmtReq->execute([':user_id' => (string)$userId]);
+    } else {
+        $stmtReq = $pdo->query("
+            SELECT request_id, rank, COUNT(DISTINCT user_id) as cnt 
+            FROM active_requests 
+            GROUP BY request_id, rank
+        ");
+    }
+    $reqRows = $stmtReq ? $stmtReq->fetchAll() : [];
+    foreach ($reqRows as $row) {
+        $reqId = $row['request_id'];
+        $rank = $row['rank'];
+        $count = (int)$row['cnt'];
+        $requests[$reqId] = $count;
+        $requestsByRank[$rank] = ($requestsByRank[$rank] ?? 0) + $count;
+    }
+
     echo json_encode([
         'success' => true,
         'userId' => $userId,
         'expeditions' => $expeditions,
-        'robotAssemblies' => $robotAssemblies
+        'robotAssemblies' => $robotAssemblies,
+        'requests' => $requests,
+        'requestsByRank' => $requestsByRank
     ], JSON_UNESCAPED_UNICODE);
 } catch (PDOException $e) {
     error_log("[active_counts.php] Database query error: " . $e->getMessage());
@@ -101,6 +141,8 @@ try {
         'success' => false,
         'error' => $e->getMessage(),
         'expeditions' => [],
-        'robotAssemblies' => 0
+        'robotAssemblies' => 0,
+        'requests' => [],
+        'requestsByRank' => []
     ], JSON_UNESCAPED_UNICODE);
 }

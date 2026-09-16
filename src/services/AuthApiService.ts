@@ -48,6 +48,8 @@ export interface DatabaseSyncError {
 export interface ActiveCountsData {
   expeditions: Record<string, number>;
   robotAssemblies: number;
+  requests: Record<string, number>;
+  requestsByRank: Record<string, number>;
 }
 
 export class AuthApiService {
@@ -642,7 +644,9 @@ export class AuthApiService {
             success: true,
             data: {
               expeditions: parsed.expeditions || {},
-              robotAssemblies: Number(parsed.robotAssemblies || 0)
+              robotAssemblies: Number(parsed.robotAssemblies || 0),
+              requests: parsed.requests || {},
+              requestsByRank: parsed.requestsByRank || {}
             }
           };
         }
@@ -656,7 +660,9 @@ export class AuthApiService {
       error: lastError ? lastError.message : 'アクティブ人数の取得に失敗しました。',
       data: {
         expeditions: {},
-        robotAssemblies: 0
+        robotAssemblies: 0,
+        requests: {},
+        requestsByRank: {}
       }
     };
   }

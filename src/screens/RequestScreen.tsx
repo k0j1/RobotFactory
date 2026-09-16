@@ -5,6 +5,7 @@ import { GameEngine } from '../core/GameEngine';
 import { Card, Button, Badge } from '../components/ui/core';
 import { RobotVisual } from '../components/robot/RobotVisual';
 import { ClientVisual } from '../components/ui/ClientVisual';
+import { ActiveUserCountBadge } from '../components/ui/ActiveUserCountBadge';
 import { theme } from '../styles/theme';
 import { TutorialPopup } from '../components/ui/TutorialPopup';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
@@ -53,6 +54,36 @@ const formatClockTime = (timestamp: number) => {
 export const RequestScreen: React.FC<{ state: GameState; engine: GameEngine; onNavigate: (view: string) => void }> = ({ state, engine, onNavigate }) => {
   const [selectedRobotId, setSelectedRobotId] = useState<string>('');
   const [now, setNow] = useState<number>(Date.now());
+  const [activeRequestCounts, setActiveRequestCounts] = useState<Record<string, number>>({});
+  const [activeRequestCountsByRank, setActiveRequestCountsByRank] = useState<Record<string, number>>({});
+
+  // activeテーブルから他ユーザーの依頼受注人数を取得
+  useEffect(() => {
+    let isMounted = true;
+    const fetchCounts = async () => {
+      try {
+        const counts = await engine.getActiveCounts();
+        if (isMounted && counts) {
+          if (counts.requests) {
+            setActiveRequestCounts(counts.requests);
+          }
+          if (counts.requestsByRank) {
+            setActiveRequestCountsByRank(counts.requestsByRank);
+          }
+        }
+      } catch (err) {
+        console.warn('[RequestScreen] activeCounts取得エラー:', err);
+      }
+    };
+
+    fetchCounts();
+    // 15秒ごとにアクティブ人数を最新化
+    const interval = setInterval(fetchCounts, 15000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [engine]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -169,14 +200,24 @@ export const RequestScreen: React.FC<{ state: GameState; engine: GameEngine; onN
       {/* Active In-Progress Request Section */}
       {state.currentRequest && (
         <Card className="border-2 border-blue-400 bg-blue-50/80 shadow-md">
-          <div className="flex justify-between items-center mb-3">
+          <div className="flex justify-between items-center mb-3 flex-wrap gap-2">
             <div className="flex items-center gap-2">
               <span className="px-2 py-0.5 text-xs font-bold bg-blue-600 text-white rounded">受注中</span>
               <h3 className={`${theme.typography.h3} text-blue-950`}>進行中の依頼</h3>
             </div>
-            <Button variant="danger" size="sm" onClick={handleCancelRequest}>
-              依頼を破棄する (好感度-1)
-            </Button>
+            <div className="flex items-center gap-2">
+              <ActiveUserCountBadge
+                type="request"
+                count={
+                  (state.currentRequest.id && activeRequestCounts[state.currentRequest.id]) ||
+                  (state.currentRequest.rank && activeRequestCountsByRank[state.currentRequest.rank]) ||
+                  0
+                }
+              />
+              <Button variant="danger" size="sm" onClick={handleCancelRequest}>
+                依頼を破棄する (好感度-1)
+              </Button>
+            </div>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 items-start mb-4 bg-white/80 p-3 rounded-lg border border-blue-200">
@@ -409,8 +450,16 @@ export const RequestScreen: React.FC<{ state: GameState; engine: GameEngine; onN
                           </div>
                         </div>
 
-                        {/* Status Badge */}
-                        <div className="shrink-0">
+                        {/* Status & Active User Count Badge */}
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <ActiveUserCountBadge
+                            type="request"
+                            count={
+                              (availableReq && activeRequestCounts[availableReq.id]) ||
+                              activeRequestCountsByRank[rank] ||
+                              0
+                            }
+                          />
                           {isCurrentActive && <Badge className="bg-blue-500 text-white leading-none whitespace-nowrap">受注中</Badge>}
                           {isCompletedThisSlot && <Badge className="bg-emerald-100 text-emerald-800 leading-none whitespace-nowrap">今期 納品完了</Badge>}
                           {!isCurrentActive && !isCompletedThisSlot && availableReq && (
@@ -439,7 +488,15 @@ export const RequestScreen: React.FC<{ state: GameState; engine: GameEngine; onN
                             {affection >= 10 && <span className="bg-rose-500 text-white px-1 rounded-full text-[9px]">MAX</span>}
                           </span>
                         </div>
-                        <div className="shrink-0">
+                        <div className="flex items-center gap-1 shrink-0">
+                          <ActiveUserCountBadge
+                            type="request"
+                            count={
+                              (availableReq && activeRequestCounts[availableReq.id]) ||
+                              activeRequestCountsByRank[rank] ||
+                              0
+                            }
+                          />
                           {isCurrentActive && <Badge className="bg-blue-500 text-white text-[10px] leading-none whitespace-nowrap">受注中</Badge>}
                           {isCompletedThisSlot && <Badge className="bg-emerald-100 text-emerald-800 text-[10px] leading-none whitespace-nowrap">今期 納品完了</Badge>}
                           {!isCurrentActive && !isCompletedThisSlot && availableReq && (

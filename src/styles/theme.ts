@@ -75,8 +75,10 @@ export const theme = {
   activeCountBadge: {
     expedition: "bg-sky-950/85 text-sky-200 border border-sky-400/60 shadow-xs font-mono text-[11px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 backdrop-blur-xs",
     assembly: "bg-amber-950/85 text-amber-200 border border-amber-400/60 shadow-xs font-mono text-[11px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 backdrop-blur-xs",
+    request: "bg-indigo-950/85 text-indigo-200 border border-indigo-400/60 shadow-xs font-mono text-[11px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 backdrop-blur-xs",
     pulseDotSky: "w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse",
     pulseDotAmber: "w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse",
+    pulseDotIndigo: "w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse",
   },
   studio: {
     viewportBg: "bg-stone-900 border-2 border-stone-700 shadow-inner rounded-2xl relative overflow-hidden",
