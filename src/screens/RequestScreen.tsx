@@ -50,7 +50,7 @@ const formatClockTime = (timestamp: number) => {
   return `${h}:${m}`;
 };
 
-export const RequestScreen: React.FC<{ state: GameState; engine: GameEngine }> = ({ state, engine }) => {
+export const RequestScreen: React.FC<{ state: GameState; engine: GameEngine; onNavigate: (view: string) => void }> = ({ state, engine, onNavigate }) => {
   const [selectedRobotId, setSelectedRobotId] = useState<string>('');
   const [now, setNow] = useState<number>(Date.now());
 
@@ -130,9 +130,17 @@ export const RequestScreen: React.FC<{ state: GameState; engine: GameEngine }> =
         icon={<Gi.GiScrollUnfurled size={16} />}
         title="依頼掲示板"
         rightElement={
-          <span className="text-[11px] text-stone-500 font-mono bg-stone-100 px-2 py-0.5 rounded border border-stone-200">
-            更新時刻: {new Date(now).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onNavigate('delivery_history')}
+              className="text-[11px] bg-blue-100 text-blue-900 px-2 py-0.5 rounded border border-blue-300 font-bold shadow-sm hover:bg-blue-200"
+            >
+              <Gi.GiArchiveResearch className="inline mr-1" />納品履歴
+            </button>
+            <span className="text-[11px] text-stone-500 font-mono bg-stone-100 px-2 py-0.5 rounded border border-stone-200 hidden sm:inline-block">
+              更新時刻: {new Date(now).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            </span>
+          </div>
         }
       />
 
