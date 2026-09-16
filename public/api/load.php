@@ -64,6 +64,14 @@ try {
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+        CREATE TABLE IF NOT EXISTS complete_parts (
+            id VARCHAR(255) PRIMARY KEY,
+            user_id VARCHAR(255) NOT NULL,
+            master_id VARCHAR(255) NOT NULL,
+            part_data JSON,
+            completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
         CREATE TABLE IF NOT EXISTS completed_robots (
             id VARCHAR(255) PRIMARY KEY,
             user_id VARCHAR(255) NOT NULL,
@@ -79,6 +87,19 @@ try {
             total_dexterity INT DEFAULT 0,
             total_int INT DEFAULT 0,
             robot_data JSON,
+            completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            CONSTRAINT fk_comp_head FOREIGN KEY (head_part_id) REFERENCES complete_parts(id) ON DELETE SET NULL,
+            CONSTRAINT fk_comp_body FOREIGN KEY (body_part_id) REFERENCES complete_parts(id) ON DELETE SET NULL,
+            CONSTRAINT fk_comp_arms FOREIGN KEY (arms_part_id) REFERENCES complete_parts(id) ON DELETE SET NULL,
+            CONSTRAINT fk_comp_legs FOREIGN KEY (legs_part_id) REFERENCES complete_parts(id) ON DELETE SET NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+        CREATE TABLE IF NOT EXISTS complete_deliveries (
+            id VARCHAR(255) PRIMARY KEY,
+            user_id VARCHAR(255) NOT NULL,
+            robot_id VARCHAR(255) NOT NULL,
+            robot_name VARCHAR(255) NOT NULL,
+            log_data JSON,
             completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -413,18 +434,18 @@ try {
         }
     }
 
-    // 10. completed_robots テーブルから納品履歴を取得
+    // 10. complete_deliveries テーブルから納品履歴を取得
     $deliveredStmt = $pdo->prepare("
-        SELECT robot_data 
-        FROM completed_robots 
+        SELECT log_data 
+        FROM complete_deliveries 
         WHERE user_id IN ($inPlaceholders)
         ORDER BY completed_at DESC
     ");
     $deliveredStmt->execute(array_values($candidateUserIds));
     $dbDeliveredLogs = [];
     while ($dRow = $deliveredStmt->fetch()) {
-        if (!empty($dRow['robot_data'])) {
-            $dData = json_decode($dRow['robot_data'], true);
+        if (!empty($dRow['log_data'])) {
+            $dData = json_decode($dRow['log_data'], true);
             if (is_array($dData)) {
                 $dbDeliveredLogs[] = $dData;
             }

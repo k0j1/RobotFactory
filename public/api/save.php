@@ -59,6 +59,14 @@ try {
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+        CREATE TABLE IF NOT EXISTS complete_parts (
+            id VARCHAR(255) PRIMARY KEY,
+            user_id VARCHAR(255) NOT NULL,
+            master_id VARCHAR(255) NOT NULL,
+            part_data JSON,
+            completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
         CREATE TABLE IF NOT EXISTS completed_robots (
             id VARCHAR(255) PRIMARY KEY,
             user_id VARCHAR(255) NOT NULL,
@@ -74,6 +82,19 @@ try {
             total_dexterity INT DEFAULT 0,
             total_int INT DEFAULT 0,
             robot_data JSON,
+            completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            CONSTRAINT fk_comp_head FOREIGN KEY (head_part_id) REFERENCES complete_parts(id) ON DELETE SET NULL,
+            CONSTRAINT fk_comp_body FOREIGN KEY (body_part_id) REFERENCES complete_parts(id) ON DELETE SET NULL,
+            CONSTRAINT fk_comp_arms FOREIGN KEY (arms_part_id) REFERENCES complete_parts(id) ON DELETE SET NULL,
+            CONSTRAINT fk_comp_legs FOREIGN KEY (legs_part_id) REFERENCES complete_parts(id) ON DELETE SET NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+        CREATE TABLE IF NOT EXISTS complete_deliveries (
+            id VARCHAR(255) PRIMARY KEY,
+            user_id VARCHAR(255) NOT NULL,
+            robot_id VARCHAR(255) NOT NULL,
+            robot_name VARCHAR(255) NOT NULL,
+            log_data JSON,
             completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -391,6 +412,23 @@ try {
                 :hp, :power, :defense, :agility, :dexterity, :intel, :robot_data, FROM_UNIXTIME(:completed_at)
             )
         ");
+        
+        $stmtCompleteParts = $pdo->prepare("
+            INSERT IGNORE INTO complete_parts (
+                id, user_id, master_id, part_data, completed_at
+            ) VALUES (
+                :id, :user_id, :master_id, :part_data, FROM_UNIXTIME(:completed_at)
+            )
+        ");
+        
+        $stmtCompleteDeliveries = $pdo->prepare("
+            INSERT IGNORE INTO complete_deliveries (
+                id, user_id, robot_id, robot_name, log_data, completed_at
+            ) VALUES (
+                :id, :user_id, :robot_id, :robot_name, :log_data, FROM_UNIXTIME(:completed_at)
+            )
+        ");
+
         foreach ($gameData['deliveredLogs'] as $log) {
             if (empty($log['id'])) continue;
             $headId = $log['parts']['head']['id'] ?? '';
@@ -399,6 +437,20 @@ try {
             $legsId = $log['parts']['legs']['id'] ?? '';
             $stats = $log['stats'] ?? [];
             $completedAt = isset($log['deliveredAt']) ? floor($log['deliveredAt'] / 1000) : time();
+            
+            foreach (['head', 'body', 'arms', 'legs'] as $pKey) {
+                if (!empty($log['parts'][$pKey]['id'])) {
+                    $pData = $log['parts'][$pKey];
+                    $stmtCompleteParts->execute([
+                        ':id' => $pData['id'],
+                        ':user_id' => $actualUserId,
+                        ':master_id' => $pData['name'] ?? $pData['id'],
+                        ':part_data' => json_encode($pData, JSON_UNESCAPED_UNICODE),
+                        ':completed_at' => $completedAt
+                    ]);
+                }
+            }
+
             $stmtDeliveredRobot->execute([
                 ':id' => $log['id'],
                 ':user_id' => $actualUserId,
@@ -414,6 +466,15 @@ try {
                 ':dexterity' => (int)($stats['dexterity'] ?? 0),
                 ':intel' => (int)($stats['intelligence'] ?? 0),
                 ':robot_data' => json_encode($log, JSON_UNESCAPED_UNICODE),
+                ':completed_at' => $completedAt
+            ]);
+
+            $stmtCompleteDeliveries->execute([
+                ':id' => $log['id'] . '_' . $completedAt,
+                ':user_id' => $actualUserId,
+                ':robot_id' => $log['id'],
+                ':robot_name' => $log['name'] ?? '名無しのロボット',
+                ':log_data' => json_encode($log, JSON_UNESCAPED_UNICODE),
                 ':completed_at' => $completedAt
             ]);
         }
@@ -702,6 +763,31 @@ try {
     $cutoffRobotStmt->execute([':user_id' => $actualUserId]);
     $cutoffTime = $cutoffRobotStmt->fetchColumn();
     if ($cutoffTime !== false && $cutoffTime !== null) {
+        // 先に削除対象のロボットに紐づくパーツIDを取得し、complete_partsから削除
+        $getPrunePartsStmt = $pdo->prepare("
+            SELECT head_part_id, body_part_id, arms_part_id, legs_part_id 
+            FROM completed_robots 
+            WHERE user_id = :user_id AND completed_at <= :cutoff_time
+        ");
+        $getPrunePartsStmt->execute([
+            ':user_id' => $actualUserId,
+            ':cutoff_time' => $cutoffTime
+        ]);
+        
+        $partIdsToDelete = [];
+        while ($row = $getPrunePartsStmt->fetch(PDO::FETCH_ASSOC)) {
+            if (!empty($row['head_part_id'])) $partIdsToDelete[] = $row['head_part_id'];
+            if (!empty($row['body_part_id'])) $partIdsToDelete[] = $row['body_part_id'];
+            if (!empty($row['arms_part_id'])) $partIdsToDelete[] = $row['arms_part_id'];
+            if (!empty($row['legs_part_id'])) $partIdsToDelete[] = $row['legs_part_id'];
+        }
+
+        if (!empty($partIdsToDelete)) {
+            $inQuery = implode(',', array_fill(0, count($partIdsToDelete), '?'));
+            $deletePartsStmt = $pdo->prepare("DELETE FROM complete_parts WHERE id IN ($inQuery)");
+            $deletePartsStmt->execute($partIdsToDelete);
+        }
+
         $pruneRobotStmt = $pdo->prepare("
             DELETE FROM completed_robots
             WHERE user_id = :user_id AND completed_at <= :cutoff_time
@@ -709,6 +795,26 @@ try {
         $pruneRobotStmt->execute([
             ':user_id' => $actualUserId,
             ':cutoff_time' => $cutoffTime
+        ]);
+    }
+
+    // complete_deliveries テーブルの保存上限ローテーション
+    $cutoffDelivStmt = $pdo->prepare("
+        SELECT completed_at FROM complete_deliveries
+        WHERE user_id = :user_id
+        ORDER BY completed_at DESC
+        LIMIT 1 OFFSET 1000
+    ");
+    $cutoffDelivStmt->execute([':user_id' => $actualUserId]);
+    $cutoffDelivTime = $cutoffDelivStmt->fetchColumn();
+    if ($cutoffDelivTime !== false && $cutoffDelivTime !== null) {
+        $pruneDelivStmt = $pdo->prepare("
+            DELETE FROM complete_deliveries
+            WHERE user_id = :user_id AND completed_at <= :cutoff_time
+        ");
+        $pruneDelivStmt->execute([
+            ':user_id' => $actualUserId,
+            ':cutoff_time' => $cutoffDelivTime
         ]);
     }
 
