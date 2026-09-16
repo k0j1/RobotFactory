@@ -55,6 +55,7 @@ try {
         storage_limit INT DEFAULT 0,
         delivered_count INT DEFAULT 0,
         received_initial_bonus BOOLEAN DEFAULT FALSE,
+        request_earned_gold INT DEFAULT 0,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -308,6 +309,13 @@ try {
     // user_workshop_status テーブルに received_initial_bonus を追加
     try {
         $pdo->exec("ALTER TABLE user_workshop_status ADD COLUMN received_initial_bonus BOOLEAN DEFAULT FALSE");
+    } catch (PDOException $e) {
+        // 既に追加されている場合は無視
+    }
+
+    // user_workshop_status テーブルに 依頼完了獲得G (request_earned_gold) を追加
+    try {
+        $pdo->exec("ALTER TABLE user_workshop_status ADD COLUMN request_earned_gold INT DEFAULT 0");
     } catch (PDOException $e) {
         // 既に追加されている場合は無視
     }

@@ -253,6 +253,7 @@ export interface GameState {
 
   currentRequest: ClientRequest | null;
   deliveredRobotsCount: number;
+  requestEarnedGold?: number; // 依頼完了で獲得した累計G
   deliveredLogs: DeliveredLog[];
   tutorialStep: number;
   lastRequestGeneratedAt: number;

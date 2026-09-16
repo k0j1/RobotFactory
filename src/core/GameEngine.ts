@@ -27,6 +27,7 @@ const INITIAL_STATE: GameState = {
   completeRequest: null,
   currentRequest: null,
   deliveredRobotsCount: 0,
+  requestEarnedGold: 0,
   deliveredLogs: [],
   tutorialStep: 0,
   lastRequestGeneratedAt: 0,
@@ -1702,6 +1703,7 @@ export class GameEngine {
 
     this.state.gold += rewardG;
     this.state.fame = (this.state.fame || 0) + totalFame;
+    this.state.requestEarnedGold = (this.state.requestEarnedGold || 0) + rewardG;
 
     this.state.deliveredLogs.push({
       id: robot.id,

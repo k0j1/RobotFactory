@@ -25,7 +25,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
         title="ポンコツロボット工房 公式仕様書"
         badge={
           <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300 font-mono font-bold px-1.5 py-0.2 rounded">
-            v0.1.13
+            v0.1.14
           </span>
         }
         rightElement={
@@ -313,6 +313,12 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                 <strong className="text-stone-900">他プレイヤーの依頼受注状況（リアルタイムactive人数）表示:</strong>
                 <span className="text-stone-600 ml-1">
                   サーバーのactive_requestsテーブルと同期し、各クライアントの依頼を他のプレイヤーが受注している場合、依頼カード右上に「〇〇人受注中」のインジケーターバッジがリアルタイムに点灯・表示されます。
+                </span>
+              </div>
+              <div className="bg-white p-2.5 rounded-lg border border-stone-200">
+                <strong className="text-stone-900">依頼達成報酬（G）のトランザクション記録:</strong>
+                <span className="text-stone-600 ml-1">
+                  依頼納品完了時、獲得したゴールドはデータベースの更新トランザクション内で<code>user_workshop_status</code>テーブルの<code>request_earned_gold</code>（依頼獲得累計G）へアトミックに加算・記録されます。
                 </span>
               </div>
               <div className="bg-white p-2.5 rounded-lg border border-stone-200">

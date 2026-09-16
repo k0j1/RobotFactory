@@ -51,6 +51,18 @@ try {
             PRIMARY KEY (user_id, material_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+        CREATE TABLE IF NOT EXISTS user_workshop_status (
+            user_id VARCHAR(255) PRIMARY KEY,
+            fame INT DEFAULT 0,
+            gold INT DEFAULT 0,
+            consumed_gold INT DEFAULT 0,
+            storage_limit INT DEFAULT 0,
+            delivered_count INT DEFAULT 0,
+            received_initial_bonus BOOLEAN DEFAULT FALSE,
+            request_earned_gold INT DEFAULT 0,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
         CREATE TABLE IF NOT EXISTS save_data (
             id INT AUTO_INCREMENT PRIMARY KEY,
             user_id VARCHAR(255) NOT NULL UNIQUE,
@@ -236,6 +248,10 @@ try {
         $pdo->exec("ALTER TABLE user_robots ADD COLUMN robot_data JSON");
     } catch (PDOException $e) {}
 
+    try {
+        $pdo->exec("ALTER TABLE user_workshop_status ADD COLUMN request_earned_gold INT DEFAULT 0");
+    } catch (PDOException $e) {}
+
     $pdo->beginTransaction();
 
     // 2. save_data テーブルにゲーム全体のスナップショットを保存 (UPSERT)
@@ -276,6 +292,7 @@ try {
     unset($saveDataSnapshot['fame']);                   // user_workshop_status
     unset($saveDataSnapshot['storageSize']);            // user_workshop_status
     unset($saveDataSnapshot['deliveredRobotsCount']);   // user_workshop_status
+    unset($saveDataSnapshot['requestEarnedGold']);       // user_workshop_status
     unset($saveDataSnapshot['battleElements']);         // user_minigame_status
     unset($saveDataSnapshot['minigameRecords']);        // user_minigame_status
 
@@ -623,6 +640,7 @@ try {
     // =========================================================================
     $compR = $gameData['completeRequest'] ?? $gameData['completedRequest'] ?? null;
     if (!empty($compR) && !empty($compR['requestId'])) {
+        $rewardG = (int)($compR['rewardG'] ?? 0);
         // 1. complete_requests テーブルに完了レコードを追加
         $stmtCompReq = $pdo->prepare("
             INSERT INTO complete_requests (user_id, request_id, rank, reward_g, deadline, delivered_robot_id, request_data)
@@ -632,14 +650,29 @@ try {
             ':user_id' => $actualUserId,
             ':request_id' => $compR['requestId'],
             ':rank' => $compR['rank'] ?? 'OldMan',
-            ':reward_g' => (int)($compR['rewardG'] ?? 0),
+            ':reward_g' => $rewardG,
             ':deadline' => (int)($compR['deadline'] ?? 0),
             ':delivered_robot_id' => $compR['deliveredRobotId'] ?? null,
             ':request_data' => json_encode($compR['requestData'] ?? [], JSON_UNESCAPED_UNICODE)
         ]);
+
         // 2. complete に追加完了後、対となる active_requests から確実に削除
         $delReq = $pdo->prepare("DELETE FROM active_requests WHERE user_id = :user_id");
         $delReq->execute([':user_id' => $actualUserId]);
+
+        // 3. 依頼完了時のトランザクション内で獲得したGを user_workshop_status テーブルに加算・記録
+        if ($rewardG > 0) {
+            $stmtEarnedG = $pdo->prepare("
+                INSERT INTO user_workshop_status (user_id, request_earned_gold)
+                VALUES (:user_id, :earned_gold)
+                ON DUPLICATE KEY UPDATE request_earned_gold = request_earned_gold + :up_earned_gold
+            ");
+            $stmtEarnedG->execute([
+                ':user_id' => $actualUserId,
+                ':earned_gold' => $rewardG,
+                ':up_earned_gold' => $rewardG
+            ]);
+        }
     } elseif (!empty($gameData['currentRequest']) && !empty($gameData['currentRequest']['id'])) {
         // 進行中の場合は active_requests テーブルを同期
         $r = $gameData['currentRequest'];

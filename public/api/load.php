@@ -62,6 +62,7 @@ try {
             storage_limit INT DEFAULT 0,
             delivered_count INT DEFAULT 0,
             received_initial_bonus BOOLEAN DEFAULT FALSE,
+            request_earned_gold INT DEFAULT 0,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -244,13 +245,17 @@ try {
         $pdo->exec("ALTER TABLE active_requests ADD COLUMN request_data JSON");
     } catch (PDOException $e) {}
 
+    try {
+        $pdo->exec("ALTER TABLE user_workshop_status ADD COLUMN request_earned_gold INT DEFAULT 0");
+    } catch (PDOException $e) {}
+
     // ユーザー識別子の候補リスト（google_id または users.id）
     $candidateUserIds = array_unique(array_filter([$actualUserId, $userId, $numericId]));
     $inPlaceholders = implode(',', array_fill(0, count($candidateUserIds), '?'));
 
     // 1. user_workshop_status テーブルから工房ステータスを取得
     $wsStmt = $pdo->prepare("
-        SELECT fame, gold, storage_limit, delivered_count, received_initial_bonus 
+        SELECT fame, gold, storage_limit, delivered_count, received_initial_bonus, request_earned_gold 
         FROM user_workshop_status 
         WHERE user_id IN ($inPlaceholders) 
         ORDER BY updated_at DESC
@@ -264,6 +269,7 @@ try {
     $storageLimitVal = ($wsRow && !empty($wsRow['storage_limit'])) ? (int)$wsRow['storage_limit'] : 5;
     $deliveredCountVal = $wsRow ? (int)($wsRow['delivered_count'] ?? 0) : 0;
     $receivedBonusVal = ($wsRow && isset($wsRow['received_initial_bonus'])) ? (int)$wsRow['received_initial_bonus'] : 0;
+    $requestEarnedGoldVal = $wsRow ? (int)($wsRow['request_earned_gold'] ?? 0) : 0;
 
     // 2. user_material テーブルから最新の素材情報を取得
     $matStmt = $pdo->prepare("
@@ -490,6 +496,7 @@ try {
         $gameData['fame'] = $fameVal;
         $gameData['storageSize'] = $storageLimitVal;
         $gameData['deliveredRobotsCount'] = $deliveredCountVal;
+        $gameData['requestEarnedGold'] = $requestEarnedGoldVal;
         $gameData['activeQuest'] = $activeQuest;
         $gameData['activePartCraft'] = $activePartCraft;
         $gameData['activeRobotAssembly'] = $activeAssembly;
@@ -515,6 +522,7 @@ try {
             "fame" => $fameVal,
             "storageSize" => $storageLimitVal,
             "deliveredRobotsCount" => $deliveredCountVal,
+            "requestEarnedGold" => $requestEarnedGoldVal,
             "activeQuest" => $activeQuest,
             "activePartCraft" => $activePartCraft,
             "activeRobotAssembly" => $activeAssembly,
