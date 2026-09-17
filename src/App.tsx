@@ -48,7 +48,14 @@ export default function App() {
   }, [engine]);
 
   if (!state || !engine) {
-    return <div className={`min-h-screen ${theme.colors.background} flex items-center justify-center`}><p className={theme.typography.h2}>Loading...</p></div>;
+    return (
+      <>
+        <VersionGuard />
+        <div className={`min-h-screen ${theme.colors.background} flex items-center justify-center`}>
+          <p className={theme.typography.h2}>Loading...</p>
+        </div>
+      </>
+    );
   }
 
   const currentInteriorData = INTERIORS.find(i => i.id === state.currentInterior);
