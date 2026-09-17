@@ -1,3 +1,4 @@
+import { VersionCheckService } from "../services/VersionCheckService";
 import { GameState, Robot, ClientRequest, Attribute, RequestRank, RobotPart, PartType, AttributeNames, WeatherType, WeatherInfo, Material } from './models';
 import { MATERIALS, LOCATIONS, getMaterialCraftableVisuals, STARTER_BONUS_MATERIALS } from './data';
 import { AttributeColors } from './models';
@@ -386,6 +387,10 @@ export class GameEngine {
   }
 
   private saveState() {
+    if (VersionCheckService.isMismatch()) {
+      console.warn("[GameEngine] Version mismatch detected. Saving is blocked.");
+      return;
+    }
     this.onStateChange(JSON.parse(JSON.stringify(this.state)));
     if (this.isCloudAccount && this.userId) {
       // Googleログイン時はローカルストレージを使用・保存せず、サーバーの各テーブルへ自動同期

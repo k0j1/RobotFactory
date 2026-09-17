@@ -1,0 +1,2 @@
+sed -i '1i import { VersionCheckService } from "../services/VersionCheckService";' src/services/AuthApiService.ts
+awk '/public async saveAllDataToTables/ { print; print "    if (VersionCheckService.isMismatch()) {\n      console.warn(\"[AuthApiService] Version mismatch detected. Saving is blocked.\");\n      return { success: false, error: \"バージョン不一致のため保存をブロックしました\" };\n    }"; next }1' src/services/AuthApiService.ts > temp.ts && mv temp.ts src/services/AuthApiService.ts

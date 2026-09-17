@@ -1,3 +1,4 @@
+import { VersionGuard } from "./components/ui/VersionGuard";
 import React, { useState, useEffect } from 'react';
 import { useGameState } from './hooks/useGameState';
 import { Layout } from './components/ui/Layout';
@@ -56,6 +57,7 @@ export default function App() {
   return (
     <>
       <SyncErrorBanner engine={engine} />
+      <VersionGuard />
       {view === 'title' ? (
         <TitleScreen onStart={() => setView('dashboard')} engine={engine} />
       ) : (

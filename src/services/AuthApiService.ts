@@ -1,3 +1,4 @@
+import { VersionCheckService } from "../services/VersionCheckService";
 /**
  * @file AuthApiService.ts
  * @description Googleログイン連携およびusersテーブルへのユーザー情報保存・同期を担当するサービスクラス
@@ -342,6 +343,10 @@ export class AuthApiService {
    * @param immediate trueの場合はデバウンスを待たずに即時送信
    */
   public async saveAllDataToTables(userId: string, state: GameState, immediate: boolean = false): Promise<AuthApiResponse> {
+    if (VersionCheckService.isMismatch()) {
+      console.warn("[AuthApiService] Version mismatch detected. Saving is blocked.");
+      return { success: false, error: "バージョン不一致のため保存をブロックしました" };
+    }
     if (!userId) {
       throw new Error('userIdが指定されていません。');
     }
