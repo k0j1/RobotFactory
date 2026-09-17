@@ -26,9 +26,22 @@ function checkIsAiStudio(): boolean {
   return false;
 }
 
-// Google AI Studio限定管理モーダルの遅延ロード（GitHubへsrc/admin/がpushされない場合でもビルドが通るように設計）
-// @ts-ignore
-const AdminDatabaseModal = React.lazy(() => import('../admin/AdminDatabaseModal').then(m => ({ default: m.AdminDatabaseModal })).catch(() => ({ default: () => null })));
+// Viteのimport.meta.globを使用して、src/admin/ディレクトリが存在する場合のみ動的に読み込み
+// （GitHub Actionsでsrc/admin/が除外されたリポジトリでもRollupの静的解決エラーを起こさず安全にビルド可能）
+const adminModuleMap = import.meta.glob<{ AdminDatabaseModal: React.ComponentType<any> }>('../admin/AdminDatabaseModal.tsx');
+
+const AdminDatabaseModal = React.lazy(async () => {
+  const loader = adminModuleMap['../admin/AdminDatabaseModal.tsx'];
+  if (loader) {
+    try {
+      const mod = await loader();
+      return { default: mod.AdminDatabaseModal };
+    } catch {
+      return { default: () => null };
+    }
+  }
+  return { default: () => null };
+});
 
 interface TitleScreenProps {
   onStart: () => void;
@@ -197,7 +210,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onStart, engine }) => 
           </div>
         )}
 
-        <p className="mt-8 text-stone-400">v0.1.19</p>
+        <p className="mt-8 text-stone-400">v0.1.20</p>
       </div>
       
       {/* Decorative background elements */}

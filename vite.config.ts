@@ -1,6 +1,7 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import fs from 'fs';
 import {defineConfig} from 'vite';
 
 export default defineConfig(({ command }) => {
@@ -9,7 +10,29 @@ export default defineConfig(({ command }) => {
 
   return {
     base,
-    plugins: [react(), tailwindcss()],
+    plugins: [
+      react(),
+      tailwindcss(),
+      // GitHub Actionsビルド時に src/admin/ が.gitignoreで除外されていてもビルドエラーを防ぐプラグイン
+      {
+        name: 'admin-fallback-resolver',
+        resolveId(source) {
+          if (source.includes('AdminDatabaseModal') || source.includes('adminApi') || source.includes('adminEnv')) {
+            const adminDir = path.resolve(__dirname, 'src/admin');
+            if (!fs.existsSync(adminDir)) {
+              return '\0virtual:admin-stub';
+            }
+          }
+          return null;
+        },
+        load(id) {
+          if (id === '\0virtual:admin-stub') {
+            return 'export const AdminDatabaseModal = () => null; export const isAiStudioEnvironment = () => false; export class AdminDatabaseApi {} export default {};';
+          }
+          return null;
+        }
+      }
+    ],
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
