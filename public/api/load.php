@@ -421,20 +421,77 @@ try {
     }
 
     // 9. user_robots テーブルから所持ロボット一覧を取得
+    // robot_data カラムは削除されたため、user_robots の各パーツIDをもとに user_parts テーブルの所持パーツと結合し、
+    // currentHp、maxHP、battleStats および合算 stats を持つ完全な Robot オブジェクトを復元
+    $partsMap = [];
+    foreach ($dbParts as $p) {
+        if (!empty($p['id'])) {
+            $partsMap[$p['id']] = $p;
+        }
+    }
+
     $robotsStmt = $pdo->prepare("
-        SELECT robot_data 
+        SELECT id, user_id, name, head_part_id, body_part_id, arms_part_id, legs_part_id,
+               currentHp, maxHP, battleStats, created_at
         FROM user_robots 
         WHERE user_id IN ($inPlaceholders)
+        ORDER BY created_at ASC
     ");
     $robotsStmt->execute(array_values($candidateUserIds));
     $dbRobots = [];
-    while ($rRow = $robotsStmt->fetch()) {
-        if (!empty($rRow['robot_data'])) {
-            $rData = json_decode($rRow['robot_data'], true);
-            if (is_array($rData)) {
-                $dbRobots[] = $rData;
-            }
+    while ($rRow = $robotsStmt->fetch(PDO::FETCH_ASSOC)) {
+        $rId = $rRow['id'];
+        $rName = $rRow['name'] ?? '名無しのロボット';
+        $headPart = (!empty($rRow['head_part_id']) && isset($partsMap[$rRow['head_part_id']])) ? $partsMap[$rRow['head_part_id']] : null;
+        $bodyPart = (!empty($rRow['body_part_id']) && isset($partsMap[$rRow['body_part_id']])) ? $partsMap[$rRow['body_part_id']] : null;
+        $armsPart = (!empty($rRow['arms_part_id']) && isset($partsMap[$rRow['arms_part_id']])) ? $partsMap[$rRow['arms_part_id']] : null;
+        $legsPart = (!empty($rRow['legs_part_id']) && isset($partsMap[$rRow['legs_part_id']])) ? $partsMap[$rRow['legs_part_id']] : null;
+
+        // 各パーツのステータス合算
+        $calcStats = [
+            'hp' => 0,
+            'power' => 0,
+            'defense' => 0,
+            'agility' => 0,
+            'dexterity' => 0,
+            'intelligence' => 0,
+        ];
+        $totalValue = 0;
+        $partsList = array_filter([$headPart, $bodyPart, $armsPart, $legsPart]);
+        foreach ($partsList as $p) {
+            $pStats = $p['stats'] ?? $p['baseStats'] ?? [];
+            $calcStats['hp'] += (int)($pStats['hp'] ?? 0);
+            $calcStats['power'] += (int)($pStats['power'] ?? 0);
+            $calcStats['defense'] += (int)($pStats['defense'] ?? 0);
+            $calcStats['agility'] += (int)($pStats['agility'] ?? 0);
+            $calcStats['dexterity'] += (int)($pStats['dexterity'] ?? 0);
+            $calcStats['intelligence'] += (int)($pStats['intelligence'] ?? $pStats['int'] ?? 0);
+            $totalValue += (int)($p['value'] ?? 50);
         }
+
+        $bStats = null;
+        if (!empty($rRow['battleStats'])) {
+            $bStats = is_array($rRow['battleStats']) ? $rRow['battleStats'] : json_decode($rRow['battleStats'], true);
+        }
+
+        $createdAtMs = !empty($rRow['created_at']) ? strtotime($rRow['created_at']) * 1000 : time() * 1000;
+
+        $dbRobots[] = [
+            'id' => $rId,
+            'name' => $rName,
+            'parts' => [
+                'head' => $headPart,
+                'body' => $bodyPart,
+                'arms' => $armsPart,
+                'legs' => $legsPart,
+            ],
+            'stats' => $calcStats,
+            'currentHp' => isset($rRow['currentHp']) ? (int)$rRow['currentHp'] : 12,
+            'maxHp' => isset($rRow['maxHP']) ? (int)$rRow['maxHP'] : max(12, $calcStats['hp']),
+            'battleStats' => $bStats,
+            'createdAt' => $createdAtMs,
+            'value' => $totalValue
+        ];
     }
 
     // 10. complete_deliveries テーブルから納品履歴を取得

@@ -94,13 +94,9 @@ try {
         body_part_id VARCHAR(255),
         arms_part_id VARCHAR(255),
         legs_part_id VARCHAR(255),
-        total_hp INT DEFAULT 0,
-        total_power INT DEFAULT 0,
-        total_defense INT DEFAULT 0,
-        total_agility INT DEFAULT 0,
-        total_dexterity INT DEFAULT 0,
-        total_int INT DEFAULT 0,
-        robot_data JSON,
+        currentHp INT DEFAULT 12,
+        maxHP INT DEFAULT 12,
+        battleStats JSON,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         CONSTRAINT fk_head_part FOREIGN KEY (head_part_id) REFERENCES user_parts(id) ON DELETE SET NULL,
         CONSTRAINT fk_body_part FOREIGN KEY (body_part_id) REFERENCES user_parts(id) ON DELETE SET NULL,
@@ -338,8 +334,113 @@ try {
         $pdo->exec("ALTER TABLE user_parts ADD COLUMN part_data JSON");
     } catch (PDOException $e) {}
 
+    // user_robots テーブルのスキーマ更新: currentHp, maxHP, battleStats の追加
     try {
-        $pdo->exec("ALTER TABLE user_robots ADD COLUMN robot_data JSON");
+        $pdo->exec("ALTER TABLE user_robots ADD COLUMN currentHp INT DEFAULT 12");
+    } catch (PDOException $e) {}
+
+    try {
+        $pdo->exec("ALTER TABLE user_robots ADD COLUMN maxHP INT DEFAULT 12");
+    } catch (PDOException $e) {}
+
+    try {
+        $pdo->exec("ALTER TABLE user_robots ADD COLUMN battleStats JSON");
+    } catch (PDOException $e) {}
+
+    // 既存の robot_data カラムが存在する場合、currentHp, maxHP, battleStats を移行
+    try {
+        $stmtMigrate = $pdo->query("SELECT id, robot_data FROM user_robots WHERE robot_data IS NOT NULL");
+        if ($stmtMigrate) {
+            $updStmt = $pdo->prepare("UPDATE user_robots SET currentHp = :cHp, maxHP = :mHp, battleStats = :bStats WHERE id = :id");
+            while ($r = $stmtMigrate->fetch(PDO::FETCH_ASSOC)) {
+                if (empty($r['robot_data'])) continue;
+                $d = json_decode($r['robot_data'], true);
+                if (is_array($d)) {
+                    $cHp = isset($d['currentHp']) ? (int)$d['currentHp'] : 12;
+                    $mHp = isset($d['maxHp']) ? (int)$d['maxHp'] : (isset($d['stats']['hp']) ? (int)$d['stats']['hp'] : 12);
+                    $bStats = isset($d['battleStats']) && is_array($d['battleStats']) ? json_encode($d['battleStats'], JSON_UNESCAPED_UNICODE) : null;
+                    $updStmt->execute([
+                        ':cHp' => $cHp,
+                        ':mHp' => $mHp,
+                        ':bStats' => $bStats,
+                        ':id' => $r['id']
+                    ]);
+                }
+            }
+        }
+    } catch (PDOException $e) {}
+
+    // user_robots テーブルから total_ がついた列をすべて削除
+    $totalCols = ['total_hp', 'total_power', 'total_defense', 'total_agility', 'total_dexterity', 'total_int'];
+    foreach ($totalCols as $col) {
+        try {
+            $pdo->exec("ALTER TABLE user_robots DROP COLUMN `{$col}`");
+        } catch (PDOException $e) {}
+    }
+
+    // user_robots テーブルから robot_data 列を削除
+    try {
+        $pdo->exec("ALTER TABLE user_robots DROP COLUMN `robot_data`");
+    } catch (PDOException $e) {}
+
+    // user_robots テーブルの total ステータスを確認できる View の作成
+    try {
+        $pdo->exec("
+            CREATE OR REPLACE VIEW view_user_robots_total_stats AS
+            SELECT 
+                ur.id AS robot_id,
+                ur.user_id,
+                ur.name AS robot_name,
+                ur.currentHp,
+                ur.maxHP,
+                ur.head_part_id,
+                ur.body_part_id,
+                ur.arms_part_id,
+                ur.legs_part_id,
+                (
+                    COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(hp.part_data, '$.stats.hp')) AS SIGNED), 0) +
+                    COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(bp.part_data, '$.stats.hp')) AS SIGNED), 0) +
+                    COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(ap.part_data, '$.stats.hp')) AS SIGNED), 0) +
+                    COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(lp.part_data, '$.stats.hp')) AS SIGNED), 0)
+                ) AS total_hp,
+                (
+                    COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(hp.part_data, '$.stats.power')) AS SIGNED), 0) +
+                    COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(bp.part_data, '$.stats.power')) AS SIGNED), 0) +
+                    COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(ap.part_data, '$.stats.power')) AS SIGNED), 0) +
+                    COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(lp.part_data, '$.stats.power')) AS SIGNED), 0)
+                ) AS total_power,
+                (
+                    COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(hp.part_data, '$.stats.defense')) AS SIGNED), 0) +
+                    COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(bp.part_data, '$.stats.defense')) AS SIGNED), 0) +
+                    COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(ap.part_data, '$.stats.defense')) AS SIGNED), 0) +
+                    COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(lp.part_data, '$.stats.defense')) AS SIGNED), 0)
+                ) AS total_defense,
+                (
+                    COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(hp.part_data, '$.stats.agility')) AS SIGNED), 0) +
+                    COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(bp.part_data, '$.stats.agility')) AS SIGNED), 0) +
+                    COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(ap.part_data, '$.stats.agility')) AS SIGNED), 0) +
+                    COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(lp.part_data, '$.stats.agility')) AS SIGNED), 0)
+                ) AS total_agility,
+                (
+                    COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(hp.part_data, '$.stats.dexterity')) AS SIGNED), 0) +
+                    COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(bp.part_data, '$.stats.dexterity')) AS SIGNED), 0) +
+                    COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(ap.part_data, '$.stats.dexterity')) AS SIGNED), 0) +
+                    COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(lp.part_data, '$.stats.dexterity')) AS SIGNED), 0)
+                ) AS total_dexterity,
+                (
+                    COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(hp.part_data, '$.stats.intelligence')) AS SIGNED), CAST(JSON_UNQUOTE(JSON_EXTRACT(hp.part_data, '$.stats.int')) AS SIGNED), 0) +
+                    COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(bp.part_data, '$.stats.intelligence')) AS SIGNED), CAST(JSON_UNQUOTE(JSON_EXTRACT(bp.part_data, '$.stats.int')) AS SIGNED), 0) +
+                    COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(ap.part_data, '$.stats.intelligence')) AS SIGNED), CAST(JSON_UNQUOTE(JSON_EXTRACT(ap.part_data, '$.stats.int')) AS SIGNED), 0) +
+                    COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(lp.part_data, '$.stats.intelligence')) AS SIGNED), CAST(JSON_UNQUOTE(JSON_EXTRACT(lp.part_data, '$.stats.int')) AS SIGNED), 0)
+                ) AS total_int,
+                ur.battleStats,
+                ur.created_at
+            FROM user_robots ur
+            LEFT JOIN user_parts hp ON ur.head_part_id = hp.id
+            LEFT JOIN user_parts bp ON ur.body_part_id = bp.id
+            LEFT JOIN user_parts ap ON ur.arms_part_id = ap.id
+            LEFT JOIN user_parts lp ON ur.legs_part_id = lp.id
+        ");
     } catch (PDOException $e) {}
 
     // activeテーブルと対となるcompleteテーブルの互換性用ビュー（completed_*）

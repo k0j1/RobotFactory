@@ -45,6 +45,7 @@ function getAllDatabaseTables(PDO $pdo): array {
         'user_material',
         'user_parts',
         'user_robots',
+        'view_user_robots_total_stats',
         'save_data',
         'active_expeditions',
         'active_robot_assemblies',
@@ -471,10 +472,10 @@ try {
                 $stmtRobot = $pdo->prepare("
                     INSERT INTO user_robots (
                         id, user_id, name, head_part_id, body_part_id, arms_part_id, legs_part_id,
-                        total_hp, total_power, total_defense, total_agility, total_dexterity, total_int, robot_data
+                        currentHp, maxHP, battleStats
                     ) VALUES (
                         :id, :user_id, :name, :head_id, :body_id, :arms_id, :legs_id,
-                        :hp, :power, :defense, :agility, :dexterity, :intel, :robot_data
+                        :current_hp, :max_hp, :battle_stats
                     )
                     ON DUPLICATE KEY UPDATE
                         user_id = VALUES(user_id),
@@ -483,14 +484,16 @@ try {
                         body_part_id = VALUES(body_part_id),
                         arms_part_id = VALUES(arms_part_id),
                         legs_part_id = VALUES(legs_part_id),
-                        total_hp = VALUES(total_hp),
-                        total_power = VALUES(total_power),
-                        total_defense = VALUES(total_defense),
-                        total_agility = VALUES(total_agility),
-                        total_dexterity = VALUES(total_dexterity),
-                        total_int = VALUES(total_int),
-                        robot_data = VALUES(robot_data)
+                        currentHp = VALUES(currentHp),
+                        maxHP = VALUES(maxHP),
+                        battleStats = VALUES(battleStats)
                 ");
+
+                $currentHp = isset($robot['currentHp']) ? (int)$robot['currentHp'] : 12;
+                $maxHp = isset($robot['maxHp']) ? (int)$robot['maxHp'] : (int)($stats['hp'] ?? 12);
+                $battleStats = !empty($robot['battleStats']) && is_array($robot['battleStats'])
+                    ? json_encode($robot['battleStats'], JSON_UNESCAPED_UNICODE)
+                    : null;
 
                 $stmtRobot->execute([
                     ':id' => $robot['id'],
@@ -500,13 +503,9 @@ try {
                     ':body_id' => $bodyId,
                     ':arms_id' => $armsId,
                     ':legs_id' => $legsId,
-                    ':hp' => (int)($stats['hp'] ?? 0),
-                    ':power' => (int)($stats['power'] ?? 0),
-                    ':defense' => (int)($stats['defense'] ?? 0),
-                    ':agility' => (int)($stats['agility'] ?? 0),
-                    ':dexterity' => (int)($stats['dexterity'] ?? 0),
-                    ':intel' => (int)($stats['int'] ?? 0),
-                    ':robot_data' => json_encode($robot, JSON_UNESCAPED_UNICODE)
+                    ':current_hp' => $currentHp,
+                    ':max_hp' => $maxHp,
+                    ':battle_stats' => $battleStats
                 ]);
 
                 // 3. save_data テーブル内の robots 配列も同期（存在する場合）
@@ -769,7 +768,7 @@ try {
             $result['materials'] = $mStmt->fetchAll();
 
             // 4. user_robots
-            $rStmt = $pdo->prepare("SELECT * FROM user_robots WHERE user_id = :uid OR user_id = :gid ORDER BY updated_at DESC");
+            $rStmt = $pdo->prepare("SELECT * FROM user_robots WHERE user_id = :uid OR user_id = :gid ORDER BY created_at DESC");
             $rStmt->execute([':uid' => $userId, ':gid' => $gId]);
             $result['robots'] = $rStmt->fetchAll();
 

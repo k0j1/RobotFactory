@@ -245,7 +245,15 @@ try {
     } catch (PDOException $e) {}
 
     try {
-        $pdo->exec("ALTER TABLE user_robots ADD COLUMN robot_data JSON");
+        $pdo->exec("ALTER TABLE user_robots ADD COLUMN currentHp INT DEFAULT 12");
+    } catch (PDOException $e) {}
+
+    try {
+        $pdo->exec("ALTER TABLE user_robots ADD COLUMN maxHP INT DEFAULT 12");
+    } catch (PDOException $e) {}
+
+    try {
+        $pdo->exec("ALTER TABLE user_robots ADD COLUMN battleStats JSON");
     } catch (PDOException $e) {}
 
     try {
@@ -405,10 +413,10 @@ try {
         $stmtRobot = $pdo->prepare("
             INSERT INTO user_robots (
                 id, user_id, name, head_part_id, body_part_id, arms_part_id, legs_part_id,
-                total_hp, total_power, total_defense, total_agility, total_dexterity, total_int, robot_data
+                currentHp, maxHP, battleStats
             ) VALUES (
                 :id, :user_id, :name, :head_id, :body_id, :arms_id, :legs_id,
-                :hp, :power, :defense, :agility, :dexterity, :intel, :robot_data
+                :current_hp, :max_hp, :battle_stats
             )
         ");
 
@@ -419,6 +427,11 @@ try {
             $armsId = !empty($robot['parts']['arms']['id']) ? $robot['parts']['arms']['id'] : null;
             $legsId = !empty($robot['parts']['legs']['id']) ? $robot['parts']['legs']['id'] : null;
             $stats = $robot['stats'] ?? [];
+            $currentHp = isset($robot['currentHp']) ? (int)$robot['currentHp'] : 12;
+            $maxHp = isset($robot['maxHp']) ? (int)$robot['maxHp'] : (int)($stats['hp'] ?? 12);
+            $battleStats = !empty($robot['battleStats']) && is_array($robot['battleStats'])
+                ? json_encode($robot['battleStats'], JSON_UNESCAPED_UNICODE)
+                : null;
             $stmtRobot->execute([
                 ':id' => $robot['id'],
                 ':user_id' => $actualUserId,
@@ -427,13 +440,9 @@ try {
                 ':body_id' => $bodyId,
                 ':arms_id' => $armsId,
                 ':legs_id' => $legsId,
-                ':hp' => (int)($stats['hp'] ?? 0),
-                ':power' => (int)($stats['power'] ?? 0),
-                ':defense' => (int)($stats['defense'] ?? 0),
-                ':agility' => (int)($stats['agility'] ?? 0),
-                ':dexterity' => (int)($stats['dexterity'] ?? 0),
-                ':intel' => (int)($stats['intelligence'] ?? 0),
-                ':robot_data' => json_encode($robot, JSON_UNESCAPED_UNICODE)
+                ':current_hp' => $currentHp,
+                ':max_hp' => $maxHp,
+                ':battle_stats' => $battleStats
             ]);
         }
     }
