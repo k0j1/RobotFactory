@@ -1,4 +1,4 @@
-export const APP_DB_VERSION = 'v0.1.29';
+export const APP_DB_VERSION = 'Ver.0.1';
 
 export class VersionCheckService {
   private static versionMismatch = false;
@@ -22,14 +22,14 @@ export class VersionCheckService {
         const data = await res.json();
         if (data && data.version && data.version !== APP_DB_VERSION) {
           this.versionMismatch = true;
-          this.errorMessage = `データベース(API)のバージョンが異なります。\nフロントエンド: ${APP_DB_VERSION}\nバックエンド: ${data.version}`;
+          this.errorMessage = `アプリの更新があります。\n現在のバージョン: ${APP_DB_VERSION}\n最新バージョン: ${data.version}`;
           this.notifyListeners();
           return false;
         }
       } else {
         if (res.status === 404) {
           this.versionMismatch = true;
-          this.errorMessage = `データベース(API)のバージョン確認ファイルが見つかりません。最新のバックエンド環境に更新してください。(想定: ${APP_DB_VERSION})`;
+          this.errorMessage = `アプリの更新があります。最新の環境に更新してください。(想定: ${APP_DB_VERSION})`;
           this.notifyListeners();
           return false;
         }
