@@ -3,6 +3,11 @@ build/
 dist/
 coverage/
 .DS_Store
+# Logs and Env
 *.log
 .env*
 !.env.example
+
+# Google AI Studio Admin Tools (管理画面用ソース・GitHub非公開)
+src/admin/
+public/api/admin/

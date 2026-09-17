@@ -2,12 +2,33 @@ import React, { useState } from 'react';
 import { theme } from '../styles/theme';
 import { Button } from '../components/ui/core';
 import * as Gi from 'react-icons/gi';
+import { Database, ShieldCheck } from 'lucide-react';
 import robotsWorkshopBg from '../assets/images/robots_workshop_bg_1788411232885.jpg';
 import { GoogleLogin } from '@react-oauth/google';
 import { jwtDecode } from 'jwt-decode';
 import { useAuth } from '../contexts/AuthContext';
 import { AuthApiService } from '../services/AuthApiService';
 import { GameEngine } from '../core/GameEngine';
+
+/**
+ * Google AI Studio プレビュー実行環境判定
+ */
+function checkIsAiStudio(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    const host = window.location.hostname;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('admin') === '1' || params.get('admin') === 'true') return true;
+    if (host.includes('run.app') || host.includes('aistudio') || host.includes('googleusercontent')) return true;
+    if (host === 'localhost' || host === '127.0.0.1' || host === '0.0.0.0') return true;
+    if (document.referrer && (document.referrer.includes('ai.studio') || document.referrer.includes('aistudio.google.com'))) return true;
+  } catch {}
+  return false;
+}
+
+// Google AI Studio限定管理モーダルの遅延ロード（GitHubへsrc/admin/がpushされない場合でもビルドが通るように設計）
+// @ts-ignore
+const AdminDatabaseModal = React.lazy(() => import('../admin/AdminDatabaseModal').then(m => ({ default: m.AdminDatabaseModal })).catch(() => ({ default: () => null })));
 
 interface TitleScreenProps {
   onStart: () => void;
@@ -18,6 +39,9 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onStart, engine }) => 
   const { user, setUser } = useAuth();
   const [loading, setLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string>('読み込み中...');
+  const [showAdminModal, setShowAdminModal] = useState<boolean>(false);
+
+  const isAiStudio = checkIsAiStudio();
 
   const handleLoginSuccess = async (credentialResponse: any) => {
     if (!credentialResponse.credential) return;
@@ -156,13 +180,40 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onStart, engine }) => 
           </div>
         )}
 
-        <p className="mt-12 text-stone-400">v0.1.14</p>
+        {/* Google AI Studio限定 DB管理画面ボタン */}
+        {isAiStudio && (
+          <div className="mt-6 flex flex-col items-center gap-1.5">
+            <button
+              onClick={() => setShowAdminModal(true)}
+              className="group flex items-center gap-2 px-3.5 py-1.5 bg-stone-900/90 hover:bg-stone-800 text-amber-400 hover:text-amber-300 rounded-full border border-amber-500/50 hover:border-amber-400 text-xs font-mono transition shadow-lg hover:shadow-amber-500/10"
+              title="データベースの内容・各テーブルレコードを確認"
+            >
+              <Database size={14} className="text-amber-400 group-hover:scale-110 transition-transform" />
+              <span className="font-bold">【管理者】DB管理画面</span>
+              <span className="bg-amber-950 text-amber-300 text-[10px] px-1.5 py-0.5 rounded border border-amber-600/40">
+                AI Studio限定
+              </span>
+            </button>
+          </div>
+        )}
+
+        <p className="mt-8 text-stone-400">v0.1.19</p>
       </div>
       
       {/* Decorative background elements */}
       <Gi.GiGears className="absolute top-10 left-10 opacity-20 text-6xl z-0" />
       <Gi.GiSpanner className="absolute bottom-20 right-10 opacity-20 text-6xl z-0" />
       <Gi.GiRobotGolem className="absolute top-1/4 right-1/4 opacity-10 text-8xl z-0" />
+
+      {/* Google AI Studio 専用 DB管理モーダル */}
+      {isAiStudio && showAdminModal && (
+        <React.Suspense fallback={null}>
+          <AdminDatabaseModal
+            isOpen={showAdminModal}
+            onClose={() => setShowAdminModal(false)}
+          />
+        </React.Suspense>
+      )}
     </div>
   );
 };
