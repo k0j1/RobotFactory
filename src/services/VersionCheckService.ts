@@ -1,4 +1,11 @@
-export const APP_DB_VERSION = 'Ver.0.1';
+export const APP_DB_VERSION = 'V0.2';
+
+/**
+ * バージョン文字列の表記揺れ（V0.2 / Ver.0.2 / v0.2 等）を正規化して比較する
+ */
+const normalizeVersion = (ver: string): string => {
+  return ver.trim().toLowerCase().replace(/^ver\.?/, '').replace(/^v/, '');
+};
 
 export class VersionCheckService {
   private static versionMismatch = false;
@@ -20,7 +27,7 @@ export class VersionCheckService {
 
       if (res.ok) {
         const data = await res.json();
-        if (data && data.version && data.version !== APP_DB_VERSION) {
+        if (data && data.version && normalizeVersion(data.version) !== normalizeVersion(APP_DB_VERSION)) {
           this.versionMismatch = true;
           this.errorMessage = `アプリの更新があります。\n現在のバージョン: ${APP_DB_VERSION}\n最新バージョン: ${data.version}`;
           this.notifyListeners();

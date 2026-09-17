@@ -527,7 +527,7 @@ try {
             SELECT :user_id, :location_id, :start_time, :end_time, :dispatched_robot_id, :reward_data
             WHERE NOT EXISTS (
                 SELECT 1 FROM complete_expeditions
-                WHERE user_id = :user_id AND start_time = :start_time AND end_time = :end_time
+                WHERE user_id = :chk_user_id AND start_time = :chk_start_time AND end_time = :chk_end_time
             )
         ");
         $stmtCompExp->execute([
@@ -536,7 +536,10 @@ try {
             ':start_time' => (int)($compQ['startTime'] ?? 0),
             ':end_time' => (int)($compQ['endTime'] ?? 0),
             ':dispatched_robot_id' => $compQ['dispatchedRobotId'] ?? null,
-            ':reward_data' => json_encode($compQ['rewardData'] ?? [], JSON_UNESCAPED_UNICODE)
+            ':reward_data' => json_encode($compQ['rewardData'] ?? [], JSON_UNESCAPED_UNICODE),
+            ':chk_user_id' => $actualUserId,
+            ':chk_start_time' => (int)($compQ['startTime'] ?? 0),
+            ':chk_end_time' => (int)($compQ['endTime'] ?? 0)
         ]);
         // 2. complete に追加完了後、対となる active_expeditions から確実に削除
         $delExp = $pdo->prepare("DELETE FROM active_expeditions WHERE user_id = :user_id");
@@ -571,7 +574,7 @@ try {
             SELECT :user_id, :part_type, :main_id, :sub_id, :start_time, :end_time, :result_part_data
             WHERE NOT EXISTS (
                 SELECT 1 FROM complete_part_crafts
-                WHERE user_id = :user_id AND start_time = :start_time AND end_time = :end_time
+                WHERE user_id = :chk_user_id AND start_time = :chk_start_time AND end_time = :chk_end_time
             )
         ");
         $stmtCompCraft->execute([
@@ -582,6 +585,10 @@ try {
             ':start_time' => (int)($compC['startTime'] ?? 0),
             ':end_time' => (int)($compC['endTime'] ?? 0),
             ':result_part_data' => json_encode($compC['resultPart'] ?? [], JSON_UNESCAPED_UNICODE)
+,
+            ':chk_user_id' => $actualUserId,
+            ':chk_start_time' => (int)($compC['startTime'] ?? 0),
+            ':chk_end_time' => (int)($compC['endTime'] ?? 0)
         ]);
         // 2. complete に追加完了後、対となる active_part_crafts から確実に削除
         $delCraft = $pdo->prepare("DELETE FROM active_part_crafts WHERE user_id = :user_id");
@@ -617,14 +624,17 @@ try {
             SELECT :user_id, :start_time, :end_time, :result_robot_data
             WHERE NOT EXISTS (
                 SELECT 1 FROM complete_robot_assemblies
-                WHERE user_id = :user_id AND start_time = :start_time AND end_time = :end_time
+                WHERE user_id = :chk_user_id AND start_time = :chk_start_time AND end_time = :chk_end_time
             )
         ");
         $stmtCompAss->execute([
             ':user_id' => $actualUserId,
             ':start_time' => (int)($compA['startTime'] ?? 0),
             ':end_time' => (int)($compA['endTime'] ?? 0),
-            ':result_robot_data' => json_encode($compA['resultRobot'] ?? [], JSON_UNESCAPED_UNICODE)
+            ':result_robot_data' => json_encode($compA['resultRobot'] ?? [], JSON_UNESCAPED_UNICODE),
+            ':chk_user_id' => $actualUserId,
+            ':chk_start_time' => (int)($compA['startTime'] ?? 0),
+            ':chk_end_time' => (int)($compA['endTime'] ?? 0)
         ]);
         // 2. complete に追加完了後、対となる active_robot_assemblies から確実に削除
         $delAss = $pdo->prepare("DELETE FROM active_robot_assemblies WHERE user_id = :user_id");
@@ -659,7 +669,7 @@ try {
             SELECT :user_id, :request_id, :rank, :reward_g, :deadline, :delivered_robot_id, :request_data
             WHERE NOT EXISTS (
                 SELECT 1 FROM complete_requests
-                WHERE user_id = :user_id AND request_id = :request_id AND deadline = :deadline
+                WHERE user_id = :chk_user_id AND request_id = :chk_request_id AND deadline = :chk_deadline
             )
         ");
         $stmtCompReq->execute([
@@ -670,6 +680,10 @@ try {
             ':deadline' => (int)($compR['deadline'] ?? 0),
             ':delivered_robot_id' => $compR['deliveredRobotId'] ?? null,
             ':request_data' => json_encode($compR['requestData'] ?? [], JSON_UNESCAPED_UNICODE)
+,
+            ':chk_user_id' => $actualUserId,
+            ':chk_request_id' => $compR['requestId'],
+            ':chk_deadline' => (int)($compR['deadline'] ?? 0)
         ]);
 
         // 2. complete に追加完了後、対となる active_requests から確実に削除
@@ -720,7 +734,7 @@ try {
             SELECT :user_id, :robot_id, :start_time, :end_time, :result_parts_data
             WHERE NOT EXISTS (
                 SELECT 1 FROM complete_robot_disassemblies
-                WHERE user_id = :user_id AND start_time = :start_time AND end_time = :end_time
+                WHERE user_id = :chk_user_id AND start_time = :chk_start_time AND end_time = :chk_end_time
             )
         ");
         $stmtCompDis->execute([
@@ -729,6 +743,10 @@ try {
             ':start_time' => (int)($compD['startTime'] ?? 0),
             ':end_time' => (int)($compD['endTime'] ?? 0),
             ':result_parts_data' => json_encode($compD['resultParts'] ?? [], JSON_UNESCAPED_UNICODE)
+,
+            ':chk_user_id' => $actualUserId,
+            ':chk_start_time' => (int)($compD['startTime'] ?? 0),
+            ':chk_end_time' => (int)($compD['endTime'] ?? 0)
         ]);
         // 2. complete に追加完了後、対となる active_robot_disassemblies から確実に削除
         $delDisass = $pdo->prepare("DELETE FROM active_robot_disassemblies WHERE user_id = :user_id");
@@ -763,7 +781,7 @@ try {
             SELECT :user_id, :part_id, :start_time, :end_time, :result_materials_data
             WHERE NOT EXISTS (
                 SELECT 1 FROM complete_part_recycles
-                WHERE user_id = :user_id AND start_time = :start_time AND end_time = :end_time
+                WHERE user_id = :chk_user_id AND start_time = :chk_start_time AND end_time = :chk_end_time
             )
         ");
         $stmtCompRec->execute([
@@ -772,6 +790,10 @@ try {
             ':start_time' => (int)($compRec['startTime'] ?? 0),
             ':end_time' => (int)($compRec['endTime'] ?? 0),
             ':result_materials_data' => json_encode($compRec['resultMaterials'] ?? [], JSON_UNESCAPED_UNICODE)
+,
+            ':chk_user_id' => $actualUserId,
+            ':chk_start_time' => (int)($compRec['startTime'] ?? 0),
+            ':chk_end_time' => (int)($compRec['endTime'] ?? 0)
         ]);
         // 2. complete に追加完了後、対となる active_part_recycles から確実に削除
         $delRec = $pdo->prepare("DELETE FROM active_part_recycles WHERE user_id = :user_id");
