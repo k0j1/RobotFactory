@@ -24,18 +24,58 @@ if (!$pdo) {
     exit;
 }
 
-// 許可テーブル一覧（ホワイトリスト）
-$ALLOWED_TABLES = [
-    'users',
-    'user_workshop_status',
-    'user_material',
-    'user_robots',
-    'save_data',
-    'active_expeditions',
-    'active_robot_assemblies',
-    'active_requests',
-    'complete_requests'
-];
+// データベース内の全テーブルを取得（BASE TABLEおよびVIEW）
+function getAllDatabaseTables(PDO $pdo): array {
+    $tables = [];
+    try {
+        $stmt = $pdo->query("SHOW FULL TABLES");
+        if ($stmt) {
+            while ($row = $stmt->fetch(PDO::FETCH_NUM)) {
+                if (!empty($row[0])) {
+                    $tables[] = $row[0];
+                }
+            }
+        }
+    } catch (Exception $e) {}
+
+    // スキーマ定義の全既知テーブル（SHOW FULL TABLES で万一取得できなかった場合のフォールバック）
+    $knownTables = [
+        'users',
+        'user_workshop_status',
+        'user_material',
+        'user_parts',
+        'user_robots',
+        'save_data',
+        'active_expeditions',
+        'active_robot_assemblies',
+        'active_requests',
+        'active_part_crafts',
+        'active_robot_disassemblies',
+        'active_part_recycles',
+        'complete_requests',
+        'complete_expeditions',
+        'complete_robot_assemblies',
+        'complete_part_crafts',
+        'complete_robot_disassemblies',
+        'complete_part_recycles',
+        'completed_robots',
+        'complete_parts',
+        'complete_deliveries',
+        'm_parts_encyclopedia',
+        'user_minigame_status',
+        'minigame_rankings'
+    ];
+
+    $merged = array_unique(array_merge($knownTables, $tables));
+    $validTables = [];
+    foreach ($merged as $t) {
+        if (preg_match('/^[a-zA-Z0-9_]+$/', $t)) {
+            $validTables[] = $t;
+        }
+    }
+    sort($validTables);
+    return $validTables;
+}
 
 $action = $_GET['action'] ?? $_POST['action'] ?? 'get_summary';
 
@@ -45,8 +85,9 @@ try {
         // 1. サマリー概要 & 全テーブル一覧取得
         // ---------------------------------------------------------------------
         case 'get_summary': {
+            $allTables = getAllDatabaseTables($pdo);
             $tableStats = [];
-            foreach ($ALLOWED_TABLES as $tableName) {
+            foreach ($allTables as $tableName) {
                 try {
                     $cntStmt = $pdo->query("SELECT COUNT(*) FROM `{$tableName}`");
                     $cnt = $cntStmt ? (int)$cntStmt->fetchColumn() : 0;
@@ -60,11 +101,12 @@ try {
                         'columns' => $columns
                     ];
                 } catch (PDOException $e) {
+                    // テーブルが未作成等の場合は0件として記録
                     $tableStats[$tableName] = [
                         'name' => $tableName,
                         'count' => 0,
                         'columns' => [],
-                        'error' => 'テーブルが存在しないか取得不可'
+                        'error' => '未作成またはアクセス不可'
                     ];
                 }
             }
@@ -102,7 +144,7 @@ try {
                         'total_request_earned_gold' => (int)($wsRow['total_request_earned_gold'] ?? 0)
                     ];
                 }
-            } catch (Exception $e) {}
+            } catch (PDOException $e) {}
 
             echo json_encode([
                 'success' => true,
@@ -123,9 +165,15 @@ try {
         // 2. 特定テーブルのレコード一覧取得
         // ---------------------------------------------------------------------
         case 'get_table_data': {
-            $table = $_GET['table'] ?? $_POST['table'] ?? '';
-            if (!in_array($table, $ALLOWED_TABLES, true)) {
-                echo json_encode(['success' => false, 'error' => "許可されていないテーブル名です: {$table}"], JSON_UNESCAPED_UNICODE);
+            $table = trim((string)($_GET['table'] ?? $_POST['table'] ?? ''));
+            if (!preg_match('/^[a-zA-Z0-9_]+$/', $table)) {
+                echo json_encode(['success' => false, 'error' => "無効なテーブル名です: {$table}"], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
+            $allTables = getAllDatabaseTables($pdo);
+            if (!in_array($table, $allTables, true)) {
+                echo json_encode(['success' => false, 'error' => "データベースに存在しないテーブル名です: {$table}"], JSON_UNESCAPED_UNICODE);
                 exit;
             }
 
@@ -189,6 +237,96 @@ try {
                 'offset' => $offset,
                 'rows' => $rows
             ], JSON_UNESCAPED_UNICODE);
+            break;
+        }
+
+        // ---------------------------------------------------------------------
+        // 3. レコード削除 (プライマリキー基準で安全に1件削除)
+        // ---------------------------------------------------------------------
+        case 'delete_record': {
+            $table = trim((string)($_POST['table'] ?? ''));
+            if (!preg_match('/^[a-zA-Z0-9_]+$/', $table)) {
+                echo json_encode(['success' => false, 'error' => "無効なテーブル名です: {$table}"], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
+            $allTables = getAllDatabaseTables($pdo);
+            if (!in_array($table, $allTables, true)) {
+                echo json_encode(['success' => false, 'error' => "存在しないテーブルです: {$table}"], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
+            $rawKeys = $_POST['primary_keys'] ?? $_POST['keys'] ?? '';
+            $keys = is_array($rawKeys) ? $rawKeys : json_decode($rawKeys, true);
+            if (empty($keys) || !is_array($keys)) {
+                echo json_encode(['success' => false, 'error' => '削除対象を指定するプライマリキー情報が提供されていません。'], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
+            // カラム一覧の取得とキーの妥当性検証
+            $colStmt = $pdo->query("DESCRIBE `{$table}`");
+            $colInfo = $colStmt ? $colStmt->fetchAll() : [];
+            $validColumns = array_map(function($c) { return $c['Field']; }, $colInfo);
+
+            $whereClauses = [];
+            $params = [];
+            $idx = 0;
+            foreach ($keys as $k => $v) {
+                if (!in_array($k, $validColumns, true)) {
+                    echo json_encode(['success' => false, 'error' => "カラム {$k} はテーブル {$table} に存在しません。"], JSON_UNESCAPED_UNICODE);
+                    exit;
+                }
+                $paramKey = ":del_key_" . $idx;
+                if ($v === null) {
+                    $whereClauses[] = "`{$k}` IS NULL";
+                } else {
+                    $whereClauses[] = "`{$k}` = {$paramKey}";
+                    $params[$paramKey] = $v;
+                }
+                $idx++;
+            }
+
+            if (empty($whereClauses)) {
+                echo json_encode(['success' => false, 'error' => 'WHERE条件が空のため削除を中止しました。'], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
+            $whereSql = implode(" AND ", $whereClauses);
+            $delSql = "DELETE FROM `{$table}` WHERE {$whereSql} LIMIT 1";
+
+            try {
+                $delStmt = $pdo->prepare($delSql);
+                $delStmt->execute($params);
+                $affected = $delStmt->rowCount();
+
+                if ($affected > 0) {
+                    echo json_encode([
+                        'success' => true,
+                        'deleted_count' => $affected,
+                        'message' => "テーブル {$table} から対象レコードを正常に削除しました。"
+                    ], JSON_UNESCAPED_UNICODE);
+                } else {
+                    echo json_encode([
+                        'success' => false,
+                        'error' => '指定されたレコードが見つからないか、既に削除されています。'
+                    ], JSON_UNESCAPED_UNICODE);
+                }
+            } catch (PDOException $e) {
+                $errCode = $e->getCode();
+                $errMsg = $e->getMessage();
+                // 外部キー制約エラー (23000 / 1451) の親切なエラーメッセージ
+                if (strpos($errMsg, 'foreign key constraint') !== false || $errCode === '23000') {
+                    echo json_encode([
+                        'success' => false,
+                        'error' => "外部キー制約により削除できません。このレコードは他のテーブル（user_robots等）から参照されています。\n詳細: {$errMsg}"
+                    ], JSON_UNESCAPED_UNICODE);
+                } else {
+                    echo json_encode([
+                        'success' => false,
+                        'error' => "データベース削除エラー: {$errMsg}"
+                    ], JSON_UNESCAPED_UNICODE);
+                }
+            }
             break;
         }
 
