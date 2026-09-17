@@ -524,7 +524,11 @@ try {
         // 1. complete_expeditions テーブルに完了レコードを追加
         $stmtCompExp = $pdo->prepare("
             INSERT INTO complete_expeditions (user_id, location_id, start_time, end_time, dispatched_robot_id, reward_data)
-            VALUES (:user_id, :location_id, :start_time, :end_time, :dispatched_robot_id, :reward_data)
+            SELECT :user_id, :location_id, :start_time, :end_time, :dispatched_robot_id, :reward_data
+            WHERE NOT EXISTS (
+                SELECT 1 FROM complete_expeditions
+                WHERE user_id = :user_id AND start_time = :start_time AND end_time = :end_time
+            )
         ");
         $stmtCompExp->execute([
             ':user_id' => $actualUserId,
@@ -564,7 +568,11 @@ try {
         // 1. complete_part_crafts テーブルに完了レコードを追加
         $stmtCompCraft = $pdo->prepare("
             INSERT INTO complete_part_crafts (user_id, part_type, main_material_id, sub_material_id, start_time, end_time, result_part_data)
-            VALUES (:user_id, :part_type, :main_id, :sub_id, :start_time, :end_time, :result_part_data)
+            SELECT :user_id, :part_type, :main_id, :sub_id, :start_time, :end_time, :result_part_data
+            WHERE NOT EXISTS (
+                SELECT 1 FROM complete_part_crafts
+                WHERE user_id = :user_id AND start_time = :start_time AND end_time = :end_time
+            )
         ");
         $stmtCompCraft->execute([
             ':user_id' => $actualUserId,
@@ -606,7 +614,11 @@ try {
         // 1. complete_robot_assemblies テーブルに完了レコードを追加
         $stmtCompAss = $pdo->prepare("
             INSERT INTO complete_robot_assemblies (user_id, start_time, end_time, result_robot_data)
-            VALUES (:user_id, :start_time, :end_time, :result_robot_data)
+            SELECT :user_id, :start_time, :end_time, :result_robot_data
+            WHERE NOT EXISTS (
+                SELECT 1 FROM complete_robot_assemblies
+                WHERE user_id = :user_id AND start_time = :start_time AND end_time = :end_time
+            )
         ");
         $stmtCompAss->execute([
             ':user_id' => $actualUserId,
@@ -644,7 +656,11 @@ try {
         // 1. complete_requests テーブルに完了レコードを追加
         $stmtCompReq = $pdo->prepare("
             INSERT INTO complete_requests (user_id, request_id, rank, reward_g, deadline, delivered_robot_id, request_data)
-            VALUES (:user_id, :request_id, :rank, :reward_g, :deadline, :delivered_robot_id, :request_data)
+            SELECT :user_id, :request_id, :rank, :reward_g, :deadline, :delivered_robot_id, :request_data
+            WHERE NOT EXISTS (
+                SELECT 1 FROM complete_requests
+                WHERE user_id = :user_id AND request_id = :request_id AND deadline = :deadline
+            )
         ");
         $stmtCompReq->execute([
             ':user_id' => $actualUserId,
@@ -701,7 +717,11 @@ try {
         // 1. complete_robot_disassemblies テーブルに完了レコードを追加
         $stmtCompDis = $pdo->prepare("
             INSERT INTO complete_robot_disassemblies (user_id, robot_id, start_time, end_time, result_parts_data)
-            VALUES (:user_id, :robot_id, :start_time, :end_time, :result_parts_data)
+            SELECT :user_id, :robot_id, :start_time, :end_time, :result_parts_data
+            WHERE NOT EXISTS (
+                SELECT 1 FROM complete_robot_disassemblies
+                WHERE user_id = :user_id AND start_time = :start_time AND end_time = :end_time
+            )
         ");
         $stmtCompDis->execute([
             ':user_id' => $actualUserId,
@@ -740,7 +760,11 @@ try {
         // 1. complete_part_recycles テーブルに完了レコードを追加
         $stmtCompRec = $pdo->prepare("
             INSERT INTO complete_part_recycles (user_id, part_id, start_time, end_time, result_materials_data)
-            VALUES (:user_id, :part_id, :start_time, :end_time, :result_materials_data)
+            SELECT :user_id, :part_id, :start_time, :end_time, :result_materials_data
+            WHERE NOT EXISTS (
+                SELECT 1 FROM complete_part_recycles
+                WHERE user_id = :user_id AND start_time = :start_time AND end_time = :end_time
+            )
         ");
         $stmtCompRec->execute([
             ':user_id' => $actualUserId,

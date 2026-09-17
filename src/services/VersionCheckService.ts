@@ -1,4 +1,4 @@
-export const APP_DB_VERSION = 'v0.1.28';
+export const APP_DB_VERSION = 'v0.1.29';
 
 export class VersionCheckService {
   private static versionMismatch = false;
