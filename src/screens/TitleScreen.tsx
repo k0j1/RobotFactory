@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { theme } from '../styles/theme';
 import { Button } from '../components/ui/core';
 import * as Gi from 'react-icons/gi';
-import { Database, ShieldCheck } from 'lucide-react';
+import { Database, ShieldCheck, UserCheck } from 'lucide-react';
 import robotsWorkshopBg from '../assets/images/robots_workshop_bg_1788411232885.jpg';
 import { GoogleLogin } from '@react-oauth/google';
 import { jwtDecode } from 'jwt-decode';
@@ -29,6 +29,7 @@ function checkIsAiStudio(): boolean {
 // Viteのimport.meta.globを使用して、src/admin/ディレクトリが存在する場合のみ動的に読み込み
 // （GitHub Actionsでsrc/admin/が除外されたリポジトリでもRollupの静的解決エラーを起こさず安全にビルド可能）
 const adminModuleMap = import.meta.glob<{ AdminDatabaseModal: React.ComponentType<any> }>('../admin/AdminDatabaseModal.tsx');
+const adminLoginModuleMap = import.meta.glob<{ AdminUserLoginModal: React.ComponentType<any> }>('../admin/AdminUserLoginModal.tsx');
 
 const AdminDatabaseModal = React.lazy(async () => {
   const loader = adminModuleMap['../admin/AdminDatabaseModal.tsx'];
@@ -36,6 +37,19 @@ const AdminDatabaseModal = React.lazy(async () => {
     try {
       const mod = await loader();
       return { default: mod.AdminDatabaseModal };
+    } catch {
+      return { default: () => null };
+    }
+  }
+  return { default: () => null };
+});
+
+const AdminUserLoginModal = React.lazy(async () => {
+  const loader = adminLoginModuleMap['../admin/AdminUserLoginModal.tsx'];
+  if (loader) {
+    try {
+      const mod = await loader();
+      return { default: mod.AdminUserLoginModal };
     } catch {
       return { default: () => null };
     }
@@ -53,8 +67,44 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onStart, engine }) => 
   const [loading, setLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string>('読み込み中...');
   const [showAdminModal, setShowAdminModal] = useState<boolean>(false);
+  const [showUserLoginModal, setShowUserLoginModal] = useState<boolean>(false);
 
   const isAiStudio = checkIsAiStudio();
+
+  // AI Studio限定: 任意のユーザーIDによる直接ログイン
+  const handleLoginAsUser = async (targetUserId: string, userRecord?: any) => {
+    setLoading(true);
+    setStatusMessage(`ユーザー (${targetUserId.slice(0, 10)}...) のデータを読み込み中...`);
+    try {
+      const apiService = AuthApiService.getInstance();
+      const res = await apiService.loadUserData(targetUserId);
+
+      let loggedUser: any = userRecord || res.user;
+      if (!loggedUser) {
+        loggedUser = {
+          id: 0,
+          google_id: targetUserId,
+          email: '',
+          name: `ユーザー (${targetUserId.slice(0, 8)})`,
+          picture: '',
+          received_initial_bonus: res.received_initial_bonus ?? 1
+        };
+      } else if (res.user) {
+        loggedUser = { ...res.user, ...loggedUser };
+      }
+      setUser(loggedUser);
+
+      if (engine) {
+        await engine.switchToGoogleUser(targetUserId, res.data);
+      }
+      onStart();
+    } catch (err: any) {
+      console.error('[TitleScreen] handleLoginAsUser error:', err);
+      alert(`ユーザーログインに失敗しました: ${err.message || '通信エラー'}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleLoginSuccess = async (credentialResponse: any) => {
     if (!credentialResponse.credential) return;
@@ -193,9 +243,9 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onStart, engine }) => 
           </div>
         )}
 
-        {/* Google AI Studio限定 DB管理画面ボタン */}
+        {/* Google AI Studio限定 管理メニュー */}
         {isAiStudio && (
-          <div className="mt-6 flex flex-col items-center gap-1.5">
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-2 max-w-md">
             <button
               onClick={() => setShowAdminModal(true)}
               className="group flex items-center gap-2 px-3.5 py-1.5 bg-stone-900/90 hover:bg-stone-800 text-amber-400 hover:text-amber-300 rounded-full border border-amber-500/50 hover:border-amber-400 text-xs font-mono transition shadow-lg hover:shadow-amber-500/10"
@@ -207,10 +257,21 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onStart, engine }) => 
                 AI Studio限定
               </span>
             </button>
+            <button
+              onClick={() => setShowUserLoginModal(true)}
+              className="group flex items-center gap-2 px-3.5 py-1.5 bg-emerald-950/90 hover:bg-emerald-900 text-emerald-300 hover:text-emerald-100 rounded-full border border-emerald-500/60 hover:border-emerald-400 text-xs font-mono transition shadow-lg hover:shadow-emerald-500/10"
+              title="任意のユーザーIDを指定してクラウドセーブから直接ログイン"
+            >
+              <UserCheck size={14} className="text-emerald-400 group-hover:scale-110 transition-transform" />
+              <span className="font-bold">ユーザーID指定ログイン</span>
+              <span className="bg-emerald-900 text-emerald-200 text-[10px] px-1.5 py-0.5 rounded border border-emerald-600/50">
+                AI Studio限定
+              </span>
+            </button>
           </div>
         )}
 
-        <p className="mt-8 text-stone-400">v0.1.21</p>
+        <p className="mt-8 text-stone-400">v0.1.27</p>
       </div>
       
       {/* Decorative background elements */}
@@ -224,6 +285,18 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onStart, engine }) => 
           <AdminDatabaseModal
             isOpen={showAdminModal}
             onClose={() => setShowAdminModal(false)}
+          />
+        </React.Suspense>
+      )}
+
+      {/* Google AI Studio 専用 ユーザーID指定ログインモーダル */}
+      {isAiStudio && showUserLoginModal && (
+        <React.Suspense fallback={null}>
+          <AdminUserLoginModal
+            isOpen={showUserLoginModal}
+            onClose={() => setShowUserLoginModal(false)}
+            onLoginAsUser={handleLoginAsUser}
+            currentUserId={user?.google_id || (user ? String((user as any).id) : null)}
           />
         </React.Suspense>
       )}

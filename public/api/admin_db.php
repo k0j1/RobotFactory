@@ -331,6 +331,406 @@ try {
         }
 
         // ---------------------------------------------------------------------
+        // 2-3. complete_robot_assemblies から user_robots へレコード登録
+        // ---------------------------------------------------------------------
+        case 'register_robot_from_assembly': {
+            $assemblyId = isset($_POST['assembly_id']) ? (int)$_POST['assembly_id'] : 0;
+            $targetUserId = trim((string)($_POST['target_user_id'] ?? ''));
+            $customRobotId = trim((string)($_POST['robot_id'] ?? ''));
+            $customRobotName = trim((string)($_POST['robot_name'] ?? ''));
+            $autoEnsureParts = !isset($_POST['auto_ensure_parts']) || $_POST['auto_ensure_parts'] === 'true' || $_POST['auto_ensure_parts'] === '1' || $_POST['auto_ensure_parts'] === 1;
+            
+            $robotDataRaw = $_POST['robot_data'] ?? null;
+            $robot = null;
+
+            if ($assemblyId > 0) {
+                $stmtAss = $pdo->prepare("SELECT * FROM complete_robot_assemblies WHERE id = :id LIMIT 1");
+                $stmtAss->execute([':id' => $assemblyId]);
+                $assRow = $stmtAss->fetch();
+
+                if (!$assRow) {
+                    echo json_encode([
+                        'success' => false,
+                        'error' => "complete_robot_assemblies の該当レコード (ID: {$assemblyId}) が見つかりません。"
+                    ], JSON_UNESCAPED_UNICODE);
+                    exit;
+                }
+
+                if ($targetUserId === '') {
+                    $targetUserId = $assRow['user_id'];
+                }
+
+                if (!empty($assRow['result_robot_data'])) {
+                    $robot = is_string($assRow['result_robot_data']) 
+                        ? json_decode($assRow['result_robot_data'], true) 
+                        : $assRow['result_robot_data'];
+                }
+            }
+
+            // 直接 robot_data が渡された場合のフォールバック
+            if (!$robot && !empty($robotDataRaw)) {
+                $robot = is_string($robotDataRaw) ? json_decode($robotDataRaw, true) : $robotDataRaw;
+            }
+
+            if (!is_array($robot)) {
+                echo json_encode([
+                    'success' => false,
+                    'error' => '有効なロボットデータ (result_robot_data) を取得できませんでした。'
+                ], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
+            if ($targetUserId === '') {
+                echo json_encode([
+                    'success' => false,
+                    'error' => '登録先 user_id が指定されていません。'
+                ], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
+            // カスタム設定の反映
+            if ($customRobotName !== '') {
+                $robot['name'] = $customRobotName;
+            }
+            if ($customRobotId !== '') {
+                $robot['id'] = $customRobotId;
+            }
+            if (empty($robot['id'])) {
+                $robot['id'] = 'robot_' . round(microtime(true) * 1000);
+            }
+            if (empty($robot['name'])) {
+                $robot['name'] = '組立完了ロボット';
+            }
+
+            try {
+                $pdo->beginTransaction();
+
+                // user_parts 登録不要時（autoEnsureParts=false）の検証: 装備パーツが全て user_parts に存在するかチェック
+                if (!$autoEnsureParts && !empty($robot['parts']) && is_array($robot['parts'])) {
+                    $stmtCheckPart = $pdo->prepare("SELECT id FROM user_parts WHERE id = :pid LIMIT 1");
+                    foreach (['head', 'body', 'arms', 'legs'] as $pKey) {
+                        if (!empty($robot['parts'][$pKey]) && is_array($robot['parts'][$pKey])) {
+                            $pId = trim((string)($robot['parts'][$pKey]['id'] ?? ''));
+                            if ($pId === '') {
+                                echo json_encode([
+                                    'success' => false,
+                                    'error' => "パーツ({$pKey}) にIDが割り振られておらず、user_parts に未登録です。user_parts テーブルへの登録が必要です。"
+                                ], JSON_UNESCAPED_UNICODE);
+                                exit;
+                            }
+                            $stmtCheckPart->execute([':pid' => $pId]);
+                            if (!$stmtCheckPart->fetch()) {
+                                echo json_encode([
+                                    'success' => false,
+                                    'error' => "パーツ({$pKey}: ID {$pId}) が user_parts テーブルに存在しません。user_parts への登録が不要な状態にしてから登録してください。"
+                                ], JSON_UNESCAPED_UNICODE);
+                                exit;
+                            }
+                        }
+                    }
+                }
+
+                // 1. 外部キー制約（fk_head_part 等）を満たすため、装備パーツを user_parts に自動補完
+                if ($autoEnsureParts && !empty($robot['parts']) && is_array($robot['parts'])) {
+                    $stmtEnsurePart = $pdo->prepare("
+                        INSERT INTO user_parts (id, user_id, master_part_id, is_equipped, part_data)
+                        VALUES (:id, :user_id, :master_id, 1, :part_data)
+                        ON DUPLICATE KEY UPDATE 
+                            user_id = VALUES(user_id),
+                            is_equipped = 1,
+                            part_data = VALUES(part_data)
+                    ");
+
+                    foreach (['head', 'body', 'arms', 'legs'] as $pKey) {
+                        if (!empty($robot['parts'][$pKey]) && is_array($robot['parts'][$pKey])) {
+                            $partObj = $robot['parts'][$pKey];
+                            if (empty($partObj['id'])) {
+                                $partObj['id'] = 'part_' . $pKey . '_' . round(microtime(true) * 1000) . '_' . mt_rand(100, 999);
+                                $robot['parts'][$pKey]['id'] = $partObj['id'];
+                            }
+                            $partId = $partObj['id'];
+                            $masterId = $partObj['name'] ?? $partObj['master_id'] ?? $partId;
+
+                            $stmtEnsurePart->execute([
+                                ':id' => $partId,
+                                ':user_id' => $targetUserId,
+                                ':master_id' => $masterId,
+                                ':part_data' => json_encode($partObj, JSON_UNESCAPED_UNICODE)
+                            ]);
+                        }
+                    }
+                }
+
+                // 2. user_robots への挿入・更新
+                $headId = !empty($robot['parts']['head']['id']) ? $robot['parts']['head']['id'] : null;
+                $bodyId = !empty($robot['parts']['body']['id']) ? $robot['parts']['body']['id'] : null;
+                $armsId = !empty($robot['parts']['arms']['id']) ? $robot['parts']['arms']['id'] : null;
+                $legsId = !empty($robot['parts']['legs']['id']) ? $robot['parts']['legs']['id'] : null;
+                $stats = $robot['stats'] ?? [];
+
+                $stmtRobot = $pdo->prepare("
+                    INSERT INTO user_robots (
+                        id, user_id, name, head_part_id, body_part_id, arms_part_id, legs_part_id,
+                        total_hp, total_power, total_defense, total_agility, total_dexterity, total_int, robot_data
+                    ) VALUES (
+                        :id, :user_id, :name, :head_id, :body_id, :arms_id, :legs_id,
+                        :hp, :power, :defense, :agility, :dexterity, :intel, :robot_data
+                    )
+                    ON DUPLICATE KEY UPDATE
+                        user_id = VALUES(user_id),
+                        name = VALUES(name),
+                        head_part_id = VALUES(head_part_id),
+                        body_part_id = VALUES(body_part_id),
+                        arms_part_id = VALUES(arms_part_id),
+                        legs_part_id = VALUES(legs_part_id),
+                        total_hp = VALUES(total_hp),
+                        total_power = VALUES(total_power),
+                        total_defense = VALUES(total_defense),
+                        total_agility = VALUES(total_agility),
+                        total_dexterity = VALUES(total_dexterity),
+                        total_int = VALUES(total_int),
+                        robot_data = VALUES(robot_data)
+                ");
+
+                $stmtRobot->execute([
+                    ':id' => $robot['id'],
+                    ':user_id' => $targetUserId,
+                    ':name' => $robot['name'],
+                    ':head_id' => $headId,
+                    ':body_id' => $bodyId,
+                    ':arms_id' => $armsId,
+                    ':legs_id' => $legsId,
+                    ':hp' => (int)($stats['hp'] ?? 0),
+                    ':power' => (int)($stats['power'] ?? 0),
+                    ':defense' => (int)($stats['defense'] ?? 0),
+                    ':agility' => (int)($stats['agility'] ?? 0),
+                    ':dexterity' => (int)($stats['dexterity'] ?? 0),
+                    ':intel' => (int)($stats['int'] ?? 0),
+                    ':robot_data' => json_encode($robot, JSON_UNESCAPED_UNICODE)
+                ]);
+
+                // 3. save_data テーブル内の robots 配列も同期（存在する場合）
+                $sdStmt = $pdo->prepare("SELECT game_data FROM save_data WHERE user_id = :uid LIMIT 1");
+                $sdStmt->execute([':uid' => $targetUserId]);
+                $sdRow = $sdStmt->fetch();
+                if ($sdRow && !empty($sdRow['game_data'])) {
+                    $gData = json_decode($sdRow['game_data'], true);
+                    if (is_array($gData)) {
+                        if (!isset($gData['robots']) || !is_array($gData['robots'])) {
+                            $gData['robots'] = [];
+                        }
+                        $replaced = false;
+                        foreach ($gData['robots'] as &$r) {
+                            if (isset($r['id']) && $r['id'] === $robot['id']) {
+                                $r = $robot;
+                                $replaced = true;
+                                break;
+                            }
+                        }
+                        unset($r);
+                        if (!$replaced) {
+                            $gData['robots'][] = $robot;
+                        }
+                        $upd = $pdo->prepare("UPDATE save_data SET game_data = :gd WHERE user_id = :uid");
+                        $upd->execute([
+                            ':gd' => json_encode($gData, JSON_UNESCAPED_UNICODE),
+                            ':uid' => $targetUserId
+                        ]);
+                    }
+                }
+
+                $pdo->commit();
+
+                echo json_encode([
+                    'success' => true,
+                    'message' => "complete_robot_assemblies のデータから user_robots テーブルへロボット「{$robot['name']}」(ID: {$robot['id']}) を正常に登録しました。",
+                    'target_user_id' => $targetUserId,
+                    'robot_id' => $robot['id'],
+                    'robot' => $robot
+                ], JSON_UNESCAPED_UNICODE);
+
+            } catch (Exception $e) {
+                if ($pdo->inTransaction()) {
+                    $pdo->rollBack();
+                }
+                echo json_encode([
+                    'success' => false,
+                    'error' => 'user_robots への登録処理中にエラーが発生しました: ' . $e->getMessage()
+                ], JSON_UNESCAPED_UNICODE);
+            }
+            break;
+        }
+
+        // ---------------------------------------------------------------------
+        // 2-4. ロボット構成パーツの user_parts 登録状態の判定 (必要 / 不要)
+        // ---------------------------------------------------------------------
+        case 'check_robot_parts_status': {
+            $targetUserId = trim((string)($_POST['target_user_id'] ?? $_GET['target_user_id'] ?? ''));
+            $robotDataRaw = $_POST['robot_data'] ?? $_GET['robot_data'] ?? null;
+            $robot = null;
+
+            if (!empty($robotDataRaw)) {
+                $robot = is_string($robotDataRaw) ? json_decode($robotDataRaw, true) : $robotDataRaw;
+            }
+
+            if (!is_array($robot) || empty($robot['parts'])) {
+                echo json_encode([
+                    'success' => true,
+                    'requires_registration' => false,
+                    'missing_parts_count' => 0,
+                    'missing_parts' => [],
+                    'parts_status' => [
+                        'head' => ['equipped' => false, 'exists' => true, 'name' => '未装着'],
+                        'body' => ['equipped' => false, 'exists' => true, 'name' => '未装着'],
+                        'arms' => ['equipped' => false, 'exists' => true, 'name' => '未装着'],
+                        'legs' => ['equipped' => false, 'exists' => true, 'name' => '未装着']
+                    ],
+                    'message' => 'パーツが装備されていないため、user_partsへの登録は不要です。'
+                ], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
+            $partsStatus = [];
+            $missingParts = [];
+            $stmtCheckPart = $pdo->prepare("SELECT id, user_id, master_part_id FROM user_parts WHERE id = :pid LIMIT 1");
+
+            foreach (['head', 'body', 'arms', 'legs'] as $pKey) {
+                if (!empty($robot['parts'][$pKey]) && is_array($robot['parts'][$pKey])) {
+                    $pObj = $robot['parts'][$pKey];
+                    $pId = trim((string)($pObj['id'] ?? ''));
+                    $pName = trim((string)($pObj['name'] ?? $pId ?? $pKey));
+
+                    $exists = false;
+                    $existingRecord = null;
+                    if ($pId !== '') {
+                        $stmtCheckPart->execute([':pid' => $pId]);
+                        $row = $stmtCheckPart->fetch();
+                        if ($row) {
+                            $exists = true;
+                            $existingRecord = $row;
+                        }
+                    }
+
+                    $partsStatus[$pKey] = [
+                        'equipped' => true,
+                        'part_id' => $pId,
+                        'name' => $pName,
+                        'exists' => $exists,
+                        'record' => $existingRecord
+                    ];
+
+                    if (!$exists) {
+                        $missingParts[] = [
+                            'slot' => $pKey,
+                            'part_id' => $pId,
+                            'name' => $pName,
+                            'data' => $pObj
+                        ];
+                    }
+                } else {
+                    $partsStatus[$pKey] = [
+                        'equipped' => false,
+                        'part_id' => null,
+                        'name' => '未装着',
+                        'exists' => true
+                    ];
+                }
+            }
+
+            $requiresRegistration = count($missingParts) > 0;
+
+            echo json_encode([
+                'success' => true,
+                'target_user_id' => $targetUserId,
+                'requires_registration' => $requiresRegistration,
+                'missing_parts_count' => count($missingParts),
+                'missing_parts' => $missingParts,
+                'parts_status' => $partsStatus,
+                'message' => $requiresRegistration
+                    ? 'user_partsテーブルへの登録が必要です（未登録パーツが存在します）。'
+                    : 'すべての装備パーツが登録済みのため、user_partsへの登録は不要です。'
+            ], JSON_UNESCAPED_UNICODE);
+            break;
+        }
+
+        // ---------------------------------------------------------------------
+        // 2-5. ロボット構成パーツを user_parts テーブルへ登録
+        // ---------------------------------------------------------------------
+        case 'register_parts_to_user_parts': {
+            $targetUserId = trim((string)($_POST['target_user_id'] ?? ''));
+            $robotDataRaw = $_POST['robot_data'] ?? null;
+            $robot = null;
+
+            if (!empty($robotDataRaw)) {
+                $robot = is_string($robotDataRaw) ? json_decode($robotDataRaw, true) : $robotDataRaw;
+            }
+
+            if (!is_array($robot) || empty($robot['parts'])) {
+                echo json_encode(['success' => false, 'error' => '有効なロボットパーツデータが見つかりません。'], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
+            if ($targetUserId === '') {
+                echo json_encode(['success' => false, 'error' => '登録先 user_id が指定されていません。'], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
+            try {
+                $pdo->beginTransaction();
+
+                $stmtEnsurePart = $pdo->prepare("
+                    INSERT INTO user_parts (id, user_id, master_part_id, is_equipped, part_data)
+                    VALUES (:id, :user_id, :master_id, 1, :part_data)
+                    ON DUPLICATE KEY UPDATE 
+                        user_id = VALUES(user_id),
+                        is_equipped = 1,
+                        part_data = VALUES(part_data)
+                ");
+
+                $registered = [];
+
+                foreach (['head', 'body', 'arms', 'legs'] as $pKey) {
+                    if (!empty($robot['parts'][$pKey]) && is_array($robot['parts'][$pKey])) {
+                        $partObj = $robot['parts'][$pKey];
+                        if (empty($partObj['id'])) {
+                            $partObj['id'] = 'part_' . $pKey . '_' . round(microtime(true) * 1000) . '_' . mt_rand(100, 999);
+                        }
+                        $partId = $partObj['id'];
+                        $masterId = $partObj['name'] ?? $partObj['master_id'] ?? $partId;
+
+                        $stmtEnsurePart->execute([
+                            ':id' => $partId,
+                            ':user_id' => $targetUserId,
+                            ':master_id' => $masterId,
+                            ':part_data' => json_encode($partObj, JSON_UNESCAPED_UNICODE)
+                        ]);
+
+                        $registered[] = [
+                            'slot' => $pKey,
+                            'id' => $partId,
+                            'name' => $masterId
+                        ];
+                    }
+                }
+
+                $pdo->commit();
+
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'パーツを user_parts テーブルへ正常に登録しました。',
+                    'registered_count' => count($registered),
+                    'registered' => $registered
+                ], JSON_UNESCAPED_UNICODE);
+            } catch (Exception $e) {
+                if ($pdo->inTransaction()) {
+                    $pdo->rollBack();
+                }
+                echo json_encode(['success' => false, 'error' => 'user_parts への登録エラー: ' . $e->getMessage()], JSON_UNESCAPED_UNICODE);
+            }
+            break;
+        }
+
+        // ---------------------------------------------------------------------
         // 3. ユーザー横断照会
         // ---------------------------------------------------------------------
         case 'get_user_full_data': {
