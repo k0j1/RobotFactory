@@ -36,25 +36,49 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
   const [isStorageUpgradeModalOpen, setIsStorageUpgradeModalOpen] = useState(false);
 
   const handleOpenChest = (chestTier: string) => {
+    if (!chestTier) return;
+    const currentCount = state.unopenedChests?.[chestTier] || 0;
+    if (currentCount <= 0) return;
+
     if (engine.removeChest(chestTier, 1)) {
       setOpeningChest(chestTier);
-      // Simulate opening delay
+      // 開封演出（1.5秒待機）
       setTimeout(() => {
-        let result;
-        // Depending on chestTier, roll something generic or combat
-        // For simplicity, we just use rollCombatChest with different levels
-        const level = chestTier === 'bronze' ? 2 : chestTier === 'silver' ? 4 : chestTier === 'gold' ? 6 : 8;
-        result = BattleChestRewardService.rollCombatChest(level, '宝箱開封', 0);
-        
-        // Add items to engine
-        if (result.gold > 0) engine.addGold(result.gold);
-        if (result.elements > 0) engine.addBattleElements(result.elements);
-        for (const mat of result.materials) {
-          engine.addMaterial(mat.material.id, mat.count);
+        try {
+          // グレードに応じたレベルで宝箱を抽選（bronze: Lv.2, silver: Lv.4, gold: Lv.7, mythic: Lv.10）
+          const level = chestTier === 'bronze' ? 2 : chestTier === 'silver' ? 4 : chestTier === 'gold' ? 7 : 10;
+          const result = BattleChestRewardService.rollCombatChest(level, '宝箱開封', 0);
+          
+          // 獲得アイテムを工房データへ確実に反映
+          if (result.repairKits > 0) {
+            engine.addRepairKits(result.repairKits);
+          }
+          if (result.gold > 0) {
+            engine.addGold(result.gold);
+          }
+          if (result.elements > 0) {
+            engine.addBattleElements(result.elements);
+          }
+          if (result.materials && Array.isArray(result.materials)) {
+            for (const mat of result.materials) {
+              if (mat && mat.material && mat.material.id) {
+                engine.addMaterial(mat.material.id, mat.count || 1);
+              }
+            }
+          }
+          if (result.fame > 0) {
+            engine.addFame(result.fame, '宝箱開封ボーナス');
+          }
+          
+          setOpenedChestResult(result);
+        } catch (err) {
+          console.error('[StorageScreen] 宝箱開封エラー:', err);
+          // 万一の例外発生時は宝箱を返却してユーザーの不利益を防止
+          engine.addChest(chestTier, 1);
+          alert('宝箱の開封処理中にエラーが発生しました。宝箱は返却されました。');
+        } finally {
+          setOpeningChest(null);
         }
-        
-        setOpeningChest(null);
-        setOpenedChestResult(result);
       }, 1500);
     }
   };
@@ -1280,9 +1304,11 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                   {openedChestResult.items.map((item: any, idx: number) => (
                     <div key={idx} className="flex items-center p-3 rounded-xl bg-white border border-stone-200 shadow-sm gap-4 transform transition-all hover:scale-105">
                       <div className="w-12 h-12 flex-shrink-0 flex items-center justify-center bg-stone-100 rounded-lg">
+                        {item.type === 'repairKit' && <Gi.GiSpanner className="text-3xl text-emerald-600" />}
                         {item.type === 'gold' && <Gi.GiCoins className="text-3xl text-yellow-500" />}
                         {item.type === 'element' && <Gi.GiCrystalGrowth className="text-3xl text-cyan-500" />}
                         {item.type === 'material' && <MaterialIcon attribute={item.material?.attribute || 'Earth'} className="text-3xl" />}
+                        {item.type === 'fame' && <Gi.GiLaurelCrown className="text-3xl text-amber-500" />}
                       </div>
                       <div className="flex-1">
                         <p className="text-xs text-stone-500">{item.desc}</p>
