@@ -545,7 +545,9 @@ export class AuthApiService {
           console.log(`[AuthApiService] ユーザーデータを正常にロードしました:`, parsed);
           const bonusVal = parsed.received_initial_bonus !== undefined && parsed.received_initial_bonus !== null
             ? Number(parsed.received_initial_bonus)
-            : 0;
+            : (parsed.user?.received_initial_bonus !== undefined && parsed.user?.received_initial_bonus !== null
+                ? Number(parsed.user.received_initial_bonus)
+                : 0);
 
           let loadedData: Partial<GameState> = parsed.data || {};
           // user_materialテーブル由来の素材データを最優先反映
@@ -556,10 +558,15 @@ export class AuthApiService {
             };
           }
 
+          const userObj = parsed.user ? {
+            ...parsed.user,
+            received_initial_bonus: bonusVal
+          } : undefined;
+
           return {
             data: (Object.keys(loadedData).length > 0 ? loadedData : null) as GameState | null,
             received_initial_bonus: bonusVal,
-            user: parsed.user
+            user: userObj
           };
         }
       } catch (err: any) {

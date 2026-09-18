@@ -375,6 +375,12 @@ try {
     $currentDbFame = 0;
     $currentStorage = 5;
     $currentDelivered = 0;
+    $currentReceivedBonus = 0;
+    foreach ($existingRows as $er) {
+        if (!empty($er['received_initial_bonus'])) {
+            $currentReceivedBonus = 1;
+        }
+    }
     if ($currentRow) {
         if (!empty($currentRow['unlocked_expeditions'])) {
             $parsedLocs = json_decode($currentRow['unlocked_expeditions'], true);
@@ -387,6 +393,9 @@ try {
         $currentDbFame = (int)($currentRow['fame'] ?? 0);
         $currentStorage = (int)($currentRow['storage_limit'] ?? 5);
         $currentDelivered = (int)($currentRow['delivered_count'] ?? 0);
+        if (!empty($currentRow['received_initial_bonus'])) {
+            $currentReceivedBonus = 1;
+        }
     }
 
     $rawClientGold = isset($gameData['gold']) ? (int)$gameData['gold'] : null;
@@ -448,15 +457,16 @@ try {
     $unlockedExpeditionsJson = json_encode($allLocations, JSON_UNESCAPED_UNICODE);
 
     $stmtWorkshop = $pdo->prepare("
-        INSERT INTO user_workshop_status (user_id, fame, gold, storage_limit, delivered_count, consumed_gold, unlocked_expeditions)
-        VALUES (:user_id, :fame, :gold, :storage_limit, :delivered_count, :consumed_gold, :unlocked)
+        INSERT INTO user_workshop_status (user_id, fame, gold, storage_limit, delivered_count, consumed_gold, unlocked_expeditions, received_initial_bonus)
+        VALUES (:user_id, :fame, :gold, :storage_limit, :delivered_count, :consumed_gold, :unlocked, :bonus)
         ON DUPLICATE KEY UPDATE 
             fame = :up_fame,
             gold = :up_gold,
             storage_limit = :up_storage_limit,
             delivered_count = :up_delivered_count,
             consumed_gold = :up_consumed_gold,
-            unlocked_expeditions = :up_unlocked
+            unlocked_expeditions = :up_unlocked,
+            received_initial_bonus = :up_bonus
     ");
     $stmtWorkshop->execute([
         ':user_id' => $actualUserId,
@@ -466,12 +476,14 @@ try {
         ':delivered_count' => $deliveredCount,
         ':consumed_gold' => $consumedGold,
         ':unlocked' => $unlockedExpeditionsJson,
+        ':bonus' => $currentReceivedBonus,
         ':up_fame' => $fame,
         ':up_gold' => $gold,
         ':up_storage_limit' => $storageLimit,
         ':up_delivered_count' => $deliveredCount,
         ':up_consumed_gold' => $consumedGold,
         ':up_unlocked' => $unlockedExpeditionsJson,
+        ':up_bonus' => $currentReceivedBonus,
     ]);
 
     // 重複していた別IDレコードがあれば削除して actualUserId に一元化

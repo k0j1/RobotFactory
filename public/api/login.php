@@ -74,10 +74,12 @@ try {
     $stmt = $pdo->prepare("
         SELECT u.*, COALESCE(s.received_initial_bonus, 0) AS received_initial_bonus 
         FROM users u 
-        LEFT JOIN user_workshop_status s ON u.google_id = s.user_id 
-        WHERE u.google_id = :google_id
+        LEFT JOIN user_workshop_status s ON (u.google_id = s.user_id OR u.id = s.user_id)
+        WHERE u.google_id = :google_id OR u.id = :uid 
+        ORDER BY s.received_initial_bonus DESC 
+        LIMIT 1
     ");
-    $stmt->execute([':google_id' => $googleId]);
+    $stmt->execute([':google_id' => $googleId, ':uid' => $googleId]);
     $user = $stmt->fetch();
     if ($user) {
         $user['received_initial_bonus'] = (int)$user['received_initial_bonus'];

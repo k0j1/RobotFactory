@@ -79,6 +79,12 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onStart, engine }) => 
       const apiService = AuthApiService.getInstance();
       const res = await apiService.loadUserData(targetUserId);
 
+      const bonusVal = res.received_initial_bonus !== undefined && res.received_initial_bonus !== null
+        ? Number(res.received_initial_bonus)
+        : (userRecord?.received_initial_bonus !== undefined
+            ? Number(userRecord.received_initial_bonus)
+            : (res.user?.received_initial_bonus !== undefined ? Number(res.user.received_initial_bonus) : 0));
+
       let loggedUser: any = userRecord || res.user;
       if (!loggedUser) {
         loggedUser = {
@@ -87,10 +93,10 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onStart, engine }) => 
           email: '',
           name: `ユーザー (${targetUserId.slice(0, 8)})`,
           picture: '',
-          received_initial_bonus: res.received_initial_bonus ?? 1
+          received_initial_bonus: bonusVal
         };
-      } else if (res.user) {
-        loggedUser = { ...res.user, ...loggedUser };
+      } else {
+        loggedUser = { ...res.user, ...loggedUser, received_initial_bonus: bonusVal };
       }
       setUser(loggedUser);
 
@@ -139,8 +145,11 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onStart, engine }) => 
           setStatusMessage('データベースからユーザー情報をロード中...');
           try {
             const res = await apiService.loadUserData(response.user.google_id);
+            const bonusVal = res.received_initial_bonus ?? (res.user?.received_initial_bonus !== undefined ? Number(res.user.received_initial_bonus) : 0);
             if (res.user) {
-              setUser(res.user);
+              setUser({ ...res.user, received_initial_bonus: bonusVal });
+            } else {
+              setUser(prev => prev ? { ...prev, received_initial_bonus: bonusVal } : null);
             }
             // ローカルストレージは一切使用・保存せず、クラウドDBデータ（新規の場合はクリーンな初期データ）で起動
             await engine.switchToGoogleUser(response.user.google_id, res.data);
@@ -196,10 +205,11 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onStart, engine }) => 
                 try {
                   const targetId = user.google_id || String((user as any).id);
                   const res = await AuthApiService.getInstance().loadUserData(targetId);
+                  const bonusVal = res.received_initial_bonus ?? (res.user?.received_initial_bonus !== undefined ? Number(res.user.received_initial_bonus) : 0);
                   if (res.user) {
-                    setUser(res.user);
-                  } else if (res.received_initial_bonus !== undefined && res.received_initial_bonus !== null) {
-                    setUser(prev => prev ? { ...prev, received_initial_bonus: res.received_initial_bonus } : null);
+                    setUser({ ...res.user, received_initial_bonus: bonusVal });
+                  } else {
+                    setUser(prev => prev ? { ...prev, received_initial_bonus: bonusVal } : null);
                   }
                   await engine.switchToGoogleUser(targetId, res.data);
                 } catch (e) {
@@ -271,7 +281,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onStart, engine }) => 
           </div>
         )}
 
-        <p className="mt-8 text-stone-400">v0.1.42</p>
+        <p className="mt-8 text-stone-400">v0.1.43</p>
       </div>
       
       {/* Decorative background elements */}

@@ -27,15 +27,37 @@ export const StarterBonusCard: React.FC<StarterBonusCardProps> = ({
   onNavigate,
   compact = false
 }) => {
-  const { user, markBonusClaimed } = useAuth();
+  const { user, markBonusClaimed, updateBonusStatus } = useAuth();
   const [isClaiming, setIsClaiming] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [justClaimed, setJustClaimed] = useState(false);
 
-  // DB上の受取済み判定（user_workshop_statusテーブルのreceived_initial_bonusが1またはtrueなら受取済み）
-  const isClaimedInDb = user
-    ? (Number(user.received_initial_bonus) === 1 || user.received_initial_bonus === true)
-    : false;
+  // DB上の受取済み判定（user_workshop_statusテーブルのreceived_initial_bonusが1、'1'、またはtrueなら受取済み）
+  const bonusVal = user?.received_initial_bonus;
+  const isClaimedInDb = Boolean(
+    bonusVal === 1 ||
+    bonusVal === '1' ||
+    bonusVal === true ||
+    bonusVal === 'true' ||
+    (bonusVal !== undefined && bonusVal !== null && Number(bonusVal) === 1)
+  );
+
+  // 表示時、もし未受取判定でもバックグラウンドで最新のDBステータスを確認して整合性を担保
+  React.useEffect(() => {
+    if (user && !isClaimedInDb) {
+      const targetUserId = user.google_id || String(user.id);
+      if (targetUserId) {
+        AuthApiService.getInstance().loadUserData(targetUserId).then(res => {
+          const dbBonus = res.received_initial_bonus ?? (res.user?.received_initial_bonus !== undefined ? Number(res.user.received_initial_bonus) : 0);
+          if (Number(dbBonus) === 1) {
+            updateBonusStatus(1);
+          }
+        }).catch(err => {
+          console.warn('[StarterBonusCard] bonus sync check error:', err);
+        });
+      }
+    }
+  }, [user, isClaimedInDb, updateBonusStatus]);
 
   // ログインしていない場合、またはすでに受け取り済みの場合は表示しない
   // ※DB上のreceived_initial_bonus（user_workshop_status）のみを唯一の真実（Source of Truth）として判定

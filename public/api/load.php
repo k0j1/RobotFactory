@@ -364,6 +364,9 @@ try {
     $storageLimitVal = ($wsRow && !empty($wsRow['storage_limit'])) ? (int)$wsRow['storage_limit'] : 5;
     $deliveredCountVal = $wsRow ? (int)($wsRow['delivered_count'] ?? 0) : 0;
     $receivedBonusVal = ($wsRow && isset($wsRow['received_initial_bonus'])) ? (int)$wsRow['received_initial_bonus'] : 0;
+    if ($userRecord) {
+        $userRecord['received_initial_bonus'] = $receivedBonusVal;
+    }
     $requestEarnedGoldVal = $wsRow ? (int)($wsRow['request_earned_gold'] ?? 0) : 0;
     $unlockedLocationsVal = ['loc1']; // 裏山のスクラップ場は最初から解放状態で設定
     if ($wsRow && !empty($wsRow['unlocked_expeditions'])) {

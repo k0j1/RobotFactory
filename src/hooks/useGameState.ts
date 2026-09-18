@@ -24,10 +24,11 @@ export function useGameState(userId?: string | null) {
       AuthApiService.getInstance().loadUserData(userId).then((res) => {
         engine.switchToGoogleUser(userId, res.data);
         engine.generateRequestsIfNeeded();
+        const bonusVal = res.received_initial_bonus ?? (res.user?.received_initial_bonus !== undefined ? Number(res.user.received_initial_bonus) : 0);
         if (res.user) {
-          setUser(res.user);
-        } else if (res.received_initial_bonus !== undefined && res.received_initial_bonus !== null) {
-          setUser(prev => prev ? { ...prev, received_initial_bonus: res.received_initial_bonus } : null);
+          setUser({ ...res.user, received_initial_bonus: bonusVal });
+        } else {
+          setUser(prev => prev ? { ...prev, received_initial_bonus: bonusVal } : null);
         }
       }).catch((err) => {
         console.warn('[useGameState] 初回クラウドデータロード失敗（初期データ使用）:', err);
@@ -57,10 +58,11 @@ export function useGameState(userId?: string | null) {
         // Googleログイン時: クラウドDBからのみロードし、ローカルストレージは一切使用しない
         AuthApiService.getInstance().loadUserData(userId).then((res) => {
           engine.switchToGoogleUser(userId, res.data);
+          const bonusVal = res.received_initial_bonus ?? (res.user?.received_initial_bonus !== undefined ? Number(res.user.received_initial_bonus) : 0);
           if (res.user) {
-            setUser(res.user);
-          } else if (res.received_initial_bonus !== undefined && res.received_initial_bonus !== null) {
-            setUser(prev => prev ? { ...prev, received_initial_bonus: res.received_initial_bonus } : null);
+            setUser({ ...res.user, received_initial_bonus: bonusVal });
+          } else {
+            setUser(prev => prev ? { ...prev, received_initial_bonus: bonusVal } : null);
           }
         }).catch((err) => {
           console.warn('[useGameState] クラウドデータロード失敗（初期データ使用）:', err);
