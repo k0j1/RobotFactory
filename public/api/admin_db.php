@@ -744,16 +744,18 @@ try {
                 'user' => null,
                 'workshop_status' => null,
                 'materials' => [],
+                'parts' => [],
                 'robots' => [],
                 'save_data' => null,
                 'active_expedition' => null,
+                'active_expeditions' => [],
                 'active_assembly' => null,
                 'active_request' => null,
                 'complete_requests' => []
             ];
 
             // 1. users
-            $uStmt = $pdo->prepare("SELECT * FROM users WHERE google_id = :uid OR id = :uid2 LIMIT 1");
+            $uStmt = $pdo->prepare("SELECT id, google_id, email, name, picture, created_at, updated_at FROM users WHERE google_id = :uid OR id = :uid2 LIMIT 1");
             $uStmt->execute([':uid' => $userId, ':uid2' => $userId]);
             $result['user'] = $uStmt->fetch() ?: null;
             $gId = $result['user']['google_id'] ?? $userId;
@@ -768,32 +770,39 @@ try {
             $mStmt->execute([':uid' => $userId, ':gid' => $gId]);
             $result['materials'] = $mStmt->fetchAll();
 
-            // 4. user_robots
+            // 4. user_parts (所持パーツ一覧)
+            $pStmt = $pdo->prepare("SELECT * FROM user_parts WHERE user_id = :uid OR user_id = :gid ORDER BY is_equipped DESC, created_at DESC");
+            $pStmt->execute([':uid' => $userId, ':gid' => $gId]);
+            $result['parts'] = $pStmt->fetchAll();
+
+            // 5. user_robots
             $rStmt = $pdo->prepare("SELECT * FROM user_robots WHERE user_id = :uid OR user_id = :gid ORDER BY created_at DESC");
             $rStmt->execute([':uid' => $userId, ':gid' => $gId]);
             $result['robots'] = $rStmt->fetchAll();
 
-            // 5. save_data
+            // 6. save_data
             $sStmt = $pdo->prepare("SELECT id, user_id, updated_at, LENGTH(game_data) as json_size, game_data FROM save_data WHERE user_id = :uid OR user_id = :gid LIMIT 1");
             $sStmt->execute([':uid' => $userId, ':gid' => $gId]);
             $result['save_data'] = $sStmt->fetch() ?: null;
 
-            // 6. active_expeditions
-            $aeStmt = $pdo->prepare("SELECT * FROM active_expeditions WHERE user_id = :uid OR user_id = :gid");
+            // 7. active_expeditions
+            $aeStmt = $pdo->prepare("SELECT * FROM active_expeditions WHERE user_id = :uid OR user_id = :gid ORDER BY id DESC");
             $aeStmt->execute([':uid' => $userId, ':gid' => $gId]);
-            $result['active_expedition'] = $aeStmt->fetch() ?: null;
+            $expList = $aeStmt->fetchAll();
+            $result['active_expeditions'] = $expList;
+            $result['active_expedition'] = !empty($expList) ? $expList[0] : null;
 
-            // 7. active_robot_assemblies
-            $aaStmt = $pdo->prepare("SELECT * FROM active_robot_assemblies WHERE user_id = :uid OR user_id = :gid");
+            // 8. active_robot_assemblies
+            $aaStmt = $pdo->prepare("SELECT * FROM active_robot_assemblies WHERE user_id = :uid OR user_id = :gid ORDER BY id DESC");
             $aaStmt->execute([':uid' => $userId, ':gid' => $gId]);
             $result['active_assembly'] = $aaStmt->fetch() ?: null;
 
-            // 8. active_requests
-            $arStmt = $pdo->prepare("SELECT * FROM active_requests WHERE user_id = :uid OR user_id = :gid");
+            // 9. active_requests
+            $arStmt = $pdo->prepare("SELECT * FROM active_requests WHERE user_id = :uid OR user_id = :gid ORDER BY id DESC");
             $arStmt->execute([':uid' => $userId, ':gid' => $gId]);
             $result['active_request'] = $arStmt->fetch() ?: null;
 
-            // 9. complete_requests
+            // 10. complete_requests
             $crStmt = $pdo->prepare("SELECT * FROM complete_requests WHERE user_id = :uid OR user_id = :gid ORDER BY created_at DESC LIMIT 50");
             $crStmt->execute([':uid' => $userId, ':gid' => $gId]);
             $result['complete_requests'] = $crStmt->fetchAll();
