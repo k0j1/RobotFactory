@@ -432,15 +432,39 @@ try {
                     }
                 }
 
-                // 1. 外部キー制約（fk_head_part 等）を満たすため、装備パーツを user_parts に自動補完
+                // 1. 外部キー制約（fk_head_part 等）を満たすため、装備パーツを user_parts に自動補完（個別カラム対応）
                 if ($autoEnsureParts && !empty($robot['parts']) && is_array($robot['parts'])) {
                     $stmtEnsurePart = $pdo->prepare("
-                        INSERT INTO user_parts (id, user_id, master_part_id, is_equipped, part_data)
-                        VALUES (:id, :user_id, :master_id, 1, :part_data)
+                        INSERT INTO user_parts (
+                            id, user_id, master_part_id, part_type, name, attribute, rarity, visual_index,
+                            is_equipped, vitality, power, defense, agility, dexterity, intelligence,
+                            battle_matches, battle_wins, battle_losses, battle_draws, main_material_id, sub_material_id
+                        ) VALUES (
+                            :id, :user_id, :master_id, :part_type, :name, :attribute, :rarity, :visual_index,
+                            1, :vitality, :power, :defense, :agility, :dexterity, :intelligence,
+                            :battle_matches, :battle_wins, :battle_losses, :battle_draws, :main_material_id, :sub_material_id
+                        )
                         ON DUPLICATE KEY UPDATE 
                             user_id = VALUES(user_id),
+                            master_part_id = VALUES(master_part_id),
+                            part_type = VALUES(part_type),
+                            name = VALUES(name),
+                            attribute = VALUES(attribute),
+                            rarity = VALUES(rarity),
+                            visual_index = VALUES(visual_index),
                             is_equipped = 1,
-                            part_data = VALUES(part_data)
+                            vitality = VALUES(vitality),
+                            power = VALUES(power),
+                            defense = VALUES(defense),
+                            agility = VALUES(agility),
+                            dexterity = VALUES(dexterity),
+                            intelligence = VALUES(intelligence),
+                            battle_matches = VALUES(battle_matches),
+                            battle_wins = VALUES(battle_wins),
+                            battle_losses = VALUES(battle_losses),
+                            battle_draws = VALUES(battle_draws),
+                            main_material_id = VALUES(main_material_id),
+                            sub_material_id = VALUES(sub_material_id)
                     ");
 
                     foreach (['head', 'body', 'arms', 'legs'] as $pKey) {
@@ -452,12 +476,30 @@ try {
                             }
                             $partId = $partObj['id'];
                             $masterId = $partObj['name'] ?? $partObj['master_id'] ?? $partId;
+                            $stats = $partObj['stats'] ?? [];
+                            $bStats = $partObj['battleStats'] ?? $partObj['battle_stats'] ?? [];
 
                             $stmtEnsurePart->execute([
                                 ':id' => $partId,
                                 ':user_id' => $targetUserId,
                                 ':master_id' => $masterId,
-                                ':part_data' => json_encode($partObj, JSON_UNESCAPED_UNICODE)
+                                ':part_type' => $partObj['type'] ?? $pKey,
+                                ':name' => $partObj['name'] ?? $masterId,
+                                ':attribute' => $partObj['attribute'] ?? 'Fire',
+                                ':rarity' => isset($partObj['rarity']) ? (int)$partObj['rarity'] : 1,
+                                ':visual_index' => isset($partObj['visualIndex']) ? (int)$partObj['visualIndex'] : 0,
+                                ':vitality' => isset($stats['hp']) ? (int)$stats['hp'] : (isset($partObj['vitality']) ? (int)$partObj['vitality'] : (isset($partObj['hp']) ? (int)$partObj['hp'] : 0)),
+                                ':power' => isset($stats['power']) ? (int)$stats['power'] : (isset($partObj['power']) ? (int)$partObj['power'] : 0),
+                                ':defense' => isset($stats['defense']) ? (int)$stats['defense'] : (isset($partObj['defense']) ? (int)$partObj['defense'] : 0),
+                                ':agility' => isset($stats['agility']) ? (int)$stats['agility'] : (isset($partObj['agility']) ? (int)$partObj['agility'] : 0),
+                                ':dexterity' => isset($stats['dexterity']) ? (int)$stats['dexterity'] : (isset($partObj['dexterity']) ? (int)$partObj['dexterity'] : 0),
+                                ':intelligence' => isset($stats['intelligence']) ? (int)$stats['intelligence'] : (isset($stats['int']) ? (int)$stats['int'] : (isset($partObj['intelligence']) ? (int)$partObj['intelligence'] : 0)),
+                                ':battle_matches' => isset($bStats['matches']) ? (int)$bStats['matches'] : 0,
+                                ':battle_wins' => isset($bStats['wins']) ? (int)$bStats['wins'] : 0,
+                                ':battle_losses' => isset($bStats['losses']) ? (int)$bStats['losses'] : 0,
+                                ':battle_draws' => isset($bStats['draws']) ? (int)$bStats['draws'] : 0,
+                                ':main_material_id' => $partObj['mainMaterialId'] ?? $partObj['main_material_id'] ?? null,
+                                ':sub_material_id' => $partObj['subMaterialId'] ?? $partObj['sub_material_id'] ?? null
                             ]);
                         }
                     }
@@ -679,12 +721,36 @@ try {
                 $pdo->beginTransaction();
 
                 $stmtEnsurePart = $pdo->prepare("
-                    INSERT INTO user_parts (id, user_id, master_part_id, is_equipped, part_data)
-                    VALUES (:id, :user_id, :master_id, 1, :part_data)
+                    INSERT INTO user_parts (
+                        id, user_id, master_part_id, part_type, name, attribute, rarity, visual_index,
+                        is_equipped, vitality, power, defense, agility, dexterity, intelligence,
+                        battle_matches, battle_wins, battle_losses, battle_draws, main_material_id, sub_material_id
+                    ) VALUES (
+                        :id, :user_id, :master_id, :part_type, :name, :attribute, :rarity, :visual_index,
+                        1, :vitality, :power, :defense, :agility, :dexterity, :intelligence,
+                        :battle_matches, :battle_wins, :battle_losses, :battle_draws, :main_material_id, :sub_material_id
+                    )
                     ON DUPLICATE KEY UPDATE 
                         user_id = VALUES(user_id),
+                        master_part_id = VALUES(master_part_id),
+                        part_type = VALUES(part_type),
+                        name = VALUES(name),
+                        attribute = VALUES(attribute),
+                        rarity = VALUES(rarity),
+                        visual_index = VALUES(visual_index),
                         is_equipped = 1,
-                        part_data = VALUES(part_data)
+                        vitality = VALUES(vitality),
+                        power = VALUES(power),
+                        defense = VALUES(defense),
+                        agility = VALUES(agility),
+                        dexterity = VALUES(dexterity),
+                        intelligence = VALUES(intelligence),
+                        battle_matches = VALUES(battle_matches),
+                        battle_wins = VALUES(battle_wins),
+                        battle_losses = VALUES(battle_losses),
+                        battle_draws = VALUES(battle_draws),
+                        main_material_id = VALUES(main_material_id),
+                        sub_material_id = VALUES(sub_material_id)
                 ");
 
                 $registered = [];
@@ -697,12 +763,30 @@ try {
                         }
                         $partId = $partObj['id'];
                         $masterId = $partObj['name'] ?? $partObj['master_id'] ?? $partId;
+                        $stats = $partObj['stats'] ?? [];
+                        $bStats = $partObj['battleStats'] ?? $partObj['battle_stats'] ?? [];
 
                         $stmtEnsurePart->execute([
                             ':id' => $partId,
                             ':user_id' => $targetUserId,
                             ':master_id' => $masterId,
-                            ':part_data' => json_encode($partObj, JSON_UNESCAPED_UNICODE)
+                            ':part_type' => $partObj['type'] ?? $pKey,
+                            ':name' => $partObj['name'] ?? $masterId,
+                            ':attribute' => $partObj['attribute'] ?? 'Fire',
+                            ':rarity' => isset($partObj['rarity']) ? (int)$partObj['rarity'] : 1,
+                            ':visual_index' => isset($partObj['visualIndex']) ? (int)$partObj['visualIndex'] : 0,
+                            ':vitality' => isset($stats['hp']) ? (int)$stats['hp'] : (isset($partObj['vitality']) ? (int)$partObj['vitality'] : (isset($partObj['hp']) ? (int)$partObj['hp'] : 0)),
+                            ':power' => isset($stats['power']) ? (int)$stats['power'] : (isset($partObj['power']) ? (int)$partObj['power'] : 0),
+                            ':defense' => isset($stats['defense']) ? (int)$stats['defense'] : (isset($partObj['defense']) ? (int)$partObj['defense'] : 0),
+                            ':agility' => isset($stats['agility']) ? (int)$stats['agility'] : (isset($partObj['agility']) ? (int)$partObj['agility'] : 0),
+                            ':dexterity' => isset($stats['dexterity']) ? (int)$stats['dexterity'] : (isset($partObj['dexterity']) ? (int)$partObj['dexterity'] : 0),
+                            ':intelligence' => isset($stats['intelligence']) ? (int)$stats['intelligence'] : (isset($stats['int']) ? (int)$stats['int'] : (isset($partObj['intelligence']) ? (int)$partObj['intelligence'] : 0)),
+                            ':battle_matches' => isset($bStats['matches']) ? (int)$bStats['matches'] : 0,
+                            ':battle_wins' => isset($bStats['wins']) ? (int)$bStats['wins'] : 0,
+                            ':battle_losses' => isset($bStats['losses']) ? (int)$bStats['losses'] : 0,
+                            ':battle_draws' => isset($bStats['draws']) ? (int)$bStats['draws'] : 0,
+                            ':main_material_id' => $partObj['mainMaterialId'] ?? $partObj['main_material_id'] ?? null,
+                            ':sub_material_id' => $partObj['subMaterialId'] ?? $partObj['sub_material_id'] ?? null
                         ]);
 
                         $registered[] = [
@@ -754,57 +838,83 @@ try {
                 'complete_requests' => []
             ];
 
-            // 1. users
-            $uStmt = $pdo->prepare("SELECT id, google_id, email, name, picture, created_at, updated_at FROM users WHERE google_id = :uid OR id = :uid2 LIMIT 1");
-            $uStmt->execute([':uid' => $userId, ':uid2' => $userId]);
-            $result['user'] = $uStmt->fetch() ?: null;
-            $gId = $result['user']['google_id'] ?? $userId;
+            // 1. users テーブルからユーザープロフィールの特定（google_id, id, email, name すべてでマッチング）
+            $uStmt = $pdo->prepare("SELECT id, google_id, email, name, picture, created_at, updated_at FROM users WHERE google_id = :uid OR id = :uid2 OR email = :uid3 OR name = :uid4 LIMIT 1");
+            $uStmt->execute([':uid' => $userId, ':uid2' => $userId, ':uid3' => $userId, ':uid4' => $userId]);
+            $foundUser = $uStmt->fetch(PDO::FETCH_ASSOC);
+
+            // 直接マッチしなかった場合、他テーブル（workshop_status, save_data等）のuser_idからusersテーブルを逆引き
+            if (!$foundUser) {
+                $revStmt = $pdo->prepare("
+                    SELECT u.id, u.google_id, u.email, u.name, u.picture, u.created_at, u.updated_at 
+                    FROM users u
+                    WHERE u.google_id IN (
+                        SELECT user_id FROM user_workshop_status WHERE user_id = :uid1
+                        UNION
+                        SELECT user_id FROM save_data WHERE user_id = :uid2
+                    )
+                    LIMIT 1
+                ");
+                $revStmt->execute([':uid1' => $userId, ':uid2' => $userId]);
+                $foundUser = $revStmt->fetch(PDO::FETCH_ASSOC);
+            }
+
+            $result['user'] = $foundUser ?: null;
+
+            // 照合用IDリスト（google_id, id, 入力値など）を網羅的に収集
+            $candidateIds = array_values(array_unique(array_filter([
+                $userId,
+                $result['user']['google_id'] ?? null,
+                isset($result['user']['id']) ? (string)$result['user']['id'] : null
+            ])));
+
+            $inPlaceholders = implode(',', array_fill(0, count($candidateIds), '?'));
 
             // 2. user_workshop_status
-            $wsStmt = $pdo->prepare("SELECT * FROM user_workshop_status WHERE user_id = :uid OR user_id = :gid LIMIT 1");
-            $wsStmt->execute([':uid' => $userId, ':gid' => $gId]);
+            $wsStmt = $pdo->prepare("SELECT * FROM user_workshop_status WHERE user_id IN ($inPlaceholders) LIMIT 1");
+            $wsStmt->execute($candidateIds);
             $result['workshop_status'] = $wsStmt->fetch() ?: null;
 
             // 3. user_material
-            $mStmt = $pdo->prepare("SELECT * FROM user_material WHERE user_id = :uid OR user_id = :gid ORDER BY count DESC");
-            $mStmt->execute([':uid' => $userId, ':gid' => $gId]);
+            $mStmt = $pdo->prepare("SELECT * FROM user_material WHERE user_id IN ($inPlaceholders) ORDER BY count DESC");
+            $mStmt->execute($candidateIds);
             $result['materials'] = $mStmt->fetchAll();
 
-            // 4. user_parts (所持パーツ一覧)
-            $pStmt = $pdo->prepare("SELECT * FROM user_parts WHERE user_id = :uid OR user_id = :gid ORDER BY is_equipped DESC, created_at DESC");
-            $pStmt->execute([':uid' => $userId, ':gid' => $gId]);
+            // 4. user_parts (所持パーツ一覧 - 個別カラムを含む全データを取得)
+            $pStmt = $pdo->prepare("SELECT * FROM user_parts WHERE user_id IN ($inPlaceholders) ORDER BY is_equipped DESC, created_at DESC");
+            $pStmt->execute($candidateIds);
             $result['parts'] = $pStmt->fetchAll();
 
             // 5. user_robots
-            $rStmt = $pdo->prepare("SELECT * FROM user_robots WHERE user_id = :uid OR user_id = :gid ORDER BY created_at DESC");
-            $rStmt->execute([':uid' => $userId, ':gid' => $gId]);
+            $rStmt = $pdo->prepare("SELECT * FROM user_robots WHERE user_id IN ($inPlaceholders) ORDER BY created_at DESC");
+            $rStmt->execute($candidateIds);
             $result['robots'] = $rStmt->fetchAll();
 
             // 6. save_data
-            $sStmt = $pdo->prepare("SELECT id, user_id, updated_at, LENGTH(game_data) as json_size, game_data FROM save_data WHERE user_id = :uid OR user_id = :gid LIMIT 1");
-            $sStmt->execute([':uid' => $userId, ':gid' => $gId]);
+            $sStmt = $pdo->prepare("SELECT id, user_id, updated_at, LENGTH(game_data) as json_size, game_data FROM save_data WHERE user_id IN ($inPlaceholders) LIMIT 1");
+            $sStmt->execute($candidateIds);
             $result['save_data'] = $sStmt->fetch() ?: null;
 
             // 7. active_expeditions
-            $aeStmt = $pdo->prepare("SELECT * FROM active_expeditions WHERE user_id = :uid OR user_id = :gid ORDER BY id DESC");
-            $aeStmt->execute([':uid' => $userId, ':gid' => $gId]);
+            $aeStmt = $pdo->prepare("SELECT * FROM active_expeditions WHERE user_id IN ($inPlaceholders) ORDER BY id DESC");
+            $aeStmt->execute($candidateIds);
             $expList = $aeStmt->fetchAll();
             $result['active_expeditions'] = $expList;
             $result['active_expedition'] = !empty($expList) ? $expList[0] : null;
 
             // 8. active_robot_assemblies
-            $aaStmt = $pdo->prepare("SELECT * FROM active_robot_assemblies WHERE user_id = :uid OR user_id = :gid ORDER BY id DESC");
-            $aaStmt->execute([':uid' => $userId, ':gid' => $gId]);
+            $aaStmt = $pdo->prepare("SELECT * FROM active_robot_assemblies WHERE user_id IN ($inPlaceholders) ORDER BY id DESC");
+            $aaStmt->execute($candidateIds);
             $result['active_assembly'] = $aaStmt->fetch() ?: null;
 
             // 9. active_requests
-            $arStmt = $pdo->prepare("SELECT * FROM active_requests WHERE user_id = :uid OR user_id = :gid ORDER BY id DESC");
-            $arStmt->execute([':uid' => $userId, ':gid' => $gId]);
+            $arStmt = $pdo->prepare("SELECT * FROM active_requests WHERE user_id IN ($inPlaceholders) ORDER BY id DESC");
+            $arStmt->execute($candidateIds);
             $result['active_request'] = $arStmt->fetch() ?: null;
 
             // 10. complete_requests
-            $crStmt = $pdo->prepare("SELECT * FROM complete_requests WHERE user_id = :uid OR user_id = :gid ORDER BY created_at DESC LIMIT 50");
-            $crStmt->execute([':uid' => $userId, ':gid' => $gId]);
+            $crStmt = $pdo->prepare("SELECT * FROM complete_requests WHERE user_id IN ($inPlaceholders) ORDER BY created_at DESC LIMIT 50");
+            $crStmt->execute($candidateIds);
             $result['complete_requests'] = $crStmt->fetchAll();
 
             echo json_encode([

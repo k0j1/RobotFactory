@@ -25,10 +25,11 @@ if (!$pdo) {
 }
 
 try {
-    // usersテーブルから該当ユーザーのgoogle_idおよびidを特定
-    $userStmt = $pdo->prepare("SELECT id, google_id FROM users WHERE google_id = :u1 OR id = :u2 LIMIT 1");
-    $userStmt->execute([':u1' => $userId, ':u2' => $userId]);
-    $uRec = $userStmt->fetch();
+    // usersテーブルから該当ユーザーのgoogle_idおよびid、プロフィール情報を特定
+    $userStmt = $pdo->prepare("SELECT id, google_id, email, name, picture, created_at, updated_at FROM users WHERE google_id = :u1 OR id = :u2 OR email = :u3 LIMIT 1");
+    $userStmt->execute([':u1' => $userId, ':u2' => $userId, ':u3' => $userId]);
+    $uRec = $userStmt->fetch(PDO::FETCH_ASSOC);
+    $userRecord = $uRec ?: null;
     $actualUserId = ($uRec && !empty($uRec['google_id'])) ? $uRec['google_id'] : $userId;
     $numericId = ($uRec && !empty($uRec['id'])) ? (string)$uRec['id'] : null;
 
@@ -511,22 +512,77 @@ try {
         }
     }
 
-    // 8. user_parts テーブルから所持パーツ一覧を取得
+    // 8. user_parts テーブルから所持パーツ一覧を取得（個別カラムからRobotPartオブジェクトを完全復元）
     $partsStmt = $pdo->prepare("
-        SELECT part_data, is_equipped 
+        SELECT * 
         FROM user_parts 
         WHERE user_id IN ($inPlaceholders)
+        ORDER BY created_at ASC
     ");
     $partsStmt->execute(array_values($candidateUserIds));
     $dbParts = [];
-    while ($pRow = $partsStmt->fetch()) {
+    while ($pRow = $partsStmt->fetch(PDO::FETCH_ASSOC)) {
+        $partId = $pRow['id'];
+        $pType = !empty($pRow['part_type']) ? $pRow['part_type'] : 'head';
+        $pName = !empty($pRow['name']) ? $pRow['name'] : ($pRow['master_part_id'] ?? $partId);
+        $pAttr = !empty($pRow['attribute']) ? $pRow['attribute'] : 'Fire';
+        $pRarity = isset($pRow['rarity']) ? (int)$pRow['rarity'] : 1;
+        $pVis = isset($pRow['visual_index']) ? (int)$pRow['visual_index'] : 0;
+        $isEquipped = !empty($pRow['is_equipped']);
+
+        $stats = [
+            'hp' => isset($pRow['vitality']) ? (int)$pRow['vitality'] : (isset($pRow['hp']) ? (int)$pRow['hp'] : 0),
+            'power' => isset($pRow['power']) ? (int)$pRow['power'] : 0,
+            'defense' => isset($pRow['defense']) ? (int)$pRow['defense'] : 0,
+            'agility' => isset($pRow['agility']) ? (int)$pRow['agility'] : 0,
+            'dexterity' => isset($pRow['dexterity']) ? (int)$pRow['dexterity'] : 0,
+            'intelligence' => isset($pRow['intelligence']) ? (int)$pRow['intelligence'] : 0,
+        ];
+
+        $battleStats = [
+            'matches' => isset($pRow['battle_matches']) ? (int)$pRow['battle_matches'] : 0,
+            'wins' => isset($pRow['battle_wins']) ? (int)$pRow['battle_wins'] : 0,
+            'losses' => isset($pRow['battle_losses']) ? (int)$pRow['battle_losses'] : 0,
+            'draws' => isset($pRow['battle_draws']) ? (int)$pRow['battle_draws'] : 0,
+        ];
+
+        // 移行期などで万が一 part_data が残っていた場合のフォールバック補完
         if (!empty($pRow['part_data'])) {
-            $pData = json_decode($pRow['part_data'], true);
-            if (is_array($pData)) {
-                $pData['isEquipped'] = !empty($pRow['is_equipped']);
-                $dbParts[] = $pData;
+            $legacy = json_decode($pRow['part_data'], true);
+            if (is_array($legacy)) {
+                if (empty($pRow['name']) && !empty($legacy['name'])) $pName = $legacy['name'];
+                if (empty($pRow['attribute']) && !empty($legacy['attribute'])) $pAttr = $legacy['attribute'];
+                if (empty($pRow['part_type']) && !empty($legacy['type'])) $pType = $legacy['type'];
+                if (isset($legacy['stats']) && is_array($legacy['stats'])) {
+                    foreach (['hp', 'power', 'defense', 'agility', 'dexterity', 'intelligence'] as $stKey) {
+                        if ($stats[$stKey] === 0 && isset($legacy['stats'][$stKey])) {
+                            $stats[$stKey] = (int)$legacy['stats'][$stKey];
+                        }
+                    }
+                }
             }
         }
+
+        $reconstructedPart = [
+            'id' => $partId,
+            'type' => $pType,
+            'name' => $pName,
+            'attribute' => $pAttr,
+            'rarity' => $pRarity,
+            'visualIndex' => $pVis,
+            'isEquipped' => $isEquipped,
+            'stats' => $stats,
+            'battleStats' => $battleStats,
+        ];
+
+        if (!empty($pRow['main_material_id'])) {
+            $reconstructedPart['mainMaterialId'] = $pRow['main_material_id'];
+        }
+        if (!empty($pRow['sub_material_id'])) {
+            $reconstructedPart['subMaterialId'] = $pRow['sub_material_id'];
+        }
+
+        $dbParts[] = $reconstructedPart;
     }
 
     // 9. user_robots テーブルから所持ロボット一覧を取得

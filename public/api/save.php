@@ -240,8 +240,37 @@ try {
         $pdo->exec("ALTER TABLE active_requests ADD COLUMN request_data JSON");
     } catch (PDOException $e) {}
 
+    $partColsSave = [
+        "ADD COLUMN IF NOT EXISTS part_type VARCHAR(50) NOT NULL DEFAULT 'head'",
+        "ADD COLUMN IF NOT EXISTS name VARCHAR(255) NOT NULL DEFAULT ''",
+        "ADD COLUMN IF NOT EXISTS attribute VARCHAR(50) NOT NULL DEFAULT 'Fire'",
+        "ADD COLUMN IF NOT EXISTS rarity INT NOT NULL DEFAULT 1",
+        "ADD COLUMN IF NOT EXISTS visual_index INT NOT NULL DEFAULT 0",
+        "ADD COLUMN IF NOT EXISTS vitality INT NOT NULL DEFAULT 0",
+        "ADD COLUMN IF NOT EXISTS power INT NOT NULL DEFAULT 0",
+        "ADD COLUMN IF NOT EXISTS defense INT NOT NULL DEFAULT 0",
+        "ADD COLUMN IF NOT EXISTS agility INT NOT NULL DEFAULT 0",
+        "ADD COLUMN IF NOT EXISTS dexterity INT NOT NULL DEFAULT 0",
+        "ADD COLUMN IF NOT EXISTS intelligence INT NOT NULL DEFAULT 0",
+        "ADD COLUMN IF NOT EXISTS battle_matches INT NOT NULL DEFAULT 0",
+        "ADD COLUMN IF NOT EXISTS battle_wins INT NOT NULL DEFAULT 0",
+        "ADD COLUMN IF NOT EXISTS battle_losses INT NOT NULL DEFAULT 0",
+        "ADD COLUMN IF NOT EXISTS battle_draws INT NOT NULL DEFAULT 0",
+        "ADD COLUMN IF NOT EXISTS main_material_id VARCHAR(100) NULL",
+        "ADD COLUMN IF NOT EXISTS sub_material_id VARCHAR(100) NULL"
+    ];
+    foreach ($partColsSave as $colDef) {
+        try {
+            $cleanDef = str_replace('IF NOT EXISTS ', '', $colDef);
+            $pdo->exec("ALTER TABLE user_parts " . $cleanDef);
+        } catch (PDOException $e) {}
+    }
+
     try {
-        $pdo->exec("ALTER TABLE user_parts ADD COLUMN part_data JSON");
+        $checkHpCol = $pdo->query("SHOW COLUMNS FROM user_parts LIKE 'hp'");
+        if ($checkHpCol && $checkHpCol->fetch()) {
+            $pdo->exec("ALTER TABLE user_parts CHANGE COLUMN hp vitality INT NOT NULL DEFAULT 0");
+        }
     } catch (PDOException $e) {}
 
     try {
@@ -450,16 +479,72 @@ try {
         } catch (Exception $e) {}
     }
 
-    // 4. user_parts テーブルの同期
+    // 4. user_parts テーブルの同期（part_data JSONを廃止し、すべてのパーツ属性を個別カラムに格納）
     $delPartsStmt = $pdo->prepare("DELETE FROM user_parts WHERE user_id = :user_id");
     $delPartsStmt->execute([':user_id' => $actualUserId]);
 
-    if (!empty($gameData['parts']) && is_array($gameData['parts'])) {
-        $stmtPart = $pdo->prepare("
-            INSERT INTO user_parts (id, user_id, master_part_id, is_equipped, part_data)
-            VALUES (:id, :user_id, :master_id, :is_equipped, :part_data)
-        ");
+    $stmtPart = $pdo->prepare("
+        INSERT INTO user_parts (
+            id, user_id, master_part_id, part_type, name, attribute, rarity, visual_index,
+            is_equipped, vitality, power, defense, agility, dexterity, intelligence,
+            battle_matches, battle_wins, battle_losses, battle_draws, main_material_id, sub_material_id
+        ) VALUES (
+            :id, :user_id, :master_id, :part_type, :name, :attribute, :rarity, :visual_index,
+            :is_equipped, :vitality, :power, :defense, :agility, :dexterity, :intelligence,
+            :battle_matches, :battle_wins, :battle_losses, :battle_draws, :main_material_id, :sub_material_id
+        )
+        ON DUPLICATE KEY UPDATE
+            user_id = VALUES(user_id),
+            master_part_id = VALUES(master_part_id),
+            part_type = VALUES(part_type),
+            name = VALUES(name),
+            attribute = VALUES(attribute),
+            rarity = VALUES(rarity),
+            visual_index = VALUES(visual_index),
+            is_equipped = VALUES(is_equipped),
+            vitality = VALUES(vitality),
+            power = VALUES(power),
+            defense = VALUES(defense),
+            agility = VALUES(agility),
+            dexterity = VALUES(dexterity),
+            intelligence = VALUES(intelligence),
+            battle_matches = VALUES(battle_matches),
+            battle_wins = VALUES(battle_wins),
+            battle_losses = VALUES(battle_losses),
+            battle_draws = VALUES(battle_draws),
+            main_material_id = VALUES(main_material_id),
+            sub_material_id = VALUES(sub_material_id)
+    ");
 
+    $extractPartParams = function($part, $userId, $isEquipped) {
+        $stats = $part['stats'] ?? [];
+        $bStats = $part['battleStats'] ?? $part['battle_stats'] ?? [];
+        return [
+            ':id' => $part['id'],
+            ':user_id' => $userId,
+            ':master_id' => $part['name'] ?? $part['id'],
+            ':part_type' => $part['type'] ?? $part['part_type'] ?? 'head',
+            ':name' => $part['name'] ?? $part['id'] ?? 'パーツ',
+            ':attribute' => $part['attribute'] ?? 'Fire',
+            ':rarity' => isset($part['rarity']) ? (int)$part['rarity'] : 1,
+            ':visual_index' => isset($part['visualIndex']) ? (int)$part['visualIndex'] : (isset($part['visual_index']) ? (int)$part['visual_index'] : 0),
+            ':is_equipped' => $isEquipped ? 1 : 0,
+            ':vitality' => isset($stats['hp']) ? (int)$stats['hp'] : (isset($part['vitality']) ? (int)$part['vitality'] : (isset($part['hp']) ? (int)$part['hp'] : 0)),
+            ':power' => isset($stats['power']) ? (int)$stats['power'] : (isset($part['power']) ? (int)$part['power'] : 0),
+            ':defense' => isset($stats['defense']) ? (int)$stats['defense'] : (isset($part['defense']) ? (int)$part['defense'] : 0),
+            ':agility' => isset($stats['agility']) ? (int)$stats['agility'] : (isset($part['agility']) ? (int)$part['agility'] : 0),
+            ':dexterity' => isset($stats['dexterity']) ? (int)$stats['dexterity'] : (isset($part['dexterity']) ? (int)$part['dexterity'] : 0),
+            ':intelligence' => isset($stats['intelligence']) ? (int)$stats['intelligence'] : (isset($stats['int']) ? (int)$stats['int'] : (isset($part['intelligence']) ? (int)$part['intelligence'] : 0)),
+            ':battle_matches' => isset($bStats['matches']) ? (int)$bStats['matches'] : 0,
+            ':battle_wins' => isset($bStats['wins']) ? (int)$bStats['wins'] : 0,
+            ':battle_losses' => isset($bStats['losses']) ? (int)$bStats['losses'] : 0,
+            ':battle_draws' => isset($bStats['draws']) ? (int)$bStats['draws'] : 0,
+            ':main_material_id' => $part['mainMaterialId'] ?? $part['main_material_id'] ?? null,
+            ':sub_material_id' => $part['subMaterialId'] ?? $part['sub_material_id'] ?? null,
+        ];
+    };
+
+    if (!empty($gameData['parts']) && is_array($gameData['parts'])) {
         // 装備中パーツのIDリストを収集
         $equippedPartIds = [];
         if (!empty($gameData['robots']) && is_array($gameData['robots'])) {
@@ -478,13 +563,8 @@ try {
             if (empty($part['id'])) continue;
             // state.parts内ですでにisEquippedが設定されていればそれを優先
             $isEquipped = (!empty($part['isEquipped']) || !empty($equippedPartIds[$part['id']])) ? 1 : 0;
-            $stmtPart->execute([
-                ':id' => $part['id'],
-                ':user_id' => $actualUserId,
-                ':master_id' => $part['name'] ?? $part['id'],
-                ':is_equipped' => $isEquipped,
-                ':part_data' => json_encode($part, JSON_UNESCAPED_UNICODE)
-            ]);
+            $params = $extractPartParams($part, $actualUserId, $isEquipped);
+            $stmtPart->execute($params);
         }
     }
 
@@ -494,24 +574,14 @@ try {
     $delRobotsStmt->execute([':user_id' => $actualUserId]);
 
     if (!empty($gameData['robots']) && is_array($gameData['robots'])) {
-        // ロボットが装備しているパーツも確実に user_parts に存在させる
-        $stmtEnsurePart = $pdo->prepare("
-            INSERT INTO user_parts (id, user_id, master_part_id, is_equipped, part_data)
-            VALUES (:id, :user_id, :master_id, 1, :part_data)
-            ON DUPLICATE KEY UPDATE is_equipped = 1, part_data = VALUES(part_data)
-        ");
-
+        // ロボットが装備しているパーツも確実に user_parts に個別カラムで存在させる
         foreach ($gameData['robots'] as $robot) {
             if (!empty($robot['parts'])) {
                 foreach (['head', 'body', 'arms', 'legs'] as $pKey) {
                     if (!empty($robot['parts'][$pKey]['id'])) {
                         $p = $robot['parts'][$pKey];
-                        $stmtEnsurePart->execute([
-                            ':id' => $p['id'],
-                            ':user_id' => $actualUserId,
-                            ':master_id' => $p['name'] ?? $p['id'],
-                            ':part_data' => json_encode($p, JSON_UNESCAPED_UNICODE)
-                        ]);
+                        $params = $extractPartParams($p, $actualUserId, 1);
+                        $stmtPart->execute($params);
                     }
                 }
             }

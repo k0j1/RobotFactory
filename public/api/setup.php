@@ -27,7 +27,7 @@ try {
         google_id VARCHAR(255) NOT NULL UNIQUE,
         email VARCHAR(255),
         name VARCHAR(255),
-        picture VARCHAR(255),
+        picture TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -90,9 +90,27 @@ try {
         id VARCHAR(255) PRIMARY KEY,
         user_id VARCHAR(255) NOT NULL,
         master_part_id VARCHAR(255) NOT NULL,
-        is_equipped BOOLEAN DEFAULT FALSE,
-        part_data JSON,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        part_type VARCHAR(50) NOT NULL DEFAULT 'head',
+        name VARCHAR(255) NOT NULL DEFAULT '',
+        attribute VARCHAR(50) NOT NULL DEFAULT 'Fire',
+        rarity INT NOT NULL DEFAULT 1,
+        visual_index INT NOT NULL DEFAULT 0,
+        is_equipped BOOLEAN NOT NULL DEFAULT FALSE,
+        vitality INT NOT NULL DEFAULT 0,
+        power INT NOT NULL DEFAULT 0,
+        defense INT NOT NULL DEFAULT 0,
+        agility INT NOT NULL DEFAULT 0,
+        dexterity INT NOT NULL DEFAULT 0,
+        intelligence INT NOT NULL DEFAULT 0,
+        battle_matches INT NOT NULL DEFAULT 0,
+        battle_wins INT NOT NULL DEFAULT 0,
+        battle_losses INT NOT NULL DEFAULT 0,
+        battle_draws INT NOT NULL DEFAULT 0,
+        main_material_id VARCHAR(100) NULL,
+        sub_material_id VARCHAR(100) NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_user_parts_user (user_id),
+        INDEX idx_user_parts_type (part_type)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
     CREATE TABLE IF NOT EXISTS user_robots (
@@ -383,8 +401,131 @@ try {
         // 既に追加されている場合は無視
     }
 
+    // usersテーブルのpicture列をTEXTに拡張（GoogleアバターURLの文字数対策）
     try {
-        $pdo->exec("ALTER TABLE user_parts ADD COLUMN part_data JSON");
+        $pdo->exec("ALTER TABLE users MODIFY COLUMN picture TEXT");
+    } catch (PDOException $e) {}
+
+    // user_parts テーブルの個別カラム化マイグレーション
+    $partCols = [
+        "ADD COLUMN IF NOT EXISTS part_type VARCHAR(50) NOT NULL DEFAULT 'head'",
+        "ADD COLUMN IF NOT EXISTS name VARCHAR(255) NOT NULL DEFAULT ''",
+        "ADD COLUMN IF NOT EXISTS attribute VARCHAR(50) NOT NULL DEFAULT 'Fire'",
+        "ADD COLUMN IF NOT EXISTS rarity INT NOT NULL DEFAULT 1",
+        "ADD COLUMN IF NOT EXISTS visual_index INT NOT NULL DEFAULT 0",
+        "ADD COLUMN IF NOT EXISTS vitality INT NOT NULL DEFAULT 0",
+        "ADD COLUMN IF NOT EXISTS power INT NOT NULL DEFAULT 0",
+        "ADD COLUMN IF NOT EXISTS defense INT NOT NULL DEFAULT 0",
+        "ADD COLUMN IF NOT EXISTS agility INT NOT NULL DEFAULT 0",
+        "ADD COLUMN IF NOT EXISTS dexterity INT NOT NULL DEFAULT 0",
+        "ADD COLUMN IF NOT EXISTS intelligence INT NOT NULL DEFAULT 0",
+        "ADD COLUMN IF NOT EXISTS battle_matches INT NOT NULL DEFAULT 0",
+        "ADD COLUMN IF NOT EXISTS battle_wins INT NOT NULL DEFAULT 0",
+        "ADD COLUMN IF NOT EXISTS battle_losses INT NOT NULL DEFAULT 0",
+        "ADD COLUMN IF NOT EXISTS battle_draws INT NOT NULL DEFAULT 0",
+        "ADD COLUMN IF NOT EXISTS main_material_id VARCHAR(100) NULL",
+        "ADD COLUMN IF NOT EXISTS sub_material_id VARCHAR(100) NULL"
+    ];
+
+    foreach ($partCols as $colDef) {
+        try {
+            // MySQLバージョンによって IF NOT EXISTS が使えない場合があるため、単純なADD COLUMNもフォールバック
+            $cleanColDef = str_replace('IF NOT EXISTS ', '', $colDef);
+            $pdo->exec("ALTER TABLE user_parts " . $cleanColDef);
+        } catch (PDOException $e) {}
+    }
+
+    // 既存の hp カラムが存在する場合、vitality カラムへリネーム
+    try {
+        $checkHpCol = $pdo->query("SHOW COLUMNS FROM user_parts LIKE 'hp'");
+        if ($checkHpCol && $checkHpCol->fetch()) {
+            $pdo->exec("ALTER TABLE user_parts CHANGE COLUMN hp vitality INT NOT NULL DEFAULT 0");
+        }
+    } catch (PDOException $e) {}
+
+    // 既存の part_data JSON から新個別カラムへのデータ移行
+    try {
+        $colCheck = $pdo->query("SHOW COLUMNS FROM user_parts LIKE 'part_data'");
+        if ($colCheck && $colCheck->fetch()) {
+            $stmtParts = $pdo->query("SELECT id, master_part_id, part_data FROM user_parts WHERE part_data IS NOT NULL AND part_data != ''");
+            if ($stmtParts) {
+                $updPartStmt = $pdo->prepare("
+                    UPDATE user_parts SET
+                        part_type = :part_type,
+                        name = :name,
+                        attribute = :attribute,
+                        rarity = :rarity,
+                        visual_index = :visual_index,
+                        vitality = :vitality,
+                        power = :power,
+                        defense = :defense,
+                        agility = :agility,
+                        dexterity = :dexterity,
+                        intelligence = :intelligence,
+                        battle_matches = :b_matches,
+                        battle_wins = :b_wins,
+                        battle_losses = :b_losses,
+                        battle_draws = :b_draws,
+                        main_material_id = :main_mat,
+                        sub_material_id = :sub_mat
+                    WHERE id = :id
+                ");
+                while ($pRow = $stmtParts->fetch(PDO::FETCH_ASSOC)) {
+                    if (empty($pRow['part_data'])) continue;
+                    $d = json_decode($pRow['part_data'], true);
+                    if (!is_array($d)) continue;
+                    
+                    $pType = $d['type'] ?? $d['part_type'] ?? 'head';
+                    $pName = $d['name'] ?? $pRow['master_part_id'] ?? 'パーツ';
+                    $pAttr = $d['attribute'] ?? 'Fire';
+                    $pRarity = isset($d['rarity']) ? (int)$d['rarity'] : 1;
+                    $pVis = isset($d['visualIndex']) ? (int)$d['visualIndex'] : (isset($d['visual_index']) ? (int)$d['visual_index'] : 0);
+                    
+                    $stats = $d['stats'] ?? [];
+                    $pVit = isset($stats['hp']) ? (int)$stats['hp'] : (isset($d['vitality']) ? (int)$d['vitality'] : (isset($d['hp']) ? (int)$d['hp'] : 0));
+                    $pPow = isset($stats['power']) ? (int)$stats['power'] : (isset($d['power']) ? (int)$d['power'] : 0);
+                    $pDef = isset($stats['defense']) ? (int)$stats['defense'] : (isset($d['defense']) ? (int)$d['defense'] : 0);
+                    $pAgi = isset($stats['agility']) ? (int)$stats['agility'] : (isset($d['agility']) ? (int)$d['agility'] : 0);
+                    $pDex = isset($stats['dexterity']) ? (int)$stats['dexterity'] : (isset($d['dexterity']) ? (int)$d['dexterity'] : 0);
+                    $pInt = isset($stats['intelligence']) ? (int)$stats['intelligence'] : (isset($stats['int']) ? (int)$stats['int'] : (isset($d['intelligence']) ? (int)$d['intelligence'] : 0));
+                    
+                    $bStats = $d['battleStats'] ?? $d['battle_stats'] ?? [];
+                    $bMatches = isset($bStats['matches']) ? (int)$bStats['matches'] : 0;
+                    $bWins = isset($bStats['wins']) ? (int)$bStats['wins'] : 0;
+                    $bLosses = isset($bStats['losses']) ? (int)$bStats['losses'] : 0;
+                    $bDraws = isset($bStats['draws']) ? (int)$bStats['draws'] : 0;
+                    
+                    $mainMat = $d['mainMaterialId'] ?? $d['main_material_id'] ?? null;
+                    $subMat = $d['subMaterialId'] ?? $d['sub_material_id'] ?? null;
+                    
+                    $updPartStmt->execute([
+                        ':part_type' => $pType,
+                        ':name' => $pName,
+                        ':attribute' => $pAttr,
+                        ':rarity' => $pRarity,
+                        ':visual_index' => $pVis,
+                        ':vitality' => $pVit,
+                        ':power' => $pPow,
+                        ':defense' => $pDef,
+                        ':agility' => $pAgi,
+                        ':dexterity' => $pDex,
+                        ':intelligence' => $pInt,
+                        ':b_matches' => $bMatches,
+                        ':b_wins' => $bWins,
+                        ':b_losses' => $bLosses,
+                        ':b_draws' => $bDraws,
+                        ':main_mat' => $mainMat,
+                        ':sub_mat' => $subMat,
+                        ':id' => $pRow['id']
+                    ]);
+                }
+            }
+
+            // 移行完了後に part_data カラムを削除
+            try {
+                $pdo->exec("ALTER TABLE user_parts DROP COLUMN `part_data`");
+            } catch (PDOException $e) {}
+        }
     } catch (PDOException $e) {}
 
     // user_robots テーブルのスキーマ更新: currentHp, maxHP, battleStats の追加
@@ -436,7 +577,7 @@ try {
         $pdo->exec("ALTER TABLE user_robots DROP COLUMN `robot_data`");
     } catch (PDOException $e) {}
 
-    // user_robots テーブルの total ステータスを確認できる View の作成
+    // user_robots テーブルの total ステータスを確認できる View の作成（user_partsの個別ステータスカラムを直接合算）
     try {
         $pdo->exec("
             CREATE OR REPLACE VIEW view_user_robots_total_stats AS
@@ -451,40 +592,40 @@ try {
                 ur.arms_part_id,
                 ur.legs_part_id,
                 (
-                    COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(hp.part_data, '$.stats.hp')) AS SIGNED), 0) +
-                    COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(bp.part_data, '$.stats.hp')) AS SIGNED), 0) +
-                    COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(ap.part_data, '$.stats.hp')) AS SIGNED), 0) +
-                    COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(lp.part_data, '$.stats.hp')) AS SIGNED), 0)
-                ) AS total_hp,
+                    COALESCE(hp.vitality, 0) +
+                    COALESCE(bp.vitality, 0) +
+                    COALESCE(ap.vitality, 0) +
+                    COALESCE(lp.vitality, 0)
+                ) AS totalvitality,
                 (
-                    COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(hp.part_data, '$.stats.power')) AS SIGNED), 0) +
-                    COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(bp.part_data, '$.stats.power')) AS SIGNED), 0) +
-                    COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(ap.part_data, '$.stats.power')) AS SIGNED), 0) +
-                    COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(lp.part_data, '$.stats.power')) AS SIGNED), 0)
+                    COALESCE(hp.power, 0) +
+                    COALESCE(bp.power, 0) +
+                    COALESCE(ap.power, 0) +
+                    COALESCE(lp.power, 0)
                 ) AS total_power,
                 (
-                    COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(hp.part_data, '$.stats.defense')) AS SIGNED), 0) +
-                    COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(bp.part_data, '$.stats.defense')) AS SIGNED), 0) +
-                    COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(ap.part_data, '$.stats.defense')) AS SIGNED), 0) +
-                    COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(lp.part_data, '$.stats.defense')) AS SIGNED), 0)
+                    COALESCE(hp.defense, 0) +
+                    COALESCE(bp.defense, 0) +
+                    COALESCE(ap.defense, 0) +
+                    COALESCE(lp.defense, 0)
                 ) AS total_defense,
                 (
-                    COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(hp.part_data, '$.stats.agility')) AS SIGNED), 0) +
-                    COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(bp.part_data, '$.stats.agility')) AS SIGNED), 0) +
-                    COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(ap.part_data, '$.stats.agility')) AS SIGNED), 0) +
-                    COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(lp.part_data, '$.stats.agility')) AS SIGNED), 0)
+                    COALESCE(hp.agility, 0) +
+                    COALESCE(bp.agility, 0) +
+                    COALESCE(ap.agility, 0) +
+                    COALESCE(lp.agility, 0)
                 ) AS total_agility,
                 (
-                    COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(hp.part_data, '$.stats.dexterity')) AS SIGNED), 0) +
-                    COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(bp.part_data, '$.stats.dexterity')) AS SIGNED), 0) +
-                    COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(ap.part_data, '$.stats.dexterity')) AS SIGNED), 0) +
-                    COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(lp.part_data, '$.stats.dexterity')) AS SIGNED), 0)
+                    COALESCE(hp.dexterity, 0) +
+                    COALESCE(bp.dexterity, 0) +
+                    COALESCE(ap.dexterity, 0) +
+                    COALESCE(lp.dexterity, 0)
                 ) AS total_dexterity,
                 (
-                    COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(hp.part_data, '$.stats.intelligence')) AS SIGNED), CAST(JSON_UNQUOTE(JSON_EXTRACT(hp.part_data, '$.stats.int')) AS SIGNED), 0) +
-                    COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(bp.part_data, '$.stats.intelligence')) AS SIGNED), CAST(JSON_UNQUOTE(JSON_EXTRACT(bp.part_data, '$.stats.int')) AS SIGNED), 0) +
-                    COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(ap.part_data, '$.stats.intelligence')) AS SIGNED), CAST(JSON_UNQUOTE(JSON_EXTRACT(ap.part_data, '$.stats.int')) AS SIGNED), 0) +
-                    COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(lp.part_data, '$.stats.intelligence')) AS SIGNED), CAST(JSON_UNQUOTE(JSON_EXTRACT(lp.part_data, '$.stats.int')) AS SIGNED), 0)
+                    COALESCE(hp.intelligence, 0) +
+                    COALESCE(bp.intelligence, 0) +
+                    COALESCE(ap.intelligence, 0) +
+                    COALESCE(lp.intelligence, 0)
                 ) AS total_int,
                 ur.battleStats,
                 ur.created_at
