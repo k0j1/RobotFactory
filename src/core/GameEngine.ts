@@ -1155,6 +1155,16 @@ export class GameEngine {
 
     const generatedStats = this._generatePartStats(type, mainMat, subMat, craftRarity, chosenCraft.visualIndex);
 
+    // メイン素材から生成されるパーツの m_parts_encyclopedia ID を取得
+    const mainMaster = findMasterPartData(type, craftRarity, chosenCraft.visualIndex);
+    const mainEncyclopediaId = mainMaster ? mainMaster.id : `${type[0]}${craftRarity}_${chosenCraft.visualIndex}`;
+
+    // サブ素材に対応する m_parts_encyclopedia ID を取得
+    const subPossibleCrafts = getMaterialCraftableVisuals(subMat);
+    const chosenSubCraft = subPossibleCrafts[Math.floor(Math.random() * subPossibleCrafts.length)] || subPossibleCrafts[0];
+    const subMaster = findMasterPartData(type, chosenSubCraft.rarity, chosenSubCraft.visualIndex);
+    const subEncyclopediaId = subMaster ? subMaster.id : `${type[0]}${chosenSubCraft.rarity}_${chosenSubCraft.visualIndex}`;
+
     const newPart: RobotPart = {
       id: `part_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
       type,
@@ -1163,6 +1173,8 @@ export class GameEngine {
       rarity: craftRarity as 1 | 2 | 3,
       stats: generatedStats.stats,
       visualIndex: chosenCraft.visualIndex,
+      mainMaterialId: mainEncyclopediaId,
+      subMaterialId: subEncyclopediaId,
     };
 
     const durationMs = this.getPartCraftDuration(mainMaterialId, subMaterialId);
@@ -1192,6 +1204,24 @@ export class GameEngine {
     }
 
     const craftedPart = target.resultPart;
+
+    // 製造完了時に確実に m_parts_encyclopedia の id がセットされていることを担保
+    if (!craftedPart.mainMaterialId || craftedPart.mainMaterialId.startsWith('m_')) {
+      const mainMaster = findMasterPartData(craftedPart.type, craftedPart.rarity, craftedPart.visualIndex);
+      craftedPart.mainMaterialId = mainMaster ? mainMaster.id : `${craftedPart.type[0]}${craftedPart.rarity}_${craftedPart.visualIndex}`;
+    }
+    if (!craftedPart.subMaterialId || craftedPart.subMaterialId.startsWith('m_')) {
+      const subMat = MATERIALS.find(m => m.id === target.subMaterialId);
+      if (subMat) {
+        const subPossibleCrafts = getMaterialCraftableVisuals(subMat);
+        const chosenSub = subPossibleCrafts[0];
+        if (chosenSub) {
+          const subMaster = findMasterPartData(craftedPart.type, chosenSub.rarity, chosenSub.visualIndex);
+          craftedPart.subMaterialId = subMaster ? subMaster.id : `${craftedPart.type[0]}${chosenSub.rarity}_${chosenSub.visualIndex}`;
+        }
+      }
+    }
+
     this.state.parts.push(craftedPart);
 
     // active_part_crafts から complete_part_crafts への移行
@@ -1414,6 +1444,16 @@ export class GameEngine {
 
     const generatedStats = this._generatePartStats(type, mainMat, subMat, craftRarity, chosenCraft.visualIndex);
 
+    // メイン素材から生成されるパーツの m_parts_encyclopedia ID を取得
+    const mainMaster = findMasterPartData(type, craftRarity, chosenCraft.visualIndex);
+    const mainEncyclopediaId = mainMaster ? mainMaster.id : `${type[0]}${craftRarity}_${chosenCraft.visualIndex}`;
+
+    // サブ素材に対応する m_parts_encyclopedia ID を取得
+    const subPossibleCrafts = getMaterialCraftableVisuals(subMat);
+    const chosenSubCraft = subPossibleCrafts[Math.floor(Math.random() * subPossibleCrafts.length)] || subPossibleCrafts[0];
+    const subMaster = findMasterPartData(type, chosenSubCraft.rarity, chosenSubCraft.visualIndex);
+    const subEncyclopediaId = subMaster ? subMaster.id : `${type[0]}${chosenSubCraft.rarity}_${chosenSubCraft.visualIndex}`;
+
     const newPart: RobotPart = {
       id: `part_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
       type,
@@ -1422,6 +1462,8 @@ export class GameEngine {
       rarity: craftRarity as 1 | 2 | 3,
       stats: generatedStats.stats,
       visualIndex: chosenCraft.visualIndex,
+      mainMaterialId: mainEncyclopediaId,
+      subMaterialId: subEncyclopediaId,
     };
     
     this.state.parts.push(newPart);

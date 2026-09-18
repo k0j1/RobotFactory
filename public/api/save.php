@@ -519,15 +519,34 @@ try {
     $extractPartParams = function($part, $userId, $isEquipped) {
         $stats = $part['stats'] ?? [];
         $bStats = $part['battleStats'] ?? $part['battle_stats'] ?? [];
+        $pType = $part['type'] ?? $part['part_type'] ?? 'head';
+        $rarity = isset($part['rarity']) ? (int)$part['rarity'] : 1;
+        $visualIndex = isset($part['visualIndex']) ? (int)$part['visualIndex'] : (isset($part['visual_index']) ? (int)$part['visual_index'] : 0);
+
+        // m_parts_encyclopedia の ID (例: h1_0, b2_1) を解決する
+        $resolveEncyclopediaId = function($matId, $pType, $rarity, $visualIndex) {
+            if (empty($matId)) return null;
+            if (preg_match('/^[hbal][1-3]_\d+$/i', $matId)) {
+                return $matId;
+            }
+            $prefix = ['head' => 'h', 'body' => 'b', 'arms' => 'a', 'legs' => 'l'][$pType] ?? 'h';
+            $r = $rarity ?: 1;
+            $v = $visualIndex !== null ? (int)$visualIndex : 0;
+            return "{$prefix}{$r}_{$v}";
+        };
+
+        $rawMainMat = $part['mainMaterialId'] ?? $part['main_material_id'] ?? null;
+        $rawSubMat = $part['subMaterialId'] ?? $part['sub_material_id'] ?? null;
+
         return [
             ':id' => $part['id'],
             ':user_id' => $userId,
             ':master_id' => $part['name'] ?? $part['id'],
-            ':part_type' => $part['type'] ?? $part['part_type'] ?? 'head',
+            ':part_type' => $pType,
             ':name' => $part['name'] ?? $part['id'] ?? 'パーツ',
             ':attribute' => $part['attribute'] ?? 'Fire',
-            ':rarity' => isset($part['rarity']) ? (int)$part['rarity'] : 1,
-            ':visual_index' => isset($part['visualIndex']) ? (int)$part['visualIndex'] : (isset($part['visual_index']) ? (int)$part['visual_index'] : 0),
+            ':rarity' => $rarity,
+            ':visual_index' => $visualIndex,
             ':is_equipped' => $isEquipped ? 1 : 0,
             ':vitality' => isset($stats['hp']) ? (int)$stats['hp'] : (isset($part['vitality']) ? (int)$part['vitality'] : (isset($part['hp']) ? (int)$part['hp'] : 0)),
             ':power' => isset($stats['power']) ? (int)$stats['power'] : (isset($part['power']) ? (int)$part['power'] : 0),
@@ -539,8 +558,8 @@ try {
             ':battle_wins' => isset($bStats['wins']) ? (int)$bStats['wins'] : 0,
             ':battle_losses' => isset($bStats['losses']) ? (int)$bStats['losses'] : 0,
             ':battle_draws' => isset($bStats['draws']) ? (int)$bStats['draws'] : 0,
-            ':main_material_id' => $part['mainMaterialId'] ?? $part['main_material_id'] ?? null,
-            ':sub_material_id' => $part['subMaterialId'] ?? $part['sub_material_id'] ?? null,
+            ':main_material_id' => $resolveEncyclopediaId($rawMainMat, $pType, $rarity, $visualIndex),
+            ':sub_material_id' => $resolveEncyclopediaId($rawSubMat, $pType, $rarity, $visualIndex),
         ];
     };
 

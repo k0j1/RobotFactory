@@ -476,18 +476,31 @@ try {
                             }
                             $partId = $partObj['id'];
                             $masterId = $partObj['name'] ?? $partObj['master_id'] ?? $partId;
+                            $pType = $partObj['type'] ?? $pKey;
+                            $rarity = isset($partObj['rarity']) ? (int)$partObj['rarity'] : 1;
+                            $visualIndex = isset($partObj['visualIndex']) ? (int)$partObj['visualIndex'] : 0;
                             $stats = $partObj['stats'] ?? [];
                             $bStats = $partObj['battleStats'] ?? $partObj['battle_stats'] ?? [];
+
+                            $resolveId = function($matId, $pt, $r, $vi) {
+                                if (empty($matId)) return null;
+                                if (preg_match('/^[hbal][1-3]_\d+$/i', $matId)) return $matId;
+                                $prefix = ['head' => 'h', 'body' => 'b', 'arms' => 'a', 'legs' => 'l'][$pt] ?? 'h';
+                                return "{$prefix}{$r}_{$vi}";
+                            };
+
+                            $rawMain = $partObj['mainMaterialId'] ?? $partObj['main_material_id'] ?? null;
+                            $rawSub = $partObj['subMaterialId'] ?? $partObj['sub_material_id'] ?? null;
 
                             $stmtEnsurePart->execute([
                                 ':id' => $partId,
                                 ':user_id' => $targetUserId,
                                 ':master_id' => $masterId,
-                                ':part_type' => $partObj['type'] ?? $pKey,
+                                ':part_type' => $pType,
                                 ':name' => $partObj['name'] ?? $masterId,
                                 ':attribute' => $partObj['attribute'] ?? 'Fire',
-                                ':rarity' => isset($partObj['rarity']) ? (int)$partObj['rarity'] : 1,
-                                ':visual_index' => isset($partObj['visualIndex']) ? (int)$partObj['visualIndex'] : 0,
+                                ':rarity' => $rarity,
+                                ':visual_index' => $visualIndex,
                                 ':vitality' => isset($stats['hp']) ? (int)$stats['hp'] : (isset($partObj['vitality']) ? (int)$partObj['vitality'] : (isset($partObj['hp']) ? (int)$partObj['hp'] : 0)),
                                 ':power' => isset($stats['power']) ? (int)$stats['power'] : (isset($partObj['power']) ? (int)$partObj['power'] : 0),
                                 ':defense' => isset($stats['defense']) ? (int)$stats['defense'] : (isset($partObj['defense']) ? (int)$partObj['defense'] : 0),
@@ -498,8 +511,8 @@ try {
                                 ':battle_wins' => isset($bStats['wins']) ? (int)$bStats['wins'] : 0,
                                 ':battle_losses' => isset($bStats['losses']) ? (int)$bStats['losses'] : 0,
                                 ':battle_draws' => isset($bStats['draws']) ? (int)$bStats['draws'] : 0,
-                                ':main_material_id' => $partObj['mainMaterialId'] ?? $partObj['main_material_id'] ?? null,
-                                ':sub_material_id' => $partObj['subMaterialId'] ?? $partObj['sub_material_id'] ?? null
+                                ':main_material_id' => $resolveId($rawMain, $pType, $rarity, $visualIndex),
+                                ':sub_material_id' => $resolveId($rawSub, $pType, $rarity, $visualIndex)
                             ]);
                         }
                     }
@@ -766,15 +779,21 @@ try {
                         $stats = $partObj['stats'] ?? [];
                         $bStats = $partObj['battleStats'] ?? $partObj['battle_stats'] ?? [];
 
+                        $pType = $partObj['type'] ?? $pKey;
+                        $rarity = isset($partObj['rarity']) ? (int)$partObj['rarity'] : 1;
+                        $visualIndex = isset($partObj['visualIndex']) ? (int)$partObj['visualIndex'] : 0;
+                        $rawMain = $partObj['mainMaterialId'] ?? $partObj['main_material_id'] ?? null;
+                        $rawSub = $partObj['subMaterialId'] ?? $partObj['sub_material_id'] ?? null;
+
                         $stmtEnsurePart->execute([
                             ':id' => $partId,
                             ':user_id' => $targetUserId,
                             ':master_id' => $masterId,
-                            ':part_type' => $partObj['type'] ?? $pKey,
+                            ':part_type' => $pType,
                             ':name' => $partObj['name'] ?? $masterId,
                             ':attribute' => $partObj['attribute'] ?? 'Fire',
-                            ':rarity' => isset($partObj['rarity']) ? (int)$partObj['rarity'] : 1,
-                            ':visual_index' => isset($partObj['visualIndex']) ? (int)$partObj['visualIndex'] : 0,
+                            ':rarity' => $rarity,
+                            ':visual_index' => $visualIndex,
                             ':vitality' => isset($stats['hp']) ? (int)$stats['hp'] : (isset($partObj['vitality']) ? (int)$partObj['vitality'] : (isset($partObj['hp']) ? (int)$partObj['hp'] : 0)),
                             ':power' => isset($stats['power']) ? (int)$stats['power'] : (isset($partObj['power']) ? (int)$partObj['power'] : 0),
                             ':defense' => isset($stats['defense']) ? (int)$stats['defense'] : (isset($partObj['defense']) ? (int)$partObj['defense'] : 0),
@@ -785,8 +804,8 @@ try {
                             ':battle_wins' => isset($bStats['wins']) ? (int)$bStats['wins'] : 0,
                             ':battle_losses' => isset($bStats['losses']) ? (int)$bStats['losses'] : 0,
                             ':battle_draws' => isset($bStats['draws']) ? (int)$bStats['draws'] : 0,
-                            ':main_material_id' => $partObj['mainMaterialId'] ?? $partObj['main_material_id'] ?? null,
-                            ':sub_material_id' => $partObj['subMaterialId'] ?? $partObj['sub_material_id'] ?? null
+                            ':main_material_id' => $resolveId($rawMain, $pType, $rarity, $visualIndex),
+                            ':sub_material_id' => $resolveId($rawSub, $pType, $rarity, $visualIndex)
                         ]);
 
                         $registered[] = [

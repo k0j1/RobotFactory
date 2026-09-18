@@ -34,6 +34,8 @@ export interface RobotPart {
     draws: number;
   };
   visualIndex: number;
+  mainMaterialId?: string; // m_parts_encyclopedia のマスターパーツID
+  subMaterialId?: string;  // サブ素材に対応する m_parts_encyclopedia のマスターパーツID
 }
 
 export interface Material {
