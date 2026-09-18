@@ -41,6 +41,7 @@ function getAllDatabaseTables(PDO $pdo): array {
     // スキーマ定義の全既知テーブル（SHOW FULL TABLES で万一取得できなかった場合のフォールバック）
     $knownTables = [
         'users',
+        'master_expeditions',
         'user_workshop_status',
         'user_material',
         'user_parts',

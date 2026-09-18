@@ -301,6 +301,7 @@ try {
     unset($saveDataSnapshot['storageSize']);            // user_workshop_status
     unset($saveDataSnapshot['deliveredRobotsCount']);   // user_workshop_status
     unset($saveDataSnapshot['requestEarnedGold']);       // user_workshop_status
+    unset($saveDataSnapshot['unlockedLocations']);      // user_workshop_status
     unset($saveDataSnapshot['battleElements']);         // user_minigame_status
     unset($saveDataSnapshot['minigameRecords']);        // user_minigame_status
 
@@ -322,14 +323,44 @@ try {
     $storageLimit = isset($gameData['storageSize']) ? (int)$gameData['storageSize'] : 0;
     $deliveredCount = isset($gameData['deliveredRobotsCount']) ? (int)$gameData['deliveredRobotsCount'] : 0;
 
+    $newLocations = isset($gameData['unlockedLocations']) && is_array($gameData['unlockedLocations']) ? $gameData['unlockedLocations'] : [];
+
+    $stmtCurrent = $pdo->prepare("SELECT unlocked_expeditions, consumed_gold FROM user_workshop_status WHERE user_id = :uid");
+    $stmtCurrent->execute([':uid' => $actualUserId]);
+    $currentRow = $stmtCurrent->fetch(PDO::FETCH_ASSOC);
+    $currentLocations = [];
+    $currentConsumedGold = 0;
+    if ($currentRow) {
+        if (!empty($currentRow['unlocked_expeditions'])) {
+            $currentLocations = json_decode($currentRow['unlocked_expeditions'], true) ?: [];
+        }
+        $currentConsumedGold = (int)$currentRow['consumed_gold'];
+    }
+
+    $diff = array_diff($newLocations, $currentLocations);
+    $additionalConsumed = 0;
+    if (!empty($diff)) {
+        $in = str_repeat('?,', count($diff) - 1) . '?';
+        $stmtCosts = $pdo->prepare("SELECT unlock_cost FROM master_expeditions WHERE id IN ($in)");
+        $stmtCosts->execute(array_values($diff));
+        while ($c = $stmtCosts->fetch(PDO::FETCH_ASSOC)) {
+            $additionalConsumed += (int)$c['unlock_cost'];
+        }
+    }
+    
+    $consumedGold = $currentConsumedGold + $additionalConsumed;
+    $unlockedExpeditionsJson = json_encode(array_values(array_unique(array_merge($currentLocations, $newLocations))), JSON_UNESCAPED_UNICODE);
+
     $stmtWorkshop = $pdo->prepare("
-        INSERT INTO user_workshop_status (user_id, fame, gold, storage_limit, delivered_count)
-        VALUES (:user_id, :fame, :gold, :storage_limit, :delivered_count)
+        INSERT INTO user_workshop_status (user_id, fame, gold, storage_limit, delivered_count, consumed_gold, unlocked_expeditions)
+        VALUES (:user_id, :fame, :gold, :storage_limit, :delivered_count, :consumed_gold, :unlocked)
         ON DUPLICATE KEY UPDATE 
             fame = :up_fame,
             gold = :up_gold,
             storage_limit = :up_storage_limit,
-            delivered_count = :up_delivered_count
+            delivered_count = :up_delivered_count,
+            consumed_gold = :up_consumed_gold,
+            unlocked_expeditions = :up_unlocked
     ");
     $stmtWorkshop->execute([
         ':user_id' => $actualUserId,
@@ -337,10 +368,14 @@ try {
         ':gold' => $gold,
         ':storage_limit' => $storageLimit,
         ':delivered_count' => $deliveredCount,
+        ':consumed_gold' => $consumedGold,
+        ':unlocked' => $unlockedExpeditionsJson,
         ':up_fame' => $fame,
         ':up_gold' => $gold,
         ':up_storage_limit' => $storageLimit,
         ':up_delivered_count' => $deliveredCount,
+        ':up_consumed_gold' => $consumedGold,
+        ':up_unlocked' => $unlockedExpeditionsJson,
     ]);
 
     // 4. user_parts テーブルの同期

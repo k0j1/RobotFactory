@@ -25,7 +25,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
         title="ポンコツロボット工房 公式仕様書"
         badge={
           <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300 font-mono font-bold px-1.5 py-0.2 rounded">
-            v0.1.33
+            v0.1.35
           </span>
         }
         rightElement={
@@ -253,6 +253,12 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                   <strong className="text-stone-900">主要遠征エリア:</strong>
                   <div className="text-stone-600 mt-1">
                     「近所のスクラップ場 (初級)」から「廃墟工場」「電脳樹海」「古代遺跡」「終末の宇宙ステーション (最上級)」まで多彩なロケーションが存在します。
+                  </div>
+                </div>
+                <div className="bg-white p-2.5 rounded-lg border border-stone-200">
+                  <strong className="text-stone-900">遠征地のマスターデータ管理と解放同期:</strong>
+                  <div className="text-stone-600 mt-1">
+                    各遠征地のマスターデータはデータベース（<code>master_expeditions</code>）にて一元管理されています。新エリア解放の際は所定のゴールドが必要となり、解放履歴と消費ゴールドは<code>user_workshop_status</code>テーブルに保存されクラウドと即座に同期されます。
                   </div>
                 </div>
                 <div className="bg-white p-2.5 rounded-lg border border-stone-200">

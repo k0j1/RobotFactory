@@ -77,6 +77,14 @@ try {
         achieved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+    CREATE TABLE IF NOT EXISTS master_expeditions (
+        id VARCHAR(100) PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        unlock_cost INT DEFAULT 0,
+        duration_seconds INT DEFAULT 0,
+        required_fame INT DEFAULT 0
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
     CREATE TABLE IF NOT EXISTS user_parts (
         id VARCHAR(255) PRIMARY KEY,
         user_id VARCHAR(255) NOT NULL,
@@ -285,7 +293,36 @@ try {
         $pdo->exec("UPDATE completed_robots SET body_part_id = NULL WHERE body_part_id IS NOT NULL AND body_part_id NOT IN (SELECT id FROM complete_parts)");
         $pdo->exec("UPDATE completed_robots SET arms_part_id = NULL WHERE arms_part_id IS NOT NULL AND arms_part_id NOT IN (SELECT id FROM complete_parts)");
         $pdo->exec("UPDATE completed_robots SET legs_part_id = NULL WHERE legs_part_id IS NOT NULL AND legs_part_id NOT IN (SELECT id FROM complete_parts)");
-    } catch (PDOException $e) {}
+    
+    // master_expeditions テーブルに初期データを登録
+    $expeditions = [
+        ['id' => 'loc1', 'name' => '裏山のスクラップ場', 'unlock_cost' => 0, 'duration_seconds' => 1800, 'required_fame' => 0],
+        ['id' => 'loc2', 'name' => '灼熱の廃工場', 'unlock_cost' => 200, 'duration_seconds' => 3600, 'required_fame' => 10],
+        ['id' => 'loc3', 'name' => '水没した都市遺跡', 'unlock_cost' => 500, 'duration_seconds' => 7200, 'required_fame' => 30],
+        ['id' => 'loc4', 'name' => '風の谷の観測所', 'unlock_cost' => 1000, 'duration_seconds' => 10800, 'required_fame' => 50],
+        ['id' => 'loc5', 'name' => '光の塔', 'unlock_cost' => 2000, 'duration_seconds' => 14400, 'required_fame' => 100],
+        ['id' => 'loc6', 'name' => '最果てのクレーター', 'unlock_cost' => 4000, 'duration_seconds' => 18000, 'required_fame' => 200],
+        ['id' => 'loc7', 'name' => '古代文明の中枢', 'unlock_cost' => 10000, 'duration_seconds' => 36000, 'required_fame' => 500],
+    ];
+
+    $stmtInsertExp = $pdo->prepare("
+        INSERT INTO master_expeditions (id, name, unlock_cost, duration_seconds, required_fame) 
+        VALUES (:id, :name, :cost, :duration, :fame)
+        ON DUPLICATE KEY UPDATE 
+            name = VALUES(name), unlock_cost = VALUES(unlock_cost), 
+            duration_seconds = VALUES(duration_seconds), required_fame = VALUES(required_fame)
+    ");
+    foreach ($expeditions as $exp) {
+        $stmtInsertExp->execute([
+            ':id' => $exp['id'],
+            ':name' => $exp['name'],
+            ':cost' => $exp['unlock_cost'],
+            ':duration' => $exp['duration_seconds'],
+            ':fame' => $exp['required_fame']
+        ]);
+    }
+
+} catch (PDOException $e) {}
 
     try { $pdo->exec("ALTER TABLE completed_robots ADD CONSTRAINT fk_comp_head FOREIGN KEY (head_part_id) REFERENCES complete_parts(id) ON DELETE SET NULL"); } catch (PDOException $e) {}
     try { $pdo->exec("ALTER TABLE completed_robots ADD CONSTRAINT fk_comp_body FOREIGN KEY (body_part_id) REFERENCES complete_parts(id) ON DELETE SET NULL"); } catch (PDOException $e) {}
@@ -312,6 +349,13 @@ try {
     // user_workshop_status テーブルに 依頼完了獲得G (request_earned_gold) を追加
     try {
         $pdo->exec("ALTER TABLE user_workshop_status ADD COLUMN request_earned_gold INT DEFAULT 0");
+    } catch (PDOException $e) {
+        // 既に追加されている場合は無視
+    }
+
+    // user_workshop_status テーブルに 解放済み遠征地 (unlocked_expeditions) を追加
+    try {
+        $pdo->exec("ALTER TABLE user_workshop_status ADD COLUMN unlocked_expeditions JSON");
     } catch (PDOException $e) {
         // 既に追加されている場合は無視
     }
