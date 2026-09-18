@@ -75,6 +75,7 @@ export interface QuestLocation {
   description: string;
   unlockCostG: number;
   baseTimeMs: number;
+  requiredFame?: number;
   drops: string[];
 }
 
@@ -253,6 +254,7 @@ export interface GameState {
 
   currentRequest: ClientRequest | null;
   deliveredRobotsCount: number;
+  consumedGold?: number; // 遠征地解放などで消費した累計G
   requestEarnedGold?: number; // 依頼完了で獲得した累計G
   deliveredLogs: DeliveredLog[];
   tutorialStep: number;

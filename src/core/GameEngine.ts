@@ -49,6 +49,7 @@ export class GameEngine {
   private onStateChange: (state: GameState) => void;
   private userId: string | null = null;
   private isCloudAccount: boolean = false;
+  private isCloudLoaded: boolean = false;
 
   constructor(onStateChange: (state: GameState) => void, initialUserId?: string | null) {
     this.onStateChange = onStateChange;
@@ -56,12 +57,14 @@ export class GameEngine {
       // Googleログインユーザーの場合: ローカルストレージのデータは一切使用しない
       this.userId = initialUserId;
       this.isCloudAccount = true;
+      this.isCloudLoaded = false;
       this.state = JSON.parse(JSON.stringify(INITIAL_STATE));
-      console.log(`[GameEngine] Googleユーザー (${initialUserId}) として初期化。ローカルストレージは使用しません。`);
+      console.log(`[GameEngine] Googleユーザー (${initialUserId}) として初期化。ローカルストレージは使用しません。クラウドデータ受信待機中...`);
     } else {
       // ゲストユーザーの場合のみローカルストレージから読み込み
       this.userId = null;
       this.isCloudAccount = false;
+      this.isCloudLoaded = true;
       this.state = this.loadLocalStorageState();
     }
     this.update();
@@ -85,13 +88,23 @@ export class GameEngine {
     this.isCloudAccount = true;
     console.log(`[GameEngine] Googleアカウント (${userId}) に切り替えました。ローカルストレージのデータは完全に遮断されます。`);
 
+    let hasExistingCloudData = false;
     if (cloudState && Object.keys(cloudState).length > 0) {
       console.log('[GameEngine] サーバーDB上のユーザーデータを適用します。');
       this.state = this.sanitizeAndMigrateState(cloudState);
+      hasExistingCloudData = true;
     } else {
       console.log('[GameEngine] サーバーDBにセーブデータが存在しないため、新規初期データから開始します。');
       this.state = JSON.parse(JSON.stringify(INITIAL_STATE));
     }
+
+    // 常に「裏山のスクラップ場」（loc1）は解放状態
+    if (!this.state.unlockedLocations || !this.state.unlockedLocations.includes('loc1')) {
+      this.state.unlockedLocations = ['loc1', ...(this.state.unlockedLocations || []).filter(id => id !== 'loc1')];
+    }
+
+    // ロード完了フラグを立てて自動保存を解禁
+    this.isCloudLoaded = true;
 
     // user_materialテーブルから最新素材情報をロードして確実にマージ
     try {
@@ -109,8 +122,11 @@ export class GameEngine {
     // UIへ反映（ローカルストレージへは一切保存しない）
     this.onStateChange(JSON.parse(JSON.stringify(this.state)));
 
-    // データベースの各適切テーブルへ即時初期保存
-    await this.syncToDatabaseNow();
+    // 既存のクラウドセーブデータがあった場合のみ、同期状態の微調整を保存
+    // セーブデータが存在しない（または取得失敗）の場合は、初期空データでDBの既存レコードをゼロ上書きするのを防ぐため即時保存は行わない
+    if (hasExistingCloudData) {
+      await this.syncToDatabaseNow();
+    }
   }
 
   /**
@@ -393,6 +409,11 @@ export class GameEngine {
     }
     this.onStateChange(JSON.parse(JSON.stringify(this.state)));
     if (this.isCloudAccount && this.userId) {
+      // ロード完了前の初期ステートをサーバーへ誤送信してDB上のgoldやステータスをゼロクリアしてしまうレースコンディションを完全ガード！
+      if (!this.isCloudLoaded) {
+        console.warn('[GameEngine] クラウドデータの初回ロードが完了していないため、サーバーDBへの自動保存を一時保留します。');
+        return;
+      }
       // Googleログイン時はローカルストレージを使用・保存せず、サーバーの各テーブルへ自動同期
       AuthApiService.getInstance().saveAllDataToTables(this.userId, this.state).catch((err) => {
         console.warn('[GameEngine] サーバーDBテーブル同期エラー:', err);
@@ -1799,13 +1820,31 @@ export class GameEngine {
     this.saveState();
   }
 
-  public unlockLocation(locationId: string) {
+  public async unlockLocation(locationId: string): Promise<void> {
     const loc = LOCATIONS.find(l => l.id === locationId);
     if (!loc) return;
     if (this.state.unlockedLocations.includes(locationId)) return;
     if (this.state.gold < loc.unlockCostG) throw new Error("Gが足りません");
 
+    // クラウドアカウントの場合は専用APIでサーバー側の user_workshop_status の gold 減額と consumed_gold 増額を実行
+    if (this.isCloudAccount && this.userId) {
+      try {
+        const res = await AuthApiService.getInstance().unlockExpedition(this.userId, locationId);
+        if (res.success && res.data) {
+          this.state.gold = res.data.gold;
+          this.state.consumedGold = res.data.consumed_gold;
+          this.state.unlockedLocations = res.data.unlocked_expeditions;
+          this.saveState();
+          return;
+        }
+      } catch (err) {
+        console.warn('[GameEngine] unlockExpedition API warning:', err);
+      }
+    }
+
+    // ローカルまたはフォールバック処理
     this.state.gold -= loc.unlockCostG;
+    this.state.consumedGold = (this.state.consumedGold || 0) + loc.unlockCostG;
     this.state.unlockedLocations.push(locationId);
     this.saveState();
   }

@@ -28,10 +28,14 @@ try {
     $uRec = $uStmt->fetch();
     $targetId = ($uRec && !empty($uRec['google_id'])) ? $uRec['google_id'] : $googleId;
 
+    // 遠征地マスターテーブルと初期データの存在を保証
+    ensureMasterExpeditions($pdo);
+
     // user_workshop_statusテーブルにUPSERT（存在しない場合は新規作成、存在する場合は更新）
+    // 新規作成時は loc1 が初期解放されるようにする
     $stmt = $pdo->prepare("
-        INSERT INTO user_workshop_status (user_id, received_initial_bonus)
-        VALUES (:google_id, 1)
+        INSERT INTO user_workshop_status (user_id, received_initial_bonus, storage_limit, unlocked_expeditions)
+        VALUES (:google_id, 1, 5, '[\"loc1\"]')
         ON DUPLICATE KEY UPDATE received_initial_bonus = 1
     ");
     $stmt->execute([':google_id' => $targetId]);

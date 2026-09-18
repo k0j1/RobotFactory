@@ -64,6 +64,7 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
   const [departingState, setDepartingState] = useState<{ isDeparting: boolean, locId: string | null }>({ isDeparting: false, locId: null });
   const [lootResult, setLootResult] = useState<{ title: string; subtitle?: string; drops: string[] } | null>(null);
   const [isAnimating, setIsAnimating] = useState<boolean>(false);
+  const [unlockingLocId, setUnlockingLocId] = useState<string | null>(null);
   const [now, setNow] = useState<number>(Date.now());
   const [activeExpeditionCounts, setActiveExpeditionCounts] = useState<Record<string, number>>({});
   const topSelectionRef = useRef<HTMLDivElement>(null);
@@ -198,6 +199,19 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
       }, 1500); // 1.5秒のアニメーション
     } catch (e: any) {
       alert(e.message || '遠征の開始に失敗しました');
+    }
+  };
+
+  const handleUnlock = async (locId: string, cost: number) => {
+    if (unlockingLocId) return;
+    setUnlockingLocId(locId);
+    try {
+      await engine.unlockLocation(locId);
+      confetti({ particleCount: 30, spread: 50, origin: { y: 0.7 } });
+    } catch (err: any) {
+      alert(err.message || '解放に失敗しました');
+    } finally {
+      setUnlockingLocId(null);
     }
   };
 
@@ -683,7 +697,9 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {LOCATIONS.map(loc => {
           const isUnlocked = state.unlockedLocations.includes(loc.id);
-          const canUnlock = !isUnlocked && state.gold >= loc.unlockCostG;
+          const hasEnoughFame = !loc.requiredFame || (state.fame || 0) >= loc.requiredFame;
+          const hasEnoughGold = state.gold >= loc.unlockCostG;
+          const canUnlock = !isUnlocked && hasEnoughGold && hasEnoughFame;
           const isCurrentQuestLoc = state.activeQuest?.locationId === loc.id;
 
           // Agilityによる短縮計算
@@ -814,15 +830,22 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
                     </Button>
                   )
                 ) : (
-                  <div className="flex items-center justify-between bg-stone-100 p-2.5 rounded-lg border border-amber-400 shadow-inner">
-                    <span className="font-bold text-amber-900">解放費用: {loc.unlockCostG} G</span>
+                  <div className="bg-stone-100 p-2.5 rounded-lg border border-amber-400 shadow-inner">
+                    <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+                      <span className="font-bold text-amber-900 text-xs sm:text-sm">解放費用: {loc.unlockCostG} G</span>
+                      {loc.requiredFame !== undefined && loc.requiredFame > 0 && (
+                        <span className={`text-[11px] font-bold px-2 py-0.5 rounded ${hasEnoughFame ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-rose-100 text-rose-700 border border-rose-300'}`}>
+                          必要名声: {loc.requiredFame} (現在: {state.fame || 0})
+                        </span>
+                      )}
+                    </div>
                     <Button 
                       variant="secondary" 
-                      disabled={!canUnlock}
-                      onClick={() => engine.unlockLocation(loc.id)}
-                      className="bg-amber-600 hover:bg-amber-500 text-white border-none"
+                      disabled={!canUnlock || unlockingLocId === loc.id}
+                      onClick={() => handleUnlock(loc.id, loc.unlockCostG)}
+                      className="w-full bg-amber-600 hover:bg-amber-500 text-white border-none py-2 text-sm font-bold disabled:opacity-50 transition-colors"
                     >
-                      解放する
+                      {unlockingLocId === loc.id ? '解放処理中...' : (!hasEnoughFame ? `名声が不足しています (${state.fame || 0}/${loc.requiredFame})` : (!hasEnoughGold ? `Gが不足しています (${state.gold}/${loc.unlockCostG} G)` : '解放する'))}
                     </Button>
                   </div>
                 )}

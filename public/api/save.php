@@ -318,25 +318,56 @@ try {
     ]);
 
     // 3. user_workshop_status テーブルに工房ステータスを保存 (UPSERT)
-    $gold = isset($gameData['gold']) ? (int)$gameData['gold'] : 0;
-    $fame = isset($gameData['fame']) ? (int)$gameData['fame'] : 0;
-    $storageLimit = isset($gameData['storageSize']) ? (int)$gameData['storageSize'] : 0;
-    $deliveredCount = isset($gameData['deliveredRobotsCount']) ? (int)$gameData['deliveredRobotsCount'] : 0;
+    // 遠征地マスターテーブルと初期データの存在を保証
+    ensureMasterExpeditions($pdo);
 
-    $newLocations = isset($gameData['unlockedLocations']) && is_array($gameData['unlockedLocations']) ? $gameData['unlockedLocations'] : [];
+    $numericId = ($userRecord && !empty($userRecord['id'])) ? (string)$userRecord['id'] : null;
+    $candidateUserIds = array_unique(array_filter([$actualUserId, $userId, $numericId]));
+    $inPlaceholders = implode(',', array_fill(0, count($candidateUserIds), '?'));
 
-    $stmtCurrent = $pdo->prepare("SELECT unlocked_expeditions, consumed_gold FROM user_workshop_status WHERE user_id = :uid");
-    $stmtCurrent->execute([':uid' => $actualUserId]);
-    $currentRow = $stmtCurrent->fetch(PDO::FETCH_ASSOC);
-    $currentLocations = [];
+    $stmtCurrent = $pdo->prepare("
+        SELECT user_id, gold, fame, storage_limit, delivered_count, consumed_gold, unlocked_expeditions, received_initial_bonus, request_earned_gold 
+        FROM user_workshop_status 
+        WHERE user_id IN ($inPlaceholders) 
+        ORDER BY gold DESC, fame DESC, updated_at DESC
+    ");
+    $stmtCurrent->execute(array_values($candidateUserIds));
+    $existingRows = $stmtCurrent->fetchAll(PDO::FETCH_ASSOC);
+    $currentRow = !empty($existingRows) ? $existingRows[0] : null;
+
+    $currentLocations = ['loc1'];
     $currentConsumedGold = 0;
+    $currentDbGold = 0;
+    $currentDbFame = 0;
+    $currentStorage = 5;
+    $currentDelivered = 0;
     if ($currentRow) {
         if (!empty($currentRow['unlocked_expeditions'])) {
-            $currentLocations = json_decode($currentRow['unlocked_expeditions'], true) ?: [];
+            $parsedLocs = json_decode($currentRow['unlocked_expeditions'], true);
+            if (is_array($parsedLocs)) {
+                $currentLocations = array_values(array_unique(array_merge(['loc1'], $parsedLocs)));
+            }
         }
-        $currentConsumedGold = (int)$currentRow['consumed_gold'];
+        $currentConsumedGold = (int)($currentRow['consumed_gold'] ?? 0);
+        $currentDbGold = (int)($currentRow['gold'] ?? 0);
+        $currentDbFame = (int)($currentRow['fame'] ?? 0);
+        $currentStorage = (int)($currentRow['storage_limit'] ?? 5);
+        $currentDelivered = (int)($currentRow['delivered_count'] ?? 0);
     }
 
+    $rawClientGold = isset($gameData['gold']) ? (int)$gameData['gold'] : null;
+    $fame = isset($gameData['fame']) ? (int)$gameData['fame'] : $currentDbFame;
+    $storageLimit = !empty($gameData['storageSize']) ? (int)$gameData['storageSize'] : $currentStorage;
+    $deliveredCount = isset($gameData['deliveredRobotsCount']) ? (int)$gameData['deliveredRobotsCount'] : $currentDelivered;
+
+    $newLocations = isset($gameData['unlockedLocations']) && is_array($gameData['unlockedLocations']) ? $gameData['unlockedLocations'] : ['loc1'];
+    // 「裏山のスクラップ場」（loc1）は最初から解放状態で設定
+    if (!in_array('loc1', $newLocations)) {
+        array_unshift($newLocations, 'loc1');
+    }
+    $newLocations = array_values(array_unique($newLocations));
+
+    // 新たに解放された遠征地の差分を算出
     $diff = array_diff($newLocations, $currentLocations);
     $additionalConsumed = 0;
     if (!empty($diff)) {
@@ -349,7 +380,38 @@ try {
     }
     
     $consumedGold = $currentConsumedGold + $additionalConsumed;
-    $unlockedExpeditionsJson = json_encode(array_values(array_unique(array_merge($currentLocations, $newLocations))), JSON_UNESCAPED_UNICODE);
+
+    // gold の決定とゼロ上書き防止ロジック:
+    // 原因調査: クライアントが初期ロード完了前（未ロード）に初期ステート(gold: 0)を送信してしまい、
+    // DBの既存の数値をゼロクリアしてしまうレースコンディションを完全に防止する。
+    $isSuspectedUnloadedState = (
+        empty($gameData['materials']) &&
+        empty($gameData['parts']) &&
+        empty($gameData['robots']) &&
+        empty($gameData['deliveredLogs']) &&
+        empty($gameData['fame']) &&
+        $rawClientGold === 0 &&
+        $currentDbGold > 0
+    );
+
+    if ($isSuspectedUnloadedState) {
+        // ロード前の空データと判定される場合は既存のgoldを死守
+        $gold = $currentDbGold;
+        $fame = $currentDbFame;
+    } else if ($rawClientGold !== null) {
+        // クライアントからgoldが明示されている場合
+        $gold = $rawClientGold;
+        // もし遠征地が新たに解放され、かつクライアントのgoldがまだ減算前の値（= $currentDbGold 以上）だった場合は確実に解放費用を減額
+        if ($additionalConsumed > 0 && $gold >= $currentDbGold && $currentDbGold > 0) {
+            $gold = max(0, $currentDbGold - $additionalConsumed);
+        }
+    } else {
+        // クライアントからの指定がない場合は既存のgoldから解放費用を差し引く
+        $gold = max(0, $currentDbGold - $additionalConsumed);
+    }
+
+    $allLocations = array_values(array_unique(array_merge($currentLocations, $newLocations)));
+    $unlockedExpeditionsJson = json_encode($allLocations, JSON_UNESCAPED_UNICODE);
 
     $stmtWorkshop = $pdo->prepare("
         INSERT INTO user_workshop_status (user_id, fame, gold, storage_limit, delivered_count, consumed_gold, unlocked_expeditions)
@@ -377,6 +439,16 @@ try {
         ':up_consumed_gold' => $consumedGold,
         ':up_unlocked' => $unlockedExpeditionsJson,
     ]);
+
+    // 重複していた別IDレコードがあれば削除して actualUserId に一元化
+    if (count($existingRows) > 1 && !empty($actualUserId)) {
+        try {
+            $cleanStmt = $pdo->prepare("DELETE FROM user_workshop_status WHERE user_id IN ($inPlaceholders) AND user_id != :act_uid");
+            $params = array_values($candidateUserIds);
+            $params[] = $actualUserId;
+            $cleanStmt->execute($params);
+        } catch (Exception $e) {}
+    }
 
     // 4. user_parts テーブルの同期
     $delPartsStmt = $pdo->prepare("DELETE FROM user_parts WHERE user_id = :user_id");

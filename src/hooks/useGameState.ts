@@ -18,12 +18,12 @@ export function useGameState(userId?: string | null) {
 
     engineRef.current = engine;
     setState(engine.getState());
-    engine.generateRequestsIfNeeded();
 
     // 既にGoogleログイン状態の場合は、クラウドDBからデータをロードして適用
     if (userId) {
       AuthApiService.getInstance().loadUserData(userId).then((res) => {
         engine.switchToGoogleUser(userId, res.data);
+        engine.generateRequestsIfNeeded();
         if (res.user) {
           setUser(res.user);
         } else if (res.received_initial_bonus !== undefined && res.received_initial_bonus !== null) {
@@ -33,6 +33,8 @@ export function useGameState(userId?: string | null) {
         console.warn('[useGameState] 初回クラウドデータロード失敗（初期データ使用）:', err);
         engine.switchToGoogleUser(userId, null);
       });
+    } else {
+      engine.generateRequestsIfNeeded();
     }
 
     // Loop to trigger re-renders for timers

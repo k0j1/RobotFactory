@@ -271,7 +271,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onStart, engine }) => 
           </div>
         )}
 
-        <p className="mt-8 text-stone-400">v0.1.35</p>
+        <p className="mt-8 text-stone-400">v0.1.36</p>
       </div>
       
       {/* Decorative background elements */}

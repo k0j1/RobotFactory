@@ -253,20 +253,110 @@ try {
         $pdo->exec("ALTER TABLE user_workshop_status ADD COLUMN unlocked_expeditions JSON");
     } catch (PDOException $e) {}
 
+    // 遠征地マスターテーブルと初期データの存在を保証
+    ensureMasterExpeditions($pdo);
+
     // ユーザー識別子の候補リスト（google_id または users.id）
     $candidateUserIds = array_unique(array_filter([$actualUserId, $userId, $numericId]));
     $inPlaceholders = implode(',', array_fill(0, count($candidateUserIds), '?'));
 
     // 1. user_workshop_status テーブルから工房ステータスを取得
+    // 複数レコードが存在する場合は gold や実績が多いレコードを最優先し、同一ユーザーでレコードが分裂して gold がゼロになるのを防ぐ
     $wsStmt = $pdo->prepare("
-        SELECT fame, gold, storage_limit, delivered_count, received_initial_bonus, request_earned_gold, unlocked_expeditions 
+        SELECT user_id, fame, gold, storage_limit, delivered_count, received_initial_bonus, request_earned_gold, unlocked_expeditions, consumed_gold 
         FROM user_workshop_status 
         WHERE user_id IN ($inPlaceholders) 
-        ORDER BY updated_at DESC
-        LIMIT 1
+        ORDER BY gold DESC, fame DESC, updated_at DESC
     ");
     $wsStmt->execute(array_values($candidateUserIds));
-    $wsRow = $wsStmt->fetch();
+    $wsRows = $wsStmt->fetchAll(PDO::FETCH_ASSOC);
+    $wsRow = !empty($wsRows) ? $wsRows[0] : null;
+
+    // もし複数レコードが存在していた場合は、実際のユーザーID (google_id) へ統合して古いゴミレコードを解消
+    if (count($wsRows) > 1 && !empty($actualUserId)) {
+        try {
+            $mergedGold = 0;
+            $mergedFame = 0;
+            $mergedConsumed = 0;
+            $mergedStorage = 5;
+            $mergedDelivered = 0;
+            $mergedBonus = 0;
+            $mergedRequestGold = 0;
+            $mergedLocations = ['loc1'];
+
+            foreach ($wsRows as $r) {
+                if ((int)$r['gold'] > $mergedGold) $mergedGold = (int)$r['gold'];
+                if ((int)$r['fame'] > $mergedFame) $mergedFame = (int)$r['fame'];
+                if ((int)$r['consumed_gold'] > $mergedConsumed) $mergedConsumed = (int)$r['consumed_gold'];
+                if ((int)$r['storage_limit'] > $mergedStorage) $mergedStorage = (int)$r['storage_limit'];
+                if ((int)$r['delivered_count'] > $mergedDelivered) $mergedDelivered = (int)$r['delivered_count'];
+                if (!empty($r['received_initial_bonus'])) $mergedBonus = 1;
+                if ((int)$r['request_earned_gold'] > $mergedRequestGold) $mergedRequestGold = (int)$r['request_earned_gold'];
+                if (!empty($r['unlocked_expeditions'])) {
+                    $locs = json_decode($r['unlocked_expeditions'], true);
+                    if (is_array($locs)) {
+                        $mergedLocations = array_unique(array_merge($mergedLocations, $locs));
+                    }
+                }
+            }
+
+            $updMaster = $pdo->prepare("
+                INSERT INTO user_workshop_status 
+                    (user_id, fame, gold, storage_limit, delivered_count, received_initial_bonus, request_earned_gold, consumed_gold, unlocked_expeditions)
+                VALUES 
+                    (:uid, :fame, :gold, :storage, :delivered, :bonus, :req_gold, :consumed, :unlocked)
+                ON DUPLICATE KEY UPDATE
+                    fame = :up_fame,
+                    gold = :up_gold,
+                    storage_limit = :up_storage,
+                    delivered_count = :up_delivered,
+                    received_initial_bonus = :up_bonus,
+                    request_earned_gold = :up_req_gold,
+                    consumed_gold = :up_consumed,
+                    unlocked_expeditions = :up_unlocked
+            ");
+            $locJson = json_encode(array_values($mergedLocations), JSON_UNESCAPED_UNICODE);
+            $updMaster->execute([
+                ':uid' => $actualUserId,
+                ':fame' => $mergedFame,
+                ':gold' => $mergedGold,
+                ':storage' => $mergedStorage,
+                ':delivered' => $mergedDelivered,
+                ':bonus' => $mergedBonus,
+                ':req_gold' => $mergedRequestGold,
+                ':consumed' => $mergedConsumed,
+                ':unlocked' => $locJson,
+                ':up_fame' => $mergedFame,
+                ':up_gold' => $mergedGold,
+                ':up_storage' => $mergedStorage,
+                ':up_delivered' => $mergedDelivered,
+                ':up_bonus' => $mergedBonus,
+                ':up_req_gold' => $mergedRequestGold,
+                ':up_consumed' => $mergedConsumed,
+                ':up_unlocked' => $locJson,
+            ]);
+
+            // actualUserId以外の別IDレコードを削除して統合
+            $cleanStmt = $pdo->prepare("DELETE FROM user_workshop_status WHERE user_id IN ($inPlaceholders) AND user_id != :act_uid");
+            $params = array_values($candidateUserIds);
+            $params[] = $actualUserId;
+            $cleanStmt->execute($params);
+
+            $wsRow = [
+                'user_id' => $actualUserId,
+                'fame' => $mergedFame,
+                'gold' => $mergedGold,
+                'storage_limit' => $mergedStorage,
+                'delivered_count' => $mergedDelivered,
+                'received_initial_bonus' => $mergedBonus,
+                'request_earned_gold' => $mergedRequestGold,
+                'consumed_gold' => $mergedConsumed,
+                'unlocked_expeditions' => $locJson,
+            ];
+        } catch (Exception $e) {
+            error_log("[load.php] Record consolidation error: " . $e->getMessage());
+        }
+    }
 
     $goldVal = $wsRow ? (int)($wsRow['gold'] ?? 0) : 0;
     $fameVal = $wsRow ? (int)($wsRow['fame'] ?? 0) : 0;
@@ -274,9 +364,20 @@ try {
     $deliveredCountVal = $wsRow ? (int)($wsRow['delivered_count'] ?? 0) : 0;
     $receivedBonusVal = ($wsRow && isset($wsRow['received_initial_bonus'])) ? (int)$wsRow['received_initial_bonus'] : 0;
     $requestEarnedGoldVal = $wsRow ? (int)($wsRow['request_earned_gold'] ?? 0) : 0;
-    $unlockedLocationsVal = [];
+    $unlockedLocationsVal = ['loc1']; // 裏山のスクラップ場は最初から解放状態で設定
     if ($wsRow && !empty($wsRow['unlocked_expeditions'])) {
-        $unlockedLocationsVal = json_decode($wsRow['unlocked_expeditions'], true) ?: [];
+        $parsedLocs = json_decode($wsRow['unlocked_expeditions'], true);
+        if (is_array($parsedLocs) && !empty($parsedLocs)) {
+            $unlockedLocationsVal = array_values(array_unique(array_merge(['loc1'], $parsedLocs)));
+        }
+    }
+
+    // DB側にも loc1 が未保存なら保存しておく
+    if ($wsRow && (empty($wsRow['unlocked_expeditions']) || $wsRow['unlocked_expeditions'] === '[]')) {
+        try {
+            $pdo->prepare("UPDATE user_workshop_status SET unlocked_expeditions = '[\"loc1\"]' WHERE user_id = :uid")
+                ->execute([':uid' => $wsRow['user_id']]);
+        } catch (PDOException $e) {}
     }
 
     // 2. user_material テーブルから最新の素材情報を取得

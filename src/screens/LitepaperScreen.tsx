@@ -25,7 +25,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
         title="ポンコツロボット工房 公式仕様書"
         badge={
           <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300 font-mono font-bold px-1.5 py-0.2 rounded">
-            v0.1.35
+            v0.1.36
           </span>
         }
         rightElement={
@@ -256,9 +256,73 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                   </div>
                 </div>
                 <div className="bg-white p-2.5 rounded-lg border border-stone-200">
-                  <strong className="text-stone-900">遠征地のマスターデータ管理と解放同期:</strong>
-                  <div className="text-stone-600 mt-1">
-                    各遠征地のマスターデータはデータベース（<code>master_expeditions</code>）にて一元管理されています。新エリア解放の際は所定のゴールドが必要となり、解放履歴と消費ゴールドは<code>user_workshop_status</code>テーブルに保存されクラウドと即座に同期されます。
+                  <strong className="text-stone-900">遠征地のマスターデータ管理と解放同期 (master_expeditions):</strong>
+                  <div className="text-stone-600 mt-1 space-y-1.5">
+                    <p>
+                      全遠征地のマスターデータはデータベースの<code>master_expeditions</code>テーブル（遠征地名、解放費用、所要時間(秒)、必要な名声値）にて一元管理されています。
+                    </p>
+                    <p>
+                      初期解放地である「<strong>裏山のスクラップ場</strong>（loc1）」は解放費用0G・必要名声0で最初から解放状態で設定されています。
+                    </p>
+                    <p>
+                      新たな遠征地を解放した際には、<code>user_workshop_status</code>テーブルの解放費用分<strong>goldが減少し、consumed_goldが増加</strong>して永続化されます。
+                    </p>
+                    <div className="overflow-x-auto mt-2">
+                      <table className="w-full text-[11px] border border-stone-300 rounded text-left">
+                        <thead className="bg-stone-100 text-stone-700 font-bold border-b border-stone-300">
+                          <tr>
+                            <th className="p-1.5">遠征地名</th>
+                            <th className="p-1.5 text-right">解放費用</th>
+                            <th className="p-1.5 text-right">所要時間</th>
+                            <th className="p-1.5 text-right">必要名声</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-stone-200 font-mono">
+                          <tr>
+                            <td className="p-1.5 font-sans font-medium">裏山のスクラップ場</td>
+                            <td className="p-1.5 text-right text-emerald-700 font-bold">0 G</td>
+                            <td className="p-1.5 text-right">30分 (1,800秒)</td>
+                            <td className="p-1.5 text-right">0</td>
+                          </tr>
+                          <tr>
+                            <td className="p-1.5 font-sans font-medium">灼熱の廃工場</td>
+                            <td className="p-1.5 text-right text-amber-800 font-bold">200 G</td>
+                            <td className="p-1.5 text-right">1時間 (3,600秒)</td>
+                            <td className="p-1.5 text-right">10</td>
+                          </tr>
+                          <tr>
+                            <td className="p-1.5 font-sans font-medium">水没した都市遺跡</td>
+                            <td className="p-1.5 text-right text-amber-800 font-bold">500 G</td>
+                            <td className="p-1.5 text-right">2時間 (7,200秒)</td>
+                            <td className="p-1.5 text-right">30</td>
+                          </tr>
+                          <tr>
+                            <td className="p-1.5 font-sans font-medium">風の谷の観測所</td>
+                            <td className="p-1.5 text-right text-amber-800 font-bold">1,000 G</td>
+                            <td className="p-1.5 text-right">3時間 (10,800秒)</td>
+                            <td className="p-1.5 text-right">50</td>
+                          </tr>
+                          <tr>
+                            <td className="p-1.5 font-sans font-medium">光の塔</td>
+                            <td className="p-1.5 text-right text-amber-800 font-bold">2,000 G</td>
+                            <td className="p-1.5 text-right">4時間 (14,400秒)</td>
+                            <td className="p-1.5 text-right">100</td>
+                          </tr>
+                          <tr>
+                            <td className="p-1.5 font-sans font-medium">最果てのクレーター</td>
+                            <td className="p-1.5 text-right text-amber-800 font-bold">4,000 G</td>
+                            <td className="p-1.5 text-right">5時間 (18,000秒)</td>
+                            <td className="p-1.5 text-right">200</td>
+                          </tr>
+                          <tr>
+                            <td className="p-1.5 font-sans font-medium">古代文明の中枢</td>
+                            <td className="p-1.5 text-right text-amber-800 font-bold">10,000 G</td>
+                            <td className="p-1.5 text-right">10時間 (36,000秒)</td>
+                            <td className="p-1.5 text-right">500</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
                 <div className="bg-white p-2.5 rounded-lg border border-stone-200">

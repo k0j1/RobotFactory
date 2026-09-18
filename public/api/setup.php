@@ -56,6 +56,7 @@ try {
         delivered_count INT DEFAULT 0,
         received_initial_bonus BOOLEAN DEFAULT FALSE,
         request_earned_gold INT DEFAULT 0,
+        unlocked_expeditions JSON,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -359,6 +360,14 @@ try {
     } catch (PDOException $e) {
         // 既に追加されている場合は無視
     }
+
+    // 既存ユーザーで unlocked_expeditions が NULL や空の場合に ['loc1'] を初期値として設定
+    try {
+        $pdo->exec("UPDATE user_workshop_status SET unlocked_expeditions = '[\"loc1\"]' WHERE unlocked_expeditions IS NULL OR unlocked_expeditions = '' OR unlocked_expeditions = '[]'");
+    } catch (PDOException $e) {}
+
+    // 遠征地マスターテーブルと初期データの登録を確実に保証
+    ensureMasterExpeditions($pdo);
 
     // active_expeditions テーブルに dispatched_robot_id を追加
     try {

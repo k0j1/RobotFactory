@@ -90,6 +90,18 @@ export class AuthApiService {
   }
 
   /**
+   * 指定したAPIパスの試行先エンドポイントリストを取得
+   */
+  private getAllEndpoints(path: string): string[] {
+    const cleanPath = path.startsWith('/') ? path : `/${path}`;
+    return Array.from(new Set([
+      `${this.defaultBaseUrl}${cleanPath}`,
+      `https://robotfactory.k0j1.v2002.coreserver.jp${cleanPath}`,
+      cleanPath
+    ])).filter(Boolean);
+  }
+
+  /**
    * Googleログインしたユーザー情報をMySQLのusersテーブルに保存（INSERTまたはUPDATE）
    * @param payload Googleから取得したユーザープロファイル情報
    * @returns usersテーブルから取得した保存済みユーザーレコード
@@ -671,5 +683,54 @@ export class AuthApiService {
       }
     };
   }
+
+  /**
+   * 遠征地の解放（user_workshop_statusテーブルのgold減額、consumed_gold増額、unlocked_expeditions更新）
+   */
+  public async unlockExpedition(userId: string, locationId: string): Promise<AuthApiResponse<{ gold: number; consumed_gold: number; unlocked_expeditions: string[] }>> {
+    const endpoints = this.getAllEndpoints('/api/unlock_expedition.php');
+    let lastError: any = null;
+
+    for (const endpoint of endpoints) {
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({ userId, locationId })
+        });
+
+        const rawText = await response.text();
+        if (rawText.trim().startsWith('<?php')) continue;
+
+        const parsed = JSON.parse(rawText);
+        if (response.ok && parsed.success) {
+          return {
+            success: true,
+            data: {
+              gold: parsed.gold,
+              consumed_gold: parsed.consumed_gold,
+              unlocked_expeditions: parsed.unlocked_expeditions
+            }
+          };
+        } else {
+          return {
+            success: false,
+            error: parsed.error || '遠征地の解放に失敗しました。'
+          };
+        }
+      } catch (err: any) {
+        lastError = err;
+      }
+    }
+
+    return {
+      success: false,
+      error: lastError ? lastError.message : 'サーバーとの通信に失敗しました。'
+    };
+  }
 }
+
 

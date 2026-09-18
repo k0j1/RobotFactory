@@ -49,10 +49,26 @@ try {
             ':picture' => $picture
         ]);
         
-        // 新規ユーザーの場合は初期ステータスも作成（初回倉庫上限は5）
-        $insertStatusStmt = $pdo->prepare("INSERT IGNORE INTO user_workshop_status (user_id, storage_limit) VALUES (:google_id, 5)");
+        // 新規ユーザーの場合は初期ステータスも作成（初回倉庫上限は5、裏山のスクラップ場 loc1 は最初から解放）
+        $insertStatusStmt = $pdo->prepare("
+            INSERT IGNORE INTO user_workshop_status (user_id, storage_limit, unlocked_expeditions) 
+            VALUES (:google_id, 5, '[\"loc1\"]')
+        ");
         $insertStatusStmt->execute([':google_id' => $googleId]);
     }
+    
+    // 遠征地マスターテーブルと初期データの存在を保証
+    ensureMasterExpeditions($pdo);
+
+    // 既存ユーザーで unlocked_expeditions が空の場合は loc1 を補完
+    try {
+        $checkLocStmt = $pdo->prepare("
+            UPDATE user_workshop_status 
+            SET unlocked_expeditions = '[\"loc1\"]' 
+            WHERE user_id = :google_id AND (unlocked_expeditions IS NULL OR unlocked_expeditions = '' OR unlocked_expeditions = '[]')
+        ");
+        $checkLocStmt->execute([':google_id' => $googleId]);
+    } catch (PDOException $e) {}
     
     // 更新後のユーザーデータとステータスを結合して取得
     $stmt = $pdo->prepare("
