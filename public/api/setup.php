@@ -102,10 +102,6 @@ try {
         agility INT NOT NULL DEFAULT 0,
         dexterity INT NOT NULL DEFAULT 0,
         intelligence INT NOT NULL DEFAULT 0,
-        battle_matches INT NOT NULL DEFAULT 0,
-        battle_wins INT NOT NULL DEFAULT 0,
-        battle_losses INT NOT NULL DEFAULT 0,
-        battle_draws INT NOT NULL DEFAULT 0,
         main_material_id VARCHAR(100) NULL,
         sub_material_id VARCHAR(100) NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -419,10 +415,6 @@ try {
         "ADD COLUMN IF NOT EXISTS agility INT NOT NULL DEFAULT 0",
         "ADD COLUMN IF NOT EXISTS dexterity INT NOT NULL DEFAULT 0",
         "ADD COLUMN IF NOT EXISTS intelligence INT NOT NULL DEFAULT 0",
-        "ADD COLUMN IF NOT EXISTS battle_matches INT NOT NULL DEFAULT 0",
-        "ADD COLUMN IF NOT EXISTS battle_wins INT NOT NULL DEFAULT 0",
-        "ADD COLUMN IF NOT EXISTS battle_losses INT NOT NULL DEFAULT 0",
-        "ADD COLUMN IF NOT EXISTS battle_draws INT NOT NULL DEFAULT 0",
         "ADD COLUMN IF NOT EXISTS main_material_id VARCHAR(100) NULL",
         "ADD COLUMN IF NOT EXISTS sub_material_id VARCHAR(100) NULL"
     ];
@@ -432,6 +424,16 @@ try {
             // MySQLバージョンによって IF NOT EXISTS が使えない場合があるため、単純なADD COLUMNもフォールバック
             $cleanColDef = str_replace('IF NOT EXISTS ', '', $colDef);
             $pdo->exec("ALTER TABLE user_parts " . $cleanColDef);
+        } catch (PDOException $e) {}
+    }
+
+    // 不要になった battle_matches, battle_wins, battle_losses, battle_draws カラムを安全に削除
+    foreach (['battle_matches', 'battle_wins', 'battle_losses', 'battle_draws'] as $delCol) {
+        try {
+            $checkDelCol = $pdo->query("SHOW COLUMNS FROM user_parts LIKE '{$delCol}'");
+            if ($checkDelCol && $checkDelCol->fetch()) {
+                $pdo->exec("ALTER TABLE user_parts DROP COLUMN `{$delCol}`");
+            }
         } catch (PDOException $e) {}
     }
 
@@ -462,10 +464,6 @@ try {
                         agility = :agility,
                         dexterity = :dexterity,
                         intelligence = :intelligence,
-                        battle_matches = :b_matches,
-                        battle_wins = :b_wins,
-                        battle_losses = :b_losses,
-                        battle_draws = :b_draws,
                         main_material_id = :main_mat,
                         sub_material_id = :sub_mat
                     WHERE id = :id
@@ -489,12 +487,6 @@ try {
                     $pDex = isset($stats['dexterity']) ? (int)$stats['dexterity'] : (isset($d['dexterity']) ? (int)$d['dexterity'] : 0);
                     $pInt = isset($stats['intelligence']) ? (int)$stats['intelligence'] : (isset($stats['int']) ? (int)$stats['int'] : (isset($d['intelligence']) ? (int)$d['intelligence'] : 0));
                     
-                    $bStats = $d['battleStats'] ?? $d['battle_stats'] ?? [];
-                    $bMatches = isset($bStats['matches']) ? (int)$bStats['matches'] : 0;
-                    $bWins = isset($bStats['wins']) ? (int)$bStats['wins'] : 0;
-                    $bLosses = isset($bStats['losses']) ? (int)$bStats['losses'] : 0;
-                    $bDraws = isset($bStats['draws']) ? (int)$bStats['draws'] : 0;
-                    
                     $mainMat = $d['mainMaterialId'] ?? $d['main_material_id'] ?? null;
                     $subMat = $d['subMaterialId'] ?? $d['sub_material_id'] ?? null;
                     
@@ -510,10 +502,6 @@ try {
                         ':agility' => $pAgi,
                         ':dexterity' => $pDex,
                         ':intelligence' => $pInt,
-                        ':b_matches' => $bMatches,
-                        ':b_wins' => $bWins,
-                        ':b_losses' => $bLosses,
-                        ':b_draws' => $bDraws,
                         ':main_mat' => $mainMat,
                         ':sub_mat' => $subMat,
                         ':id' => $pRow['id']

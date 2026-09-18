@@ -540,10 +540,10 @@ try {
         ];
 
         $battleStats = [
-            'matches' => isset($pRow['battle_matches']) ? (int)$pRow['battle_matches'] : 0,
-            'wins' => isset($pRow['battle_wins']) ? (int)$pRow['battle_wins'] : 0,
-            'losses' => isset($pRow['battle_losses']) ? (int)$pRow['battle_losses'] : 0,
-            'draws' => isset($pRow['battle_draws']) ? (int)$pRow['battle_draws'] : 0,
+            'matches' => 0,
+            'wins' => 0,
+            'losses' => 0,
+            'draws' => 0,
         ];
 
         // 移行期などで万が一 part_data が残っていた場合のフォールバック補完

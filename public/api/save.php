@@ -252,10 +252,6 @@ try {
         "ADD COLUMN IF NOT EXISTS agility INT NOT NULL DEFAULT 0",
         "ADD COLUMN IF NOT EXISTS dexterity INT NOT NULL DEFAULT 0",
         "ADD COLUMN IF NOT EXISTS intelligence INT NOT NULL DEFAULT 0",
-        "ADD COLUMN IF NOT EXISTS battle_matches INT NOT NULL DEFAULT 0",
-        "ADD COLUMN IF NOT EXISTS battle_wins INT NOT NULL DEFAULT 0",
-        "ADD COLUMN IF NOT EXISTS battle_losses INT NOT NULL DEFAULT 0",
-        "ADD COLUMN IF NOT EXISTS battle_draws INT NOT NULL DEFAULT 0",
         "ADD COLUMN IF NOT EXISTS main_material_id VARCHAR(100) NULL",
         "ADD COLUMN IF NOT EXISTS sub_material_id VARCHAR(100) NULL"
     ];
@@ -263,6 +259,15 @@ try {
         try {
             $cleanDef = str_replace('IF NOT EXISTS ', '', $colDef);
             $pdo->exec("ALTER TABLE user_parts " . $cleanDef);
+        } catch (PDOException $e) {}
+    }
+
+    foreach (['battle_matches', 'battle_wins', 'battle_losses', 'battle_draws'] as $delCol) {
+        try {
+            $checkDelCol = $pdo->query("SHOW COLUMNS FROM user_parts LIKE '{$delCol}'");
+            if ($checkDelCol && $checkDelCol->fetch()) {
+                $pdo->exec("ALTER TABLE user_parts DROP COLUMN `{$delCol}`");
+            }
         } catch (PDOException $e) {}
     }
 
@@ -487,11 +492,11 @@ try {
         INSERT INTO user_parts (
             id, user_id, master_part_id, part_type, name, attribute, rarity, visual_index,
             is_equipped, vitality, power, defense, agility, dexterity, intelligence,
-            battle_matches, battle_wins, battle_losses, battle_draws, main_material_id, sub_material_id
+            main_material_id, sub_material_id
         ) VALUES (
             :id, :user_id, :master_id, :part_type, :name, :attribute, :rarity, :visual_index,
             :is_equipped, :vitality, :power, :defense, :agility, :dexterity, :intelligence,
-            :battle_matches, :battle_wins, :battle_losses, :battle_draws, :main_material_id, :sub_material_id
+            :main_material_id, :sub_material_id
         )
         ON DUPLICATE KEY UPDATE
             user_id = VALUES(user_id),
@@ -508,17 +513,12 @@ try {
             agility = VALUES(agility),
             dexterity = VALUES(dexterity),
             intelligence = VALUES(intelligence),
-            battle_matches = VALUES(battle_matches),
-            battle_wins = VALUES(battle_wins),
-            battle_losses = VALUES(battle_losses),
-            battle_draws = VALUES(battle_draws),
             main_material_id = VALUES(main_material_id),
             sub_material_id = VALUES(sub_material_id)
     ");
 
     $extractPartParams = function($part, $userId, $isEquipped) {
         $stats = $part['stats'] ?? [];
-        $bStats = $part['battleStats'] ?? $part['battle_stats'] ?? [];
         $pType = $part['type'] ?? $part['part_type'] ?? 'head';
         $rarity = isset($part['rarity']) ? (int)$part['rarity'] : 1;
         $visualIndex = isset($part['visualIndex']) ? (int)$part['visualIndex'] : (isset($part['visual_index']) ? (int)$part['visual_index'] : 0);
@@ -554,10 +554,6 @@ try {
             ':agility' => isset($stats['agility']) ? (int)$stats['agility'] : (isset($part['agility']) ? (int)$part['agility'] : 0),
             ':dexterity' => isset($stats['dexterity']) ? (int)$stats['dexterity'] : (isset($part['dexterity']) ? (int)$part['dexterity'] : 0),
             ':intelligence' => isset($stats['intelligence']) ? (int)$stats['intelligence'] : (isset($stats['int']) ? (int)$stats['int'] : (isset($part['intelligence']) ? (int)$part['intelligence'] : 0)),
-            ':battle_matches' => isset($bStats['matches']) ? (int)$bStats['matches'] : 0,
-            ':battle_wins' => isset($bStats['wins']) ? (int)$bStats['wins'] : 0,
-            ':battle_losses' => isset($bStats['losses']) ? (int)$bStats['losses'] : 0,
-            ':battle_draws' => isset($bStats['draws']) ? (int)$bStats['draws'] : 0,
             ':main_material_id' => $resolveEncyclopediaId($rawMainMat, $pType, $rarity, $visualIndex),
             ':sub_material_id' => $resolveEncyclopediaId($rawSubMat, $pType, $rarity, $visualIndex),
         ];

@@ -438,11 +438,11 @@ try {
                         INSERT INTO user_parts (
                             id, user_id, master_part_id, part_type, name, attribute, rarity, visual_index,
                             is_equipped, vitality, power, defense, agility, dexterity, intelligence,
-                            battle_matches, battle_wins, battle_losses, battle_draws, main_material_id, sub_material_id
+                            main_material_id, sub_material_id
                         ) VALUES (
                             :id, :user_id, :master_id, :part_type, :name, :attribute, :rarity, :visual_index,
                             1, :vitality, :power, :defense, :agility, :dexterity, :intelligence,
-                            :battle_matches, :battle_wins, :battle_losses, :battle_draws, :main_material_id, :sub_material_id
+                            :main_material_id, :sub_material_id
                         )
                         ON DUPLICATE KEY UPDATE 
                             user_id = VALUES(user_id),
@@ -459,10 +459,6 @@ try {
                             agility = VALUES(agility),
                             dexterity = VALUES(dexterity),
                             intelligence = VALUES(intelligence),
-                            battle_matches = VALUES(battle_matches),
-                            battle_wins = VALUES(battle_wins),
-                            battle_losses = VALUES(battle_losses),
-                            battle_draws = VALUES(battle_draws),
                             main_material_id = VALUES(main_material_id),
                             sub_material_id = VALUES(sub_material_id)
                     ");
@@ -480,7 +476,6 @@ try {
                             $rarity = isset($partObj['rarity']) ? (int)$partObj['rarity'] : 1;
                             $visualIndex = isset($partObj['visualIndex']) ? (int)$partObj['visualIndex'] : 0;
                             $stats = $partObj['stats'] ?? [];
-                            $bStats = $partObj['battleStats'] ?? $partObj['battle_stats'] ?? [];
 
                             $resolveId = function($matId, $pt, $r, $vi) {
                                 if (empty($matId)) return null;
@@ -507,10 +502,6 @@ try {
                                 ':agility' => isset($stats['agility']) ? (int)$stats['agility'] : (isset($partObj['agility']) ? (int)$partObj['agility'] : 0),
                                 ':dexterity' => isset($stats['dexterity']) ? (int)$stats['dexterity'] : (isset($partObj['dexterity']) ? (int)$partObj['dexterity'] : 0),
                                 ':intelligence' => isset($stats['intelligence']) ? (int)$stats['intelligence'] : (isset($stats['int']) ? (int)$stats['int'] : (isset($partObj['intelligence']) ? (int)$partObj['intelligence'] : 0)),
-                                ':battle_matches' => isset($bStats['matches']) ? (int)$bStats['matches'] : 0,
-                                ':battle_wins' => isset($bStats['wins']) ? (int)$bStats['wins'] : 0,
-                                ':battle_losses' => isset($bStats['losses']) ? (int)$bStats['losses'] : 0,
-                                ':battle_draws' => isset($bStats['draws']) ? (int)$bStats['draws'] : 0,
                                 ':main_material_id' => $resolveId($rawMain, $pType, $rarity, $visualIndex),
                                 ':sub_material_id' => $resolveId($rawSub, $pType, $rarity, $visualIndex)
                             ]);
@@ -737,11 +728,11 @@ try {
                     INSERT INTO user_parts (
                         id, user_id, master_part_id, part_type, name, attribute, rarity, visual_index,
                         is_equipped, vitality, power, defense, agility, dexterity, intelligence,
-                        battle_matches, battle_wins, battle_losses, battle_draws, main_material_id, sub_material_id
+                        main_material_id, sub_material_id
                     ) VALUES (
                         :id, :user_id, :master_id, :part_type, :name, :attribute, :rarity, :visual_index,
                         1, :vitality, :power, :defense, :agility, :dexterity, :intelligence,
-                        :battle_matches, :battle_wins, :battle_losses, :battle_draws, :main_material_id, :sub_material_id
+                        :main_material_id, :sub_material_id
                     )
                     ON DUPLICATE KEY UPDATE 
                         user_id = VALUES(user_id),
@@ -758,10 +749,6 @@ try {
                         agility = VALUES(agility),
                         dexterity = VALUES(dexterity),
                         intelligence = VALUES(intelligence),
-                        battle_matches = VALUES(battle_matches),
-                        battle_wins = VALUES(battle_wins),
-                        battle_losses = VALUES(battle_losses),
-                        battle_draws = VALUES(battle_draws),
                         main_material_id = VALUES(main_material_id),
                         sub_material_id = VALUES(sub_material_id)
                 ");
@@ -777,7 +764,6 @@ try {
                         $partId = $partObj['id'];
                         $masterId = $partObj['name'] ?? $partObj['master_id'] ?? $partId;
                         $stats = $partObj['stats'] ?? [];
-                        $bStats = $partObj['battleStats'] ?? $partObj['battle_stats'] ?? [];
 
                         $pType = $partObj['type'] ?? $pKey;
                         $rarity = isset($partObj['rarity']) ? (int)$partObj['rarity'] : 1;
@@ -800,10 +786,6 @@ try {
                             ':agility' => isset($stats['agility']) ? (int)$stats['agility'] : (isset($partObj['agility']) ? (int)$partObj['agility'] : 0),
                             ':dexterity' => isset($stats['dexterity']) ? (int)$stats['dexterity'] : (isset($partObj['dexterity']) ? (int)$partObj['dexterity'] : 0),
                             ':intelligence' => isset($stats['intelligence']) ? (int)$stats['intelligence'] : (isset($stats['int']) ? (int)$stats['int'] : (isset($partObj['intelligence']) ? (int)$partObj['intelligence'] : 0)),
-                            ':battle_matches' => isset($bStats['matches']) ? (int)$bStats['matches'] : 0,
-                            ':battle_wins' => isset($bStats['wins']) ? (int)$bStats['wins'] : 0,
-                            ':battle_losses' => isset($bStats['losses']) ? (int)$bStats['losses'] : 0,
-                            ':battle_draws' => isset($bStats['draws']) ? (int)$bStats['draws'] : 0,
                             ':main_material_id' => $resolveId($rawMain, $pType, $rarity, $visualIndex),
                             ':sub_material_id' => $resolveId($rawSub, $pType, $rarity, $visualIndex)
                         ]);
