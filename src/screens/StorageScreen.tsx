@@ -1,4 +1,6 @@
 import { BattleChestRewardService } from '../components/minigames/BattleChestRewardService';
+import { ChestAudioPlayer } from '../components/minigames/BattleChestRewardModal';
+import confetti from 'canvas-confetti';
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { GameState, AttributeColors, AttributeNames, Robot, getFameRank } from '../core/models';
 import { GameEngine } from '../core/GameEngine';
@@ -16,6 +18,53 @@ import { COMBAT_EQUIPMENT_RANKS, getEquipmentBonus, CombatEquipmentRank } from '
 import { RewardAdShortenButton } from '../components/ads/RewardAdShortenButton';
 import * as Gi from 'react-icons/gi';
 
+// 宝箱ティア別ビジュアル定義
+const getChestVisual = (tier: string) => {
+  switch (tier) {
+    case 'mythic':
+      return {
+        name: '至高の軍需コンテナ',
+        label: '神話の宝箱',
+        badge: 'bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white border-fuchsia-300',
+        glow: 'from-fuchsia-500/40 via-purple-500/25 to-amber-400/20',
+        boxBg: 'from-[#3b1233] via-[#210927] to-[#120718]',
+        borderColor: 'border-fuchsia-400',
+        iconColor: 'text-fuchsia-400',
+      };
+    case 'gold':
+      return {
+        name: '司令官補給箱',
+        label: '金の宝箱',
+        badge: 'bg-gradient-to-r from-amber-500 to-yellow-400 text-stone-950 font-black border-yellow-200',
+        glow: 'from-amber-400/40 via-yellow-500/25 to-amber-600/20',
+        boxBg: 'from-[#33220f] via-[#241709] to-[#140e06]',
+        borderColor: 'border-amber-400',
+        iconColor: 'text-amber-400',
+      };
+    case 'silver':
+      return {
+        name: '作戦資材コンテナ',
+        label: '銀の宝箱',
+        badge: 'bg-gradient-to-r from-sky-500 to-blue-600 text-white border-sky-200',
+        glow: 'from-sky-400/30 via-slate-300/20 to-blue-500/20',
+        boxBg: 'from-[#172535] via-[#101b27] to-[#0a111a]',
+        borderColor: 'border-sky-300',
+        iconColor: 'text-sky-300',
+      };
+    case 'bronze':
+    default:
+      return {
+        name: '初級補給コンテナ',
+        label: '銅の宝箱',
+        badge: 'bg-amber-800 text-amber-100 border-amber-600',
+        glow: 'from-amber-700/30 via-orange-800/20 to-stone-800/30',
+        boxBg: 'from-[#2b1911] via-[#1e120c] to-[#130b08]',
+        borderColor: 'border-amber-700',
+        iconColor: 'text-amber-500',
+      };
+  }
+};
+
 export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> = ({ state, engine }) => {
   const [tab, setTab] = useState<'robots'|'parts'|'items'|'materials'>('robots');
   const [confirmRobotId, setConfirmRobotId] = useState<string | null>(null);
@@ -27,7 +76,9 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
   const [selectedBaselinePart, setSelectedBaselinePart] = useState<RobotPart | null>(null);
   const [now, setNow] = useState(Date.now());
 
+  // 宝箱開封演出用ステート
   const [openingChest, setOpeningChest] = useState<string | null>(null);
+  const [isChestFlashing, setIsChestFlashing] = useState<boolean>(false);
   const [openedChestResult, setOpenedChestResult] = useState<any | null>(null);
   const [isRepairSelectOpen, setIsRepairSelectOpen] = useState(false);
   const [isExchangeKitOpen, setIsExchangeKitOpen] = useState(false);
@@ -35,6 +86,31 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
   const [exchangeCount, setExchangeCount] = useState<number>(1);
   const [isStorageUpgradeModalOpen, setIsStorageUpgradeModalOpen] = useState(false);
 
+  // 宝箱開封時の紙吹雪演出
+  const triggerChestConfetti = (tier: string) => {
+    try {
+      const colors = tier === 'mythic'
+        ? ['#d946ef', '#a855f7', '#ec4899', '#facc15', '#ffffff']
+        : tier === 'gold'
+        ? ['#f59e0b', '#fbbf24', '#fef08a', '#ffffff', '#eab308']
+        : tier === 'silver'
+        ? ['#38bdf8', '#e2e8f0', '#94a3b8', '#60a5fa', '#ffffff']
+        : ['#b45309', '#d97706', '#f59e0b', '#78350f', '#fef3c7'];
+
+      confetti({
+        particleCount: 60,
+        spread: 80,
+        origin: { y: 0.55 },
+        colors,
+        zIndex: 99999,
+        disableForReducedMotion: true,
+      });
+    } catch {
+      // ignore
+    }
+  };
+
+  // 宝箱開封ハンドラー（CSS揺れ・フラッシュ・効果音付きのワクワク演出）
   const handleOpenChest = (chestTier: string) => {
     if (!chestTier) return;
     const currentCount = state.unopenedChests?.[chestTier] || 0;
@@ -42,8 +118,37 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
 
     if (engine.removeChest(chestTier, 1)) {
       setOpeningChest(chestTier);
-      // 開封演出（1.5秒待機）
-      setTimeout(() => {
+      setIsChestFlashing(false);
+
+      // 演出フェーズ1: 宝箱のガタガタ揺れと効果音
+      try {
+        ChestAudioPlayer.playRattle();
+      } catch {
+        // audio ignore
+      }
+
+      // 中間での小刻み揺れとロック解除音
+      const timerUnlock = setTimeout(() => {
+        try {
+          ChestAudioPlayer.playUnlock();
+        } catch {
+          // ignore
+        }
+      }, 750);
+
+      // 演出フェーズ2: 開封フラッシュ＆ファンファーレ（1.35秒後）
+      const timerFlash = setTimeout(() => {
+        setIsChestFlashing(true);
+        try {
+          ChestAudioPlayer.playChestOpen();
+        } catch {
+          // ignore
+        }
+        triggerChestConfetti(chestTier);
+      }, 1350);
+
+      // 演出フェーズ3: アイテム付与と結果表示（1.65秒後）
+      const timerResult = setTimeout(() => {
         try {
           // グレードに応じたレベルで宝箱を抽選（bronze: Lv.2, silver: Lv.4, gold: Lv.7, mythic: Lv.10）
           const level = chestTier === 'bronze' ? 2 : chestTier === 'silver' ? 4 : chestTier === 'gold' ? 7 : 10;
@@ -70,7 +175,20 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
             engine.addFame(result.fame, '宝箱開封ボーナス');
           }
           
-          setOpenedChestResult(result);
+          setOpenedChestResult({ ...result, chestTier });
+
+          // アイテム出現音をスタッガードで再生
+          if (result.items && Array.isArray(result.items)) {
+            result.items.forEach((_, idx) => {
+              setTimeout(() => {
+                try {
+                  ChestAudioPlayer.playItemPop(idx);
+                } catch {
+                  // ignore
+                }
+              }, 150 + idx * 120);
+            });
+          }
         } catch (err) {
           console.error('[StorageScreen] 宝箱開封エラー:', err);
           // 万一の例外発生時は宝箱を返却してユーザーの不利益を防止
@@ -78,9 +196,27 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
           alert('宝箱の開封処理中にエラーが発生しました。宝箱は返却されました。');
         } finally {
           setOpeningChest(null);
+          setIsChestFlashing(false);
         }
-      }, 1500);
+      }, 1650);
+
+      // クリーンアップ用
+      return () => {
+        clearTimeout(timerUnlock);
+        clearTimeout(timerFlash);
+        clearTimeout(timerResult);
+      };
     }
+  };
+
+  // 連続開封ハンドラー（同一ティアの宝箱が残っている場合）
+  const handleOpenAgain = () => {
+    if (!openedChestResult?.chestTier) return;
+    const tier = openedChestResult.chestTier;
+    setOpenedChestResult(null);
+    setTimeout(() => {
+      handleOpenChest(tier);
+    }, 120);
   };
 
   
@@ -1286,48 +1422,129 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
       )}
       {/* パーツ基準値比較グラフモーダル */}
 
-      {/* Chest Opening Modal */}
-      {(openingChest || openedChestResult) && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-stone-900/80 backdrop-blur-sm">
-          <div className="bg-stone-50 border-4 border-stone-300 rounded-2xl p-6 w-full max-w-sm flex flex-col items-center animate-in fade-in zoom-in duration-300 shadow-2xl relative overflow-hidden">
-            {openingChest ? (
-              <div className="flex flex-col items-center py-8">
-                <Gi.GiChest className="text-6xl text-amber-500 animate-bounce mb-4" />
-                <h3 className="text-xl font-bold text-stone-800">宝箱を開封中...</h3>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center w-full">
-                <div className="absolute inset-0 bg-gradient-to-br from-amber-100 to-transparent opacity-50 pointer-events-none"></div>
-                <Gi.GiOpenTreasureChest className="text-7xl text-amber-500 mb-2 drop-shadow-lg" />
-                <h3 className="text-2xl font-bold text-amber-700 mb-6 relative z-10 drop-shadow-sm">開封結果</h3>
-                <div className="w-full space-y-3 relative z-10 mb-6">
-                  {openedChestResult.items.map((item: any, idx: number) => (
-                    <div key={idx} className="flex items-center p-3 rounded-xl bg-white border border-stone-200 shadow-sm gap-4 transform transition-all hover:scale-105">
-                      <div className="w-12 h-12 flex-shrink-0 flex items-center justify-center bg-stone-100 rounded-lg">
-                        {item.type === 'repairKit' && <Gi.GiSpanner className="text-3xl text-emerald-600" />}
-                        {item.type === 'gold' && <Gi.GiCoins className="text-3xl text-yellow-500" />}
-                        {item.type === 'element' && <Gi.GiCrystalGrowth className="text-3xl text-cyan-500" />}
-                        {item.type === 'material' && <MaterialIcon attribute={item.material?.attribute || 'Earth'} className="text-3xl" />}
-                        {item.type === 'fame' && <Gi.GiLaurelCrown className="text-3xl text-amber-500" />}
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-xs text-stone-500">{item.desc}</p>
-                        <p className="text-sm font-bold text-stone-800">{item.name}</p>
-                      </div>
-                      <div className="text-lg font-bold text-amber-600">
-                        x{item.count}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <Button onClick={() => setOpenedChestResult(null)} className="w-full font-bold shadow-md relative z-10">
-                  閉じる
-                </Button>
-              </div>
+      {/* 宝箱開封モーダル（CSSアニメーション揺れ・フラッシュ・光彩・アイテム出現演出） */}
+      {(openingChest || openedChestResult) && (() => {
+        const activeTier = openingChest || openedChestResult?.chestTier || 'bronze';
+        const visual = getChestVisual(activeTier);
+        const remainingCount = openedChestResult?.chestTier ? (state.unopenedChests?.[openedChestResult.chestTier] || 0) : 0;
+
+        return (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-stone-950/85 backdrop-blur-md animate-in fade-in duration-200">
+            {/* 全画面フラッシュ光彩（開封の瞬間） */}
+            {isChestFlashing && (
+              <div className="fixed inset-0 z-[120] bg-gradient-to-r from-amber-100 via-white to-amber-200 animate-chest-flash pointer-events-none" />
             )}
+
+            <div className={`relative rounded-3xl border-2 shadow-2xl p-6 w-full max-w-sm flex flex-col items-center overflow-hidden bg-gradient-to-b ${visual.boxBg} ${visual.borderColor} text-stone-100`}>
+              
+              {/* 背景の光彩オーラ */}
+              <div className={`absolute inset-0 bg-radial ${visual.glow} opacity-60 pointer-events-none`} />
+
+              {openingChest ? (
+                /* ＝＝＝ 開封中演出（ガタガタ激しい揺れ & パルス光彩） ＝＝＝ */
+                <div className="flex flex-col items-center py-6 w-full relative z-10">
+                  <span className={`px-3 py-0.5 rounded-full text-[11px] font-mono font-black border shadow-xs mb-3 ${visual.badge}`}>
+                    {visual.label}
+                  </span>
+
+                  {/* 宝箱アイコン（CSSランブル揺れ＋グロー光彩） */}
+                  <div className="relative my-4 flex items-center justify-center">
+                    <div className="absolute w-28 h-28 rounded-full bg-amber-400/25 blur-xl animate-chest-glow" />
+                    <Gi.GiLockedChest className={`text-7xl sm:text-8xl ${visual.iconColor} drop-shadow-[0_4px_16px_rgba(0,0,0,0.8)] animate-chest-rumble animate-chest-glow relative z-10`} />
+                    <Gi.GiSparkles className="absolute -top-1 -right-1 text-2xl text-amber-300 animate-spin" />
+                  </div>
+
+                  <h3 className="text-xl font-black text-white tracking-wide drop-shadow-md flex items-center gap-1.5 mt-2">
+                    <Gi.GiKey className="text-amber-400 text-lg animate-bounce" />
+                    宝箱を開封中...
+                  </h3>
+                  <p className="text-xs text-amber-200/90 font-medium mt-1 animate-pulse">
+                    ガタガタ… カギを解除しています！
+                  </p>
+
+                  <div className="w-36 h-1.5 bg-stone-800/80 rounded-full mt-4 overflow-hidden border border-stone-700/50">
+                    <div className="h-full bg-gradient-to-r from-amber-500 to-yellow-300 rounded-full animate-pulse w-full" />
+                  </div>
+                </div>
+              ) : (
+                /* ＝＝＝ 開封結果表示（放射光線 & ポップアップアイテム） ＝＝＝ */
+                <div className="flex flex-col items-center w-full relative z-10">
+                  {/* 背景の回転する放射光線 */}
+                  <div className="absolute -inset-20 bg-[conic-gradient(from_0deg,transparent_0_30deg,rgba(251,191,36,0.18)_45deg,transparent_60deg_120deg,rgba(244,114,182,0.18)_135deg,transparent_150deg_240deg,rgba(56,189,248,0.18)_255deg,transparent_270deg)] animate-rays-spin pointer-events-none" />
+
+                  {/* 開いた宝箱アイコン（ジャンプ登場） */}
+                  <div className="relative mb-2">
+                    <Gi.GiOpenTreasureChest className={`text-7xl sm:text-8xl ${visual.iconColor} drop-shadow-[0_4px_16px_rgba(0,0,0,0.8)] animate-chest-open-jump`} />
+                  </div>
+
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-black border shadow-xs mb-1.5 ${visual.badge}`}>
+                    {visual.label}
+                  </span>
+                  
+                  <h3 className="text-2xl font-black text-amber-300 drop-shadow-md mb-4 flex items-center gap-1.5">
+                    <Gi.GiSparkles className="text-amber-400" />
+                    宝箱開封成功！
+                    <Gi.GiSparkles className="text-amber-400" />
+                  </h3>
+
+                  {/* 獲得アイテムリスト（ポップイン & シマー光沢） */}
+                  <div className="w-full space-y-2.5 max-h-[46vh] overflow-y-auto pr-1 mb-5">
+                    {openedChestResult.items.map((item: any, idx: number) => (
+                      <div
+                        key={idx}
+                        className="flex items-center p-3 rounded-xl bg-stone-900/85 border border-stone-700/70 shadow-md gap-3.5 transform transition-all hover:scale-[1.02] animate-item-pop relative overflow-hidden"
+                        style={{ animationDelay: `${idx * 110}ms` }}
+                      >
+                        {/* シマー光沢線 */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent pointer-events-none animate-shimmer" />
+
+                        <div className="w-12 h-12 flex-shrink-0 flex items-center justify-center bg-stone-800/90 rounded-lg border border-stone-700 shadow-inner">
+                          {item.type === 'repairKit' && <Gi.GiSpanner className="text-3xl text-emerald-400 drop-shadow" />}
+                          {item.type === 'gold' && <Gi.GiCoins className="text-3xl text-yellow-400 drop-shadow" />}
+                          {item.type === 'element' && <Gi.GiCrystalGrowth className="text-3xl text-cyan-400 drop-shadow" />}
+                          {item.type === 'material' && <MaterialIcon attribute={item.material?.attribute || 'Earth'} className="text-3xl" />}
+                          {item.type === 'fame' && <Gi.GiLaurelCrown className="text-3xl text-amber-400 drop-shadow" />}
+                        </div>
+                        <div className="flex-1 text-left min-w-0">
+                          <p className="text-[11px] text-stone-400 truncate">{item.desc}</p>
+                          <p className="text-sm font-bold text-white truncate">{item.name}</p>
+                        </div>
+                        <div className="text-lg font-black text-amber-400 font-mono tracking-tight shrink-0">
+                          x{item.count}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <p className="text-[11px] text-amber-200/80 font-bold mb-3 flex items-center gap-1">
+                    <span>✓</span> すべて工房倉庫に安全に格納されました
+                  </p>
+
+                  <div className="w-full space-y-2 relative z-10">
+                    {remainingCount > 0 && (
+                      <Button
+                        onClick={handleOpenAgain}
+                        variant="primary"
+                        className="w-full font-bold py-2.5 shadow-lg bg-gradient-to-r from-amber-500 to-yellow-500 text-stone-950 hover:brightness-110 flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <Gi.GiChest className="text-lg" />
+                        <span>もう1個開封する（残り {remainingCount}個）</span>
+                      </Button>
+                    )}
+                    <Button
+                      onClick={() => setOpenedChestResult(null)}
+                      variant={remainingCount > 0 ? "secondary" : "primary"}
+                      className="w-full font-bold py-2 shadow-md cursor-pointer"
+                    >
+                      閉じる
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {selectedBaselinePart && (
         <PartBaselineModal

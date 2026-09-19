@@ -15,7 +15,7 @@ interface BattleChestRewardModalProps {
 /**
  * Web Audio による宝箱専用SEジェネレーター
  */
-class ChestAudioPlayer {
+export class ChestAudioPlayer {
   private static getAudioContext(): AudioContext | null {
     try {
       const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;

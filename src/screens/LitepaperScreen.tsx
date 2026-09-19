@@ -25,7 +25,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
         title="ポンコツロボット工房 公式仕様書"
         badge={
           <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300 font-mono font-bold px-1.5 py-0.2 rounded">
-            v0.1.43
+            v0.1.45
           </span>
         }
         rightElement={
@@ -511,9 +511,13 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                   </p>
                 </div>
                 <div className="bg-white p-2.5 rounded-lg border border-stone-200">
-                  <strong className="text-stone-900 block font-bold mb-1">📦 倉庫・保管庫システム</strong>
+                  <strong className="text-stone-900 block font-bold mb-1">📦 倉庫・保管庫システム & 宝箱演出</strong>
                   <p className="text-stone-600">
-                    「ロボット」「パーツ」「素材」「アイテム」の4分類で管理。アイテムタブでは未開封宝箱の即時開封や、修理キットによる機体HP回復・素材からのキット作成、エレメント・演習武装の保管状況を確認できます。ロボットタブの倉庫容量拡張ボタンには誤操作を防ぐ確認ダイアログが導入されており、拡張後の上限や残高を事前に確認できます（工房称号は工房ダッシュボードに統合され常時確認可能）。
+                    「ロボット」「パーツ」「素材」「アイテム」の4分類で管理。アイテムタブでは未開封宝箱の即時開封や、修理キットによる機体HP回復・素材からのキット作成、エレメント・演習武装の保管状況を確認できます。
+                    <br />
+                    <strong>宝箱開封演出:</strong> 倉庫からの宝箱開封時には、開封前の激しい揺れ（CSSランブル）、黄金の光彩脈動（グローパルス）、閃光フラッシュ（ホワイト＆ゴールドバースト）、祝祭の紙吹雪（コンフェッティ）、神聖な放射光線スピン、アイテム出現アニメーション（ポップイン＆シマー光沢）、専用効果音（ガタガタ揺れ音・ロック解除音・開封ファンファーレ・アイテム出現音）による演出が施され、アイテム獲得のワクワク感を高めています。また、同一ティアの宝箱が手元に残っている場合は結果モーダルからそのまま「もう1個開封する」ワンタップ連続開封にも対応しています。
+                    <br />
+                    ロボットタブの倉庫容量拡張ボタンには誤操作を防ぐ確認ダイアログが導入されており、拡張後の上限や残高を事前に確認できます（工房称号は工房ダッシュボードに統合され常時確認可能）。
                   </p>
                 </div>
                 <div className="bg-white p-2.5 rounded-lg border border-stone-200">
