@@ -401,9 +401,21 @@ export const CombatSetupCard: React.FC<CombatSetupCardProps> = ({
 
         {/* 対戦相手選択 */}
         <div className="bg-stone-100 p-3 rounded-xl border border-stone-300 flex flex-col gap-3">
-          <div className="flex justify-between items-center border-b border-stone-200 pb-1">
-            <span className="font-bold text-xs sm:text-sm text-stone-800">対戦相手</span>
-            <span className="text-[10px] text-stone-500 font-mono">強さLv 1〜10</span>
+          <div className="flex justify-between items-center border-b border-stone-200 pb-1.5 flex-wrap gap-1">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-xs sm:text-sm text-stone-800">対戦相手を選ぶ</span>
+              <span className="text-[10px] text-stone-500 font-mono">強さLv 1〜10</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-[10px]">
+              <span className="bg-yellow-100 text-yellow-900 border border-yellow-300 font-bold px-1.5 py-0.2 rounded flex items-center gap-0.5">
+                <Gi.GiTrophyCup className="text-amber-600 text-[9px]" /> 名声
+              </span>
+              <span className="text-stone-400 font-bold">＆</span>
+              <span className="bg-indigo-50 text-indigo-900 border border-indigo-200 font-bold font-mono px-1.5 py-0.2 rounded flex items-center gap-0.5">
+                <Gi.GiAtom className="text-indigo-600 text-[9px]" /> エレメント
+              </span>
+              <span className="text-amber-900 font-bold bg-amber-100/80 px-1 py-0.2 rounded">同数獲得！(Lv4〜)</span>
+            </div>
           </div>
           <div className="flex gap-2 overflow-x-auto pt-2.5 pb-2 px-1 custom-scrollbar">
             {OPPONENTS.map(o => {
@@ -413,7 +425,7 @@ export const CombatSetupCard: React.FC<CombatSetupCardProps> = ({
                 <button
                   key={o.id}
                   onClick={() => setSelectedOpponentId(o.id)}
-                  className={`shrink-0 w-[58px] h-[58px] relative rounded-xl border-2 transition-all p-1 bg-white flex flex-col items-center justify-center overflow-visible cursor-pointer ${
+                  className={`shrink-0 min-w-[62px] h-[60px] relative rounded-xl border-2 transition-all p-1 bg-white flex flex-col items-center justify-center overflow-visible cursor-pointer ${
                     isSelected 
                       ? 'border-amber-500 ring-2 ring-amber-300 shadow-xs z-10' 
                       : isCleared
@@ -421,7 +433,16 @@ export const CombatSetupCard: React.FC<CombatSetupCardProps> = ({
                       : 'border-stone-300 hover:border-amber-400'
                   }`}
                 >
-                  <div className={`font-black text-xl font-mono ${isCleared ? 'text-emerald-700' : 'text-stone-700'}`}>Lv{o.level}</div>
+                  <div className={`font-black text-lg font-mono leading-none ${isCleared ? 'text-emerald-700' : 'text-stone-700'}`}>Lv{o.level}</div>
+                  {o.rewardFame > 0 ? (
+                    <span className="text-[9px] font-mono font-bold text-amber-800 mt-1 leading-none">
+                      +{o.rewardFame}
+                    </span>
+                  ) : (
+                    <span className="text-[8px] font-mono text-stone-400 mt-1 leading-none">
+                      -
+                    </span>
+                  )}
                   {isCleared && (
                     <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 z-20 bg-emerald-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-md flex items-center gap-0.5 font-mono whitespace-nowrap border border-emerald-400">
                       <Gi.GiCheckMark className="text-[8px]" /> 済
@@ -468,9 +489,18 @@ export const CombatSetupCard: React.FC<CombatSetupCardProps> = ({
                       <Gi.GiLockedChest className="text-amber-600 text-sm" />
                       <span>勝利報酬: 宝箱ドロップ</span>
                     </span>
-                    {activeOpponent.rewardFame > 0 && (
-                      <span className="text-amber-900 text-[10px] flex items-center gap-1 font-bold">
-                        <Gi.GiTrophyCup className="text-amber-600 text-xs" /> 名声 +{activeOpponent.rewardFame}
+                    {activeOpponent.rewardFame > 0 ? (
+                      <div className="flex items-center gap-1 flex-wrap justify-end">
+                        <span className="text-amber-900 text-[10px] flex items-center gap-0.5 font-bold bg-yellow-100/90 px-1.5 py-0.5 rounded border border-yellow-300">
+                          <Gi.GiTrophyCup className="text-amber-600 text-xs" /> 名声 +{activeOpponent.rewardFame}
+                        </span>
+                        <span className="text-indigo-900 text-[10px] flex items-center gap-0.5 font-bold font-mono bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-200">
+                          <Gi.GiAtom className="text-indigo-600 text-xs" /> +{activeOpponent.rewardElements} E
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-[10px] text-stone-500 font-normal">
+                        Lv.1〜3は名声・E獲得なし
                       </span>
                     )}
                   </div>

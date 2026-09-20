@@ -32,6 +32,7 @@ interface GameDef {
   category: string;
   name: string;
   desc: string;
+  rewardText: string;
   icon: React.ReactNode;
   requiresOpponent: boolean;
 }
@@ -49,6 +50,7 @@ const GAMES: GameDef[] = [
     category: 'battle', 
     name: 'バトル演習', 
     desc: '時間経過で攻撃・閃きと戦術を競う本格リアルタイムバトル（全能力値重視）', 
+    rewardText: '勝利報酬: 名声 +0〜100 ＆ エレメント +0〜100 E (Lv.4〜)',
     icon: <Gi.GiCrossedSwords className="inline text-red-600" />, 
     requiresOpponent: true 
   },
@@ -57,13 +59,46 @@ const GAMES: GameDef[] = [
     category: 'battle', 
     name: '拠点防衛戦', 
     desc: '手持ちの機体を配備して大量の敵から拠点を守る防衛ゲーム（Pow/Agi/Int重視）', 
+    rewardText: '防衛報酬: 名声 +0〜15 ＆ エレメント +0〜15 E (Stage 3〜)',
     icon: <Gi.GiCastleRuins className="inline text-blue-600" />, 
     requiresOpponent: false 
   },
-  { id: 'othello', category: 'puzzle', name: 'オセロ演習', desc: '挟んで裏返す定番ボードゲーム（Int重視）', icon: <Gi.GiCheckeredFlag className="inline text-stone-700" />, requiresOpponent: true },
-  { id: 'chess', category: 'puzzle', name: 'チェス演習', desc: 'キャスリング無しの頭脳勝負（Int重視）', icon: <Gi.GiChessKing className="inline text-stone-800" />, requiresOpponent: true },
-  { id: 'danmaku', category: 'shooting', name: '弾幕よけ試験', desc: '10秒間、弾幕から生き残る（Agi/Dex重視）', icon: <Gi.GiBullseye className="inline text-emerald-600" />, requiresOpponent: false },
-  { id: 'piano', category: 'music', name: 'ピアノ演奏', desc: '指定された楽曲を演奏する（Int/Dex重視）', icon: <Gi.GiPianoKeys className="inline text-stone-700" />, requiresOpponent: false }
+  { 
+    id: 'othello', 
+    category: 'puzzle', 
+    name: 'オセロ演習', 
+    desc: '挟んで裏返す定番ボードゲーム（Int重視）', 
+    rewardText: '勝利報酬: 名声 +0〜100 ＆ エレメント +0〜100 E (Lv.4〜)',
+    icon: <Gi.GiCheckeredFlag className="inline text-stone-700" />, 
+    requiresOpponent: true 
+  },
+  { 
+    id: 'chess', 
+    category: 'puzzle', 
+    name: 'チェス演習', 
+    desc: 'キャスリング無しの頭脳勝負（Int重視）', 
+    rewardText: '勝利報酬: 名声 +0〜100 ＆ エレメント +0〜100 E (Lv.4〜)',
+    icon: <Gi.GiChessKing className="inline text-stone-800" />, 
+    requiresOpponent: true 
+  },
+  { 
+    id: 'danmaku', 
+    category: 'shooting', 
+    name: '弾幕よけ試験', 
+    desc: '10秒間、弾幕から生き残る（Agi/Dex重視）', 
+    rewardText: '生還報酬: 名声 +0〜100 ＆ エレメント +0〜100 E (Lv.4〜)',
+    icon: <Gi.GiBullseye className="inline text-emerald-600" />, 
+    requiresOpponent: false 
+  },
+  { 
+    id: 'piano', 
+    category: 'music', 
+    name: 'ピアノ演奏', 
+    desc: '指定された楽曲を演奏する（Int/Dex重視）', 
+    rewardText: '演奏報酬: 名声 +10〜35 ＆ エレメント +10〜35 E',
+    icon: <Gi.GiPianoKeys className="inline text-stone-700" />, 
+    requiresOpponent: false 
+  }
 ];
 
 interface MinigameScreenProps {
@@ -251,14 +286,11 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
         else { chestTier = 'mythic'; chestTitle = '神話のプリズム宝箱'; }
 
         earnedFame = activeOpponent.rewardFame || 0;
-        obtainedElements = activeOpponent.rewardElements || 0;
+        // エレメント獲得量は名声の数と完全に一致
+        obtainedElements = earnedFame;
 
         if (earnedFame > 0) {
           (engine as any).addFame(earnedFame, `${selectedGame === 'othello' ? 'オセロ' : selectedGame === 'chess' ? 'チェス' : '演習'}勝利: ${activeOpponent.name}`);
-          // 名声が増える場合、エレメントも確実に増加
-          if (obtainedElements <= 0) {
-            obtainedElements = Math.max(5, earnedFame);
-          }
         }
       } else if (selectedGame === 'defense') {
         stageName = activeDefenseStage.name;
@@ -268,9 +300,12 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
         else if (lvl <= 8) { chestTier = 'gold'; chestTitle = '燦然たる黄金の宝箱'; }
         else { chestTier = 'mythic'; chestTitle = '神話のプリズム宝箱'; }
 
-        earnedFame = 10 * lvl;
-        obtainedElements = 15 * lvl;
-        (engine as any).addFame(earnedFame, `拠点防衛成功: ${activeDefenseStage.name}`);
+        earnedFame = activeDefenseStage.rewardFame || 0;
+        // エレメント獲得量は名声の数と完全に一致
+        obtainedElements = earnedFame;
+        if (earnedFame > 0) {
+          (engine as any).addFame(earnedFame, `拠点防衛成功: ${activeDefenseStage.name}`);
+        }
 
         const selectedDefenseRobots = selectedDefenseRobotIds.map(id => state.robots.find(r => r.id === id)!).filter(Boolean);
         const regenHours = activeDefenseStage.rewardRegenHours || 12;
@@ -288,14 +323,11 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
         else { chestTier = 'mythic'; chestTitle = '神話のプリズム宝箱'; }
 
         earnedFame = activeDanmakuDiff.rewardFame || 0;
-        obtainedElements = activeDanmakuDiff.rewardElements || 0;
+        // エレメント獲得量は名声の数と完全に一致
+        obtainedElements = earnedFame;
 
         if (earnedFame > 0) {
           (engine as any).addFame(earnedFame, `弾幕サバイバルクリア: ${activeDanmakuDiff.name}`);
-          // 名声が増える場合、エレメントも確実に増加
-          if (obtainedElements <= 0) {
-            obtainedElements = Math.max(5, earnedFame);
-          }
         }
       } else if (selectedGame === 'piano') {
         stageName = `ピアノ演奏 (${activePianoSong.title})`;
@@ -304,10 +336,10 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
         chestTitle = '古びた鉄の宝箱';
 
         earnedFame = activePianoSong.rewardFame || 0;
+        // エレメント獲得量は名声の数と完全に一致
+        obtainedElements = earnedFame;
         if (earnedFame > 0) {
           (engine as any).addFame(earnedFame, `ピアノ演奏クリア: ${activePianoSong.title}`);
-          // 名声が増える場合、エレメントも増加
-          obtainedElements = earnedFame;
         }
       } else if (requiresOpponent && activeOpponent) {
         stageName = activeOpponent.name;
@@ -318,13 +350,11 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
         else { chestTier = 'mythic'; chestTitle = '神話のプリズム宝箱'; }
 
         earnedFame = activeOpponent.rewardFame || 0;
-        obtainedElements = activeOpponent.rewardElements || 0;
+        // エレメント獲得量は名声の数と完全に一致
+        obtainedElements = earnedFame;
 
         if (earnedFame > 0) {
           (engine as any).addFame(earnedFame, `演習勝利: ${activeOpponent.name}`);
-          if (obtainedElements <= 0) {
-            obtainedElements = Math.max(5, earnedFame);
-          }
         }
       } else {
         stageName = selectedGameDef?.name || '演習';
@@ -500,9 +530,23 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
         <div className="space-y-5">
           {/* 種目選択カード */}
           <Card className="bg-stone-50 border-2 border-stone-300 p-4 shadow-sm">
-            <div className="flex items-center gap-2 mb-3">
-              <Gi.GiAnvil className="text-stone-600 text-lg" />
-              <h3 className={`${theme.typography.h3} text-stone-800`}>演習種目を選ぶ</h3>
+            <div className="flex items-center justify-between mb-3 border-b border-stone-200 pb-2.5 flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <Gi.GiAnvil className="text-stone-600 text-lg" />
+                <h3 className={`${theme.typography.h3} text-stone-800`}>演習種目を選ぶ</h3>
+              </div>
+              <div className="flex items-center gap-1.5 text-xs bg-amber-50/90 border border-amber-300/80 px-2.5 py-1 rounded-lg">
+                <span className="text-[11px] font-bold text-amber-950 flex items-center gap-1">
+                  <Gi.GiTrophyCup className="text-amber-600 text-xs" /> 工房名声
+                </span>
+                <span className="text-[10px] text-stone-400 font-bold">＆</span>
+                <span className="text-[11px] font-bold text-indigo-900 flex items-center gap-1 font-mono">
+                  <Gi.GiAtom className="text-indigo-600 text-xs" /> エレメント
+                </span>
+                <span className="text-[10px] text-amber-900 font-bold bg-amber-200/80 px-1.5 py-0.2 rounded ml-1">
+                  同数獲得！
+                </span>
+              </div>
             </div>
             
             {/* カテゴリタブ */}
@@ -581,6 +625,19 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                       </div>
                     </div>
                     <div className="text-[11px] text-stone-500 mt-1 pl-7 leading-tight">{g.desc}</div>
+                    <div className="flex items-center gap-1.5 mt-2 pl-7 flex-wrap">
+                      <span className="text-[10px] text-amber-900 font-bold bg-yellow-50 border border-yellow-300/90 px-1.5 py-0.5 rounded flex items-center gap-0.5 shadow-2xs">
+                        <Gi.GiTrophyCup className="text-amber-600 text-[10px]" />
+                        <span>名声</span>
+                      </span>
+                      <span className="text-[10px] text-indigo-950 font-bold bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded flex items-center gap-0.5 font-mono shadow-2xs">
+                        <Gi.GiAtom className="text-indigo-600 text-[10px]" />
+                        <span>エレメント</span>
+                      </span>
+                      <span className="text-[10px] text-stone-600 font-semibold font-mono">
+                        {g.rewardText}
+                      </span>
+                    </div>
                   </button>
                 );
               })}
@@ -699,6 +756,11 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                             {stage.rewardFame > 0 && (
                               <span className="text-[10px] bg-yellow-100 text-yellow-900 border border-yellow-300 px-1.5 py-0.5 rounded flex items-center gap-0.5 font-bold">
                                 <Gi.GiTrophyCup className="inline text-amber-600" /> 名声 +{stage.rewardFame}
+                              </span>
+                            )}
+                            {stage.rewardElements > 0 && (
+                              <span className="text-[10px] bg-indigo-50 text-indigo-900 border border-indigo-200 px-1.5 py-0.5 rounded flex items-center gap-0.5 font-bold font-mono">
+                                <Gi.GiAtom className="inline text-indigo-600" /> +{stage.rewardElements} E
                               </span>
                             )}
                           </div>
@@ -997,6 +1059,11 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                               {song.rewardFame > 0 && (
                                 <span className="text-[10px] bg-yellow-100 text-yellow-900 border border-yellow-300 font-bold font-mono px-1.5 py-0.5 rounded shrink-0 flex items-center gap-0.5">
                                   <Gi.GiTrophyCup className="inline text-amber-600 text-xs" /> 名声 +{song.rewardFame}
+                                </span>
+                              )}
+                              {song.rewardElements > 0 && (
+                                <span className="text-[10px] bg-indigo-50 text-indigo-900 border border-indigo-200 font-bold font-mono px-1.5 py-0.5 rounded shrink-0 flex items-center gap-0.5">
+                                  <Gi.GiAtom className="inline text-indigo-600 text-xs" /> +{song.rewardElements} E
                                 </span>
                               )}
                             </div>

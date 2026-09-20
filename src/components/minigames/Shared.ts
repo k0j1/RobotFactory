@@ -35,6 +35,7 @@ export interface DefenseStage {
   rewardKits: number;
   rewardRegenHours: number;
   rewardFame: number;
+  rewardElements: number;
   bossInfo: string;
 }
 
@@ -52,6 +53,7 @@ export const DEFENSE_STAGES: DefenseStage[] = [
     rewardKits: 1,
     rewardRegenHours: 3,
     rewardFame: 0,
+    rewardElements: 0,
     bossInfo: 'ボスなし (通常敵のみ 100体)',
   },
   {
@@ -67,6 +69,7 @@ export const DEFENSE_STAGES: DefenseStage[] = [
     rewardKits: 1,
     rewardRegenHours: 6,
     rewardFame: 0,
+    rewardElements: 0,
     bossInfo: '100体ごとに小ボス(HP50,000)出現',
   },
   {
@@ -82,6 +85,7 @@ export const DEFENSE_STAGES: DefenseStage[] = [
     rewardKits: 1,
     rewardRegenHours: 9,
     rewardFame: 5,
+    rewardElements: 5,
     bossInfo: '100体毎に中ボス(HP10万)、最後に大ボス(HP15万)出現',
   },
   {
@@ -97,6 +101,7 @@ export const DEFENSE_STAGES: DefenseStage[] = [
     rewardKits: 1,
     rewardRegenHours: 12,
     rewardFame: 10,
+    rewardElements: 10,
     bossInfo: '最後の99体は小ボス、ラストに巨大ボス(HP25万)',
   },
   {
@@ -112,6 +117,7 @@ export const DEFENSE_STAGES: DefenseStage[] = [
     rewardKits: 1,
     rewardRegenHours: 24,
     rewardFame: 15,
+    rewardElements: 15,
     bossInfo: '全波ボス級ラッシュ＆最後は超巨大ボス(HP100万)',
   },
 ];
@@ -153,6 +159,7 @@ export interface PianoSong {
   bgmUrl?: string;
   desc: string;
   rewardFame: number;
+  rewardElements: number;
   notes: PianoNoteData[];
 }
 
@@ -225,6 +232,7 @@ export const PIANO_SONGS: PianoSong[] = [
     songSpeed: 1.0,
     desc: 'バガテル「エリーゼのために」WoO 59 (イ短調 3/8拍子)。pianoclassics.net (ID 47) 準拠。主部と全エピソードを網羅した全曲完全収録版。', 
     rewardFame: 10,
+    rewardElements: 10,
     notes: FUR_ELISE_NOTES
   },
   { 
@@ -235,6 +243,7 @@ export const PIANO_SONGS: PianoSong[] = [
     songSpeed: 1.0,
     desc: 'ピアノソナタ第11番 イ長調 K. 331 第3楽章「トルコ行進曲」(Allegretto 2/4拍子)。pianoclassics.net (ID 55) / Mutopia 準拠。主部・中間部・コーダを網羅した全曲完全収録版。', 
     rewardFame: 20,
+    rewardElements: 20,
     notes: TURKISH_MARCH_NOTES
   },
   { 
@@ -245,6 +254,7 @@ export const PIANO_SONGS: PianoSong[] = [
     songSpeed: 1.0,
     desc: 'パガニーニ大練習曲 第3番 嬰ト短調。pianoclassics.net (ID 110) 準拠。特徴的な跳躍と高音の鐘の音を再現したテーマ部。', 
     rewardFame: 35,
+    rewardElements: 35,
     notes: LA_CAMPANELLA_NOTES
   }
 ];
@@ -297,13 +307,13 @@ export const DANMAKU_DIFFICULTIES: DanmakuDifficultyConfig[] = [
     level: 4,
     name: 'レベル4 (中級)',
     label: 'Lv.4 中級',
-    subLabel: '弾速0.9x・名声+1/E+5',
+    subLabel: '弾速0.9x・名声+1/E+1',
     desc: '本格的な弾幕展開。ここから工房名声とエレメントが獲得可能！',
     bulletSpeedMult: 0.90,
     ringCount: 7,
     rewardKits: 1,
     rewardFame: 1,
-    rewardElements: 5,
+    rewardElements: 1,
     badgeClass: 'bg-blue-100 text-blue-800 border-blue-300',
   },
   {
@@ -311,13 +321,13 @@ export const DANMAKU_DIFFICULTIES: DanmakuDifficultyConfig[] = [
     level: 5,
     name: 'レベル5 (標準)',
     label: 'Lv.5 標準',
-    subLabel: '弾速1.0x・名声+3/E+10',
+    subLabel: '弾速1.0x・名声+3/E+3',
     desc: '標準的な高密度弾幕サバイバル。適切なAgiとDexが求められる。',
     bulletSpeedMult: 1.00,
     ringCount: 8,
     rewardKits: 1,
     rewardFame: 3,
-    rewardElements: 10,
+    rewardElements: 3,
     badgeClass: 'bg-indigo-100 text-indigo-800 border-indigo-300',
   },
   {
@@ -325,13 +335,13 @@ export const DANMAKU_DIFFICULTIES: DanmakuDifficultyConfig[] = [
     level: 6,
     name: 'レベル6 (精鋭)',
     label: 'Lv.6 精鋭',
-    subLabel: '弾速1.1x・名声+6/E+20',
+    subLabel: '弾速1.1x・名声+6/E+6',
     desc: '高速かつ多角的なリング弾が迫る精鋭ステージ。',
     bulletSpeedMult: 1.10,
     ringCount: 9,
     rewardKits: 1,
     rewardFame: 6,
-    rewardElements: 20,
+    rewardElements: 6,
     badgeClass: 'bg-purple-100 text-purple-800 border-purple-300',
   },
   {
@@ -339,13 +349,13 @@ export const DANMAKU_DIFFICULTIES: DanmakuDifficultyConfig[] = [
     level: 7,
     name: 'レベル7 (上級)',
     label: 'Lv.7 上級',
-    subLabel: '弾速1.2x・名声+10/E+35',
+    subLabel: '弾速1.2x・名声+10/E+10',
     desc: '超高速に降り注ぐ上位弾幕。鍛え抜かれた敏捷性が必要。',
     bulletSpeedMult: 1.20,
     ringCount: 10,
     rewardKits: 2,
     rewardFame: 10,
-    rewardElements: 35,
+    rewardElements: 10,
     badgeClass: 'bg-amber-100 text-amber-800 border-amber-300',
   },
   {
@@ -353,13 +363,13 @@ export const DANMAKU_DIFFICULTIES: DanmakuDifficultyConfig[] = [
     level: 8,
     name: 'レベル8 (極限)',
     label: 'Lv.8 極限',
-    subLabel: '弾速1.3x・名声+20/E+60',
+    subLabel: '弾速1.3x・名声+20/E+20',
     desc: '隙間のない弾幕の雨が襲う極限サバイバル。',
     bulletSpeedMult: 1.30,
     ringCount: 11,
     rewardKits: 2,
     rewardFame: 20,
-    rewardElements: 60,
+    rewardElements: 20,
     badgeClass: 'bg-orange-100 text-orange-800 border-orange-300',
   },
   {
@@ -367,13 +377,13 @@ export const DANMAKU_DIFFICULTIES: DanmakuDifficultyConfig[] = [
     level: 9,
     name: 'レベル9 (達人)',
     label: 'Lv.9 達人',
-    subLabel: '弾速1.45x・名声+50/E+100',
+    subLabel: '弾速1.45x・名声+50/E+50',
     desc: '達人級の高速弾幕。回避判断の猶予はコンマ数秒。',
     bulletSpeedMult: 1.45,
     ringCount: 12,
     rewardKits: 2,
     rewardFame: 50,
-    rewardElements: 100,
+    rewardElements: 50,
     badgeClass: 'bg-rose-100 text-rose-800 border-rose-300',
   },
   {
@@ -381,13 +391,13 @@ export const DANMAKU_DIFFICULTIES: DanmakuDifficultyConfig[] = [
     level: 10,
     name: 'レベル10 (悪夢)',
     label: 'Lv.10 悪夢',
-    subLabel: '弾速1.6x・名声+100/E+200',
+    subLabel: '弾速1.6x・名声+100/E+100',
     desc: '全方位から高速で包囲する最高峰の悪夢弾幕空間。',
     bulletSpeedMult: 1.60,
     ringCount: 14,
     rewardKits: 3,
     rewardFame: 100,
-    rewardElements: 200,
+    rewardElements: 100,
     badgeClass: 'bg-red-100 text-red-900 border-red-400',
   },
 ];
@@ -396,13 +406,13 @@ export const OPPONENTS: Opponent[] = [
   { id: 'op1', level: 1, name: 'ポンコツ試作機', org: '町の発明家', int: 16, agi: 14, dex: 16, hp: 25, power: 22, defense: 15, rewardKits: 1, rewardElements: 0, rewardFame: 0 },
   { id: 'op2', level: 2, name: 'ジャンク・スカベンジャー', org: '廃品回収ギルド', int: 26, agi: 22, dex: 24, hp: 42, power: 36, defense: 26, rewardKits: 1, rewardElements: 0, rewardFame: 0 },
   { id: 'op3', level: 3, name: '汎用作業ボット', org: 'アポロ重工', int: 38, agi: 31, dex: 34, hp: 65, power: 55, defense: 40, rewardKits: 1, rewardElements: 0, rewardFame: 0 },
-  { id: 'op4', level: 4, name: '警邏パトロールボット', org: 'シティ警察機構', int: 47, agi: 38, dex: 41, hp: 82, power: 70, defense: 51, rewardKits: 1, rewardElements: 5, rewardFame: 1 },
-  { id: 'op5', level: 5, name: '戦術演算ユニット', org: 'ゼニス・コーポレーション', int: 56, agi: 44, dex: 48, hp: 98, power: 84, defense: 62, rewardKits: 1, rewardElements: 10, rewardFame: 3 },
-  { id: 'op6', level: 6, name: '重装機甲ストライカー', org: 'ネオ・ミリタリー', int: 72, agi: 56, dex: 62, hp: 135, power: 115, defense: 85, rewardKits: 1, rewardElements: 20, rewardFame: 6 },
-  { id: 'op7', level: 7, name: '高機動ファントム', org: 'シャドウ・ラボラトリー', int: 92, agi: 70, dex: 78, hp: 180, power: 150, defense: 110, rewardKits: 1, rewardElements: 35, rewardFame: 10 },
-  { id: 'op8', level: 8, name: '要塞ガーディアン', org: '古代防衛システム', int: 140, agi: 115, dex: 120, hp: 280, power: 230, defense: 170, rewardKits: 1, rewardElements: 60, rewardFame: 20 },
-  { id: 'op9', level: 9, name: 'サイバネティクス・カイザー', org: '帝国兵器工廠', int: 190, agi: 160, dex: 165, hp: 400, power: 330, defense: 250, rewardKits: 1, rewardElements: 100, rewardFame: 50 },
-  { id: 'op10', level: 10, name: 'オメガ・マスター', org: '世界AI協会', int: 260, agi: 220, dex: 230, hp: 600, power: 480, defense: 360, rewardKits: 1, rewardElements: 200, rewardFame: 100 },
+  { id: 'op4', level: 4, name: '警邏パトロールボット', org: 'シティ警察機構', int: 47, agi: 38, dex: 41, hp: 82, power: 70, defense: 51, rewardKits: 1, rewardElements: 1, rewardFame: 1 },
+  { id: 'op5', level: 5, name: '戦術演算ユニット', org: 'ゼニス・コーポレーション', int: 56, agi: 44, dex: 48, hp: 98, power: 84, defense: 62, rewardKits: 1, rewardElements: 3, rewardFame: 3 },
+  { id: 'op6', level: 6, name: '重装機甲ストライカー', org: 'ネオ・ミリタリー', int: 72, agi: 56, dex: 62, hp: 135, power: 115, defense: 85, rewardKits: 1, rewardElements: 6, rewardFame: 6 },
+  { id: 'op7', level: 7, name: '高機動ファントム', org: 'シャドウ・ラボラトリー', int: 92, agi: 70, dex: 78, hp: 180, power: 150, defense: 110, rewardKits: 1, rewardElements: 10, rewardFame: 10 },
+  { id: 'op8', level: 8, name: '要塞ガーディアン', org: '古代防衛システム', int: 140, agi: 115, dex: 120, hp: 280, power: 230, defense: 170, rewardKits: 1, rewardElements: 20, rewardFame: 20 },
+  { id: 'op9', level: 9, name: 'サイバネティクス・カイザー', org: '帝国兵器工廠', int: 190, agi: 160, dex: 165, hp: 400, power: 330, defense: 250, rewardKits: 1, rewardElements: 50, rewardFame: 50 },
+  { id: 'op10', level: 10, name: 'オメガ・マスター', org: '世界AI協会', int: 260, agi: 220, dex: 230, hp: 600, power: 480, defense: 360, rewardKits: 1, rewardElements: 100, rewardFame: 100 },
 ];
 
 export interface MinigameProps {
