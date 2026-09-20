@@ -60,12 +60,24 @@ try {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+    CREATE TABLE IF NOT EXISTS user_item (
+        user_id VARCHAR(255) PRIMARY KEY,
+        repair_kit INT DEFAULT 0,
+        bronze_chest INT DEFAULT 0,
+        silver_chest INT DEFAULT 0,
+        gold_chest INT DEFAULT 0,
+        mythic_chest INT DEFAULT 0,
+        element INT DEFAULT 0,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
     CREATE TABLE IF NOT EXISTS user_minigame_status (
         user_id VARCHAR(255),
         minigame_id VARCHAR(255),
         play_count INT DEFAULT 0,
         wins INT DEFAULT 0,
         elements_count INT DEFAULT 0,
+        chests_count INT DEFAULT 0,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         PRIMARY KEY (user_id, minigame_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -393,6 +405,13 @@ try {
     // active_requests テーブルに request_data を追加
     try {
         $pdo->exec("ALTER TABLE active_requests ADD COLUMN request_data JSON");
+    } catch (PDOException $e) {
+        // 既に追加されている場合は無視
+    }
+
+    // user_minigame_status テーブルに chests_count を追加
+    try {
+        $pdo->exec("ALTER TABLE user_minigame_status ADD COLUMN chests_count INT DEFAULT 0");
     } catch (PDOException $e) {
         // 既に追加されている場合は無視
     }
@@ -730,15 +749,50 @@ try {
         $pdo->exec("ALTER TABLE user_robots ADD CONSTRAINT fk_legs_part FOREIGN KEY (legs_part_id) REFERENCES user_parts(id) ON DELETE SET NULL");
     } catch (PDOException $e) {}
 
-    // save_dataテーブルのJSONから不要なデータを物理的に削除する
+    // save_dataテーブルから不要なデータを物理的に削除し、user_itemテーブルへのデータ移行を実施
     try {
-        $stmt = $pdo->query("SELECT id, game_data FROM save_data");
+        $stmt = $pdo->query("SELECT user_id, game_data FROM save_data");
+        $upsertItem = $pdo->prepare("
+            INSERT INTO user_item (user_id, repair_kit, bronze_chest, silver_chest, gold_chest, mythic_chest, element)
+            VALUES (:user_id, :repair_kit, :bronze_chest, :silver_chest, :gold_chest, :mythic_chest, :element)
+            ON DUPLICATE KEY UPDATE
+                repair_kit = VALUES(repair_kit),
+                bronze_chest = VALUES(bronze_chest),
+                silver_chest = VALUES(silver_chest),
+                gold_chest = VALUES(gold_chest),
+                mythic_chest = VALUES(mythic_chest),
+                element = VALUES(element)
+        ");
+
         while ($row = $stmt->fetch()) {
             if (empty($row['game_data'])) continue;
             $data = json_decode($row['game_data'], true);
             if (is_array($data)) {
                 $needsUpdate = false;
-                $keysToRemove = ['parts', 'robots', 'materials', 'gold', 'fame', 'storageSize', 'deliveredRobotsCount', 'starterBonusClaimed'];
+
+                // user_item に該当するデータが存在する場合は移行
+                $hasItemData = isset($data['repairKits']) || isset($data['unopenedChests']) || isset($data['battleElements']);
+                if ($hasItemData) {
+                    $rKit = isset($data['repairKits']) ? (int)$data['repairKits'] : 0;
+                    $chests = (isset($data['unopenedChests']) && is_array($data['unopenedChests'])) ? $data['unopenedChests'] : [];
+                    $bChest = isset($chests['bronze']) ? (int)$chests['bronze'] : 0;
+                    $sChest = isset($chests['silver']) ? (int)$chests['silver'] : 0;
+                    $gChest = isset($chests['gold']) ? (int)$chests['gold'] : 0;
+                    $mChest = isset($chests['mythic']) ? (int)$chests['mythic'] : 0;
+                    $elem = isset($data['battleElements']) ? (int)$data['battleElements'] : 0;
+
+                    $upsertItem->execute([
+                        ':user_id' => $row['user_id'],
+                        ':repair_kit' => $rKit,
+                        ':bronze_chest' => $bChest,
+                        ':silver_chest' => $sChest,
+                        ':gold_chest' => $gChest,
+                        ':mythic_chest' => $mChest,
+                        ':element' => $elem
+                    ]);
+                }
+
+                $keysToRemove = ['parts', 'robots', 'materials', 'gold', 'fame', 'storageSize', 'deliveredRobotsCount', 'starterBonusClaimed', 'repairKits', 'unopenedChests', 'battleElements', 'minigameRecords'];
                 foreach ($keysToRemove as $k) {
                     if (isset($data[$k])) {
                         unset($data[$k]);
@@ -746,10 +800,10 @@ try {
                     }
                 }
                 if ($needsUpdate) {
-                    $updateStmt = $pdo->prepare("UPDATE save_data SET game_data = :game_data WHERE id = :id");
+                    $updateStmt = $pdo->prepare("UPDATE save_data SET game_data = :game_data WHERE user_id = :user_id");
                     $updateStmt->execute([
                         ':game_data' => json_encode($data, JSON_UNESCAPED_UNICODE),
-                        ':id' => $row['id']
+                        ':user_id' => $row['user_id']
                     ]);
                 }
             }

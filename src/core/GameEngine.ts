@@ -800,12 +800,12 @@ export class GameEngine {
     }
   }
 
-  public recordMinigameResult(gameId: string, result: 'win' | 'lose' | 'draw', elementsObtained: number = 0) {
+  public recordMinigameResult(gameId: string, result: 'win' | 'lose' | 'draw', elementsObtained: number = 0, chestsObtained: number = 0) {
     if (!this.state.minigameRecords) {
       this.state.minigameRecords = {};
     }
     if (!this.state.minigameRecords[gameId]) {
-      this.state.minigameRecords[gameId] = { plays: 0, wins: 0, losses: 0, draws: 0, elements: 0 };
+      this.state.minigameRecords[gameId] = { plays: 0, wins: 0, losses: 0, draws: 0, elements: 0, chests: 0 };
     }
     const record = this.state.minigameRecords[gameId];
     record.plays += 1;
@@ -816,6 +816,9 @@ export class GameEngine {
     if (elementsObtained > 0) {
       record.elements = (record.elements || 0) + elementsObtained;
       this.state.battleElements = (this.state.battleElements || 0) + elementsObtained;
+    }
+    if (chestsObtained > 0) {
+      record.chests = (record.chests || 0) + chestsObtained;
     }
     this.saveState();
   }

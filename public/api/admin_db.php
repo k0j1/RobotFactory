@@ -48,6 +48,7 @@ function getAllDatabaseTables(PDO $pdo): array {
         'user_robots',
         'view_user_robots_total_stats',
         'save_data',
+        'user_item',
         'active_expeditions',
         'active_robot_assemblies',
         'active_requests',
@@ -917,6 +918,16 @@ try {
             $crStmt = $pdo->prepare("SELECT * FROM complete_requests WHERE user_id IN ($inPlaceholders) ORDER BY created_at DESC LIMIT 50");
             $crStmt->execute($candidateIds);
             $result['complete_requests'] = $crStmt->fetchAll();
+
+            // 11. user_minigame_status
+            $msStmt = $pdo->prepare("SELECT * FROM user_minigame_status WHERE user_id IN ($inPlaceholders) ORDER BY minigame_id ASC");
+            $msStmt->execute($candidateIds);
+            $result['minigame_status'] = $msStmt->fetchAll();
+
+            // 12. user_item
+            $uiStmt = $pdo->prepare("SELECT * FROM user_item WHERE user_id IN ($inPlaceholders) LIMIT 1");
+            $uiStmt->execute($candidateIds);
+            $result['user_item'] = $uiStmt->fetch() ?: null;
 
             echo json_encode([
                 'success' => true,

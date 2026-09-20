@@ -230,7 +230,33 @@ try {
             completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             INDEX idx_comp_recyc_user (user_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+        CREATE TABLE IF NOT EXISTS user_item (
+            user_id VARCHAR(255) PRIMARY KEY,
+            repair_kit INT DEFAULT 0,
+            bronze_chest INT DEFAULT 0,
+            silver_chest INT DEFAULT 0,
+            gold_chest INT DEFAULT 0,
+            mythic_chest INT DEFAULT 0,
+            element INT DEFAULT 0,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+        CREATE TABLE IF NOT EXISTS user_minigame_status (
+            user_id VARCHAR(255),
+            minigame_id VARCHAR(255),
+            play_count INT DEFAULT 0,
+            wins INT DEFAULT 0,
+            elements_count INT DEFAULT 0,
+            chests_count INT DEFAULT 0,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (user_id, minigame_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ");
+
+    try {
+        $pdo->exec("ALTER TABLE user_minigame_status ADD COLUMN chests_count INT DEFAULT 0");
+    } catch (PDOException $e) {}
 
     try {
         $pdo->exec("ALTER TABLE active_expeditions ADD COLUMN dispatched_robot_id VARCHAR(255)");
@@ -336,8 +362,10 @@ try {
     unset($saveDataSnapshot['deliveredRobotsCount']);   // user_workshop_status
     unset($saveDataSnapshot['requestEarnedGold']);       // user_workshop_status
     unset($saveDataSnapshot['unlockedLocations']);      // user_workshop_status
-    unset($saveDataSnapshot['battleElements']);         // user_minigame_status
+    unset($saveDataSnapshot['battleElements']);         // user_item
     unset($saveDataSnapshot['minigameRecords']);        // user_minigame_status
+    unset($saveDataSnapshot['repairKits']);             // user_item
+    unset($saveDataSnapshot['unopenedChests']);         // user_item
 
     $jsonGameData = json_encode($saveDataSnapshot, JSON_UNESCAPED_UNICODE);
     $stmtSave = $pdo->prepare("
@@ -1143,28 +1171,30 @@ try {
         ]);
     }
 
-    // 10. user_minigame_status テーブルの同期 (ミニゲーム毎の遊んだ数、勝利数、獲得エレメント数)
+    // 10. user_minigame_status テーブルの同期 (ミニゲーム毎の遊んだ数、勝利数、獲得エレメント数、宝箱獲得数および所持宝箱数)
     $elements = isset($gameData['battleElements']) ? (int)$gameData['battleElements'] : 0;
     $minigameRecords = (isset($gameData['minigameRecords']) && is_array($gameData['minigameRecords'])) ? $gameData['minigameRecords'] : [];
 
     // もし minigameRecords に combat_training または combat が無ければ初期化
     if (!isset($minigameRecords['combat_training']) && !isset($minigameRecords['combat'])) {
-        $minigameRecords['combat_training'] = ['plays' => 0, 'wins' => 0, 'elements' => $elements];
+        $minigameRecords['combat_training'] = ['plays' => 0, 'wins' => 0, 'elements' => $elements, 'chests' => 0];
     }
 
     $stmtMini = $pdo->prepare("
-        INSERT INTO user_minigame_status (user_id, minigame_id, play_count, wins, elements_count)
-        VALUES (:user_id, :minigame_id, :play_count, :wins, :elements_count)
+        INSERT INTO user_minigame_status (user_id, minigame_id, play_count, wins, elements_count, chests_count)
+        VALUES (:user_id, :minigame_id, :play_count, :wins, :elements_count, :chests_count)
         ON DUPLICATE KEY UPDATE 
             play_count = :play_count_up,
             wins = :wins_up,
-            elements_count = :elements_count_up
+            elements_count = :elements_count_up,
+            chests_count = :chests_count_up
     ");
 
     foreach ($minigameRecords as $mId => $mRec) {
         $plays = isset($mRec['plays']) ? (int)$mRec['plays'] : 0;
         $wins = isset($mRec['wins']) ? (int)$mRec['wins'] : 0;
         $elem = isset($mRec['elements']) ? (int)$mRec['elements'] : (($mId === 'combat_training' || $mId === 'combat') ? $elements : 0);
+        $chests = isset($mRec['chests']) ? (int)$mRec['chests'] : (isset($mRec['chests_count']) ? (int)$mRec['chests_count'] : 0);
 
         $stmtMini->execute([
             ':user_id' => $actualUserId,
@@ -1172,11 +1202,32 @@ try {
             ':play_count' => $plays,
             ':wins' => $wins,
             ':elements_count' => $elem,
+            ':chests_count' => $chests,
             ':play_count_up' => $plays,
             ':wins_up' => $wins,
-            ':elements_count_up' => $elem
+            ':elements_count_up' => $elem,
+            ':chests_count_up' => $chests
         ]);
     }
+
+    // 未開封宝箱の個数（unopenedChests）も user_minigame_status に保存（minigame_id = 'unopened_chests'）
+    $unopenedChests = (isset($gameData['unopenedChests']) && is_array($gameData['unopenedChests'])) ? $gameData['unopenedChests'] : [];
+    $totalUnopenedChests = 0;
+    foreach ($unopenedChests as $chestTierCount) {
+        $totalUnopenedChests += (int)$chestTierCount;
+    }
+    $stmtMini->execute([
+        ':user_id' => $actualUserId,
+        ':minigame_id' => 'unopened_chests',
+        ':play_count' => count($unopenedChests),
+        ':wins' => 0,
+        ':elements_count' => 0,
+        ':chests_count' => $totalUnopenedChests,
+        ':play_count_up' => count($unopenedChests),
+        ':wins_up' => 0,
+        ':elements_count_up' => 0,
+        ':chests_count_up' => $totalUnopenedChests
+    ]);
 
     // 11. user_material テーブルの同期（所持素材数）
     $delMatStmt = $pdo->prepare("DELETE FROM user_material WHERE user_id = :user_id");
@@ -1200,6 +1251,42 @@ try {
             }
         }
     }
+
+    // 12. user_item テーブルの同期（修理キット、各宝箱、エレメント）
+    $repairKitCount = isset($gameData['repairKits']) ? (int)$gameData['repairKits'] : 0;
+    $rawChests = (isset($gameData['unopenedChests']) && is_array($gameData['unopenedChests'])) ? $gameData['unopenedChests'] : [];
+    $bronzeChestCount = isset($rawChests['bronze']) ? (int)$rawChests['bronze'] : 0;
+    $silverChestCount = isset($rawChests['silver']) ? (int)$rawChests['silver'] : 0;
+    $goldChestCount = isset($rawChests['gold']) ? (int)$rawChests['gold'] : 0;
+    $mythicChestCount = isset($rawChests['mythic']) ? (int)$rawChests['mythic'] : 0;
+    $elementCount = isset($gameData['battleElements']) ? (int)$gameData['battleElements'] : 0;
+
+    $stmtItem = $pdo->prepare("
+        INSERT INTO user_item (user_id, repair_kit, bronze_chest, silver_chest, gold_chest, mythic_chest, element)
+        VALUES (:user_id, :repair_kit, :bronze_chest, :silver_chest, :gold_chest, :mythic_chest, :element)
+        ON DUPLICATE KEY UPDATE
+            repair_kit = :repair_kit_up,
+            bronze_chest = :bronze_chest_up,
+            silver_chest = :silver_chest_up,
+            gold_chest = :gold_chest_up,
+            mythic_chest = :mythic_chest_up,
+            element = :element_up
+    ");
+    $stmtItem->execute([
+        ':user_id' => $actualUserId,
+        ':repair_kit' => $repairKitCount,
+        ':bronze_chest' => $bronzeChestCount,
+        ':silver_chest' => $silverChestCount,
+        ':gold_chest' => $goldChestCount,
+        ':mythic_chest' => $mythicChestCount,
+        ':element' => $elementCount,
+        ':repair_kit_up' => $repairKitCount,
+        ':bronze_chest_up' => $bronzeChestCount,
+        ':silver_chest_up' => $silverChestCount,
+        ':gold_chest_up' => $goldChestCount,
+        ':mythic_chest_up' => $mythicChestCount,
+        ':element_up' => $elementCount
+    ]);
 
     $pdo->commit();
 

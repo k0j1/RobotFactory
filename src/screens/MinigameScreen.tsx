@@ -370,7 +370,8 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
       setVictoryRewards(null);
     }
 
-    (engine as any).recordMinigameResult(selectedGame, result, obtainedElements);
+    const obtainedChests = result === 'win' ? 1 : 0;
+    (engine as any).recordMinigameResult(selectedGame, result, obtainedElements, obtainedChests);
     if (result === 'win' && typeof (engine as any).syncToDatabaseNow === 'function') {
       (engine as any).syncToDatabaseNow().catch((e: any) => console.warn('[MinigameScreen] Victory sync warn:', e));
     }

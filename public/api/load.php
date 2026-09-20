@@ -227,16 +227,32 @@ try {
             INDEX idx_comp_recyc_user (user_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+        CREATE TABLE IF NOT EXISTS user_item (
+            user_id VARCHAR(255) PRIMARY KEY,
+            repair_kit INT DEFAULT 0,
+            bronze_chest INT DEFAULT 0,
+            silver_chest INT DEFAULT 0,
+            gold_chest INT DEFAULT 0,
+            mythic_chest INT DEFAULT 0,
+            element INT DEFAULT 0,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
         CREATE TABLE IF NOT EXISTS user_minigame_status (
             user_id VARCHAR(255),
             minigame_id VARCHAR(255),
             play_count INT DEFAULT 0,
             wins INT DEFAULT 0,
             elements_count INT DEFAULT 0,
+            chests_count INT DEFAULT 0,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (user_id, minigame_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ");
+
+    try {
+        $pdo->exec("ALTER TABLE user_minigame_status ADD COLUMN chests_count INT DEFAULT 0");
+    } catch (PDOException $e) {}
 
     try {
         $pdo->exec("ALTER TABLE active_expeditions ADD COLUMN dispatched_robot_id VARCHAR(255)");
@@ -486,36 +502,53 @@ try {
         }
     }
 
-    // 7. user_minigame_status テーブルからミニゲーム/バトル演習成績・エレメント数を取得
+    // 7. user_minigame_status テーブルからミニゲーム/バトル演習成績・エレメント数・宝箱数を取得
     $miniStmt = $pdo->prepare("
-        SELECT minigame_id, play_count, wins, elements_count 
+        SELECT minigame_id, play_count, wins, elements_count, chests_count 
         FROM user_minigame_status 
         WHERE user_id IN ($inPlaceholders)
     ");
     $miniStmt->execute(array_values($candidateUserIds));
     $dbMinigameRecords = [];
     $battleElements = 0;
+    $dbUnopenedChestsCount = 0;
 
     while ($mRow = $miniStmt->fetch()) {
         $mId = $mRow['minigame_id'];
         $plays = (int)$mRow['play_count'];
         $wins = (int)$mRow['wins'];
         $elems = (int)$mRow['elements_count'];
+        $chests = isset($mRow['chests_count']) ? (int)$mRow['chests_count'] : 0;
 
         $dbMinigameRecords[$mId] = [
             'plays' => $plays,
             'wins' => $wins,
             'losses' => 0,
             'draws' => 0,
-            'elements' => $elems
+            'elements' => $elems,
+            'chests' => $chests
         ];
+
+        if ($mId === 'unopened_chests' || $mId === 'chests_inventory') {
+            $dbUnopenedChestsCount = max($dbUnopenedChestsCount, $chests);
+        }
 
         if ($elems > $battleElements) {
             $battleElements = $elems;
         }
     }
 
-    // 8. user_parts テーブルから所持パーツ一覧を取得（個別カラムからRobotPartオブジェクトを完全復元）
+    // 8. user_item テーブルから所持アイテム（修理キット、各宝箱、エレメント）を取得
+    $itemStmt = $pdo->prepare("
+        SELECT repair_kit, bronze_chest, silver_chest, gold_chest, mythic_chest, element
+        FROM user_item
+        WHERE user_id IN ($inPlaceholders)
+        LIMIT 1
+    ");
+    $itemStmt->execute(array_values($candidateUserIds));
+    $userItemRow = $itemStmt->fetch(PDO::FETCH_ASSOC);
+
+    // 9. user_parts テーブルから所持パーツ一覧を取得（個別カラムからRobotPartオブジェクトを完全復元）
     $partsStmt = $pdo->prepare("
         SELECT * 
         FROM user_parts 
@@ -730,8 +763,69 @@ try {
         unset($gameData['fame']);
         unset($gameData['storageSize']);
         unset($gameData['deliveredRobotsCount']);
-        unset($gameData['battleElements']);
         unset($gameData['minigameRecords']);
+
+        // save_data テーブルに残っているアイテム・宝箱・エレメント情報を user_item テーブルへ移行し、save_data から削除
+        $needsSaveDataClean = false;
+        if (isset($gameData['repairKits']) || isset($gameData['unopenedChests']) || isset($gameData['battleElements'])) {
+            $needsSaveDataClean = true;
+        }
+
+        if (!$userItemRow && $needsSaveDataClean) {
+            $rKit = isset($gameData['repairKits']) ? (int)$gameData['repairKits'] : 0;
+            $rawChests = (isset($gameData['unopenedChests']) && is_array($gameData['unopenedChests'])) ? $gameData['unopenedChests'] : [];
+            $bChest = isset($rawChests['bronze']) ? (int)$rawChests['bronze'] : 0;
+            $sChest = isset($rawChests['silver']) ? (int)$rawChests['silver'] : 0;
+            $gChest = isset($rawChests['gold']) ? (int)$rawChests['gold'] : 0;
+            $mChest = isset($rawChests['mythic']) ? (int)$rawChests['mythic'] : 0;
+            $elem = isset($gameData['battleElements']) ? (int)$gameData['battleElements'] : 0;
+
+            try {
+                $insItem = $pdo->prepare("
+                    INSERT INTO user_item (user_id, repair_kit, bronze_chest, silver_chest, gold_chest, mythic_chest, element)
+                    VALUES (:user_id, :repair_kit, :bronze_chest, :silver_chest, :gold_chest, :mythic_chest, :element)
+                    ON DUPLICATE KEY UPDATE
+                        repair_kit = VALUES(repair_kit),
+                        bronze_chest = VALUES(bronze_chest),
+                        silver_chest = VALUES(silver_chest),
+                        gold_chest = VALUES(gold_chest),
+                        mythic_chest = VALUES(mythic_chest),
+                        element = VALUES(element)
+                ");
+                $insItem->execute([
+                    ':user_id' => $actualUserId,
+                    ':repair_kit' => $rKit,
+                    ':bronze_chest' => $bChest,
+                    ':silver_chest' => $sChest,
+                    ':gold_chest' => $gChest,
+                    ':mythic_chest' => $mChest,
+                    ':element' => $elem
+                ]);
+                $userItemRow = [
+                    'repair_kit' => $rKit,
+                    'bronze_chest' => $bChest,
+                    'silver_chest' => $sChest,
+                    'gold_chest' => $gChest,
+                    'mythic_chest' => $mChest,
+                    'element' => $elem
+                ];
+            } catch (PDOException $e) {}
+        }
+
+        unset($gameData['repairKits']);
+        unset($gameData['unopenedChests']);
+        unset($gameData['battleElements']);
+
+        // save_data テーブル内の JSON をクリーンアップ更新
+        if ($needsSaveDataClean && isset($row['id'])) {
+            try {
+                $cleanSaveStmt = $pdo->prepare("UPDATE save_data SET game_data = :game_data WHERE id = :id");
+                $cleanSaveStmt->execute([
+                    ':game_data' => json_encode($gameData, JSON_UNESCAPED_UNICODE),
+                    ':id' => $row['id']
+                ]);
+            } catch (PDOException $e) {}
+        }
 
         // user_robots 内のパーツが user_parts に無い場合は復元する
         $existingPartIds = array_column($dbParts, 'id');
@@ -760,8 +854,15 @@ try {
         $gameData['activePartCraft'] = $activePartCraft;
         $gameData['activeRobotAssembly'] = $activeAssembly;
         $gameData['currentRequest'] = $currentRequest;
-        $gameData['battleElements'] = $battleElements;
+        $gameData['battleElements'] = $userItemRow ? (int)$userItemRow['element'] : $battleElements;
         $gameData['minigameRecords'] = $dbMinigameRecords;
+        $gameData['repairKits'] = $userItemRow ? (int)$userItemRow['repair_kit'] : 0;
+        $gameData['unopenedChests'] = [
+            'bronze' => $userItemRow ? (int)$userItemRow['bronze_chest'] : 0,
+            'silver' => $userItemRow ? (int)$userItemRow['silver_chest'] : 0,
+            'gold' => $userItemRow ? (int)$userItemRow['gold_chest'] : 0,
+            'mythic' => $userItemRow ? (int)$userItemRow['mythic_chest'] : 0,
+        ];
 
         echo json_encode([
             "success" => true, 
@@ -787,8 +888,15 @@ try {
             "activePartCraft" => $activePartCraft,
             "activeRobotAssembly" => $activeAssembly,
             "currentRequest" => $currentRequest,
-            "battleElements" => $battleElements,
-            "minigameRecords" => $dbMinigameRecords
+            "battleElements" => $userItemRow ? (int)$userItemRow['element'] : $battleElements,
+            "minigameRecords" => $dbMinigameRecords,
+            "repairKits" => $userItemRow ? (int)$userItemRow['repair_kit'] : 0,
+            "unopenedChests" => [
+                'bronze' => $userItemRow ? (int)$userItemRow['bronze_chest'] : 0,
+                'silver' => $userItemRow ? (int)$userItemRow['silver_chest'] : 0,
+                'gold' => $userItemRow ? (int)$userItemRow['gold_chest'] : 0,
+                'mythic' => $userItemRow ? (int)$userItemRow['mythic_chest'] : 0,
+            ]
         ];
         echo json_encode([
             "success" => true, 
