@@ -78,11 +78,12 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
   const [selectedDefenseRobotIds, setSelectedDefenseRobotIds] = useState<string[]>([]);
   const [defenseStageId, setDefenseStageId] = useState<string>('stage1');
   const [selectedOpponentId, setSelectedOpponentId] = useState<string | null>(null);
-  const [danmakuDifficulty, setDanmakuDifficulty] = useState<DanmakuDifficulty>('normal');
+  const [danmakuDifficulty, setDanmakuDifficulty] = useState<DanmakuDifficulty>('lvl4');
   const [pianoSongId, setPianoSongId] = useState<string>(PIANO_SONGS[0]?.id || 'fur_elise');
   const [pianoBestScores, setPianoBestScores] = useState<Record<string, PianoBestScore>>(() => getPianoBestScores());
   const [isBattleActive, setIsBattleActive] = useState(false);
   const [acquiredChestInfo, setAcquiredChestInfo] = useState<{ tier: 'bronze' | 'silver' | 'gold' | 'mythic'; title: string; stageName: string } | null>(null);
+  const [victoryRewards, setVictoryRewards] = useState<{ fame: number; elements: number } | null>(null);
   const [battleResult, setBattleResult] = useState<'win' | 'lose' | 'draw' | null>(null);
   const [currentChestDrop, setCurrentChestDrop] = useState<BattleChestDropResult | null>(null);
   const [isChestModalOpen, setIsChestModalOpen] = useState<boolean>(false);
@@ -110,7 +111,9 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
 
   const activeRobot = state.robots.find(r => r.id === selectedRobotId);
   const activeOpponent = OPPONENTS.find(o => o.id === selectedOpponentId);
-  const activeDanmakuDiff = DANMAKU_DIFFICULTIES.find(d => d.id === danmakuDifficulty) || DANMAKU_DIFFICULTIES[1];
+  const activeDanmakuDiff = DANMAKU_DIFFICULTIES.find(d => d.id === danmakuDifficulty) 
+    || (danmakuDifficulty === 'easy' ? DANMAKU_DIFFICULTIES[1] : danmakuDifficulty === 'hard' ? DANMAKU_DIFFICULTIES[7] : DANMAKU_DIFFICULTIES[3]) 
+    || DANMAKU_DIFFICULTIES[0];
   const activePianoSong = PIANO_SONGS.find(s => s.id === pianoSongId) || PIANO_SONGS[0];
   const activeDefenseStage = DEFENSE_STAGES.find(s => s.id === defenseStageId) || DEFENSE_STAGES[0];
   
@@ -140,14 +143,10 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
     const dex = robot.stats.dexterity || 10;
     const score = (agi * 1.2 + dex * 0.8) / 2;
 
-    let rate = 0;
-    if (difficultyId === 'easy') {
-      rate = score * 1.0 + 30;
-    } else if (difficultyId === 'normal') {
-      rate = score * 1.0 - 10;
-    } else if (difficultyId === 'hard') {
-      rate = score * 0.8 - 40;
-    }
+    const conf = DANMAKU_DIFFICULTIES.find(d => d.id === difficultyId);
+    const lvl = conf ? conf.level : (difficultyId === 'easy' ? 2 : difficultyId === 'normal' ? 5 : difficultyId === 'hard' ? 8 : 1);
+    const targetScore = lvl * 15;
+    const rate = 50 + (score - targetScore) * 1.5;
     return Math.max(1, Math.min(99, Math.floor(rate)));
   };
 
@@ -198,11 +197,11 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
     if (!activeRobot) return false;
     let levelId: number | string = 1;
     if (requiresOpponent && activeOpponent) levelId = activeOpponent.level;
-    else if (selectedGame === 'danmaku') levelId = DANMAKU_DIFFICULTIES.find(d => d.id === danmakuDifficulty)?.id || 'easy';
+    else if (selectedGame === 'danmaku') levelId = activeDanmakuDiff.id;
     else if (selectedGame === 'piano') levelId = pianoSongId;
 
     return (engine as any).checkDailyBattleLimit(activeRobot.id, selectedGame, levelId, currentTimestamp);
-  }, [selectedGame, activeRobot, requiresOpponent, activeOpponent, danmakuDifficulty, pianoSongId, defenseResetInfo.isCompletedToday, currentTimestamp, state.dailyBattleLimits]);
+  }, [selectedGame, activeRobot, requiresOpponent, activeOpponent, danmakuDifficulty, pianoSongId, defenseResetInfo.isCompletedToday, currentTimestamp, state.dailyBattleLimits, activeDanmakuDiff.id]);
 
   const handleFinish = (result: 'win' | 'lose' | 'draw') => {
     if (selectedGame === 'defense') {
@@ -219,6 +218,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
       setPianoBestScores(getPianoBestScores());
     }
     let obtainedElements = 0;
+    let earnedFame = 0;
     if (result === 'win') {
       // 勝利時：本日のクリア制限を記録
       if (activeRobot) {
@@ -237,7 +237,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
         }
       }
 
-      // 宝箱獲得情報の決定＆直接名声報酬等の適用
+      // 宝箱獲得情報の決定＆直接名声報酬・エレメント報酬の適用
       let chestTier: 'bronze' | 'silver' | 'gold' | 'mythic' = 'bronze';
       let chestTitle = '古びた鉄の宝箱';
       let stageName = '演習';
@@ -250,8 +250,15 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
         else if (lvl <= 8) { chestTier = 'gold'; chestTitle = '燦然たる黄金の宝箱'; }
         else { chestTier = 'mythic'; chestTitle = '神話のプリズム宝箱'; }
 
-        if (activeOpponent.rewardFame > 0) {
-          (engine as any).addFame(activeOpponent.rewardFame, `${selectedGame === 'othello' ? 'オセロ' : selectedGame === 'chess' ? 'チェス' : '演習'}勝利: ${activeOpponent.name}`);
+        earnedFame = activeOpponent.rewardFame || 0;
+        obtainedElements = activeOpponent.rewardElements || 0;
+
+        if (earnedFame > 0) {
+          (engine as any).addFame(earnedFame, `${selectedGame === 'othello' ? 'オセロ' : selectedGame === 'chess' ? 'チェス' : '演習'}勝利: ${activeOpponent.name}`);
+          // 名声が増える場合、エレメントも確実に増加
+          if (obtainedElements <= 0) {
+            obtainedElements = Math.max(5, earnedFame);
+          }
         }
       } else if (selectedGame === 'defense') {
         stageName = activeDefenseStage.name;
@@ -261,8 +268,9 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
         else if (lvl <= 8) { chestTier = 'gold'; chestTitle = '燦然たる黄金の宝箱'; }
         else { chestTier = 'mythic'; chestTitle = '神話のプリズム宝箱'; }
 
-        const fame = 10 * lvl;
-        (engine as any).addFame(fame, `拠点防衛成功: ${activeDefenseStage.name}`);
+        earnedFame = 10 * lvl;
+        obtainedElements = 15 * lvl;
+        (engine as any).addFame(earnedFame, `拠点防衛成功: ${activeDefenseStage.name}`);
 
         const selectedDefenseRobots = selectedDefenseRobotIds.map(id => state.robots.find(r => r.id === id)!).filter(Boolean);
         const regenHours = activeDefenseStage.rewardRegenHours || 12;
@@ -273,19 +281,33 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
         (engine as any).recordDefenseVictory();
       } else if (selectedGame === 'danmaku') {
         stageName = `弾幕サバイバル (${activeDanmakuDiff.name})`;
-        const diffId = activeDanmakuDiff.id;
-        if (diffId === 'easy') { chestTier = 'bronze'; chestTitle = '古びた鉄の宝箱'; }
-        else if (diffId === 'normal') { chestTier = 'silver'; chestTitle = '堅牢な銀の宝箱'; }
-        else if (diffId === 'hard') { chestTier = 'gold'; chestTitle = '燦然たる黄金の宝箱'; }
+        const lvl = activeDanmakuDiff.level;
+        if (lvl <= 2) { chestTier = 'bronze'; chestTitle = '古びた鉄の宝箱'; }
+        else if (lvl <= 4) { chestTier = 'silver'; chestTitle = '堅牢な銀の宝箱'; }
+        else if (lvl <= 8) { chestTier = 'gold'; chestTitle = '燦然たる黄金の宝箱'; }
         else { chestTier = 'mythic'; chestTitle = '神話のプリズム宝箱'; }
+
+        earnedFame = activeDanmakuDiff.rewardFame || 0;
+        obtainedElements = activeDanmakuDiff.rewardElements || 0;
+
+        if (earnedFame > 0) {
+          (engine as any).addFame(earnedFame, `弾幕サバイバルクリア: ${activeDanmakuDiff.name}`);
+          // 名声が増える場合、エレメントも確実に増加
+          if (obtainedElements <= 0) {
+            obtainedElements = Math.max(5, earnedFame);
+          }
+        }
       } else if (selectedGame === 'piano') {
         stageName = `ピアノ演奏 (${activePianoSong.title})`;
         // ピアノ演奏は工房名声を多く獲得できるため、宝箱は低ランク（古びた鉄の宝箱）固定ドロップ
         chestTier = 'bronze';
         chestTitle = '古びた鉄の宝箱';
 
-        if (activePianoSong.rewardFame > 0) {
-          (engine as any).addFame(activePianoSong.rewardFame, `ピアノ演奏クリア: ${activePianoSong.title}`);
+        earnedFame = activePianoSong.rewardFame || 0;
+        if (earnedFame > 0) {
+          (engine as any).addFame(earnedFame, `ピアノ演奏クリア: ${activePianoSong.title}`);
+          // 名声が増える場合、エレメントも増加
+          obtainedElements = earnedFame;
         }
       } else if (requiresOpponent && activeOpponent) {
         stageName = activeOpponent.name;
@@ -295,8 +317,14 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
         else if (lvl <= 8) { chestTier = 'gold'; chestTitle = '燦然たる黄金の宝箱'; }
         else { chestTier = 'mythic'; chestTitle = '神話のプリズム宝箱'; }
 
-        if (activeOpponent.rewardFame > 0) {
-          (engine as any).addFame(activeOpponent.rewardFame, `演習勝利: ${activeOpponent.name}`);
+        earnedFame = activeOpponent.rewardFame || 0;
+        obtainedElements = activeOpponent.rewardElements || 0;
+
+        if (earnedFame > 0) {
+          (engine as any).addFame(earnedFame, `演習勝利: ${activeOpponent.name}`);
+          if (obtainedElements <= 0) {
+            obtainedElements = Math.max(5, earnedFame);
+          }
         }
       } else {
         stageName = selectedGameDef?.name || '演習';
@@ -307,9 +335,15 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
       // 未開封の宝箱として所持アイテムに追加
       (engine as any).addChest(chestTier, 1);
       setAcquiredChestInfo({ tier: chestTier, title: chestTitle, stageName });
+      setVictoryRewards({ fame: earnedFame, elements: obtainedElements });
+    } else {
+      setVictoryRewards(null);
     }
 
     (engine as any).recordMinigameResult(selectedGame, result, obtainedElements);
+    if (result === 'win' && typeof (engine as any).syncToDatabaseNow === 'function') {
+      (engine as any).syncToDatabaseNow().catch((e: any) => console.warn('[MinigameScreen] Victory sync warn:', e));
+    }
   };
 
   const handleStartBattle = () => {
@@ -846,10 +880,10 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                       <Gi.GiShield className="text-stone-700 text-lg" />
                       <h3 className={`${theme.typography.h3} text-stone-800`}>演習難易度</h3>
                     </div>
-                    <span className="text-xs text-stone-500 font-mono">全3段階</span>
+                    <span className="text-xs text-stone-500 font-mono">全10段階 (Lv.1〜Lv.10)</span>
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
                     {DANMAKU_DIFFICULTIES.map(diff => {
                       const isSelected = danmakuDifficulty === diff.id;
                       const isCleared = activeRobot ? (engine as any).checkDailyBattleLimit(activeRobot.id, 'danmaku', diff.id, currentTimestamp) : false;
@@ -877,10 +911,22 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                                 </span>
                               )}
                             </div>
-                            <div className="text-right font-mono text-xs text-amber-800 font-bold bg-amber-100/80 px-2 py-0.5 rounded border border-amber-300 flex items-center gap-1">
-                              <span className="flex items-center gap-1 text-[11px] text-amber-900 font-bold">
+                            <div className="text-right flex flex-col items-end gap-1 font-mono text-xs">
+                              <span className="text-[10px] text-amber-900 font-bold bg-amber-100/90 px-2 py-0.5 rounded border border-amber-300 flex items-center gap-1">
                                 <Gi.GiLockedChest className="inline text-amber-600" /> 宝箱ドロップ
                               </span>
+                              <div className="flex items-center gap-1">
+                                {diff.rewardFame > 0 && (
+                                  <span className="text-[10px] text-amber-900 font-bold bg-yellow-100/90 px-1.5 py-0.5 rounded border border-yellow-300 flex items-center gap-1">
+                                    <Gi.GiTrophyCup className="text-amber-600 text-[10px]" /> 名声 +{diff.rewardFame}
+                                  </span>
+                                )}
+                                {diff.rewardElements > 0 && (
+                                  <span className="text-[10px] text-indigo-900 font-bold bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-300 flex items-center gap-1">
+                                    <Gi.GiAtom className="text-indigo-600 text-[10px]" /> +{diff.rewardElements} E
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
                           <div className="text-[11px] text-stone-500 leading-tight">
@@ -1077,11 +1123,18 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                             <span className="text-[10px] text-amber-900 font-bold bg-amber-100/90 px-2 py-0.5 rounded border border-amber-300 shadow-2xs font-mono flex items-center gap-1">
                               <Gi.GiLockedChest className="text-amber-600" /> 宝箱ドロップ
                             </span>
-                            {o.rewardFame > 0 && (
-                              <span className="text-[10px] text-amber-900 font-bold bg-yellow-100/90 px-1.5 py-0.5 rounded border border-yellow-300 flex items-center gap-1">
-                                <Gi.GiTrophyCup className="text-amber-600" /> 名声 +{o.rewardFame}
-                              </span>
-                            )}
+                            <div className="flex items-center gap-1">
+                              {o.rewardFame > 0 && (
+                                <span className="text-[10px] text-amber-900 font-bold bg-yellow-100/90 px-1.5 py-0.5 rounded border border-yellow-300 flex items-center gap-1">
+                                  <Gi.GiTrophyCup className="text-amber-600 text-[10px]" /> 名声 +{o.rewardFame}
+                                </span>
+                              )}
+                              {o.rewardElements > 0 && (
+                                <span className="text-[10px] text-indigo-900 font-bold bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-300 flex items-center gap-1 font-mono">
+                                  <Gi.GiAtom className="text-indigo-600 text-[10px]" /> +{o.rewardElements} E
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </button>
                       );
@@ -1470,6 +1523,24 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                       </div>
                     ) : null}
 
+                    {/* 名声・エレメント獲得ボーナス */}
+                    {victoryRewards && (victoryRewards.fame > 0 || victoryRewards.elements > 0) && (
+                      <div className="flex flex-wrap items-center justify-center gap-2">
+                        {victoryRewards.fame > 0 && (
+                          <div className="bg-yellow-50 border-2 border-yellow-400 text-yellow-950 font-bold px-3 py-1.5 rounded-xl text-xs sm:text-sm flex items-center gap-1.5 shadow-xs">
+                            <Gi.GiTrophyCup className="text-amber-600 text-base" />
+                            <span>工房名声 +{victoryRewards.fame}</span>
+                          </div>
+                        )}
+                        {victoryRewards.elements > 0 && (
+                          <div className="bg-indigo-50 border-2 border-indigo-400 text-indigo-950 font-bold px-3 py-1.5 rounded-xl text-xs sm:text-sm flex items-center gap-1.5 shadow-xs font-mono">
+                            <Gi.GiAtom className="text-indigo-600 text-base" />
+                            <span>バトルエレメント +{victoryRewards.elements} E</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     {/* 拠点防衛戦のリジェネボーナス */}
                     {selectedGame === 'defense' && (
                       <div className="flex items-center justify-center gap-2 text-xs sm:text-sm font-bold text-emerald-800 bg-emerald-100/90 border border-emerald-300 py-2 px-4 rounded-xl shadow-xs">
@@ -1484,6 +1555,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                           setIsBattleActive(false); 
                           setBattleResult(null); 
                           setAcquiredChestInfo(null);
+                          setVictoryRewards(null);
                           setCurrentChestDrop(null); 
                           setIsChestModalOpen(false);
                         }}

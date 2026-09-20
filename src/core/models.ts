@@ -216,6 +216,7 @@ export interface CompleteClientRequest {
   requestId: string;
   rank: string;
   rewardG: number;
+  rewardFame?: number;
   deadline: number;
   deliveredRobotId?: string;
   completedAt?: number;

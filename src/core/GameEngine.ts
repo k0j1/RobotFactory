@@ -365,20 +365,22 @@ export class GameEngine {
         parsed.deliveredLogs = [];
       }
 
-      // Migrate fame if not present
-      if (parsed.fame === undefined) {
-        let calculatedFame = 0;
-        if (parsed.deliveredRobotsCount) {
-          calculatedFame += parsed.deliveredRobotsCount * 20;
-        }
-        if (parsed.minigameRecords) {
-          Object.values(parsed.minigameRecords).forEach((rec: any) => {
-            if (rec && typeof rec.wins === 'number') {
-              calculatedFame += rec.wins * 5;
-            }
-          });
-        }
-        parsed.fame = calculatedFame;
+      // Migrate fame if not present or incorrectly 0 with past activity
+      let calculatedFame = 0;
+      if (parsed.deliveredRobotsCount) {
+        calculatedFame += parsed.deliveredRobotsCount * 20;
+      } else if (Array.isArray(parsed.deliveredLogs) && parsed.deliveredLogs.length > 0) {
+        calculatedFame += parsed.deliveredLogs.length * 20;
+      }
+      if (parsed.minigameRecords) {
+        Object.values(parsed.minigameRecords).forEach((rec: any) => {
+          if (rec && typeof rec.wins === 'number') {
+            calculatedFame += rec.wins * 5;
+          }
+        });
+      }
+      if (parsed.fame === undefined || (parsed.fame === 0 && calculatedFame > 0)) {
+        parsed.fame = Math.max(parsed.fame || 0, calculatedFame);
       }
 
       // Migrate combat equipment ranks (Default to 'common' for existing equipments)
@@ -813,6 +815,7 @@ export class GameEngine {
 
     if (elementsObtained > 0) {
       record.elements = (record.elements || 0) + elementsObtained;
+      this.state.battleElements = (this.state.battleElements || 0) + elementsObtained;
     }
     this.saveState();
   }
@@ -931,6 +934,14 @@ export class GameEngine {
     const newFame = oldFame + amount;
     this.state.fame = newFame;
     this.saveState();
+
+    // Googleログインユーザーの場合、サーバーの user_workshop_status.fame へ直接アトミック加算
+    if (this.isCloudAccount && this.userId && this.isCloudLoaded) {
+      AuthApiService.getInstance().addFame(this.userId, amount, reason).catch((err) => {
+        console.warn('[GameEngine] サーバーDB名声直接加算エラー:', err);
+      });
+    }
+
     return { oldFame, newFame, gained: amount };
   }
   
@@ -1790,6 +1801,7 @@ export class GameEngine {
       requestId: req.id,
       rank: req.rank,
       rewardG,
+      rewardFame: totalFame,
       deadline: req.deadline,
       deliveredRobotId: robot.id,
       completedAt: Date.now(),
@@ -1801,6 +1813,14 @@ export class GameEngine {
     if (this.state.tutorialStep === 4) this.advanceTutorial();
     this.generateRequestsIfNeeded(); // Instantly replenish the board
     this.saveState();
+
+    // 依頼完了時は即座にサーバーDBと同期して獲得Gおよび名声を確実に永続化
+    if (this.isCloudAccount && this.userId && this.isCloudLoaded) {
+      this.syncToDatabaseNow().catch((err) => {
+        console.warn('[GameEngine] 納品完了時の即時同期警告:', err);
+      });
+    }
+
     return {
       rewardG,
       rewardFame: totalFame,
@@ -1954,7 +1974,8 @@ export class GameEngine {
     const part = this.state.parts[idx];
     
     // Extract the original material name from the part name (e.g. "さびた鉄くずのヘッド" -> "さびた鉄くず")
-    const mat = MATERIALS.find(m => part.name.startsWith(m.name));
+    const partName = part?.name || '';
+    const mat = partName ? MATERIALS.find(m => partName.startsWith(m.name)) : undefined;
     const resultMaterials = mat ? [{ materialId: mat.id, count: 2 }] : [];
 
     const durationMs = 10000; // 10 seconds for recycling

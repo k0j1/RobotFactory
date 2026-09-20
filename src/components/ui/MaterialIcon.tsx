@@ -2,13 +2,14 @@ import React from 'react';
 import * as Gi from 'react-icons/gi';
 
 interface Props {
-  materialId: string;
+  materialId?: string;
+  attribute?: string;
   size?: number;
   className?: string;
   color?: string;
 }
 
-export const MaterialIcon: React.FC<Props> = ({ materialId, size = 16, className = '', color }) => {
+export const MaterialIcon: React.FC<Props> = ({ materialId, attribute, size = 16, className = '', color }) => {
   const props = { size, className, color };
   
   const map: Record<string, React.ElementType> = {
@@ -97,15 +98,29 @@ export const MaterialIcon: React.FC<Props> = ({ materialId, size = 16, className
     m_d3_4: Gi.GiOre,
   };
 
-  const IconComponent = map[materialId];
-  if (IconComponent) return <IconComponent {...props} />;
+  // materialId が指定されている場合
+  if (materialId) {
+    const IconComponent = map[materialId];
+    if (IconComponent) return <IconComponent {...props} />;
 
-  if (materialId.startsWith('m_e')) return <Gi.GiStoneBlock {...props} />;
-  if (materialId.startsWith('m_f')) return <Gi.GiFlame {...props} />;
-  if (materialId.startsWith('m_w')) return <Gi.GiWaterDrop {...props} />;
-  if (materialId.startsWith('m_a')) return <Gi.GiTornado {...props} />;
-  if (materialId.startsWith('m_l')) return <Gi.GiSunbeams {...props} />;
-  if (materialId.startsWith('m_d')) return <Gi.GiEvilBat {...props} />;
+    if (materialId.startsWith('m_e')) return <Gi.GiStoneBlock {...props} />;
+    if (materialId.startsWith('m_f')) return <Gi.GiFlame {...props} />;
+    if (materialId.startsWith('m_w')) return <Gi.GiWaterDrop {...props} />;
+    if (materialId.startsWith('m_a')) return <Gi.GiTornado {...props} />;
+    if (materialId.startsWith('m_l')) return <Gi.GiSunbeams {...props} />;
+    if (materialId.startsWith('m_d')) return <Gi.GiEvilBat {...props} />;
+  }
+
+  // attribute のみ指定されている場合のフォールバック
+  if (attribute) {
+    const attrLower = attribute.toLowerCase();
+    if (attrLower.includes('earth') || attrLower.includes('地') || attrLower.includes('土')) return <Gi.GiStoneBlock {...props} />;
+    if (attrLower.includes('fire') || attrLower.includes('火')) return <Gi.GiFlame {...props} />;
+    if (attrLower.includes('water') || attrLower.includes('水')) return <Gi.GiWaterDrop {...props} />;
+    if (attrLower.includes('air') || attrLower.includes('wind') || attrLower.includes('風')) return <Gi.GiTornado {...props} />;
+    if (attrLower.includes('light') || attrLower.includes('光')) return <Gi.GiSunbeams {...props} />;
+    if (attrLower.includes('dark') || attrLower.includes('闇')) return <Gi.GiEvilBat {...props} />;
+  }
   
   return <Gi.GiHelp {...props} />;
 };

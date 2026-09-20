@@ -6,6 +6,8 @@ import {
   CombatLogItem, 
   CombatPopup, 
   CombatActionEvent,
+  TimeUpResult,
+  CombatFinishReason,
   SkillDef 
 } from './combatTypes';
 import { 
@@ -15,12 +17,18 @@ import {
   chooseStrategicSkill 
 } from './combatSkills';
 
+export const MAX_COMBAT_DURATION_SECONDS = 60;
+
 export interface CombatEngineSnapshot {
   player: CombatFighter;
   opponent: CombatFighter;
   elapsedSeconds: number;
+  timeRemaining: number;
+  maxDurationSeconds: number;
   isFinished: boolean;
   winner: 'player' | 'opponent' | 'draw' | null;
+  finishReason: CombatFinishReason | null;
+  timeUpResult: TimeUpResult | null;
   logs: CombatLogItem[];
   popups: CombatPopup[];
   lastLearnedSkill: { fighterId: string; fighterName: string; skill: SkillDef } | null;
@@ -33,6 +41,8 @@ export class CombatEngine {
   private elapsedSeconds = 0;
   private isFinished = false;
   private winner: 'player' | 'opponent' | 'draw' | null = null;
+  private finishReason: CombatFinishReason | null = null;
+  private timeUpResult: TimeUpResult | null = null;
   private logs: CombatLogItem[] = [];
   private popups: CombatPopup[] = [];
   private logIdCounter = 0;
@@ -471,9 +481,11 @@ export class CombatEngine {
   private checkVictoryConditions(): void {
     if (this.isFinished) return;
 
+    // 耐久値によるKO判定
     if (this.player.currentDurability <= 0 && this.opponent.currentDurability <= 0) {
       this.isFinished = true;
       this.winner = 'draw';
+      this.finishReason = 'ko';
       this.addLog({
         type: 'ko',
         actorId: 'system',
@@ -481,9 +493,11 @@ export class CombatEngine {
         isPlayer: false,
         message: '相打ち！両機とも同時に戦闘不能となりました（引き分け）'
       });
+      return;
     } else if (this.opponent.currentDurability <= 0) {
       this.isFinished = true;
       this.winner = 'player';
+      this.finishReason = 'ko';
       this.addLog({
         type: 'ko',
         actorId: 'system',
@@ -491,9 +505,11 @@ export class CombatEngine {
         isPlayer: true,
         message: `🏆 決着！${this.player.name}が${this.opponent.name}を完全撃破！バトル演習クリア！`
       });
+      return;
     } else if (this.player.currentDurability <= 0) {
       this.isFinished = true;
       this.winner = 'opponent';
+      this.finishReason = 'ko';
       this.addLog({
         type: 'ko',
         actorId: 'system',
@@ -501,6 +517,76 @@ export class CombatEngine {
         isPlayer: false,
         message: `⚠️ 決着！${this.player.name}の耐久限界！バトル演習失敗。`
       });
+      return;
+    }
+
+    // 60秒制限時間到達判定（タイムアップ・ダメージ量に基づくスコア判定）
+    if (this.elapsedSeconds >= MAX_COMBAT_DURATION_SECONDS) {
+      this.isFinished = true;
+      this.finishReason = 'time_up';
+
+      const playerDamageDealt = Math.round(this.player.damageDealt);
+      const playerDamageTaken = Math.round(this.player.damageTaken);
+      const opponentDamageDealt = Math.round(this.opponent.damageDealt);
+      const opponentDamageTaken = Math.round(this.opponent.damageTaken);
+
+      // 与えたダメージ量と受けたダメージ量からスコア化（与ダメ - 被ダメ）
+      const playerScore = playerDamageDealt - playerDamageTaken;
+      const opponentScore = opponentDamageDealt - opponentDamageTaken;
+
+      this.timeUpResult = {
+        playerScore,
+        opponentScore,
+        playerDamageDealt,
+        playerDamageTaken,
+        opponentDamageDealt,
+        opponentDamageTaken,
+      };
+
+      this.addLog({
+        type: 'ko',
+        actorId: 'system',
+        actorName: '演習システム',
+        isPlayer: false,
+        message: `⏱️【TIME UP】制限時間（${MAX_COMBAT_DURATION_SECONDS}秒）到達！ダメージ判定により勝敗を決します。`
+      });
+
+      this.addLog({
+        type: 'buff',
+        actorId: 'system',
+        actorName: '判定スコア',
+        isPlayer: false,
+        message: `📊 [自機: ${playerScore >= 0 ? '+' : ''}${playerScore.toLocaleString()} pt (与ダメ:${playerDamageDealt.toLocaleString()} / 被ダメ:${playerDamageTaken.toLocaleString()})] VS [相手: ${opponentScore >= 0 ? '+' : ''}${opponentScore.toLocaleString()} pt (与ダメ:${opponentDamageDealt.toLocaleString()} / 被ダメ:${opponentDamageTaken.toLocaleString()})]`
+      });
+
+      if (playerScore > opponentScore) {
+        this.winner = 'player';
+        this.addLog({
+          type: 'ko',
+          actorId: 'system',
+          actorName: '演習システム',
+          isPlayer: true,
+          message: `🏆 判定勝利！${this.player.name}のスコアが上回りました！バトル演習クリア！`
+        });
+      } else if (playerScore < opponentScore) {
+        this.winner = 'opponent';
+        this.addLog({
+          type: 'ko',
+          actorId: 'system',
+          actorName: '演習システム',
+          isPlayer: false,
+          message: `⚠️ 判定敗北...${this.opponent.name}のスコアが上回りました。バトル演習失敗。`
+        });
+      } else {
+        this.winner = 'draw';
+        this.addLog({
+          type: 'ko',
+          actorId: 'system',
+          actorName: '演習システム',
+          isPlayer: false,
+          message: `⚖️ 判定引き分け！両機のスコアが完全に同点でした。`
+        });
+      }
     }
   }
 
@@ -550,8 +636,12 @@ export class CombatEngine {
         activeBuffs: [...this.opponent.activeBuffs]
       },
       elapsedSeconds: this.elapsedSeconds,
+      timeRemaining: Math.max(0, MAX_COMBAT_DURATION_SECONDS - this.elapsedSeconds),
+      maxDurationSeconds: MAX_COMBAT_DURATION_SECONDS,
       isFinished: this.isFinished,
       winner: this.winner,
+      finishReason: this.finishReason,
+      timeUpResult: this.timeUpResult ? { ...this.timeUpResult } : null,
       logs: [...this.logs],
       popups: [...this.popups],
       lastLearnedSkill: this.lastLearnedSkill,

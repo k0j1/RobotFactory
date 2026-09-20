@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { LocationEnvironment } from '../../robot/LocationEnvironment';
 import { LOCATIONS } from '../../../core/data';
 import { Opponent } from '../Shared';
-import { CombatFighter, CombatPopup, CombatActionEvent, SkillDef } from './combatTypes';
+import { CombatFighter, CombatPopup, CombatActionEvent, SkillDef, TimeUpResult, CombatFinishReason } from './combatTypes';
 import { getOpponentRobotModel, OPPONENT_DEFAULT_STAGES } from './opponentRobotData';
 import { ALL_COMBAT_SKILLS, getGsapPatternIdForSkill } from './combatSkills';
 import { GSAPRobotCanvas } from '../../robot/GSAPRobotCanvas';
@@ -21,6 +21,9 @@ interface CombatArenaProps {
   isPaused: boolean;
   isFinished: boolean;
   winner: 'player' | 'opponent' | 'draw' | null;
+  timeRemaining?: number;
+  finishReason?: CombatFinishReason | null;
+  timeUpResult?: TimeUpResult | null;
   onTogglePause?: () => void;
   onSetSpeed?: (speed: number) => void;
   onOpenSkillModal?: (skill?: SkillDef) => void;
@@ -37,6 +40,9 @@ export const CombatArena: React.FC<CombatArenaProps> = ({
   isPaused,
   isFinished,
   winner,
+  timeRemaining,
+  finishReason,
+  timeUpResult,
   onTogglePause,
   onSetSpeed,
   onOpenSkillModal,
@@ -384,8 +390,25 @@ export const CombatArena: React.FC<CombatArenaProps> = ({
             </div>
           </div>
 
-          {/* 中央 VS バッジ */}
+          {/* 中央: 制限時間タイマー & VS バッジ */}
           <div className="col-span-1 flex flex-col items-center justify-center">
+            {typeof timeRemaining === 'number' && (
+              <div 
+                className={`px-1 sm:px-1.5 py-0.5 rounded font-mono text-[10px] sm:text-xs font-black border flex items-center gap-0.5 shadow-xs transition-colors mb-0.5 ${
+                  isFinished && finishReason === 'time_up'
+                    ? 'bg-rose-900/90 text-rose-200 border-rose-500'
+                    : timeRemaining <= 10 
+                    ? 'bg-rose-950/90 text-rose-300 border-rose-500 animate-pulse ring-1 ring-rose-400' 
+                    : timeRemaining <= 20
+                    ? 'bg-amber-950/80 text-amber-300 border-amber-500/80'
+                    : 'bg-black/70 text-cyan-300 border-stone-600'
+                }`}
+                title={`残り制限時間: ${Math.ceil(timeRemaining)}秒`}
+              >
+                <Gi.GiHourglass className={`text-[10px] ${timeRemaining <= 10 && !isFinished ? 'animate-spin' : ''}`} />
+                <span>{Math.ceil(timeRemaining)}s</span>
+              </div>
+            )}
             <span className="font-black text-stone-400 text-xs sm:text-sm font-mono tracking-widest text-shadow-sm">
               VS
             </span>
@@ -941,6 +964,76 @@ export const CombatArena: React.FC<CombatArenaProps> = ({
         rewardElements={activeOpponent.rewardElements}
         rewardKits={activeOpponent.rewardKits}
       />
+
+      {/* タイムアップ判定結果表示オーバーレイ */}
+      <AnimatePresence>
+        {isFinished && finishReason === 'time_up' && timeUpResult && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.85, y: 15 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            transition={{ type: 'spring', stiffness: 350, damping: 25 }}
+            className="absolute inset-x-4 top-1/2 -translate-y-1/2 z-35 flex justify-center pointer-events-none"
+          >
+            <div className="w-full max-w-sm bg-stone-900/95 border-2 border-amber-400/80 rounded-2xl p-3 shadow-2xl backdrop-blur-md text-stone-100 space-y-2">
+              <div className="flex items-center justify-between border-b border-stone-800 pb-1.5">
+                <span className="flex items-center gap-1.5 text-xs font-black text-rose-400 font-mono tracking-wider">
+                  <Gi.GiHourglass className="text-sm animate-pulse" />
+                  TIME UP (60秒終了)
+                </span>
+                <span className={`text-xs font-black px-2 py-0.5 rounded-full ${
+                  winner === 'player'
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/50'
+                    : winner === 'opponent'
+                    ? 'bg-rose-500/20 text-rose-300 border border-rose-500/50'
+                    : 'bg-stone-500/20 text-stone-300 border border-stone-500/50'
+                }`}>
+                  {winner === 'player' ? '自機 判定勝ち！' : winner === 'opponent' ? '敵機 判定勝ち' : '判定引き分け'}
+                </span>
+              </div>
+
+              {/* スコア比較 */}
+              <div className="grid grid-cols-2 gap-2 text-center text-xs">
+                {/* 自機スコア */}
+                <div className={`p-2 rounded-xl border ${
+                  winner === 'player' ? 'bg-amber-950/50 border-amber-500/60' : 'bg-stone-950/60 border-stone-800'
+                }`}>
+                  <div className="text-[10px] text-amber-300 font-bold truncate">{player.name}</div>
+                  <div className={`text-lg font-black font-mono ${
+                    timeUpResult.playerScore >= timeUpResult.opponentScore ? 'text-amber-300' : 'text-stone-400'
+                  }`}>
+                    {timeUpResult.playerScore >= 0 ? '+' : ''}{timeUpResult.playerScore.toLocaleString()} <span className="text-[10px] font-normal text-stone-400">pt</span>
+                  </div>
+                  <div className="text-[9px] text-stone-400 space-y-0.5 mt-0.5 font-mono">
+                    <div>与ダメ: <span className="text-emerald-400 font-bold">{timeUpResult.playerDamageDealt.toLocaleString()}</span></div>
+                    <div>被ダメ: <span className="text-rose-400 font-bold">{timeUpResult.playerDamageTaken.toLocaleString()}</span></div>
+                  </div>
+                </div>
+
+                {/* 敵機スコア */}
+                <div className={`p-2 rounded-xl border ${
+                  winner === 'opponent' ? 'bg-rose-950/50 border-red-500/60' : 'bg-stone-950/60 border-stone-800'
+                }`}>
+                  <div className="text-[10px] text-red-300 font-bold truncate">{opponent.name}</div>
+                  <div className={`text-lg font-black font-mono ${
+                    timeUpResult.opponentScore >= timeUpResult.playerScore ? 'text-red-300' : 'text-stone-400'
+                  }`}>
+                    {timeUpResult.opponentScore >= 0 ? '+' : ''}{timeUpResult.opponentScore.toLocaleString()} <span className="text-[10px] font-normal text-stone-400">pt</span>
+                  </div>
+                  <div className="text-[9px] text-stone-400 space-y-0.5 mt-0.5 font-mono">
+                    <div>与ダメ: <span className="text-emerald-400 font-bold">{timeUpResult.opponentDamageDealt.toLocaleString()}</span></div>
+                    <div>被ダメ: <span className="text-rose-400 font-bold">{timeUpResult.opponentDamageTaken.toLocaleString()}</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-[10px] text-stone-400 text-center leading-tight">
+                ※ スコア = 与えたダメージ量 - 受けたダメージ量
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

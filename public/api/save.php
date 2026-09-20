@@ -324,14 +324,14 @@ try {
     unset($saveDataSnapshot['completeRequest']);        // complete_requests
     unset($saveDataSnapshot['completedRequest']);
 
-    // その他の個別テーブルに保存される情報も重複排除
+    // その他の個別テーブルに保存される情報も重複排除（fameはフェイルセーフのためsave_dataにもバックアップ保持）
     unset($saveDataSnapshot['robots']);                 // user_robots
     unset($saveDataSnapshot['parts']);                  // user_parts
     unset($saveDataSnapshot['craftedRobots']);          // craftedRobots
     unset($saveDataSnapshot['deliveredLogs']);          // deliveredLogs
     unset($saveDataSnapshot['materials']);              // user_material
     unset($saveDataSnapshot['gold']);                   // user_workshop_status
-    unset($saveDataSnapshot['fame']);                   // user_workshop_status
+    // unset($saveDataSnapshot['fame']);               // user_workshop_status (バックアップとして保持)
     unset($saveDataSnapshot['storageSize']);            // user_workshop_status
     unset($saveDataSnapshot['deliveredRobotsCount']);   // user_workshop_status
     unset($saveDataSnapshot['requestEarnedGold']);       // user_workshop_status
@@ -399,9 +399,14 @@ try {
     }
 
     $rawClientGold = isset($gameData['gold']) ? (int)$gameData['gold'] : null;
-    $fame = isset($gameData['fame']) ? (int)$gameData['fame'] : $currentDbFame;
+    $rawClientFame = isset($gameData['fame']) ? (int)$gameData['fame'] : null;
     $storageLimit = !empty($gameData['storageSize']) ? (int)$gameData['storageSize'] : $currentStorage;
     $deliveredCount = isset($gameData['deliveredRobotsCount']) ? (int)$gameData['deliveredRobotsCount'] : $currentDelivered;
+
+    // 名声(fame)は蓄積値（減少しない実績値）のため、DB上の既存名声とクライアント名声の最大値を採用し、
+    // クライアントの初期化前空ステート等によって0にリセットされるのを確実に防止！
+    $clientFameVal = $rawClientFame !== null ? $rawClientFame : 0;
+    $fame = max($currentDbFame, $clientFameVal);
 
     $newLocations = isset($gameData['unlockedLocations']) && is_array($gameData['unlockedLocations']) ? $gameData['unlockedLocations'] : ['loc1'];
     // 「裏山のスクラップ場」（loc1）は最初から解放状態で設定
@@ -424,21 +429,20 @@ try {
     
     $consumedGold = $currentConsumedGold + $additionalConsumed;
 
-    // gold の決定とゼロ上書き防止ロジック:
-    // 原因調査: クライアントが初期ロード完了前（未ロード）に初期ステート(gold: 0)を送信してしまい、
+    // gold / fame の決定とゼロ上書き防止ロジック:
+    // 原因調査: クライアントが初期ロード完了前（未ロード）に初期ステート(gold: 0, fame: 0)を送信してしまい、
     // DBの既存の数値をゼロクリアしてしまうレースコンディションを完全に防止する。
     $isSuspectedUnloadedState = (
         empty($gameData['materials']) &&
         empty($gameData['parts']) &&
         empty($gameData['robots']) &&
         empty($gameData['deliveredLogs']) &&
-        empty($gameData['fame']) &&
-        $rawClientGold === 0 &&
-        $currentDbGold > 0
+        ($rawClientFame === null || $rawClientFame === 0) &&
+        (($rawClientGold === 0 && $currentDbGold > 0) || ($rawClientFame === 0 && $currentDbFame > 0))
     );
 
     if ($isSuspectedUnloadedState) {
-        // ロード前の空データと判定される場合は既存のgoldを死守
+        // ロード前の空データと判定される場合は既存のgold/fameを死守
         $gold = $currentDbGold;
         $fame = $currentDbFame;
     } else if ($rawClientGold !== null) {
@@ -460,7 +464,7 @@ try {
         INSERT INTO user_workshop_status (user_id, fame, gold, storage_limit, delivered_count, consumed_gold, unlocked_expeditions, received_initial_bonus)
         VALUES (:user_id, :fame, :gold, :storage_limit, :delivered_count, :consumed_gold, :unlocked, :bonus)
         ON DUPLICATE KEY UPDATE 
-            fame = :up_fame,
+            fame = GREATEST(COALESCE(fame, 0), :up_fame),
             gold = :up_gold,
             storage_limit = :up_storage_limit,
             delivered_count = :up_delivered_count,
@@ -903,17 +907,27 @@ try {
         $delReq = $pdo->prepare("DELETE FROM active_requests WHERE user_id = :user_id");
         $delReq->execute([':user_id' => $actualUserId]);
 
-        // 3. 依頼完了時のトランザクション内で獲得したGを user_workshop_status テーブルに加算・記録
-        if ($rewardG > 0) {
+        // 3. 依頼完了時のトランザクション内で獲得したGおよび名声(fame)を user_workshop_status テーブルに確実に加算・記録
+        $rewardFame = (int)($compR['rewardFame'] ?? ($compR['reward_fame'] ?? 0));
+        if ($rewardFame <= 0) {
+            $rRank = $compR['rank'] ?? 'OldMan';
+            $rewardFame = ($rRank === 'King') ? 50 : (($rRank === 'Noble') ? 25 : 10);
+        }
+
+        if ($rewardG > 0 || $rewardFame > 0) {
             $stmtEarnedG = $pdo->prepare("
-                INSERT INTO user_workshop_status (user_id, request_earned_gold)
-                VALUES (:user_id, :earned_gold)
-                ON DUPLICATE KEY UPDATE request_earned_gold = request_earned_gold + :up_earned_gold
+                INSERT INTO user_workshop_status (user_id, request_earned_gold, fame)
+                VALUES (:user_id, :earned_gold, :earned_fame)
+                ON DUPLICATE KEY UPDATE 
+                    request_earned_gold = request_earned_gold + :up_earned_gold,
+                    fame = COALESCE(fame, 0) + :up_earned_fame
             ");
             $stmtEarnedG->execute([
                 ':user_id' => $actualUserId,
                 ':earned_gold' => $rewardG,
-                ':up_earned_gold' => $rewardG
+                ':earned_fame' => $rewardFame,
+                ':up_earned_gold' => $rewardG,
+                ':up_earned_fame' => $rewardFame
             ]);
         }
     } elseif (!empty($gameData['currentRequest']) && !empty($gameData['currentRequest']['id'])) {

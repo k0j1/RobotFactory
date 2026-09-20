@@ -680,6 +680,39 @@ try {
         }
     }
 
+    // 名声(fame)が0または過小な場合の自己修復・ゼロ防止フェイルセーフ:
+    // 過去のセーブスナップショット、納品履歴、ミニゲーム勝利実績から正当な名声を自動復元
+    $snapshotFame = 0;
+    if ($row && !empty($row['game_data'])) {
+        $tempGd = json_decode($row['game_data'], true);
+        if (is_array($tempGd) && !empty($tempGd['fame'])) {
+            $snapshotFame = (int)$tempGd['fame'];
+        }
+    }
+    $calculatedMinFame = 0;
+    if (!empty($dbDeliveredLogs)) {
+        $calculatedMinFame += count($dbDeliveredLogs) * 20;
+    } elseif ($deliveredCountVal > 0) {
+        $calculatedMinFame += $deliveredCountVal * 20;
+    }
+    if (!empty($dbMinigameRecords)) {
+        foreach ($dbMinigameRecords as $mRec) {
+            $calculatedMinFame += (int)($mRec['wins'] ?? 0) * 5;
+        }
+    }
+    $effectiveFame = max($fameVal, $snapshotFame, $calculatedMinFame);
+    if ($effectiveFame > $fameVal) {
+        $fameVal = $effectiveFame;
+        // DB側 (user_workshop_status) も最新の名声で自己修復
+        try {
+            $pdo->prepare("
+                INSERT INTO user_workshop_status (user_id, fame, storage_limit, unlocked_expeditions)
+                VALUES (:uid, :fame, 5, '[\"loc1\"]')
+                ON DUPLICATE KEY UPDATE fame = GREATEST(COALESCE(fame, 0), :up_fame)
+            ")->execute([':uid' => $actualUserId, ':fame' => $fameVal, ':up_fame' => $fameVal]);
+        } catch (PDOException $e) {}
+    }
+
     if ($row && !empty($row['game_data'])) {
         $gameData = json_decode($row['game_data'], true);
         if (!is_array($gameData)) {

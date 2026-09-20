@@ -25,7 +25,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
         title="ポンコツロボット工房 公式仕様書"
         badge={
           <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300 font-mono font-bold px-1.5 py-0.2 rounded">
-            v0.1.45
+            v0.1.50
           </span>
         }
         rightElement={
@@ -181,9 +181,9 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                 <div className="font-bold text-stone-900">【名声の主な獲得方法】</div>
                 <ul className="list-disc list-inside space-y-1 text-stone-700">
                   <li><strong>依頼掲示板での納品:</strong> 王様の依頼 (+50)、貴族の依頼 (+25)、おじさんの依頼 (+10)。好感度MAX時はさらに追加ボーナス付与。</li>
-                  <li><strong>高難度バトル演習勝利:</strong> Lv.3〜10の強敵戦術ボット撃破 (+5〜+70 名声)。</li>
-                  <li><strong>拠点防衛戦の制覇:</strong> ウェーブ防衛成功 (+5〜+70 名声)。</li>
-                  <li><strong>ピアノ演奏会:</strong> 高難度楽曲完全演奏クリア (+5〜+30 名声)。※弾幕よけは名声の獲得なし（専用宝箱ドロップ）。</li>
+                  <li><strong>バトル演習・弾幕避け・頭脳対戦:</strong> レベル1〜3は名声獲得なし(0)、レベル4(+1)、レベル5(+3)、レベル6(+6)、レベル7(+10)、レベル8(+20)、レベル9(+50)、レベル10(+100)。※名声が増える演習ではエレメントも同時に獲得できます。</li>
+                  <li><strong>拠点防衛戦の制覇:</strong> ウェーブ防衛成功 (ステージレベル×10名声 & 防衛リジェネ付与)。</li>
+                  <li><strong>ピアノ演奏会:</strong> 楽曲完全演奏クリア (+5〜+30 名声 & エレメント獲得)。</li>
                 </ul>
               </div>
             </div>
@@ -386,9 +386,9 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                 </span>
               </div>
               <div className="bg-white p-2.5 rounded-lg border border-stone-200">
-                <strong className="text-stone-900">依頼達成報酬（G）のトランザクション記録:</strong>
+                <strong className="text-stone-900">依頼達成報酬（G・名声）のアトミック永続化:</strong>
                 <span className="text-stone-600 ml-1">
-                  依頼納品完了時、獲得したゴールドはデータベースの更新トランザクション内で<code>user_workshop_status</code>テーブルの<code>request_earned_gold</code>（依頼獲得累計G）へアトミックに加算・記録されます。
+                  依頼納品完了時、獲得したゴールドは<code>user_workshop_status</code>テーブルの<code>request_earned_gold</code>へ、獲得名声は<code>fame</code>カラムへトランザクション内でアトミックに加算・記録されます。また、クライアント未ロード等による誤ったゼロ上書きを防止する安全ロジックおよび自己修復機能が組み込まれています。
                 </span>
               </div>
               <div className="bg-white p-2.5 rounded-lg border border-stone-200">
@@ -459,21 +459,23 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                     <br />
                     <strong>演習専用武装ランクアップシステム:</strong> ビームサーベルとビームシールドは、バトル勝利などで獲得できるエレメントを消費することで、<strong>初級★1 (初期解放: 100 E) → 中級★2 (500 E) → 上級★3 (1,000 E) → 特級★4 (5,000 E) → 伝説★5 (10,000 E)</strong> の全5段階にランクアップ強化可能！ランクに応じて攻撃力（Power +35〜+320）や防御力（Defense +30〜+270）が大幅に上昇し、専用奥義【星断オメガクロス】やシールド防御が飛躍的に強化されます。
                     <br />
-                    演習勝利時には、<strong>宝箱がドロップ</strong>しアイテムとして回収できます（倉庫画面から開封可能）。開封時には★1〜★3素材・ゴールド・バトルエレメント・工房名声を獲得できます。未勝利の場合は1日何回でも再挑戦可能です。
+                    ・<strong>⏱️ 60秒時間制限＆ダメージ判定システム:</strong> バトルが60秒を経過した場合、時間制限（タイムアップ）により戦闘終了となります。その際、各機体が「与えたダメージ量」と「受けたダメージ量」からスコア（スコア ＝ 与ダメ － 被ダメ）が算出され、スコアが高い側が判定勝利（自機勝利の場合は通常通り宝箱ドロップ・名声報酬等を獲得）となります。HUD中央のVS表示にはリアルタイムで残り秒数がカウントダウンされ、残り10秒以下で緊急パルス発動します。
+                    <br />
+                    演習勝利時には、<strong>宝箱がドロップ</strong>しアイテムとして回収できます（倉庫画面から開封可能）。また対戦相手のレベルに応じて工房名声（<strong>Lv.1〜3: 0, Lv.4: 1, Lv.5: 3, Lv.6: 6, Lv.7: 10, Lv.8: 20, Lv.9: 50, Lv.10: 100</strong>）を獲得でき、名声が増える場合はバトルエレメント（5〜250 E）も直接加算されます。未勝利の場合は1日何回でも再挑戦可能です。
                   </p>
                 </div>
 
                 <div className="bg-white p-2.5 rounded-lg border border-stone-200">
                   <strong className="text-stone-900 block font-bold mb-1">🛡️ 拠点防衛戦 (Base Defense)</strong>
                   <p className="text-stone-600">
-                    最大3機のロボットをタレットとして配備するリアルタイム防衛戦。勝利時に<strong>防衛宝箱がドロップ</strong>し、回収可能です（倉庫で開封）。素材・ゴールド・エレメント・工房名声（Lv.3:+5, Lv.4:+10, Lv.5:+15）を獲得。さらにステージ難易度に応じた<strong>防衛リジェネ（3h〜24h）</strong>が出撃機体全員に付与されます（※防衛戦は1日1回挑戦制限）。
+                    最大3機のロボットをタレットとして配備するリアルタイム防衛戦。勝利時に<strong>防衛宝箱がドロップ</strong>し、回収可能です（倉庫で開封）。素材・ゴールド・エレメント・工房名声（ステージレベル×10）を獲得。さらにステージ難易度に応じた<strong>防衛リジェネ（3h〜24h）</strong>が出撃機体全員に付与されます（※防衛戦は1日1回挑戦制限）。
                   </p>
                 </div>
 
                 <div className="bg-white p-2.5 rounded-lg border border-stone-200">
                   <strong className="text-stone-900 block font-bold mb-1">🚀 弾幕サバイバル (Danmaku Survival)</strong>
                   <p className="text-stone-600">
-                    敵機から放たれる幾何学的な弾幕を回避するアクションシューティング。Easy / Normal / Hard の3段階難易度。<strong>飛行中はロボットがジェット噴射スラスターとマッハ衝撃波を放ち、左右回避時にはリアルタイムにバンク傾斜する高速ジェット飛行アニメーション</strong>が発動します。名声の獲得はありませんが、生還成功時に<strong>専用のクリア宝箱がドロップ</strong>し、回収できます。倉庫で開封することで、ゴールド・クラフト素材・バトルエレメントなどを獲得できます。未生還時は何度でも再挑戦可能です。
+                    敵機から放たれる幾何学的な弾幕を回避するアクションシューティング。Lv.1〜Lv.10の全10段階難易度。<strong>飛行中はロボットがジェット噴射スラスターとマッハ衝撃波を放ち、左右回避時にはリアルタイムにバンク傾斜する高速ジェット飛行アニメーション</strong>が発動します。生還成功時に<strong>専用のクリア宝箱がドロップ</strong>し、倉庫で開封することでゴールド・クラフト素材・バトルエレメントを獲得できるほか、クリア難易度に応じた<strong>工房名声（Lv.1〜3: 0, Lv.4: 1, Lv.5: 3, Lv.6: 6, Lv.7: 10, Lv.8: 20, Lv.9: 50, Lv.10: 100）およびバトルエレメント（5〜250 E）</strong>も獲得できます。未生還時は何度でも再挑戦可能です。
                   </p>
                 </div>
 

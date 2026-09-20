@@ -17,7 +17,10 @@ export interface Opponent {
   rewardFame: number;
 }
 
-export type DanmakuDifficulty = 'easy' | 'normal' | 'hard';
+export type DanmakuDifficulty = 
+  | 'lvl1' | 'lvl2' | 'lvl3' | 'lvl4' | 'lvl5' 
+  | 'lvl6' | 'lvl7' | 'lvl8' | 'lvl9' | 'lvl10'
+  | 'easy' | 'normal' | 'hard';
 
 export interface DefenseStage {
   id: string;
@@ -115,6 +118,7 @@ export const DEFENSE_STAGES: DefenseStage[] = [
 
 export interface DanmakuDifficultyConfig {
   id: DanmakuDifficulty;
+  level: number;
   name: string;
   label: string;
   subLabel: string;
@@ -123,6 +127,7 @@ export interface DanmakuDifficultyConfig {
   ringCount: number;
   rewardKits: number;
   rewardFame: number;
+  rewardElements: number;
   badgeClass: string;
 }
 
@@ -246,40 +251,144 @@ export const PIANO_SONGS: PianoSong[] = [
 
 export const DANMAKU_DIFFICULTIES: DanmakuDifficultyConfig[] = [
   {
-    id: 'easy',
-    name: '初級',
-    label: '初級 (EASY)',
-    subLabel: '弾速0.75x・入門向け',
-    desc: '弾幕の速度が控えめで、初心者ロボットでも隙間を抜けやすい入門モード。',
-    bulletSpeedMult: 0.75,
-    ringCount: 6,
+    id: 'lvl1',
+    level: 1,
+    name: 'レベル1 (入門)',
+    label: 'Lv.1 入門',
+    subLabel: '弾速0.6x・訓練',
+    desc: '弾幕の速度が非常に緩やかで基本操作を確認できる初級モード。',
+    bulletSpeedMult: 0.60,
+    ringCount: 4,
     rewardKits: 1,
     rewardFame: 0,
+    rewardElements: 0,
+    badgeClass: 'bg-stone-100 text-stone-800 border-stone-300',
+  },
+  {
+    id: 'lvl2',
+    level: 2,
+    name: 'レベル2 (基礎)',
+    label: 'Lv.2 基礎',
+    subLabel: '弾速0.7x・初級',
+    desc: '標準的な低速弾幕。初心者ロボットでも隙間を抜けやすい。',
+    bulletSpeedMult: 0.70,
+    ringCount: 5,
+    rewardKits: 1,
+    rewardFame: 0,
+    rewardElements: 0,
     badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-300',
   },
   {
-    id: 'normal',
-    name: '中級',
-    label: '中級 (NORMAL)',
-    subLabel: '標準弾幕・バランス',
-    desc: '標準的な高密度弾幕サバイバル。適切なAgiとDexが求められる。',
-    bulletSpeedMult: 1.0,
-    ringCount: 8,
+    id: 'lvl3',
+    level: 3,
+    name: 'レベル3 (応用)',
+    label: 'Lv.3 応用',
+    subLabel: '弾速0.8x・軽快',
+    desc: '徐々に密度が増すステップアップステージ。',
+    bulletSpeedMult: 0.80,
+    ringCount: 6,
     rewardKits: 1,
     rewardFame: 0,
+    rewardElements: 0,
+    badgeClass: 'bg-teal-100 text-teal-800 border-teal-300',
+  },
+  {
+    id: 'lvl4',
+    level: 4,
+    name: 'レベル4 (中級)',
+    label: 'Lv.4 中級',
+    subLabel: '弾速0.9x・名声+1/E+5',
+    desc: '本格的な弾幕展開。ここから工房名声とエレメントが獲得可能！',
+    bulletSpeedMult: 0.90,
+    ringCount: 7,
+    rewardKits: 1,
+    rewardFame: 1,
+    rewardElements: 5,
     badgeClass: 'bg-blue-100 text-blue-800 border-blue-300',
   },
   {
-    id: 'hard',
-    name: '上級',
-    label: '上級 (HARD)',
-    subLabel: '弾速1.25x・極限弾幕',
-    desc: '超高速かつ高密度に降り注ぐ極限の弾幕。鍛え抜かれたAgiとDexが必要。',
-    bulletSpeedMult: 1.25,
+    id: 'lvl5',
+    level: 5,
+    name: 'レベル5 (標準)',
+    label: 'Lv.5 標準',
+    subLabel: '弾速1.0x・名声+3/E+10',
+    desc: '標準的な高密度弾幕サバイバル。適切なAgiとDexが求められる。',
+    bulletSpeedMult: 1.00,
+    ringCount: 8,
+    rewardKits: 1,
+    rewardFame: 3,
+    rewardElements: 10,
+    badgeClass: 'bg-indigo-100 text-indigo-800 border-indigo-300',
+  },
+  {
+    id: 'lvl6',
+    level: 6,
+    name: 'レベル6 (精鋭)',
+    label: 'Lv.6 精鋭',
+    subLabel: '弾速1.1x・名声+6/E+20',
+    desc: '高速かつ多角的なリング弾が迫る精鋭ステージ。',
+    bulletSpeedMult: 1.10,
+    ringCount: 9,
+    rewardKits: 1,
+    rewardFame: 6,
+    rewardElements: 20,
+    badgeClass: 'bg-purple-100 text-purple-800 border-purple-300',
+  },
+  {
+    id: 'lvl7',
+    level: 7,
+    name: 'レベル7 (上級)',
+    label: 'Lv.7 上級',
+    subLabel: '弾速1.2x・名声+10/E+35',
+    desc: '超高速に降り注ぐ上位弾幕。鍛え抜かれた敏捷性が必要。',
+    bulletSpeedMult: 1.20,
     ringCount: 10,
     rewardKits: 2,
-    rewardFame: 0,
-    badgeClass: 'bg-purple-100 text-purple-800 border-purple-300',
+    rewardFame: 10,
+    rewardElements: 35,
+    badgeClass: 'bg-amber-100 text-amber-800 border-amber-300',
+  },
+  {
+    id: 'lvl8',
+    level: 8,
+    name: 'レベル8 (極限)',
+    label: 'Lv.8 極限',
+    subLabel: '弾速1.3x・名声+20/E+60',
+    desc: '隙間のない弾幕の雨が襲う極限サバイバル。',
+    bulletSpeedMult: 1.30,
+    ringCount: 11,
+    rewardKits: 2,
+    rewardFame: 20,
+    rewardElements: 60,
+    badgeClass: 'bg-orange-100 text-orange-800 border-orange-300',
+  },
+  {
+    id: 'lvl9',
+    level: 9,
+    name: 'レベル9 (達人)',
+    label: 'Lv.9 達人',
+    subLabel: '弾速1.45x・名声+50/E+100',
+    desc: '達人級の高速弾幕。回避判断の猶予はコンマ数秒。',
+    bulletSpeedMult: 1.45,
+    ringCount: 12,
+    rewardKits: 2,
+    rewardFame: 50,
+    rewardElements: 100,
+    badgeClass: 'bg-rose-100 text-rose-800 border-rose-300',
+  },
+  {
+    id: 'lvl10',
+    level: 10,
+    name: 'レベル10 (悪夢)',
+    label: 'Lv.10 悪夢',
+    subLabel: '弾速1.6x・名声+100/E+200',
+    desc: '全方位から高速で包囲する最高峰の悪夢弾幕空間。',
+    bulletSpeedMult: 1.60,
+    ringCount: 14,
+    rewardKits: 3,
+    rewardFame: 100,
+    rewardElements: 200,
+    badgeClass: 'bg-red-100 text-red-900 border-red-400',
   },
 ];
 
@@ -287,13 +396,13 @@ export const OPPONENTS: Opponent[] = [
   { id: 'op1', level: 1, name: 'ポンコツ試作機', org: '町の発明家', int: 16, agi: 14, dex: 16, hp: 25, power: 22, defense: 15, rewardKits: 1, rewardElements: 0, rewardFame: 0 },
   { id: 'op2', level: 2, name: 'ジャンク・スカベンジャー', org: '廃品回収ギルド', int: 26, agi: 22, dex: 24, hp: 42, power: 36, defense: 26, rewardKits: 1, rewardElements: 0, rewardFame: 0 },
   { id: 'op3', level: 3, name: '汎用作業ボット', org: 'アポロ重工', int: 38, agi: 31, dex: 34, hp: 65, power: 55, defense: 40, rewardKits: 1, rewardElements: 0, rewardFame: 0 },
-  { id: 'op4', level: 4, name: '警邏パトロールボット', org: 'シティ警察機構', int: 47, agi: 38, dex: 41, hp: 82, power: 70, defense: 51, rewardKits: 1, rewardElements: 0, rewardFame: 0 },
-  { id: 'op5', level: 5, name: '戦術演算ユニット', org: 'ゼニス・コーポレーション', int: 56, agi: 44, dex: 48, hp: 98, power: 84, defense: 62, rewardKits: 1, rewardElements: 5, rewardFame: 3 },
-  { id: 'op6', level: 6, name: '重装機甲ストライカー', org: 'ネオ・ミリタリー', int: 72, agi: 56, dex: 62, hp: 135, power: 115, defense: 85, rewardKits: 1, rewardElements: 10, rewardFame: 5 },
-  { id: 'op7', level: 7, name: '高機動ファントム', org: 'シャドウ・ラボラトリー', int: 92, agi: 70, dex: 78, hp: 180, power: 150, defense: 110, rewardKits: 1, rewardElements: 15, rewardFame: 8 },
-  { id: 'op8', level: 8, name: '要塞ガーディアン', org: '古代防衛システム', int: 140, agi: 115, dex: 120, hp: 280, power: 230, defense: 170, rewardKits: 1, rewardElements: 30, rewardFame: 30 },
-  { id: 'op9', level: 9, name: 'サイバネティクス・カイザー', org: '帝国兵器工廠', int: 190, agi: 160, dex: 165, hp: 400, power: 330, defense: 250, rewardKits: 1, rewardElements: 60, rewardFame: 60 },
-  { id: 'op10', level: 10, name: 'オメガ・マスター', org: '世界AI協会', int: 260, agi: 220, dex: 230, hp: 600, power: 480, defense: 360, rewardKits: 1, rewardElements: 120, rewardFame: 120 },
+  { id: 'op4', level: 4, name: '警邏パトロールボット', org: 'シティ警察機構', int: 47, agi: 38, dex: 41, hp: 82, power: 70, defense: 51, rewardKits: 1, rewardElements: 5, rewardFame: 1 },
+  { id: 'op5', level: 5, name: '戦術演算ユニット', org: 'ゼニス・コーポレーション', int: 56, agi: 44, dex: 48, hp: 98, power: 84, defense: 62, rewardKits: 1, rewardElements: 10, rewardFame: 3 },
+  { id: 'op6', level: 6, name: '重装機甲ストライカー', org: 'ネオ・ミリタリー', int: 72, agi: 56, dex: 62, hp: 135, power: 115, defense: 85, rewardKits: 1, rewardElements: 20, rewardFame: 6 },
+  { id: 'op7', level: 7, name: '高機動ファントム', org: 'シャドウ・ラボラトリー', int: 92, agi: 70, dex: 78, hp: 180, power: 150, defense: 110, rewardKits: 1, rewardElements: 35, rewardFame: 10 },
+  { id: 'op8', level: 8, name: '要塞ガーディアン', org: '古代防衛システム', int: 140, agi: 115, dex: 120, hp: 280, power: 230, defense: 170, rewardKits: 1, rewardElements: 60, rewardFame: 20 },
+  { id: 'op9', level: 9, name: 'サイバネティクス・カイザー', org: '帝国兵器工廠', int: 190, agi: 160, dex: 165, hp: 400, power: 330, defense: 250, rewardKits: 1, rewardElements: 100, rewardFame: 50 },
+  { id: 'op10', level: 10, name: 'オメガ・マスター', org: '世界AI協会', int: 260, agi: 220, dex: 230, hp: 600, power: 480, defense: 360, rewardKits: 1, rewardElements: 200, rewardFame: 100 },
 ];
 
 export interface MinigameProps {

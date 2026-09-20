@@ -49,7 +49,8 @@ export interface PartBaselineReport {
  */
 export function findMainMaterialForPart(part: RobotPart): Material {
   // 1. パーツ名から直接素材名を検索
-  const matchedByName = MATERIALS.find(m => part.name.startsWith(m.name) || part.name.includes(m.name));
+  const partName = part?.name || '';
+  const matchedByName = partName ? MATERIALS.find(m => partName.startsWith(m.name) || partName.includes(m.name)) : undefined;
   if (matchedByName) return matchedByName;
 
   // 2. 属性とレア度で検索

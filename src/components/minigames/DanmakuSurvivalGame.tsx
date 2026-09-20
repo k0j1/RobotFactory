@@ -49,7 +49,9 @@ export const DanmakuSurvivalGame: React.FC<DanmakuProps> = ({
   const patternSequenceRef = useRef<number[]>([0, 1, 2]);
   const gameSeedRef = useRef(Math.random());
 
-  const currentDiffConfig = DANMAKU_DIFFICULTIES.find(d => d.id === difficulty) || DANMAKU_DIFFICULTIES[1];
+  const currentDiffConfig = DANMAKU_DIFFICULTIES.find(d => d.id === difficulty) 
+    || (difficulty === 'easy' ? DANMAKU_DIFFICULTIES[1] : difficulty === 'hard' ? DANMAKU_DIFFICULTIES[7] : DANMAKU_DIFFICULTIES[4]) 
+    || DANMAKU_DIFFICULTIES[0];
   
   const GOAL_TIME = 10000;
   const FPS = 30;

@@ -136,3 +136,14 @@ export interface CombatActionEvent {
   timestamp: number;
 }
 
+export interface TimeUpResult {
+  playerScore: number;
+  opponentScore: number;
+  playerDamageDealt: number;
+  playerDamageTaken: number;
+  opponentDamageDealt: number;
+  opponentDamageTaken: number;
+}
+
+export type CombatFinishReason = 'ko' | 'time_up';
+

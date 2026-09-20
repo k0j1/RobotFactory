@@ -141,7 +141,19 @@ export const CombatGame: React.FC<MinigameProps> = ({
     );
   }
 
-  const { player, opponent, isFinished: snapFinished, winner: snapWinner, logs, popups, lastActionEvent, lastLearnedSkill } = snapshot;
+  const { 
+    player, 
+    opponent, 
+    isFinished: snapFinished, 
+    winner: snapWinner, 
+    finishReason, 
+    timeRemaining, 
+    timeUpResult, 
+    logs, 
+    popups, 
+    lastActionEvent, 
+    lastLearnedSkill 
+  } = snapshot;
   const isFinished = snapFinished || parentFinished;
   const winner = snapWinner || (parentResult === 'win' ? 'player' : parentResult === 'lose' ? 'opponent' : parentResult === 'draw' ? 'draw' : null);
   const playerPopups = popups.filter(p => p.targetId === 'player');
@@ -191,6 +203,9 @@ export const CombatGame: React.FC<MinigameProps> = ({
         isPaused={isPaused}
         isFinished={isFinished}
         winner={winner}
+        timeRemaining={timeRemaining}
+        finishReason={finishReason}
+        timeUpResult={timeUpResult}
         onTogglePause={onTogglePause}
         onSetSpeed={onSetSpeed}
         onOpenSkillModal={(skill) => {
@@ -281,29 +296,35 @@ export const CombatGame: React.FC<MinigameProps> = ({
               <>
                 <Gi.GiTrophy className="text-amber-500 text-3xl animate-bounce" />
                 <h3 className="text-lg sm:text-xl font-black text-amber-900 tracking-wider">
-                  演習クリア！完全勝利！
+                  {finishReason === 'time_up' ? '演習終了（60秒 判定勝利！）' : '演習クリア！完全勝利！'}
                 </h3>
               </>
             ) : winner === 'opponent' ? (
               <>
                 <Gi.GiHazardSign className="text-red-500 text-2xl" />
                 <h3 className="text-lg sm:text-xl font-black text-stone-800 tracking-wider">
-                  演習終了（敗北）
+                  {finishReason === 'time_up' ? '演習終了（60秒 判定敗北）' : '演習終了（敗北）'}
                 </h3>
               </>
             ) : (
               <h3 className="text-lg sm:text-xl font-black text-stone-800 tracking-wider">
-                演習終了（引き分け）
+                {finishReason === 'time_up' ? '演習終了（60秒 判定引き分け）' : '演習終了（引き分け）'}
               </h3>
             )}
           </div>
 
           <p className="text-xs sm:text-sm text-stone-700 max-w-lg mx-auto leading-relaxed">
-            {winner === 'player' 
-              ? `お見事！${activeOpponent.name}の耐久力を削り切りました！勝利報酬として宝箱ドロップを獲得しました！` 
-              : winner === 'opponent' 
-                ? `${activeOpponent.name}の猛攻により耐久限界に達しました。工房でロボットのステータス強化やパーツ換装を行い再挑戦しましょう！` 
-                : '両機が同時に耐久限界を迎えました。激戦の記録が残されました。'}
+            {finishReason === 'time_up' && timeUpResult
+              ? winner === 'player'
+                ? `60秒の時間制限到達！ダメージスコア判定【自機: ${timeUpResult.playerScore >= 0 ? '+' : ''}${timeUpResult.playerScore.toLocaleString()} pt vs 相手: ${timeUpResult.opponentScore >= 0 ? '+' : ''}${timeUpResult.opponentScore.toLocaleString()} pt】により見事判定勝利しました！`
+                : winner === 'opponent'
+                ? `60秒の時間制限到達！ダメージスコア判定【自機: ${timeUpResult.playerScore >= 0 ? '+' : ''}${timeUpResult.playerScore.toLocaleString()} pt vs 相手: ${timeUpResult.opponentScore >= 0 ? '+' : ''}${timeUpResult.opponentScore.toLocaleString()} pt】により相手のスコアが上回りました。`
+                : `60秒の時間制限到達！ダメージスコア判定【両機スコア同点】により引き分けとなりました。`
+              : winner === 'player' 
+                ? `お見事！${activeOpponent.name}の耐久力を削り切りました！勝利報酬として宝箱ドロップを獲得しました！` 
+                : winner === 'opponent' 
+                  ? `${activeOpponent.name}の猛攻により耐久限界に達しました。工房でロボットのステータス強化やパーツ換装を行い再挑戦しましょう！` 
+                  : '両機が同時に耐久限界を迎えました。激戦の記録が残されました。'}
           </p>
 
           {winner === 'player' && (

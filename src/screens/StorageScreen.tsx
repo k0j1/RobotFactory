@@ -80,6 +80,15 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
   const [openingChest, setOpeningChest] = useState<string | null>(null);
   const [isChestFlashing, setIsChestFlashing] = useState<boolean>(false);
   const [openedChestResult, setOpenedChestResult] = useState<any | null>(null);
+  const chestTimersRef = useRef<number[]>([]);
+
+  // コンポーネントアンマウント時のタイマークリーンアップ
+  useEffect(() => {
+    return () => {
+      chestTimersRef.current.forEach(timerId => clearTimeout(timerId));
+      chestTimersRef.current = [];
+    };
+  }, []);
   const [isRepairSelectOpen, setIsRepairSelectOpen] = useState(false);
   const [isExchangeKitOpen, setIsExchangeKitOpen] = useState(false);
   const [exchangeMaterialId, setExchangeMaterialId] = useState<string>(MATERIALS[0]?.id || '');
@@ -127,17 +136,22 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
         // audio ignore
       }
 
+      // 既存の未完了タイマーをクリア
+      chestTimersRef.current.forEach(timerId => clearTimeout(timerId));
+      chestTimersRef.current = [];
+
       // 中間での小刻み揺れとロック解除音
-      const timerUnlock = setTimeout(() => {
+      const timerUnlock = window.setTimeout(() => {
         try {
           ChestAudioPlayer.playUnlock();
         } catch {
           // ignore
         }
       }, 750);
+      chestTimersRef.current.push(timerUnlock);
 
       // 演出フェーズ2: 開封フラッシュ＆ファンファーレ（1.35秒後）
-      const timerFlash = setTimeout(() => {
+      const timerFlash = window.setTimeout(() => {
         setIsChestFlashing(true);
         try {
           ChestAudioPlayer.playChestOpen();
@@ -146,9 +160,10 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
         }
         triggerChestConfetti(chestTier);
       }, 1350);
+      chestTimersRef.current.push(timerFlash);
 
       // 演出フェーズ3: アイテム付与と結果表示（1.65秒後）
-      const timerResult = setTimeout(() => {
+      const timerResult = window.setTimeout(() => {
         try {
           // グレードに応じたレベルで宝箱を抽選（bronze: Lv.2, silver: Lv.4, gold: Lv.7, mythic: Lv.10）
           const level = chestTier === 'bronze' ? 2 : chestTier === 'silver' ? 4 : chestTier === 'gold' ? 7 : 10;
@@ -180,13 +195,14 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
           // アイテム出現音をスタッガードで再生
           if (result.items && Array.isArray(result.items)) {
             result.items.forEach((_, idx) => {
-              setTimeout(() => {
+              const itemTimer = window.setTimeout(() => {
                 try {
                   ChestAudioPlayer.playItemPop(idx);
                 } catch {
                   // ignore
                 }
               }, 150 + idx * 120);
+              chestTimersRef.current.push(itemTimer);
             });
           }
         } catch (err) {
@@ -199,13 +215,7 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
           setIsChestFlashing(false);
         }
       }, 1650);
-
-      // クリーンアップ用
-      return () => {
-        clearTimeout(timerUnlock);
-        clearTimeout(timerFlash);
-        clearTimeout(timerResult);
-      };
+      chestTimersRef.current.push(timerResult);
     }
   };
 
@@ -1502,7 +1512,14 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
                           {item.type === 'repairKit' && <Gi.GiSpanner className="text-3xl text-emerald-400 drop-shadow" />}
                           {item.type === 'gold' && <Gi.GiCoins className="text-3xl text-yellow-400 drop-shadow" />}
                           {item.type === 'element' && <Gi.GiCrystalGrowth className="text-3xl text-cyan-400 drop-shadow" />}
-                          {item.type === 'material' && <MaterialIcon attribute={item.material?.attribute || 'Earth'} className="text-3xl" />}
+                          {item.type === 'material' && (
+                            <MaterialIcon 
+                              materialId={item.material?.id} 
+                              attribute={item.material?.attribute || 'Earth'} 
+                              size={32}
+                              className="text-3xl" 
+                            />
+                          )}
                           {item.type === 'fame' && <Gi.GiLaurelCrown className="text-3xl text-amber-400 drop-shadow" />}
                         </div>
                         <div className="flex-1 text-left min-w-0">

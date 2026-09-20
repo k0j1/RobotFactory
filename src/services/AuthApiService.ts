@@ -738,6 +738,56 @@ export class AuthApiService {
       error: lastError ? lastError.message : 'サーバーとの通信に失敗しました。'
     };
   }
+
+  /**
+   * 工房名声（user_workshop_status.fame）を直接アトミックに加算
+   */
+  public async addFame(userId: string, amount: number, reason?: string): Promise<AuthApiResponse<{ fame: number; gained: number }>> {
+    if (amount <= 0) {
+      return { success: true, data: { fame: 0, gained: 0 } };
+    }
+    const endpoints = this.getAllEndpoints('/api/add_fame.php');
+    let lastError: any = null;
+
+    for (const endpoint of endpoints) {
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({ userId, amount, reason })
+        });
+
+        const rawText = await response.text();
+        if (rawText.trim().startsWith('<?php')) continue;
+
+        const parsed = JSON.parse(rawText);
+        if (response.ok && parsed.success) {
+          return {
+            success: true,
+            data: {
+              fame: parsed.fame,
+              gained: parsed.gained
+            }
+          };
+        } else {
+          return {
+            success: false,
+            error: parsed.error || '名声の加算に失敗しました。'
+          };
+        }
+      } catch (err: any) {
+        lastError = err;
+      }
+    }
+
+    return {
+      success: false,
+      error: lastError ? lastError.message : 'サーバーとの通信に失敗しました。'
+    };
+  }
 }
 
 
