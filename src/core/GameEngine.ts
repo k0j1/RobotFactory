@@ -40,6 +40,7 @@ const INITIAL_STATE: GameState = {
   clientAffection: { King: 1, Noble: 1, OldMan: 1 },
   completedRequestDeadlines: {},
   craftedRobots: [],
+  minigameDashboardMode: 'compact',
 };
 
 const STORAGE_KEY = 'ponkotsu_robot_save';
@@ -2092,6 +2093,15 @@ export class GameEngine {
 
     this.update();
     return { materialsGained };
+  }
+
+  /**
+   * ミニゲーム演習録ダッシュボードの表示モード設定を保存
+   * @param mode 'detailed' | 'compact'
+   */
+  public setMinigameDashboardMode(mode: 'detailed' | 'compact') {
+    this.state.minigameDashboardMode = mode;
+    this.saveState();
   }
 }
 

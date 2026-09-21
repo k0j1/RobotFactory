@@ -278,6 +278,7 @@ export interface GameState {
   activeCombatEquipments?: { beamSaber?: boolean; beamShield?: boolean }; // 戦闘出撃時に有効化する装備
   minigameRecords?: Record<string, { plays: number; wins: number; losses: number; draws: number; elements?: number; chests?: number }>;
   dailyBattleLimits?: Record<string, string[]>; // { "YYYY-MM-DD": ["robotId_categoryId_levelId", ...] }
+  minigameDashboardMode?: 'detailed' | 'compact'; // ミニゲーム演習録ダッシュボードの表示モード
 }
 
 export interface FameRankInfo {

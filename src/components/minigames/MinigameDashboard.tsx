@@ -12,6 +12,8 @@ export interface RecordData {
 
 interface MinigameDashboardProps {
   records: Record<string, RecordData> | undefined;
+  displayMode?: 'detailed' | 'compact';
+  onToggleMode?: (mode: 'detailed' | 'compact') => void;
 }
 
 export interface CategoryGroup {
@@ -304,9 +306,23 @@ export const getRankInfo = (wins: number, plays: number): RankInfo => {
   };
 };
 
-export const MinigameDashboard: React.FC<MinigameDashboardProps> = ({ records = {} }) => {
-  // 初期状態はコンパクトモード
-  const [isDetailed, setIsDetailed] = useState<boolean>(false);
+export const MinigameDashboard: React.FC<MinigameDashboardProps> = ({ 
+  records = {},
+  displayMode,
+  onToggleMode
+}) => {
+  // displayModeが親（save_data）から渡されている場合はそれを優先し、なければ内部stateを使用
+  const [internalDetailed, setInternalDetailed] = useState<boolean>(false);
+  const isDetailed = displayMode !== undefined ? displayMode === 'detailed' : internalDetailed;
+
+  const handleToggle = (detailed: boolean) => {
+    if (onToggleMode) {
+      onToggleMode(detailed ? 'detailed' : 'compact');
+    } else {
+      setInternalDetailed(detailed);
+    }
+  };
+
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<string>('all');
 
   // 全体集計
@@ -380,29 +396,29 @@ export const MinigameDashboard: React.FC<MinigameDashboardProps> = ({ records = 
           </div>
         </div>
 
-        {/* 右側：コンパクト / 詳細モード 切り替え */}
-        <div className="flex items-center gap-1.5 bg-[#ece1d3] p-1 rounded-xl border border-[#c5a786] shadow-inner flex-wrap">
+        {/* 右側：詳細 / コンパクト モード切り替え */}
+        <div className="flex items-center bg-[#eae0d5] p-0.5 rounded-lg border border-[#cbb197] shadow-2xs">
           <button
-            onClick={() => setIsDetailed(false)}
-            className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all flex items-center gap-1 cursor-pointer shrink-0 ${
-              !isDetailed
-                ? 'bg-amber-700 text-white shadow-2xs'
-                : 'text-stone-700 hover:text-stone-900 hover:bg-stone-200/60'
-            }`}
-          >
-            <Gi.GiBriefcase className="text-xs" />
-            <span>コンパクト</span>
-          </button>
-          <button
-            onClick={() => setIsDetailed(true)}
-            className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all flex items-center gap-1 cursor-pointer shrink-0 ${
+            onClick={() => handleToggle(true)}
+            className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
               isDetailed
                 ? 'bg-amber-700 text-white shadow-2xs'
-                : 'text-stone-700 hover:text-stone-900 hover:bg-stone-200/60'
+                : 'text-stone-700 hover:text-stone-900'
             }`}
           >
-            <Gi.GiMagnifyingGlass className="text-xs" />
-            <span>詳細モード</span>
+            <Gi.GiEyeTarget size={12} />
+            <span>詳細</span>
+          </button>
+          <button
+            onClick={() => handleToggle(false)}
+            className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
+              !isDetailed
+                ? 'bg-amber-700 text-white shadow-2xs'
+                : 'text-stone-700 hover:text-stone-900'
+            }`}
+          >
+            <Gi.GiLightningBow size={12} />
+            <span>コンパクト</span>
           </button>
         </div>
       </div>

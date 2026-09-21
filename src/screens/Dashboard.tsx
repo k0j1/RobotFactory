@@ -344,6 +344,25 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
         );
       })()}
 
+      {/* Tutorial Banner (工房称号の下に配置) */}
+      {state.tutorialStep < 5 && (
+        <Card className="bg-[#eff6ff] border-2 border-blue-300 text-blue-900 p-3 shadow-2xs">
+          <h3 className="font-black text-xs sm:text-sm text-blue-900 flex items-center gap-1.5">
+            <div className="w-5 h-5 rounded bg-blue-100 flex items-center justify-center text-amber-500 shrink-0">
+              <Gi.GiLightBulb size={15} />
+            </div>
+            <span>チュートリアル進行中</span>
+          </h3>
+          <p className="mt-1 text-xs font-bold text-blue-800">
+            {state.tutorialStep === 0 && '「遠征」へ向かい素材を集めよう。'}
+            {state.tutorialStep === 1 && '遠征から帰還するのを待ち、素材を受け取ろう。'}
+            {state.tutorialStep === 2 && '「製造」メニューでロボットを作ってみよう！'}
+            {state.tutorialStep === 3 && '「依頼板」を見て、納品できそうな依頼を受けよう。'}
+            {state.tutorialStep === 4 && '依頼詳細からロボットを「納品」しよう。'}
+          </p>
+        </Card>
+      )}
+
       {/* ========================================================================= */}
       {/* 1. コンパクトモード (Compact Mode: Icons, Badges & Minimal Essential Stats) */}
       {/* ========================================================================= */}
@@ -956,25 +975,6 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
             })}
         </div>
       </Card>
-
-      {/* Tutorial Banner */}
-      {state.tutorialStep < 5 && (
-        <Card className="bg-[#eff6ff] border-2 border-blue-300 text-blue-900 p-3 shadow-2xs">
-          <h3 className="font-black text-xs sm:text-sm text-blue-900 flex items-center gap-1.5">
-            <div className="w-5 h-5 rounded bg-blue-100 flex items-center justify-center text-amber-500 shrink-0">
-              <Gi.GiLightBulb size={15} />
-            </div>
-            <span>チュートリアル進行中</span>
-          </h3>
-          <p className="mt-1 text-xs font-bold text-blue-800">
-            {state.tutorialStep === 0 && '「遠征」へ向かい素材を集めよう。'}
-            {state.tutorialStep === 1 && '遠征から帰還するのを待ち、素材を受け取ろう。'}
-            {state.tutorialStep === 2 && '「製造」メニューでロボットを作ってみよう！'}
-            {state.tutorialStep === 3 && '「依頼板」を見て、納品できそうな依頼を受けよう。'}
-            {state.tutorialStep === 4 && '依頼詳細からロボットを「納品」しよう。'}
-          </p>
-        </Card>
-      )}
 
       {/* Shop & Material Trade Feature Card (商店・素材売買・交換所) */}
       <div 

@@ -524,7 +524,11 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
       />
 
       {!isBattleActive && !battleResult && (
-        <MinigameDashboard records={state.minigameRecords} />
+        <MinigameDashboard 
+          records={state.minigameRecords} 
+          displayMode={state.minigameDashboardMode || 'compact'}
+          onToggleMode={(mode) => engine.setMinigameDashboardMode(mode)}
+        />
       )}
 
       {!isBattleActive && !battleResult ? (
