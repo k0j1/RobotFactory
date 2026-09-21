@@ -50,7 +50,7 @@ export const ActiveUserCountBadge: React.FC<ActiveUserCountBadgeProps> = ({
     ? `他の工房で${count}人組立中`
     : isRequest
     ? `他の工房で${count}人依頼中`
-    : `他の工房で${count}人プレイ中`;
+    : `現在${count}人プレイ中`;
 
   const displayText = label || defaultText;
 
@@ -60,7 +60,7 @@ export const ActiveUserCountBadge: React.FC<ActiveUserCountBadgeProps> = ({
     ? `現在他の工房で${count}人のプレイヤーがロボット組立中`
     : isRequest
     ? `現在他の工房で${count}人のプレイヤーがこの依頼を進行中`
-    : `現在他の工房で${count}人のプレイヤーが作業・プレイ中`;
+    : `現在${count}人のプレイヤーが作業・プレイ中`;
 
   return (
     <span
