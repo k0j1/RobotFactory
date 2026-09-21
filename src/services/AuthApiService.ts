@@ -49,8 +49,10 @@ export interface DatabaseSyncError {
 export interface ActiveCountsData {
   expeditions: Record<string, number>;
   robotAssemblies: number;
+  robotDisassemblies?: number;
   requests: Record<string, number>;
   requestsByRank: Record<string, number>;
+  playingUsers?: number;
 }
 
 export class AuthApiService {
@@ -669,8 +671,10 @@ export class AuthApiService {
             data: {
               expeditions: parsed.expeditions || {},
               robotAssemblies: Number(parsed.robotAssemblies || 0),
+              robotDisassemblies: Number(parsed.robotDisassemblies || 0),
               requests: parsed.requests || {},
-              requestsByRank: parsed.requestsByRank || {}
+              requestsByRank: parsed.requestsByRank || {},
+              playingUsers: Number(parsed.playingUsers || 0)
             }
           };
         }
@@ -685,8 +689,10 @@ export class AuthApiService {
       data: {
         expeditions: {},
         robotAssemblies: 0,
+        robotDisassemblies: 0,
         requests: {},
-        requestsByRank: {}
+        requestsByRank: {},
+        playingUsers: 0
       }
     };
   }

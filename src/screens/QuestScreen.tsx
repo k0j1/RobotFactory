@@ -732,10 +732,6 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
                         {questDone ? '受取可能' : '遠征中'}
                       </span>
                     )}
-                    <ActiveUserCountBadge
-                      type="expedition"
-                      count={activeExpeditionCounts[loc.id] || 0}
-                    />
                   </div>
                   <button 
                     onClick={() => setShowDropsForLoc(showDropsForLoc === loc.id ? null : loc.id)}
@@ -745,7 +741,7 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
                   </button>
                 </div>
                 
-                <div className="flex items-center gap-2 mb-3">
+                <div className="flex items-center gap-2 mb-3 flex-wrap">
                   <p className={`${theme.typography.small} text-stone-200 bg-stone-800/80 px-2 py-0.5 rounded font-medium border border-stone-700/50`}>
                     所要時間: <span className={selectedRobot && agiReductionSec > 0 ? "line-through text-stone-400" : "font-mono font-bold text-white"}>{formatDurationText(baseFinalSec)}</span>
                   </p>
@@ -754,6 +750,10 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
                       ➔ {formatDurationText(finalSec)}<Gi.GiLightningTrio className="inline text-yellow-500" />
                     </span>
                   )}
+                  <ActiveUserCountBadge
+                    type="expedition"
+                    count={activeExpeditionCounts[loc.id] || 0}
+                  />
                 </div>
 
                 <p className="mb-2 text-sm text-stone-100 bg-stone-900/50 p-2 rounded border border-stone-700/50 drop-shadow">{loc.description}</p>

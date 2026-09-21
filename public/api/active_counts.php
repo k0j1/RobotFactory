@@ -140,13 +140,118 @@ try {
         $requestsByRank[$rank] = ($requestsByRank[$rank] ?? 0) + $count;
     }
 
+    // 4. active_robot_disassemblies テーブルから解体中の人数を集計
+    $robotDisassemblies = 0;
+    if (!empty($userId)) {
+        $stmtDis = $pdo->prepare("
+            SELECT COUNT(DISTINCT user_id) as cnt 
+            FROM active_robot_disassemblies 
+            WHERE user_id != :user_id
+        ");
+        $stmtDis->execute([':user_id' => (string)$userId]);
+    } else {
+        $stmtDis = $pdo->query("
+            SELECT COUNT(DISTINCT user_id) as cnt 
+            FROM active_robot_disassemblies
+        ");
+    }
+    if ($stmtDis) {
+        $robotDisassemblies = (int)($stmtDis->fetchColumn() ?: 0);
+    }
+
+    // 5. 工房全体でプレイ・作業中の他ユーザー人数を集計（UNIONによるユニークユーザー集計）
+    $playingUsers = 0;
+    try {
+        if (!empty($userId)) {
+            $stmtPlay = $pdo->prepare("
+                SELECT COUNT(DISTINCT u.uid) as total_playing
+                FROM (
+                    SELECT user_id AS uid FROM active_expeditions WHERE user_id != :uid1
+                    UNION
+                    SELECT user_id AS uid FROM active_robot_assemblies WHERE user_id != :uid2
+                    UNION
+                    SELECT user_id AS uid FROM active_robot_disassemblies WHERE user_id != :uid3
+                    UNION
+                    SELECT user_id AS uid FROM active_requests WHERE user_id != :uid4
+                    UNION
+                    SELECT user_id AS uid FROM user_workshop_status WHERE user_id != :uid5 AND updated_at >= NOW() - INTERVAL 30 MINUTE
+                ) AS u
+            ");
+            $stmtPlay->execute([
+                ':uid1' => (string)$userId,
+                ':uid2' => (string)$userId,
+                ':uid3' => (string)$userId,
+                ':uid4' => (string)$userId,
+                ':uid5' => (string)$userId,
+            ]);
+        } else {
+            $stmtPlay = $pdo->query("
+                SELECT COUNT(DISTINCT u.uid) as total_playing
+                FROM (
+                    SELECT user_id AS uid FROM active_expeditions
+                    UNION
+                    SELECT user_id AS uid FROM active_robot_assemblies
+                    UNION
+                    SELECT user_id AS uid FROM active_robot_disassemblies
+                    UNION
+                    SELECT user_id AS uid FROM active_requests
+                    UNION
+                    SELECT user_id AS uid FROM user_workshop_status WHERE updated_at >= NOW() - INTERVAL 30 MINUTE
+                ) AS u
+            ");
+        }
+        if ($stmtPlay) {
+            $playingUsers = (int)($stmtPlay->fetchColumn() ?: 0);
+        }
+    } catch (Exception $exPlay) {
+        // user_workshop_status に updated_at が存在しない環境へのフォールバック
+        if (!empty($userId)) {
+            $stmtPlayFallback = $pdo->prepare("
+                SELECT COUNT(DISTINCT u.uid) as total_playing
+                FROM (
+                    SELECT user_id AS uid FROM active_expeditions WHERE user_id != :uid1
+                    UNION
+                    SELECT user_id AS uid FROM active_robot_assemblies WHERE user_id != :uid2
+                    UNION
+                    SELECT user_id AS uid FROM active_robot_disassemblies WHERE user_id != :uid3
+                    UNION
+                    SELECT user_id AS uid FROM active_requests WHERE user_id != :uid4
+                ) AS u
+            ");
+            $stmtPlayFallback->execute([
+                ':uid1' => (string)$userId,
+                ':uid2' => (string)$userId,
+                ':uid3' => (string)$userId,
+                ':uid4' => (string)$userId,
+            ]);
+        } else {
+            $stmtPlayFallback = $pdo->query("
+                SELECT COUNT(DISTINCT u.uid) as total_playing
+                FROM (
+                    SELECT user_id AS uid FROM active_expeditions
+                    UNION
+                    SELECT user_id AS uid FROM active_robot_assemblies
+                    UNION
+                    SELECT user_id AS uid FROM active_robot_disassemblies
+                    UNION
+                    SELECT user_id AS uid FROM active_requests
+                ) AS u
+            ");
+        }
+        if ($stmtPlayFallback) {
+            $playingUsers = (int)($stmtPlayFallback->fetchColumn() ?: 0);
+        }
+    }
+
     echo json_encode([
         'success' => true,
         'userId' => $userId,
         'expeditions' => $expeditions,
         'robotAssemblies' => $robotAssemblies,
+        'robotDisassemblies' => $robotDisassemblies,
         'requests' => $requests,
-        'requestsByRank' => $requestsByRank
+        'requestsByRank' => $requestsByRank,
+        'playingUsers' => $playingUsers
     ], JSON_UNESCAPED_UNICODE);
 } catch (PDOException $e) {
     error_log("[active_counts.php] Database query error: " . $e->getMessage());
@@ -156,7 +261,9 @@ try {
         'error' => $e->getMessage(),
         'expeditions' => [],
         'robotAssemblies' => 0,
+        'robotDisassemblies' => 0,
         'requests' => [],
-        'requestsByRank' => []
+        'requestsByRank' => [],
+        'playingUsers' => 0
     ], JSON_UNESCAPED_UNICODE);
 }

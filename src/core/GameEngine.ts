@@ -197,8 +197,10 @@ export class GameEngine {
     return {
       expeditions: {},
       robotAssemblies: 0,
+      robotDisassemblies: 0,
       requests: {},
-      requestsByRank: {}
+      requestsByRank: {},
+      playingUsers: 0
     };
   }
 

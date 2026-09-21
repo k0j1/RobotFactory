@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import * as Gi from 'react-icons/gi';
 import { GameState, Robot, getFameRank } from '../core/models';
 import { GameEngine } from '../core/GameEngine';
@@ -13,6 +13,7 @@ import confetti from 'canvas-confetti';
 import { RobotRadarChart } from '../components/robot/RobotRadarChart';
 import { RepairAnimationModal } from '../components/effects/RepairAnimationModal';
 import { StarterBonusCard } from '../components/ui/StarterBonusCard';
+import { ActiveUserCountBadge } from '../components/ui/ActiveUserCountBadge';
 
 const formatTime = (ms: number) => {
   if (ms <= 0) return '00:00';
@@ -32,6 +33,30 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
       return 'detailed';
     }
   });
+
+  const [activePlayingCount, setActivePlayingCount] = useState<number>(0);
+
+  // 他ユーザーのアクティブ（プレイ中）人数を取得
+  useEffect(() => {
+    let isMounted = true;
+    const fetchCounts = async () => {
+      try {
+        const counts = await engine.getActiveCounts();
+        if (isMounted && counts) {
+          setActivePlayingCount(Number(counts.playingUsers || 0));
+        }
+      } catch (err) {
+        console.warn('[Dashboard] activeCounts取得エラー:', err);
+      }
+    };
+
+    fetchCounts();
+    const interval = setInterval(fetchCounts, 15000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [engine]);
 
   const handleToggleMode = (mode: 'detailed' | 'compact') => {
     setDisplayMode(mode);
@@ -208,9 +233,15 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
     <div className="space-y-4">
       {/* 表示モード切り替えスイッチバー */}
       <div className="flex items-center justify-between gap-2 px-1">
-        <div className="flex items-center gap-1.5 text-xs text-stone-700 font-bold">
-          <Gi.GiFactory className="text-amber-800" size={16} />
-          <span>工房ダッシュボード</span>
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 text-xs text-stone-700 font-bold">
+            <Gi.GiFactory className="text-amber-800" size={16} />
+            <span>工房ダッシュボード</span>
+          </div>
+          <ActiveUserCountBadge
+            type="playing"
+            count={activePlayingCount}
+          />
         </div>
         <div className="flex items-center bg-[#eae0d5] p-0.5 rounded-lg border border-[#cbb197] shadow-2xs">
           <button
@@ -590,140 +621,136 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
         /* ========================================================================= */
         /* 2. 詳細モード (Detailed Mode: Rich Visuals, Progress Meters, & Full Info)   */
         /* ========================================================================= */
-        <>
-          {/* 統合ダッシュボードカード (Unified Workshop Dashboard - Warm Brick & Wood Theme) */}
-          <Card className={theme.workshop.mainCard + " p-3.5"}>
-            <div className="relative z-10">
-        
-        {/* 上部ステータスバー (工房の木製・真鍮プレート銘板デザイン) */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-3.5">
-          {/* GOLD */}
-          <div className={theme.workshop.statCard}>
-            <div className={`${theme.workshop.statIconBox} bg-amber-100/90 border-amber-300/80 text-amber-700`}>
-              <Gi.GiCoins size={20} />
+        <div className="space-y-3">
+          {/* 上部ステータスバー (工房の木製・真鍮プレート銘板デザイン) */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+            {/* GOLD */}
+            <div className={theme.workshop.statCard}>
+              <div className={`${theme.workshop.statIconBox} bg-amber-100/90 border-amber-300/80 text-amber-700`}>
+                <Gi.GiCoins size={20} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-[10px] font-bold text-amber-900/80 tracking-wider leading-none mb-1">所持金</div>
+                <div className="text-sm font-black text-amber-700 font-mono truncate leading-none">
+                  {state.gold} <span className="text-[10px] font-bold font-sans text-amber-600/90">G</span>
+                </div>
+              </div>
             </div>
-            <div className="min-w-0 flex-1">
-              <div className="text-[10px] font-bold text-amber-900/80 tracking-wider leading-none mb-1">所持金</div>
-              <div className="text-sm font-black text-amber-700 font-mono truncate leading-none">
-                {state.gold} <span className="text-[10px] font-bold font-sans text-amber-600/90">G</span>
+
+            {/* ROBOTS */}
+            <div className={theme.workshop.statCard}>
+              <div className={`${theme.workshop.statIconBox} bg-sky-100/90 border-sky-300/80 text-sky-700`}>
+                <Gi.GiRobotAntennas size={20} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-[10px] font-bold text-sky-950/80 tracking-wider leading-none mb-1">機体保管</div>
+                <div className="text-sm font-black text-sky-800 font-mono truncate leading-none">
+                  {state.robots?.length} <span className="text-[10px] text-stone-500 font-normal">/ {state.storageSize}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* DELIVERIES */}
+            <div className={theme.workshop.statCard}>
+              <div className={`${theme.workshop.statIconBox} bg-emerald-100/90 border-emerald-300/80 text-emerald-700`}>
+                <Gi.GiTrophy size={20} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-[10px] font-bold text-emerald-950/80 tracking-wider leading-none mb-1">納品実績</div>
+                <div className="text-sm font-black text-emerald-800 font-mono truncate leading-none">
+                  {state.deliveredRobotsCount} <span className="text-[10px] text-stone-500 font-normal">件</span>
+                </div>
+              </div>
+            </div>
+
+            {/* REPAIRS */}
+            <div className={theme.workshop.statCard}>
+              <div className={`${theme.workshop.statIconBox} bg-purple-100/90 border-purple-300/80 text-purple-700`}>
+                <Gi.GiSpanner size={20} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-[10px] font-bold text-purple-950/80 tracking-wider leading-none mb-1">修理キット</div>
+                <div className="text-sm font-black text-purple-800 font-mono truncate leading-none">
+                  {state.repairKits ?? 0} <span className="text-[10px] text-stone-500 font-normal">個</span>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* ROBOTS */}
-          <div className={theme.workshop.statCard}>
-            <div className={`${theme.workshop.statIconBox} bg-sky-100/90 border-sky-300/80 text-sky-700`}>
-              <Gi.GiRobotAntennas size={20} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="text-[10px] font-bold text-sky-950/80 tracking-wider leading-none mb-1">機体保管</div>
-              <div className="text-sm font-black text-sky-800 font-mono truncate leading-none">
-                {state.robots?.length} <span className="text-[10px] text-stone-500 font-normal">/ {state.storageSize}</span>
-              </div>
-            </div>
-          </div>
+          {/* 工房称号・名声ランク別カード (Workshop Title & Fame Meter Card) */}
+          {(() => {
+            const currentFame = state.fame || 0;
+            const fameRank = getFameRank(currentFame);
+            const nextRankFame = fameRank.nextFame;
+            const prevRankFame = fameRank.minFame;
+            const progressPercent = nextRankFame
+              ? Math.min(100, Math.max(0, Math.round(((currentFame - prevRankFame) / (nextRankFame - prevRankFame)) * 100)))
+              : 100;
 
-          {/* DELIVERIES */}
-          <div className={theme.workshop.statCard}>
-            <div className={`${theme.workshop.statIconBox} bg-emerald-100/90 border-emerald-300/80 text-emerald-700`}>
-              <Gi.GiTrophy size={20} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="text-[10px] font-bold text-emerald-950/80 tracking-wider leading-none mb-1">納品実績</div>
-              <div className="text-sm font-black text-emerald-800 font-mono truncate leading-none">
-                {state.deliveredRobotsCount} <span className="text-[10px] text-stone-500 font-normal">件</span>
-              </div>
-            </div>
-          </div>
-
-          {/* REPAIRS */}
-          <div className={theme.workshop.statCard}>
-            <div className={`${theme.workshop.statIconBox} bg-purple-100/90 border-purple-300/80 text-purple-700`}>
-              <Gi.GiSpanner size={20} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="text-[10px] font-bold text-purple-950/80 tracking-wider leading-none mb-1">修理キット</div>
-              <div className="text-sm font-black text-purple-800 font-mono truncate leading-none">
-                {state.repairKits ?? 0} <span className="text-[10px] text-stone-500 font-normal">個</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* 工房称号・名声ランクバナー (Workshop Title & Fame Banner) */}
-        {(() => {
-          const currentFame = state.fame || 0;
-          const fameRank = getFameRank(currentFame);
-          const nextRankFame = fameRank.nextFame;
-          const prevRankFame = fameRank.minFame;
-          const progressPercent = nextRankFame
-            ? Math.min(100, Math.max(0, Math.round(((currentFame - prevRankFame) / (nextRankFame - prevRankFame)) * 100)))
-            : 100;
-
-          return (
-            <div className={`${theme.workshop.fameCard} mb-3.5`}>
-              <div className="flex items-center justify-between gap-2.5 flex-wrap mb-2.5">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-2xl shrink-0 border border-amber-300 shadow-2xs">
-                    <Gi.GiLaurelsTrophy />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs font-bold text-stone-600">工房称号:</span>
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded border ${fameRank.badgeBg} ${fameRank.badgeBorder} ${fameRank.textColor} shadow-2xs`}>
-                        {fameRank.title}
-                      </span>
-                      <span className="text-[10px] font-bold text-amber-800 bg-amber-100/80 px-1.5 py-0.2 rounded border border-amber-200">
-                        Rank {fameRank.level}
-                      </span>
+            return (
+              <Card className="bg-[#fcf8f2] border-2 border-[#c29b77] p-3 shadow-2xs">
+                <div className="flex items-center justify-between gap-2.5 flex-wrap mb-2.5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-2xl shrink-0 border border-amber-300 shadow-2xs">
+                      <Gi.GiLaurelsTrophy />
                     </div>
-                    <p className="text-[11px] text-stone-600 mt-0.5">
-                      名声値: <strong className="font-mono text-amber-800">{currentFame.toLocaleString()}</strong> pt — {fameRank.desc}
-                    </p>
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-bold text-stone-600">工房称号:</span>
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded border ${fameRank.badgeBg} ${fameRank.badgeBorder} ${fameRank.textColor} shadow-2xs`}>
+                          {fameRank.title}
+                        </span>
+                        <span className="text-[10px] font-bold text-amber-800 bg-amber-100/80 px-1.5 py-0.2 rounded border border-amber-200">
+                          Rank {fameRank.level}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-stone-600 mt-0.5">
+                        名声値: <strong className="font-mono text-amber-800">{currentFame.toLocaleString()}</strong> pt — {fameRank.desc}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="text-right ml-auto sm:ml-0">
+                    <div className="text-base sm:text-lg font-black font-mono text-amber-800 leading-none">
+                      {currentFame.toLocaleString()} <span className="text-xs font-sans text-stone-500 font-normal">pt</span>
+                    </div>
+                    <div className="text-[10px] font-mono text-stone-500 mt-0.5">
+                      {nextRankFame ? (
+                        <span>次ランクまで <span className="font-bold text-amber-900 font-mono">{(nextRankFame - currentFame).toLocaleString()}</span> pt</span>
+                      ) : (
+                        <span className="text-amber-800 font-bold">★最高名声ランク到達！</span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
-                <div className="text-right ml-auto sm:ml-0">
-                  <div className="text-base sm:text-lg font-black font-mono text-amber-800 leading-none">
-                    {currentFame.toLocaleString()} <span className="text-xs font-sans text-stone-500 font-normal">pt</span>
+                {/* 名声進行度プログレスバー */}
+                <div className="space-y-1 pt-1.5 border-t border-[#e2cfbd]">
+                  <div className={theme.workshop.fameProgressBg}>
+                    <div 
+                      className={theme.workshop.fameProgressFill}
+                      style={{ width: `${progressPercent}%` }}
+                    />
                   </div>
-                  <div className="text-[10px] font-mono text-stone-500 mt-0.5">
-                    {nextRankFame ? (
-                      <span>次ランクまで <span className="font-bold text-amber-900 font-mono">{(nextRankFame - currentFame).toLocaleString()}</span> pt</span>
-                    ) : (
-                      <span className="text-amber-800 font-bold">★最高名声ランク到達！</span>
-                    )}
+                  <div className="flex justify-between items-center text-[9px] text-stone-500 font-mono">
+                    <span>Rank {fameRank.level} ({prevRankFame} pt)</span>
+                    <span className="font-bold text-amber-900">{progressPercent}%</span>
+                    <span>{nextRankFame ? `Rank ${fameRank.level + 1} (${nextRankFame} pt)` : 'MAX'}</span>
                   </div>
                 </div>
-              </div>
+              </Card>
+            );
+          })()}
 
-              {/* 名声進行度プログレスバー */}
-              <div className="space-y-1 pt-1 border-t border-amber-200/60">
-                <div className={theme.workshop.fameProgressBg}>
-                  <div 
-                    className={theme.workshop.fameProgressFill}
-                    style={{ width: `${progressPercent}%` }}
-                  />
+          {/* リアルタイム作業進捗ハブ (Active Operations Overview Card) */}
+          <Card className={theme.workshop.mainCard + " p-3.5"}>
+            <div className="flex items-center justify-between gap-2 mb-2.5">
+              <div className="flex items-center gap-1.5">
+                <div className="w-5 h-5 rounded bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-800 text-xs">
+                  <Gi.GiGears size={13} />
                 </div>
-                <div className="flex justify-between items-center text-[9px] text-stone-500 font-mono">
-                  <span>Rank {fameRank.level} ({prevRankFame} pt)</span>
-                  <span className="font-bold text-amber-900">{progressPercent}%</span>
-                  <span>{nextRankFame ? `Rank ${fameRank.level + 1} (${nextRankFame} pt)` : 'MAX'}</span>
-                </div>
+                <span className="text-xs font-bold text-amber-950">現在の作業・稼働状況</span>
               </div>
-            </div>
-          );
-        })()}
-
-        {/* リアルタイム作業進捗ハブ (Active Operations Overview) */}
-        <div className="mb-3.5">
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 rounded bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-800 text-xs">
-                <Gi.GiGears size={13} />
-              </div>
-              <span className="text-xs font-bold text-amber-950">現在の作業・稼働状況</span>
-            </div>
             {totalAutoPendingDrops > 0 && (
               <button
                 onClick={handleClaimAllAutoDispatches}
@@ -866,31 +893,32 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
               <span className="text-xs text-stone-400 group-hover:text-amber-800 group-hover:translate-x-0.5 transition-all font-bold">›</span>
             </div>
           </div>
-        </div>
+        </Card>
 
-        {/* 自動探索セクション */}
-        <div className={`${theme.workshop.sectionDivider} pt-3 mb-2.5 flex items-center justify-between flex-wrap gap-2`}>
-          <div className="flex items-center gap-2">
-            <div className={theme.workshop.sectionHeader}>
-              <div className="w-6 h-6 rounded-md bg-[#eaddcf] border border-[#b89578] flex items-center justify-center text-[#734320]">
-                <Gi.GiFactory size={16} />
+        {/* 自動探索セクション (Auto Dispatches Card) */}
+        <Card className={theme.workshop.mainCard + " p-3.5"}>
+          <div className="flex items-center justify-between flex-wrap gap-2 mb-2.5">
+            <div className="flex items-center gap-2">
+              <div className={theme.workshop.sectionHeader}>
+                <div className="w-6 h-6 rounded-md bg-[#eaddcf] border border-[#b89578] flex items-center justify-center text-[#734320]">
+                  <Gi.GiFactory size={16} />
+                </div>
+                <span>自動探索 稼働状況</span>
               </div>
-              <span>自動探索 稼働状況</span>
+              {(state.autoDispatches && state.autoDispatches.length > 0) && (
+                <span className="flex h-2 w-2 relative">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                </span>
+              )}
             </div>
-            {(state.autoDispatches && state.autoDispatches.length > 0) && (
-              <span className="flex h-2 w-2 relative">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
-              </span>
-            )}
+            <div className="flex items-center gap-1.5">
+              <Button size="sm" onClick={() => setIsDispatchModalOpen(true)} className="text-xs px-2.5 py-1 bg-[#8e5e3a] hover:bg-[#784d2e] text-white border border-[#784d2e] font-bold shadow-xs flex items-center gap-1.5">
+                <Gi.GiWalkingScout size={14} />
+                <span>ロボットを派遣</span>
+              </Button>
+            </div>
           </div>
-          <div className="flex items-center gap-1.5">
-            <Button size="sm" onClick={() => setIsDispatchModalOpen(true)} className="text-xs px-2.5 py-1 bg-[#8e5e3a] hover:bg-[#784d2e] text-white border border-[#784d2e] font-bold shadow-xs flex items-center gap-1.5">
-              <Gi.GiWalkingScout size={14} />
-              <span>ロボットを派遣</span>
-            </Button>
-          </div>
-        </div>
 
         <div className="space-y-3">
           {(!state.autoDispatches || state.autoDispatches.length === 0) && (
@@ -1045,8 +1073,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
               );
             })}
         </div>
-      </div>
-    </Card>
+      </Card>
 
       {/* Tutorial Banner */}
       {state.tutorialStep < 5 && (
@@ -1126,7 +1153,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
           </div>
         </button>
       </div>
-      </>
+    </div>
     )}
 
       {/* Dispatch Modal */}
