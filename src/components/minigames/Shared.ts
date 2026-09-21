@@ -232,7 +232,7 @@ export const PIANO_SONGS: PianoSong[] = [
     songSpeed: 1.0,
     desc: 'バガテル「エリーゼのために」WoO 59 (イ短調 3/8拍子)。pianoclassics.net (ID 47) 準拠。主部と全エピソードを網羅した全曲完全収録版。', 
     rewardFame: 10,
-    rewardElements: 10,
+    rewardElements: 0,
     notes: FUR_ELISE_NOTES
   },
   { 
@@ -243,7 +243,7 @@ export const PIANO_SONGS: PianoSong[] = [
     songSpeed: 1.0,
     desc: 'ピアノソナタ第11番 イ長調 K. 331 第3楽章「トルコ行進曲」(Allegretto 2/4拍子)。pianoclassics.net (ID 55) / Mutopia 準拠。主部・中間部・コーダを網羅した全曲完全収録版。', 
     rewardFame: 20,
-    rewardElements: 20,
+    rewardElements: 0,
     notes: TURKISH_MARCH_NOTES
   },
   { 
@@ -254,7 +254,7 @@ export const PIANO_SONGS: PianoSong[] = [
     songSpeed: 1.0,
     desc: 'パガニーニ大練習曲 第3番 嬰ト短調。pianoclassics.net (ID 110) 準拠。特徴的な跳躍と高音の鐘の音を再現したテーマ部。', 
     rewardFame: 35,
-    rewardElements: 35,
+    rewardElements: 0,
     notes: LA_CAMPANELLA_NOTES
   }
 ];

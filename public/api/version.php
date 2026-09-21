@@ -8,7 +8,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 // アプリケーションとデータベースの同期用バージョン
-define('API_DB_VERSION', 'V0.9');
+define('API_DB_VERSION', 'V1.0');
 
 echo json_encode([
     'success' => true,

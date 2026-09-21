@@ -154,8 +154,30 @@ try {
             user_id VARCHAR(255) PRIMARY KEY,
             start_time BIGINT NOT NULL,
             end_time BIGINT NOT NULL,
-            result_robot_data JSON NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            duration_ms BIGINT DEFAULT 0,
+            robot_id VARCHAR(255) NOT NULL,
+            robot_name VARCHAR(255) NOT NULL,
+            head_part_id VARCHAR(255),
+            body_part_id VARCHAR(255),
+            arms_part_id VARCHAR(255),
+            legs_part_id VARCHAR(255),
+            hp INT DEFAULT 0,
+            power INT DEFAULT 0,
+            defense INT DEFAULT 0,
+            agility INT DEFAULT 0,
+            dexterity INT DEFAULT 0,
+            intelligence INT DEFAULT 0,
+            current_hp INT DEFAULT 12,
+            max_hp INT DEFAULT 12,
+            value INT DEFAULT 0,
+            robot_created_at BIGINT DEFAULT 0,
+            battle_stats JSON,
+            result_robot_data JSON NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            CONSTRAINT fk_act_ass_head FOREIGN KEY (head_part_id) REFERENCES user_parts(id) ON DELETE SET NULL,
+            CONSTRAINT fk_act_ass_body FOREIGN KEY (body_part_id) REFERENCES user_parts(id) ON DELETE SET NULL,
+            CONSTRAINT fk_act_ass_arms FOREIGN KEY (arms_part_id) REFERENCES user_parts(id) ON DELETE SET NULL,
+            CONSTRAINT fk_act_ass_legs FOREIGN KEY (legs_part_id) REFERENCES user_parts(id) ON DELETE SET NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
         CREATE TABLE IF NOT EXISTS complete_robot_assemblies (
@@ -885,17 +907,83 @@ try {
         $delAss = $pdo->prepare("DELETE FROM active_robot_assemblies WHERE user_id = :user_id");
         $delAss->execute([':user_id' => $actualUserId]);
     } elseif (!empty($gameData['activeRobotAssembly']) && !empty($gameData['activeRobotAssembly']['startTime'])) {
-        // 進行中の場合は active_robot_assemblies テーブルを同期
+        // 進行中の場合は active_robot_assemblies テーブルを同期（全データを個別列化・パーツIDを外部キー保存）
         $a = $gameData['activeRobotAssembly'];
+        $robot = $a['resultRobot'] ?? [];
+        $parts = $robot['parts'] ?? [];
+
+        // 組立予定ロボットの各パーツが user_parts に個別カラムで存在することを保証して外部キー制約を満たす
+        foreach (['head', 'body', 'arms', 'legs'] as $pKey) {
+            if (!empty($parts[$pKey]['id']) && isset($extractPartParams) && isset($stmtPart)) {
+                $p = $parts[$pKey];
+                $params = $extractPartParams($p, $actualUserId, 1);
+                $stmtPart->execute($params);
+            }
+        }
+
+        $headId = !empty($parts['head']['id']) ? $parts['head']['id'] : null;
+        $bodyId = !empty($parts['body']['id']) ? $parts['body']['id'] : null;
+        $armsId = !empty($parts['arms']['id']) ? $parts['arms']['id'] : null;
+        $legsId = !empty($parts['legs']['id']) ? $parts['legs']['id'] : null;
+
+        $stats = $robot['stats'] ?? [];
+        $hp = isset($stats['hp']) ? (int)$stats['hp'] : 0;
+        $power = isset($stats['power']) ? (int)$stats['power'] : 0;
+        $defense = isset($stats['defense']) ? (int)$stats['defense'] : 0;
+        $agility = isset($stats['agility']) ? (int)$stats['agility'] : 0;
+        $dexterity = isset($stats['dexterity']) ? (int)$stats['dexterity'] : 0;
+        $intelligence = isset($stats['intelligence']) ? (int)$stats['intelligence'] : (isset($stats['int']) ? (int)$stats['int'] : 0);
+        $currentHp = isset($robot['currentHp']) ? (int)$robot['currentHp'] : 12;
+        $maxHp = isset($robot['maxHp']) ? (int)$robot['maxHp'] : 12;
+        $value = isset($robot['value']) ? (int)$robot['value'] : 0;
+        $robotCreatedAt = isset($robot['createdAt']) ? (int)$robot['createdAt'] : (int)($a['startTime'] ?? 0);
+        $durationMs = isset($a['durationMs']) ? (int)$a['durationMs'] : ((int)($a['endTime'] ?? 0) - (int)($a['startTime'] ?? 0));
+        $battleStats = !empty($robot['battleStats']) && is_array($robot['battleStats'])
+            ? json_encode($robot['battleStats'], JSON_UNESCAPED_UNICODE)
+            : null;
+        $robotId = !empty($robot['id']) ? $robot['id'] : ('rob_' . (int)($a['startTime'] ?? time()));
+        $robotName = !empty($robot['name']) ? $robot['name'] : '組立中ロボット';
+
         $stmtAss = $pdo->prepare("
-            REPLACE INTO active_robot_assemblies (user_id, start_time, end_time, result_robot_data)
-            VALUES (:user_id, :start_time, :end_time, :result_robot_data)
+            REPLACE INTO active_robot_assemblies (
+                user_id, start_time, end_time, duration_ms,
+                robot_id, robot_name,
+                head_part_id, body_part_id, arms_part_id, legs_part_id,
+                hp, power, defense, agility, dexterity, intelligence,
+                current_hp, max_hp, value, robot_created_at,
+                battle_stats, result_robot_data
+            ) VALUES (
+                :user_id, :start_time, :end_time, :duration_ms,
+                :robot_id, :robot_name,
+                :head_part_id, :body_part_id, :arms_part_id, :legs_part_id,
+                :hp, :power, :defense, :agility, :dexterity, :intelligence,
+                :current_hp, :max_hp, :value, :robot_created_at,
+                :battle_stats, :result_robot_data
+            )
         ");
         $stmtAss->execute([
             ':user_id' => $actualUserId,
             ':start_time' => (int)($a['startTime'] ?? 0),
             ':end_time' => (int)($a['endTime'] ?? 0),
-            ':result_robot_data' => json_encode($a['resultRobot'] ?? [], JSON_UNESCAPED_UNICODE)
+            ':duration_ms' => $durationMs,
+            ':robot_id' => $robotId,
+            ':robot_name' => $robotName,
+            ':head_part_id' => $headId,
+            ':body_part_id' => $bodyId,
+            ':arms_part_id' => $armsId,
+            ':legs_part_id' => $legsId,
+            ':hp' => $hp,
+            ':power' => $power,
+            ':defense' => $defense,
+            ':agility' => $agility,
+            ':dexterity' => $dexterity,
+            ':intelligence' => $intelligence,
+            ':current_hp' => $currentHp,
+            ':max_hp' => $maxHp,
+            ':value' => $value,
+            ':robot_created_at' => $robotCreatedAt,
+            ':battle_stats' => $battleStats,
+            ':result_robot_data' => json_encode($robot, JSON_UNESCAPED_UNICODE)
         ]);
     } else {
         $delAss = $pdo->prepare("DELETE FROM active_robot_assemblies WHERE user_id = :user_id");

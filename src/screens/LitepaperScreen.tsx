@@ -25,7 +25,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
         title="ポンコツロボット工房 公式仕様書"
         badge={
           <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300 font-mono font-bold px-1.5 py-0.2 rounded">
-            v0.1.54
+            v0.1.58
           </span>
         }
         rightElement={
@@ -227,7 +227,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                     <li><strong>新人技師初回ボーナス:</strong> 初期ユーザー向けに、ロボット1体を即座に組み立てられる☆1素材セット（全24個・すべて☆1ランクのみ）をプレゼント。ヘッド・ボディ・アーム・レッグの4部位（各5個＝計20個必要）を余すことなく組み立て可能です。初回登録時に確実に受取カードが表示され受け取ることができます。</li>
                     <li><strong>図鑑登録・パーツ基準値一覧:</strong> 完成した新機体は自動的に図鑑へ記録されます。また、パーツ図鑑タブではすべてのパーツ形状と、耐久力(HP)・攻撃力(POW)・探索力(DEX)などの「基準値ステータス」を便利なテーブル（表）形式で一覧表示し、比較することができます。</li>
                     <li><strong>Google AdSense リワード広告時短:</strong> パーツ製造およびロボット組立の進行中に動画広告を視聴することで、完了までの所要時間を<strong>1回につき30分短縮</strong>できます。残り時間が30分以内の場合は即座に完成します。</li>
-                    <li><strong>Googleアカウント連携 &amp; クラウドデータ同期 (DB V0.9):</strong> Googleアカウントでログインした場合、オンライン上にゲームデータ（工房ステータス、所持機体、パーツ、遠征、ミニゲーム成績・宝箱数等）が自動的に保存・同期されます。所持パーツテーブル（<code>user_parts</code>）は個別カラム（vitality・power・defense・agility・dexterity・intelligence・attribute・rarity・メイン/サブ素材マスターID等）へ構造化され、ミニゲーム状況テーブル（<code>user_minigame_status</code>）には挑戦回数・勝利数・獲得エレメント数に加え<strong>宝箱獲得数（<code>chests_count</code>）</strong>および未開封所持宝箱数が永続化されます。別の端末からでも同じアカウントで続きからプレイが可能です。ゲストプレイ時は端末内に独立してデータが保護されます。</li>
+                    <li><strong>Googleアカウント連携 &amp; クラウドデータ同期 (DB V1.0):</strong> Googleアカウントでログインした場合、オンライン上にゲームデータ（工房ステータス、所持機体、パーツ、遠征、ミニゲーム成績・宝箱数等）が自動的に保存・同期されます。所持パーツテーブル（<code>user_parts</code>）は個別カラム（vitality・power・defense・agility・dexterity・intelligence・attribute・rarity・メイン/サブ素材マスターID等）へ構造化され、ロボット組立テーブル（<code>active_robot_assemblies</code>）は<code>result_robot_data</code>のJSON管理からすべての機体属性（機体ID・機体名・全ステータス・HP・価値・作成日時・戦闘成績等）が個別カラムとして保存され、頭・胴・腕・脚の各パーツ情報は<code>user_parts(id)</code>を外部キーとして参照する高精度なリレーショナル構造へと正規化されています。ミニゲーム状況テーブル（<code>user_minigame_status</code>）には挑戦回数・勝利数・獲得エレメント数に加え<strong>宝箱獲得数（<code>chests_count</code>）</strong>および未開封所持宝箱数が永続化されます。別の端末からでも同じアカウントで続きからプレイが可能です。ゲストプレイ時は端末内に独立してデータが保護されます。</li>
                     <li><strong>他プレイヤーのリアルタイム組立状況表示:</strong> active_robot_assembliesテーブルを参照し、現在他のプレイヤーがロボットを組み立てている場合、組立タブや作業ドックに「〇〇人組立中」バッジがリアルタイムに表示されます。</li>
                     <li><strong>GSAPモーションスタジオ:</strong> 漆黒のグランドピアノによる華麗なピアノ協奏曲演奏をはじめ、各種戦闘・アクロバット・仕草など、多彩なモーションをロボットで鑑賞・動作検証できます。</li>
                   </ul>
@@ -482,7 +482,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                 <div className="bg-white p-2.5 rounded-lg border border-stone-200">
                   <strong className="text-stone-900 block font-bold mb-1">🎹 ピアノ演奏会 (Piano Rhythm)</strong>
                   <p className="text-stone-600">
-                    難易度順（Lv.5 エリーゼのために［推奨INT 50前後］ → Lv.8 トルコ行進曲［推奨INT 75前後］ → Lv.10 ラ・カンパネラ［推奨INT 100前後］）に並んだ名曲を完全演奏する鍵盤リズムゲーム。演奏クリア（精度90%以上）時には楽曲難易度に応じた<strong>工房名声（+10〜+35）および同数のバトルエレメント（+10〜+35 E）</strong>を獲得でき、あわせて低ランクの<strong>古びた鉄の宝箱がドロップ</strong>します。演奏会場のバックグラウンドでは、ロボットが漆黒のグランドピアノを操る『ピアノ協奏曲・超絶技巧演奏』アニメーションを披露します。
+                    難易度順（Lv.5 エリーゼのために［推奨INT 50前後］ → Lv.8 トルコ行進曲［推奨INT 75前後］ → Lv.10 ラ・カンパネラ［推奨INT 100前後］）に並んだ名曲を完全演奏する鍵盤リズムゲーム。演奏クリア（精度90%以上）時には楽曲難易度に応じた<strong>工房名声（+10〜+35）</strong>を獲得でき（※エレメント獲得はなし）、あわせて低ランクの<strong>古びた鉄の宝箱がドロップ</strong>します。演奏会場のバックグラウンドでは、ロボットが漆黒のグランドピアノを操る『ピアノ協奏曲・超絶技巧演奏』アニメーションを披露します。
                   </p>
                 </div>
 

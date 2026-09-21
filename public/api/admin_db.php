@@ -367,6 +367,30 @@ try {
                     $robot = is_string($assRow['result_robot_data']) 
                         ? json_decode($assRow['result_robot_data'], true) 
                         : $assRow['result_robot_data'];
+                } elseif (!empty($assRow['robot_id']) || !empty($assRow['robot_name'])) {
+                    // 個別カラムからロボットデータを復元
+                    $robot = [
+                        'id' => $assRow['robot_id'] ?? ('rob_' . time()),
+                        'name' => $assRow['robot_name'] ?? '組立ロボット',
+                        'parts' => [
+                            'head' => !empty($assRow['head_part_id']) ? ['id' => $assRow['head_part_id'], 'type' => 'head', 'name' => 'ヘッド'] : null,
+                            'body' => !empty($assRow['body_part_id']) ? ['id' => $assRow['body_part_id'], 'type' => 'body', 'name' => 'ボディ'] : null,
+                            'arms' => !empty($assRow['arms_part_id']) ? ['id' => $assRow['arms_part_id'], 'type' => 'arms', 'name' => 'アーム'] : null,
+                            'legs' => !empty($assRow['legs_part_id']) ? ['id' => $assRow['legs_part_id'], 'type' => 'legs', 'name' => 'レッグ'] : null,
+                        ],
+                        'stats' => [
+                            'hp' => (int)($assRow['hp'] ?? 0),
+                            'power' => (int)($assRow['power'] ?? 0),
+                            'defense' => (int)($assRow['defense'] ?? 0),
+                            'agility' => (int)($assRow['agility'] ?? 0),
+                            'dexterity' => (int)($assRow['dexterity'] ?? 0),
+                            'intelligence' => (int)($assRow['intelligence'] ?? 0),
+                        ],
+                        'currentHp' => isset($assRow['current_hp']) ? (int)$assRow['current_hp'] : 12,
+                        'maxHp' => isset($assRow['max_hp']) ? (int)$assRow['max_hp'] : 12,
+                        'value' => (int)($assRow['value'] ?? 0),
+                        'createdAt' => (int)($assRow['robot_created_at'] ?? $assRow['start_time'] ?? time())
+                    ];
                 }
             }
 
@@ -905,9 +929,20 @@ try {
             $result['active_expedition'] = !empty($expList) ? $expList[0] : null;
 
             // 8. active_robot_assemblies
-            $aaStmt = $pdo->prepare("SELECT * FROM active_robot_assemblies WHERE user_id IN ($inPlaceholders) ORDER BY id DESC");
+            $aaStmt = $pdo->prepare("SELECT * FROM active_robot_assemblies WHERE user_id IN ($inPlaceholders) ORDER BY created_at DESC, start_time DESC");
             $aaStmt->execute($candidateIds);
-            $result['active_assembly'] = $aaStmt->fetch() ?: null;
+            $assItem = $aaStmt->fetch() ?: null;
+            if ($assItem) {
+                // UI表示用プロパティの補完
+                if (empty($assItem['robot_id']) && !empty($assItem['result_robot_data'])) {
+                    $parsed = is_string($assItem['result_robot_data']) ? json_decode($assItem['result_robot_data'], true) : $assItem['result_robot_data'];
+                    if (is_array($parsed)) {
+                        $assItem['robot_id'] = $parsed['id'] ?? null;
+                        $assItem['robot_name'] = $parsed['name'] ?? null;
+                    }
+                }
+            }
+            $result['active_assembly'] = $assItem;
 
             // 9. active_requests
             $arStmt = $pdo->prepare("SELECT * FROM active_requests WHERE user_id IN ($inPlaceholders) ORDER BY id DESC");

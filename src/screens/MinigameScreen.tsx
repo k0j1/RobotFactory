@@ -95,7 +95,7 @@ const GAMES: GameDef[] = [
     category: 'music', 
     name: 'ピアノ演奏', 
     desc: '指定された楽曲を演奏する（Int/Dex重視）', 
-    rewardText: '演奏報酬: 名声 +10〜35 ＆ エレメント +10〜35 E',
+    rewardText: '演奏報酬: 名声 +10〜35',
     icon: <Gi.GiPianoKeys className="inline text-stone-700" />, 
     requiresOpponent: false 
   }
@@ -336,8 +336,8 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
         chestTitle = '古びた鉄の宝箱';
 
         earnedFame = activePianoSong.rewardFame || 0;
-        // エレメント獲得量は名声の数と完全に一致
-        obtainedElements = earnedFame;
+        // ピアノ演奏ではエレメントの獲得はなし（名声のみ）
+        obtainedElements = 0;
         if (earnedFame > 0) {
           (engine as any).addFame(earnedFame, `ピアノ演奏クリア: ${activePianoSong.title}`);
         }
@@ -535,18 +535,6 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
               <div className="flex items-center gap-2">
                 <Gi.GiAnvil className="text-stone-600 text-lg" />
                 <h3 className={`${theme.typography.h3} text-stone-800`}>演習種目を選ぶ</h3>
-              </div>
-              <div className="flex items-center gap-1.5 text-xs bg-amber-50/90 border border-amber-300/80 px-2.5 py-1 rounded-lg">
-                <span className="text-[11px] font-bold text-amber-950 flex items-center gap-1">
-                  <Gi.GiTrophyCup className="text-amber-600 text-xs" /> 工房名声
-                </span>
-                <span className="text-[10px] text-stone-400 font-bold">＆</span>
-                <span className="text-[11px] font-bold text-indigo-900 flex items-center gap-1 font-mono">
-                  <Gi.GiAtom className="text-indigo-600 text-xs" /> エレメント
-                </span>
-                <span className="text-[10px] text-amber-900 font-bold bg-amber-200/80 px-1.5 py-0.2 rounded ml-1">
-                  同数獲得！
-                </span>
               </div>
             </div>
             

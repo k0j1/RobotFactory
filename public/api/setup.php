@@ -226,8 +226,30 @@ try {
         user_id VARCHAR(255) PRIMARY KEY,
         start_time BIGINT NOT NULL,
         end_time BIGINT NOT NULL,
-        result_robot_data JSON NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        duration_ms BIGINT DEFAULT 0,
+        robot_id VARCHAR(255) NOT NULL,
+        robot_name VARCHAR(255) NOT NULL,
+        head_part_id VARCHAR(255),
+        body_part_id VARCHAR(255),
+        arms_part_id VARCHAR(255),
+        legs_part_id VARCHAR(255),
+        hp INT DEFAULT 0,
+        power INT DEFAULT 0,
+        defense INT DEFAULT 0,
+        agility INT DEFAULT 0,
+        dexterity INT DEFAULT 0,
+        intelligence INT DEFAULT 0,
+        current_hp INT DEFAULT 12,
+        max_hp INT DEFAULT 12,
+        value INT DEFAULT 0,
+        robot_created_at BIGINT DEFAULT 0,
+        battle_stats JSON,
+        result_robot_data JSON NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT fk_act_ass_head FOREIGN KEY (head_part_id) REFERENCES user_parts(id) ON DELETE SET NULL,
+        CONSTRAINT fk_act_ass_body FOREIGN KEY (body_part_id) REFERENCES user_parts(id) ON DELETE SET NULL,
+        CONSTRAINT fk_act_ass_arms FOREIGN KEY (arms_part_id) REFERENCES user_parts(id) ON DELETE SET NULL,
+        CONSTRAINT fk_act_ass_legs FOREIGN KEY (legs_part_id) REFERENCES user_parts(id) ON DELETE SET NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
     CREATE TABLE IF NOT EXISTS complete_robot_assemblies (
@@ -653,6 +675,105 @@ try {
         $pdo->exec("CREATE OR REPLACE VIEW completed_robot_disassemblies AS SELECT * FROM complete_robot_disassemblies");
         $pdo->exec("CREATE OR REPLACE VIEW completed_part_recycles AS SELECT * FROM complete_part_recycles");
     } catch (PDOException $e) {}
+
+    // active_robot_assemblies テーブルの個別カラム化＆外部キー化マイグレーション
+    $activeAssemblyCols = [
+        "ADD COLUMN duration_ms BIGINT DEFAULT 0",
+        "ADD COLUMN robot_id VARCHAR(255) NULL",
+        "ADD COLUMN robot_name VARCHAR(255) NULL",
+        "ADD COLUMN head_part_id VARCHAR(255) NULL",
+        "ADD COLUMN body_part_id VARCHAR(255) NULL",
+        "ADD COLUMN arms_part_id VARCHAR(255) NULL",
+        "ADD COLUMN legs_part_id VARCHAR(255) NULL",
+        "ADD COLUMN hp INT DEFAULT 0",
+        "ADD COLUMN power INT DEFAULT 0",
+        "ADD COLUMN defense INT DEFAULT 0",
+        "ADD COLUMN agility INT DEFAULT 0",
+        "ADD COLUMN dexterity INT DEFAULT 0",
+        "ADD COLUMN intelligence INT DEFAULT 0",
+        "ADD COLUMN current_hp INT DEFAULT 12",
+        "ADD COLUMN max_hp INT DEFAULT 12",
+        "ADD COLUMN value INT DEFAULT 0",
+        "ADD COLUMN robot_created_at BIGINT DEFAULT 0",
+        "ADD COLUMN battle_stats JSON NULL",
+        "MODIFY COLUMN result_robot_data JSON NULL"
+    ];
+
+    foreach ($activeAssemblyCols as $colSql) {
+        try {
+            $pdo->exec("ALTER TABLE active_robot_assemblies $colSql");
+        } catch (PDOException $e) {}
+    }
+
+    // 既存レコードがあれば result_robot_data JSON から新列へデータ同期
+    try {
+        $checkJsonCol = $pdo->query("SHOW COLUMNS FROM active_robot_assemblies LIKE 'result_robot_data'");
+        if ($checkJsonCol && $checkJsonCol->fetch()) {
+            $stmtActAss = $pdo->query("SELECT user_id, start_time, result_robot_data FROM active_robot_assemblies WHERE result_robot_data IS NOT NULL AND result_robot_data != ''");
+            if ($stmtActAss) {
+                $updAssStmt = $pdo->prepare("
+                    UPDATE active_robot_assemblies SET
+                        robot_id = COALESCE(:robot_id, robot_id),
+                        robot_name = COALESCE(:robot_name, robot_name),
+                        head_part_id = COALESCE(:head_part_id, head_part_id),
+                        body_part_id = COALESCE(:body_part_id, body_part_id),
+                        arms_part_id = COALESCE(:arms_part_id, arms_part_id),
+                        legs_part_id = COALESCE(:legs_part_id, legs_part_id),
+                        hp = COALESCE(:hp, hp),
+                        power = COALESCE(:power, power),
+                        defense = COALESCE(:defense, defense),
+                        agility = COALESCE(:agility, agility),
+                        dexterity = COALESCE(:dexterity, dexterity),
+                        intelligence = COALESCE(:intelligence, intelligence),
+                        current_hp = COALESCE(:current_hp, current_hp),
+                        max_hp = COALESCE(:max_hp, max_hp),
+                        value = COALESCE(:value, value),
+                        robot_created_at = COALESCE(:robot_created_at, robot_created_at)
+                    WHERE user_id = :user_id
+                ");
+                while ($assRow = $stmtActAss->fetch(PDO::FETCH_ASSOC)) {
+                    $d = json_decode($assRow['result_robot_data'], true);
+                    if (!is_array($d)) continue;
+                    $rStats = $d['stats'] ?? [];
+                    $rParts = $d['parts'] ?? [];
+
+                    $updAssStmt->execute([
+                        ':robot_id' => $d['id'] ?? ('rob_' . $assRow['start_time']),
+                        ':robot_name' => $d['name'] ?? '組立ロボット',
+                        ':head_part_id' => $rParts['head']['id'] ?? null,
+                        ':body_part_id' => $rParts['body']['id'] ?? null,
+                        ':arms_part_id' => $rParts['arms']['id'] ?? null,
+                        ':legs_part_id' => $rParts['legs']['id'] ?? null,
+                        ':hp' => isset($rStats['hp']) ? (int)$rStats['hp'] : 0,
+                        ':power' => isset($rStats['power']) ? (int)$rStats['power'] : 0,
+                        ':defense' => isset($rStats['defense']) ? (int)$rStats['defense'] : 0,
+                        ':agility' => isset($rStats['agility']) ? (int)$rStats['agility'] : 0,
+                        ':dexterity' => isset($rStats['dexterity']) ? (int)$rStats['dexterity'] : 0,
+                        ':intelligence' => isset($rStats['intelligence']) ? (int)$rStats['intelligence'] : (isset($rStats['int']) ? (int)$rStats['int'] : 0),
+                        ':current_hp' => isset($d['currentHp']) ? (int)$d['currentHp'] : 12,
+                        ':max_hp' => isset($d['maxHp']) ? (int)$d['maxHp'] : 12,
+                        ':value' => isset($d['value']) ? (int)$d['value'] : 0,
+                        ':robot_created_at' => isset($d['createdAt']) ? (int)$d['createdAt'] : (int)$assRow['start_time'],
+                        ':user_id' => $assRow['user_id']
+                    ]);
+                }
+            }
+        }
+    } catch (PDOException $e) {}
+
+    // user_parts に存在しない外部キー整合性エラーを予防
+    try {
+        $pdo->exec("UPDATE active_robot_assemblies SET head_part_id = NULL WHERE head_part_id IS NOT NULL AND head_part_id NOT IN (SELECT id FROM user_parts)");
+        $pdo->exec("UPDATE active_robot_assemblies SET body_part_id = NULL WHERE body_part_id IS NOT NULL AND body_part_id NOT IN (SELECT id FROM user_parts)");
+        $pdo->exec("UPDATE active_robot_assemblies SET arms_part_id = NULL WHERE arms_part_id IS NOT NULL AND arms_part_id NOT IN (SELECT id FROM user_parts)");
+        $pdo->exec("UPDATE active_robot_assemblies SET legs_part_id = NULL WHERE legs_part_id IS NOT NULL AND legs_part_id NOT IN (SELECT id FROM user_parts)");
+    } catch (PDOException $e) {}
+
+    // active_robot_assemblies の外部キー制約を設定
+    try { $pdo->exec("ALTER TABLE active_robot_assemblies ADD CONSTRAINT fk_act_ass_head FOREIGN KEY (head_part_id) REFERENCES user_parts(id) ON DELETE SET NULL"); } catch (PDOException $e) {}
+    try { $pdo->exec("ALTER TABLE active_robot_assemblies ADD CONSTRAINT fk_act_ass_body FOREIGN KEY (body_part_id) REFERENCES user_parts(id) ON DELETE SET NULL"); } catch (PDOException $e) {}
+    try { $pdo->exec("ALTER TABLE active_robot_assemblies ADD CONSTRAINT fk_act_ass_arms FOREIGN KEY (arms_part_id) REFERENCES user_parts(id) ON DELETE SET NULL"); } catch (PDOException $e) {}
+    try { $pdo->exec("ALTER TABLE active_robot_assemblies ADD CONSTRAINT fk_act_ass_legs FOREIGN KEY (legs_part_id) REFERENCES user_parts(id) ON DELETE SET NULL"); } catch (PDOException $e) {}
 
     try {
         $pdo->exec("ALTER TABLE m_parts_encyclopedia ADD COLUMN visual_index INT DEFAULT 0");

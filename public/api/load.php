@@ -456,9 +456,9 @@ try {
         ];
     }
 
-    // 5. active_robot_assemblies テーブルから最新のロボット組立進行状態を取得
+    // 5. active_robot_assemblies テーブルから最新のロボット組立進行状態を取得（個別カラム＆user_parts外部キー結合）
     $assStmt = $pdo->prepare("
-        SELECT start_time, end_time, result_robot_data 
+        SELECT * 
         FROM active_robot_assemblies 
         WHERE user_id IN ($inPlaceholders) 
         LIMIT 1
@@ -467,10 +467,115 @@ try {
     $assRow = $assStmt->fetch();
     $activeAssembly = null;
     if ($assRow) {
-        $resultRobot = json_decode($assRow['result_robot_data'], true);
+        $resultRobot = null;
+        
+        // 個別列データが存在する場合、列情報および user_parts から Robot オブジェクトを再構築
+        if (!empty($assRow['robot_id']) || !empty($assRow['robot_name'])) {
+            $partMap = [];
+            if (!empty($dbParts)) {
+                foreach ($dbParts as $dp) {
+                    $partMap[$dp['id']] = $dp;
+                }
+            }
+
+            // まだ $partMap にないパーツがあれば user_parts テーブルから個別取得
+            $neededPartIds = array_values(array_filter([
+                $assRow['head_part_id'] ?? null,
+                $assRow['body_part_id'] ?? null,
+                $assRow['arms_part_id'] ?? null,
+                $assRow['legs_part_id'] ?? null
+            ], function($id) use ($partMap) {
+                return !empty($id) && !isset($partMap[$id]);
+            }));
+
+            if (!empty($neededPartIds)) {
+                $pIn = implode(',', array_fill(0, count($neededPartIds), '?'));
+                $fetchPartStmt = $pdo->prepare("SELECT * FROM user_parts WHERE id IN ($pIn)");
+                $fetchPartStmt->execute($neededPartIds);
+                while ($pRow = $fetchPartStmt->fetch(PDO::FETCH_ASSOC)) {
+                    $partMap[$pRow['id']] = [
+                        'id' => $pRow['id'],
+                        'type' => $pRow['part_type'] ?? 'head',
+                        'name' => $pRow['name'] ?? 'パーツ',
+                        'attribute' => $pRow['attribute'] ?? 'Fire',
+                        'rarity' => (int)($pRow['rarity'] ?? 1),
+                        'visualIndex' => (int)($pRow['visual_index'] ?? 0),
+                        'isEquipped' => true,
+                        'stats' => [
+                            'hp' => (int)($pRow['vitality'] ?? 0),
+                            'power' => (int)($pRow['power'] ?? 0),
+                            'defense' => (int)($pRow['defense'] ?? 0),
+                            'agility' => (int)($pRow['agility'] ?? 0),
+                            'dexterity' => (int)($pRow['dexterity'] ?? 0),
+                            'intelligence' => (int)($pRow['intelligence'] ?? 0)
+                        ],
+                        'mainMaterialId' => $pRow['main_material_id'] ?? null,
+                        'subMaterialId' => $pRow['sub_material_id'] ?? null
+                    ];
+                }
+            }
+
+            $buildPartObj = function($type, $partId) use ($partMap) {
+                if (!empty($partId) && isset($partMap[$partId])) {
+                    return $partMap[$partId];
+                }
+                return [
+                    'id' => $partId ?: ('dummy_' . $type),
+                    'type' => $type,
+                    'name' => 'パーツ(' . $type . ')',
+                    'attribute' => 'Fire',
+                    'rarity' => 1,
+                    'visualIndex' => 0,
+                    'isEquipped' => true,
+                    'stats' => ['hp' => 3, 'power' => 3, 'defense' => 3, 'agility' => 3, 'dexterity' => 3, 'intelligence' => 3]
+                ];
+            };
+
+            $resultRobot = [
+                'id' => $assRow['robot_id'] ?? ('rob_' . $assRow['start_time']),
+                'name' => $assRow['robot_name'] ?? '組立ロボット',
+                'parts' => [
+                    'head' => $buildPartObj('head', $assRow['head_part_id'] ?? null),
+                    'body' => $buildPartObj('body', $assRow['body_part_id'] ?? null),
+                    'arms' => $buildPartObj('arms', $assRow['arms_part_id'] ?? null),
+                    'legs' => $buildPartObj('legs', $assRow['legs_part_id'] ?? null),
+                ],
+                'stats' => [
+                    'hp' => (int)($assRow['hp'] ?? 0),
+                    'power' => (int)($assRow['power'] ?? 0),
+                    'defense' => (int)($assRow['defense'] ?? 0),
+                    'agility' => (int)($assRow['agility'] ?? 0),
+                    'dexterity' => (int)($assRow['dexterity'] ?? 0),
+                    'intelligence' => (int)($assRow['intelligence'] ?? 0),
+                ],
+                'currentHp' => isset($assRow['current_hp']) ? (int)$assRow['current_hp'] : 12,
+                'maxHp' => isset($assRow['max_hp']) ? (int)$assRow['max_hp'] : 12,
+                'value' => (int)($assRow['value'] ?? 0),
+                'createdAt' => isset($assRow['robot_created_at']) && (int)$assRow['robot_created_at'] > 0
+                    ? (int)$assRow['robot_created_at']
+                    : (int)$assRow['start_time']
+            ];
+
+            if (!empty($assRow['battle_stats'])) {
+                $bs = is_string($assRow['battle_stats']) ? json_decode($assRow['battle_stats'], true) : $assRow['battle_stats'];
+                if (is_array($bs)) {
+                    $resultRobot['battleStats'] = $bs;
+                }
+            }
+        }
+
+        // 旧データ互換用フォールバック
+        if (!$resultRobot && !empty($assRow['result_robot_data'])) {
+            $decoded = json_decode($assRow['result_robot_data'], true);
+            if (is_array($decoded)) {
+                $resultRobot = $decoded;
+            }
+        }
+
         $activeAssembly = [
             'startTime' => (int)$assRow['start_time'],
             'endTime' => (int)$assRow['end_time'],
+            'durationMs' => isset($assRow['duration_ms']) ? (int)$assRow['duration_ms'] : ((int)$assRow['end_time'] - (int)$assRow['start_time']),
             'resultRobot' => is_array($resultRobot) ? $resultRobot : null
         ];
     }
