@@ -860,6 +860,7 @@ try {
                 'active_expedition' => null,
                 'active_expeditions' => [],
                 'active_assembly' => null,
+                'active_disassembly' => null,
                 'active_request' => null,
                 'complete_requests' => []
             ];
@@ -943,6 +944,12 @@ try {
                 }
             }
             $result['active_assembly'] = $assItem;
+
+            // 8-2. active_robot_disassemblies
+            $adStmt = $pdo->prepare("SELECT * FROM active_robot_disassemblies WHERE user_id IN ($inPlaceholders) ORDER BY created_at DESC, start_time DESC LIMIT 1");
+            $adStmt->execute($candidateIds);
+            $disItem = $adStmt->fetch() ?: null;
+            $result['active_disassembly'] = $disItem;
 
             // 9. active_requests
             $arStmt = $pdo->prepare("SELECT * FROM active_requests WHERE user_id IN ($inPlaceholders) LIMIT 1");

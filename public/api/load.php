@@ -204,10 +204,17 @@ try {
         CREATE TABLE IF NOT EXISTS active_robot_disassemblies (
             user_id VARCHAR(255) PRIMARY KEY,
             robot_id VARCHAR(255),
+            head_part_id VARCHAR(255),
+            body_part_id VARCHAR(255),
+            arms_part_id VARCHAR(255),
+            legs_part_id VARCHAR(255),
             start_time BIGINT NOT NULL,
             end_time BIGINT NOT NULL,
-            result_parts_data JSON,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            CONSTRAINT fk_act_disass_head FOREIGN KEY (head_part_id) REFERENCES user_parts(id) ON DELETE SET NULL,
+            CONSTRAINT fk_act_disass_body FOREIGN KEY (body_part_id) REFERENCES user_parts(id) ON DELETE SET NULL,
+            CONSTRAINT fk_act_disass_arms FOREIGN KEY (arms_part_id) REFERENCES user_parts(id) ON DELETE SET NULL,
+            CONSTRAINT fk_act_disass_legs FOREIGN KEY (legs_part_id) REFERENCES user_parts(id) ON DELETE SET NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
         CREATE TABLE IF NOT EXISTS complete_robot_disassemblies (
@@ -601,6 +608,100 @@ try {
         ];
     }
 
+    // 5-2. active_robot_disassemblies テーブルから最新のロボット解体進行状態を取得（個別カラム＆user_parts外部キー結合）
+    $disStmt = $pdo->prepare("
+        SELECT * 
+        FROM active_robot_disassemblies 
+        WHERE user_id IN ($inPlaceholders) 
+        LIMIT 1
+    ");
+    $disStmt->execute(array_values($candidateUserIds));
+    $disRow = $disStmt->fetch();
+    $activeRobotDisassembly = null;
+    if ($disRow && !empty($disRow['start_time'])) {
+        $partMap = [];
+        if (!empty($dbParts)) {
+            foreach ($dbParts as $dp) {
+                $partMap[$dp['id']] = $dp;
+            }
+        }
+
+        $neededDisPartIds = array_values(array_filter([
+            $disRow['head_part_id'] ?? null,
+            $disRow['body_part_id'] ?? null,
+            $disRow['arms_part_id'] ?? null,
+            $disRow['legs_part_id'] ?? null
+        ], function($id) use ($partMap) {
+            return !empty($id) && !isset($partMap[$id]);
+        }));
+
+        if (!empty($neededDisPartIds)) {
+            $pIn = implode(',', array_fill(0, count($neededDisPartIds), '?'));
+            $fetchDisPartStmt = $pdo->prepare("SELECT * FROM user_parts WHERE id IN ($pIn)");
+            $fetchDisPartStmt->execute($neededDisPartIds);
+            while ($pRow = $fetchDisPartStmt->fetch(PDO::FETCH_ASSOC)) {
+                $partMap[$pRow['id']] = [
+                    'id' => $pRow['id'],
+                    'type' => $pRow['part_type'] ?? 'head',
+                    'name' => $pRow['name'] ?? 'パーツ',
+                    'attribute' => $pRow['attribute'] ?? 'Fire',
+                    'rarity' => (int)($pRow['rarity'] ?? 1),
+                    'visualIndex' => (int)($pRow['visual_index'] ?? 0),
+                    'isEquipped' => true,
+                    'stats' => [
+                        'hp' => (int)($pRow['vitality'] ?? 0),
+                        'power' => (int)($pRow['power'] ?? 0),
+                        'defense' => (int)($pRow['defense'] ?? 0),
+                        'agility' => (int)($pRow['agility'] ?? 0),
+                        'dexterity' => (int)($pRow['dexterity'] ?? 0),
+                        'intelligence' => (int)($pRow['intelligence'] ?? 0)
+                    ],
+                    'mainMaterialId' => $pRow['main_material_id'] ?? null,
+                    'subMaterialId' => $pRow['sub_material_id'] ?? null
+                ];
+            }
+        }
+
+        $buildDisPartObj = function($type, $partId) use ($partMap) {
+            if (!empty($partId) && isset($partMap[$partId])) {
+                return $partMap[$partId];
+            }
+            return [
+                'id' => $partId ?: ('dummy_' . $type),
+                'type' => $type,
+                'name' => 'パーツ(' . $type . ')',
+                'attribute' => 'Fire',
+                'rarity' => 1,
+                'visualIndex' => 0,
+                'isEquipped' => true,
+                'stats' => ['hp' => 3, 'power' => 3, 'defense' => 3, 'agility' => 3, 'dexterity' => 3, 'intelligence' => 3]
+            ];
+        };
+
+        $disHead = $buildDisPartObj('head', $disRow['head_part_id'] ?? null);
+        $disBody = $buildDisPartObj('body', $disRow['body_part_id'] ?? null);
+        $disArms = $buildDisPartObj('arms', $disRow['arms_part_id'] ?? null);
+        $disLegs = $buildDisPartObj('legs', $disRow['legs_part_id'] ?? null);
+
+        $durationMs = (int)$disRow['end_time'] - (int)$disRow['start_time'];
+        $activeRobotDisassembly = [
+            'robotClone' => [
+                'id' => $disRow['robot_id'] ?? ('rob_' . $disRow['start_time']),
+                'name' => '解体中ロボット',
+                'parts' => [
+                    'head' => $disHead,
+                    'body' => $disBody,
+                    'arms' => $disArms,
+                    'legs' => $disLegs
+                ]
+            ],
+            'startTime' => (int)$disRow['start_time'],
+            'endTime' => (int)$disRow['end_time'],
+            'durationMs' => $durationMs > 0 ? $durationMs : 30000,
+            'resultParts' => array_values(array_filter([$disHead, $disBody, $disArms, $disLegs]))
+        ];
+    }
+
     // 6. active_requests テーブルから受注依頼状態を取得 (テーブル列値とrequest_dataの残余データを合成して復元)
     $reqStmt = $pdo->prepare("
         SELECT request_id, rank, reward_g, deadline, request_data 
@@ -989,6 +1090,7 @@ try {
         $gameData['activeQuest'] = $activeQuest;
         $gameData['activePartCraft'] = $activePartCraft;
         $gameData['activeRobotAssembly'] = $activeAssembly;
+        $gameData['activeRobotDisassembly'] = $activeRobotDisassembly;
         $gameData['currentRequest'] = $currentRequest;
         $gameData['battleElements'] = $userItemRow ? (int)$userItemRow['element'] : $battleElements;
         $gameData['minigameRecords'] = $dbMinigameRecords;
@@ -1023,6 +1125,7 @@ try {
             "activeQuest" => $activeQuest,
             "activePartCraft" => $activePartCraft,
             "activeRobotAssembly" => $activeAssembly,
+            "activeRobotDisassembly" => $activeRobotDisassembly,
             "currentRequest" => $currentRequest,
             "battleElements" => $userItemRow ? (int)$userItemRow['element'] : $battleElements,
             "minigameRecords" => $dbMinigameRecords,

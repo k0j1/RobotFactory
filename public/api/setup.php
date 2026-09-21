@@ -280,10 +280,17 @@ try {
     CREATE TABLE IF NOT EXISTS active_robot_disassemblies (
         user_id VARCHAR(255) PRIMARY KEY,
         robot_id VARCHAR(255),
+        head_part_id VARCHAR(255),
+        body_part_id VARCHAR(255),
+        arms_part_id VARCHAR(255),
+        legs_part_id VARCHAR(255),
         start_time BIGINT NOT NULL,
         end_time BIGINT NOT NULL,
-        result_parts_data JSON,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT fk_act_disass_head FOREIGN KEY (head_part_id) REFERENCES user_parts(id) ON DELETE SET NULL,
+        CONSTRAINT fk_act_disass_body FOREIGN KEY (body_part_id) REFERENCES user_parts(id) ON DELETE SET NULL,
+        CONSTRAINT fk_act_disass_arms FOREIGN KEY (arms_part_id) REFERENCES user_parts(id) ON DELETE SET NULL,
+        CONSTRAINT fk_act_disass_legs FOREIGN KEY (legs_part_id) REFERENCES user_parts(id) ON DELETE SET NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
     CREATE TABLE IF NOT EXISTS complete_robot_disassemblies (
@@ -793,6 +800,78 @@ try {
             $pdo->exec("ALTER TABLE active_robot_assemblies DROP COLUMN $colName");
         } catch (PDOException $e) {}
     }
+
+    // active_robot_disassemblies テーブルのパーツIDカラム追加＆result_parts_data削除マイグレーション
+    $activeDisassemblyCols = [
+        "ADD COLUMN head_part_id VARCHAR(255) NULL",
+        "ADD COLUMN body_part_id VARCHAR(255) NULL",
+        "ADD COLUMN arms_part_id VARCHAR(255) NULL",
+        "ADD COLUMN legs_part_id VARCHAR(255) NULL"
+    ];
+    foreach ($activeDisassemblyCols as $colSql) {
+        try {
+            $pdo->exec("ALTER TABLE active_robot_disassemblies $colSql");
+        } catch (PDOException $e) {}
+    }
+
+    // 既存レコードがあれば result_parts_data JSON から新列へデータ移行
+    try {
+        $checkJsonColDisass = $pdo->query("SHOW COLUMNS FROM active_robot_disassemblies LIKE 'result_parts_data'");
+        if ($checkJsonColDisass && $checkJsonColDisass->fetch()) {
+            $stmtActDis = $pdo->query("SELECT user_id, result_parts_data FROM active_robot_disassemblies WHERE result_parts_data IS NOT NULL AND result_parts_data != ''");
+            if ($stmtActDis) {
+                $updDisStmt = $pdo->prepare("
+                    UPDATE active_robot_disassemblies SET
+                        head_part_id = COALESCE(:head_part_id, head_part_id),
+                        body_part_id = COALESCE(:body_part_id, body_part_id),
+                        arms_part_id = COALESCE(:arms_part_id, arms_part_id),
+                        legs_part_id = COALESCE(:legs_part_id, legs_part_id)
+                    WHERE user_id = :user_id
+                ");
+                while ($disRow = $stmtActDis->fetch(PDO::FETCH_ASSOC)) {
+                    $partsList = json_decode($disRow['result_parts_data'], true);
+                    if (!is_array($partsList)) continue;
+                    $hId = null;
+                    $bId = null;
+                    $aId = null;
+                    $lId = null;
+                    foreach ($partsList as $p) {
+                        $pType = strtolower($p['type'] ?? '');
+                        if ($pType === 'head' && !$hId) $hId = $p['id'] ?? null;
+                        if ($pType === 'body' && !$bId) $bId = $p['id'] ?? null;
+                        if (($pType === 'arms' || $pType === 'arm') && !$aId) $aId = $p['id'] ?? null;
+                        if (($pType === 'legs' || $pType === 'leg') && !$lId) $lId = $p['id'] ?? null;
+                    }
+                    $updDisStmt->execute([
+                        ':head_part_id' => $hId,
+                        ':body_part_id' => $bId,
+                        ':arms_part_id' => $aId,
+                        ':legs_part_id' => $lId,
+                        ':user_id' => $disRow['user_id']
+                    ]);
+                }
+            }
+            // 移行完了後に result_parts_data カラムを削除
+            try {
+                $pdo->exec("ALTER TABLE active_robot_disassemblies DROP COLUMN result_parts_data");
+            } catch (PDOException $e) {}
+        }
+    } catch (PDOException $e) {}
+
+    // 外部キー制約の追加
+    try {
+        $pdo->exec("UPDATE active_robot_disassemblies SET head_part_id = NULL WHERE head_part_id IS NOT NULL AND head_part_id NOT IN (SELECT id FROM user_parts)");
+        $pdo->exec("UPDATE active_robot_disassemblies SET body_part_id = NULL WHERE body_part_id IS NOT NULL AND body_part_id NOT IN (SELECT id FROM user_parts)");
+        $pdo->exec("UPDATE active_robot_disassemblies SET arms_part_id = NULL WHERE arms_part_id IS NOT NULL AND arms_part_id NOT IN (SELECT id FROM user_parts)");
+        $pdo->exec("UPDATE active_robot_disassemblies SET legs_part_id = NULL WHERE legs_part_id IS NOT NULL AND legs_part_id NOT IN (SELECT id FROM user_parts)");
+    } catch (PDOException $e) {}
+
+    try {
+        $pdo->exec("ALTER TABLE active_robot_disassemblies ADD CONSTRAINT fk_act_disass_head FOREIGN KEY (head_part_id) REFERENCES user_parts(id) ON DELETE SET NULL");
+        $pdo->exec("ALTER TABLE active_robot_disassemblies ADD CONSTRAINT fk_act_disass_body FOREIGN KEY (body_part_id) REFERENCES user_parts(id) ON DELETE SET NULL");
+        $pdo->exec("ALTER TABLE active_robot_disassemblies ADD CONSTRAINT fk_act_disass_arms FOREIGN KEY (arms_part_id) REFERENCES user_parts(id) ON DELETE SET NULL");
+        $pdo->exec("ALTER TABLE active_robot_disassemblies ADD CONSTRAINT fk_act_disass_legs FOREIGN KEY (legs_part_id) REFERENCES user_parts(id) ON DELETE SET NULL");
+    } catch (PDOException $e) {}
 
     try {
         $pdo->exec("ALTER TABLE m_parts_encyclopedia ADD COLUMN visual_index INT DEFAULT 0");

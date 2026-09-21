@@ -208,10 +208,17 @@ try {
         CREATE TABLE IF NOT EXISTS active_robot_disassemblies (
             user_id VARCHAR(255) PRIMARY KEY,
             robot_id VARCHAR(255),
+            head_part_id VARCHAR(255),
+            body_part_id VARCHAR(255),
+            arms_part_id VARCHAR(255),
+            legs_part_id VARCHAR(255),
             start_time BIGINT NOT NULL,
             end_time BIGINT NOT NULL,
-            result_parts_data JSON,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            CONSTRAINT fk_act_disass_head FOREIGN KEY (head_part_id) REFERENCES user_parts(id) ON DELETE SET NULL,
+            CONSTRAINT fk_act_disass_body FOREIGN KEY (body_part_id) REFERENCES user_parts(id) ON DELETE SET NULL,
+            CONSTRAINT fk_act_disass_arms FOREIGN KEY (arms_part_id) REFERENCES user_parts(id) ON DELETE SET NULL,
+            CONSTRAINT fk_act_disass_legs FOREIGN KEY (legs_part_id) REFERENCES user_parts(id) ON DELETE SET NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
         CREATE TABLE IF NOT EXISTS complete_robot_disassemblies (
@@ -332,6 +339,26 @@ try {
 
     try {
         $pdo->exec("ALTER TABLE user_workshop_status ADD COLUMN request_earned_gold INT DEFAULT 0");
+    } catch (PDOException $e) {}
+
+    // active_robot_disassemblies テーブルのカラムマイグレーション
+    try {
+        $pdo->exec("ALTER TABLE active_robot_disassemblies ADD COLUMN head_part_id VARCHAR(255) NULL");
+    } catch (PDOException $e) {}
+    try {
+        $pdo->exec("ALTER TABLE active_robot_disassemblies ADD COLUMN body_part_id VARCHAR(255) NULL");
+    } catch (PDOException $e) {}
+    try {
+        $pdo->exec("ALTER TABLE active_robot_disassemblies ADD COLUMN arms_part_id VARCHAR(255) NULL");
+    } catch (PDOException $e) {}
+    try {
+        $pdo->exec("ALTER TABLE active_robot_disassemblies ADD COLUMN legs_part_id VARCHAR(255) NULL");
+    } catch (PDOException $e) {}
+    try {
+        $checkCol = $pdo->query("SHOW COLUMNS FROM active_robot_disassemblies LIKE 'result_parts_data'");
+        if ($checkCol && $checkCol->fetch()) {
+            $pdo->exec("ALTER TABLE active_robot_disassemblies DROP COLUMN result_parts_data");
+        }
     } catch (PDOException $e) {}
 
     $pdo->beginTransaction();
@@ -1078,18 +1105,45 @@ try {
         $delDisass = $pdo->prepare("DELETE FROM active_robot_disassemblies WHERE user_id = :user_id");
         $delDisass->execute([':user_id' => $actualUserId]);
     } elseif (!empty($gameData['activeRobotDisassembly']) && !empty($gameData['activeRobotDisassembly']['startTime'])) {
-        // 進行中の場合は active_robot_disassemblies テーブルを同期
+        // 進行中の場合は active_robot_disassemblies テーブルを同期 (パーツIDを個別カラムで保持)
         $ad = $gameData['activeRobotDisassembly'];
+        $robClone = $ad['robotClone'] ?? [];
+        $robParts = $robClone['parts'] ?? [];
+        $resultParts = $ad['resultParts'] ?? [];
+
+        $headId = $robParts['head']['id'] ?? null;
+        $bodyId = $robParts['body']['id'] ?? null;
+        $armsId = $robParts['arms']['id'] ?? null;
+        $legsId = $robParts['legs']['id'] ?? null;
+
+        // resultParts からのフォールバック
+        if (!$headId || !$bodyId || !$armsId || !$legsId) {
+            foreach ($resultParts as $rp) {
+                if (!is_array($rp)) continue;
+                $type = strtolower($rp['type'] ?? '');
+                if ($type === 'head' && !$headId) $headId = $rp['id'] ?? null;
+                if ($type === 'body' && !$bodyId) $bodyId = $rp['id'] ?? null;
+                if (($type === 'arms' || $type === 'arm') && !$armsId) $armsId = $rp['id'] ?? null;
+                if (($type === 'legs' || $type === 'leg') && !$legsId) $legsId = $rp['id'] ?? null;
+            }
+        }
+
         $stmtDisass = $pdo->prepare("
-            REPLACE INTO active_robot_disassemblies (user_id, robot_id, start_time, end_time, result_parts_data)
-            VALUES (:user_id, :robot_id, :start_time, :end_time, :result_parts_data)
+            REPLACE INTO active_robot_disassemblies (
+                user_id, robot_id, head_part_id, body_part_id, arms_part_id, legs_part_id, start_time, end_time
+            ) VALUES (
+                :user_id, :robot_id, :head_part_id, :body_part_id, :arms_part_id, :legs_part_id, :start_time, :end_time
+            )
         ");
         $stmtDisass->execute([
             ':user_id' => $actualUserId,
-            ':robot_id' => $ad['robotClone']['id'] ?? '',
+            ':robot_id' => $robClone['id'] ?? ($ad['robotId'] ?? ''),
+            ':head_part_id' => $headId,
+            ':body_part_id' => $bodyId,
+            ':arms_part_id' => $armsId,
+            ':legs_part_id' => $legsId,
             ':start_time' => (int)($ad['startTime'] ?? 0),
             ':end_time' => (int)($ad['endTime'] ?? 0),
-            ':result_parts_data' => json_encode($ad['resultParts'] ?? [], JSON_UNESCAPED_UNICODE)
         ]);
     } else {
         $delDisass = $pdo->prepare("DELETE FROM active_robot_disassemblies WHERE user_id = :user_id");
