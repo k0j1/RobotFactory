@@ -150,8 +150,22 @@ try {
             user_id VARCHAR(255) PRIMARY KEY,
             start_time BIGINT NOT NULL,
             end_time BIGINT NOT NULL,
-            result_robot_data JSON NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            duration_ms BIGINT DEFAULT 0,
+            robot_id VARCHAR(255) NOT NULL,
+            robot_name VARCHAR(255) NOT NULL,
+            head_part_id VARCHAR(255),
+            body_part_id VARCHAR(255),
+            arms_part_id VARCHAR(255),
+            legs_part_id VARCHAR(255),
+            current_hp INT DEFAULT 12,
+            max_hp INT DEFAULT 12,
+            value INT DEFAULT 0,
+            robot_created_at BIGINT DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            CONSTRAINT fk_act_ass_head FOREIGN KEY (head_part_id) REFERENCES user_parts(id) ON DELETE SET NULL,
+            CONSTRAINT fk_act_ass_body FOREIGN KEY (body_part_id) REFERENCES user_parts(id) ON DELETE SET NULL,
+            CONSTRAINT fk_act_ass_arms FOREIGN KEY (arms_part_id) REFERENCES user_parts(id) ON DELETE SET NULL,
+            CONSTRAINT fk_act_ass_legs FOREIGN KEY (legs_part_id) REFERENCES user_parts(id) ON DELETE SET NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
         CREATE TABLE IF NOT EXISTS complete_robot_assemblies (
@@ -531,37 +545,44 @@ try {
                 ];
             };
 
+            $headPart = $buildPartObj('head', $assRow['head_part_id'] ?? null);
+            $bodyPart = $buildPartObj('body', $assRow['body_part_id'] ?? null);
+            $armsPart = $buildPartObj('arms', $assRow['arms_part_id'] ?? null);
+            $legsPart = $buildPartObj('legs', $assRow['legs_part_id'] ?? null);
+
+            $calcStats = [
+                'hp' => 0, 'power' => 0, 'defense' => 0, 'agility' => 0, 'dexterity' => 0, 'intelligence' => 0
+            ];
+            foreach ([$headPart, $bodyPart, $armsPart, $legsPart] as $pObj) {
+                if (!empty($pObj['stats']) && is_array($pObj['stats'])) {
+                    foreach ($calcStats as $sKey => $sVal) {
+                        $calcStats[$sKey] += (int)($pObj['stats'][$sKey] ?? 0);
+                    }
+                }
+            }
+
             $resultRobot = [
                 'id' => $assRow['robot_id'] ?? ('rob_' . $assRow['start_time']),
                 'name' => $assRow['robot_name'] ?? '組立ロボット',
                 'parts' => [
-                    'head' => $buildPartObj('head', $assRow['head_part_id'] ?? null),
-                    'body' => $buildPartObj('body', $assRow['body_part_id'] ?? null),
-                    'arms' => $buildPartObj('arms', $assRow['arms_part_id'] ?? null),
-                    'legs' => $buildPartObj('legs', $assRow['legs_part_id'] ?? null),
+                    'head' => $headPart,
+                    'body' => $bodyPart,
+                    'arms' => $armsPart,
+                    'legs' => $legsPart,
                 ],
-                'stats' => [
-                    'hp' => (int)($assRow['hp'] ?? 0),
-                    'power' => (int)($assRow['power'] ?? 0),
-                    'defense' => (int)($assRow['defense'] ?? 0),
-                    'agility' => (int)($assRow['agility'] ?? 0),
-                    'dexterity' => (int)($assRow['dexterity'] ?? 0),
-                    'intelligence' => (int)($assRow['intelligence'] ?? 0),
-                ],
-                'currentHp' => isset($assRow['current_hp']) ? (int)$assRow['current_hp'] : 12,
-                'maxHp' => isset($assRow['max_hp']) ? (int)$assRow['max_hp'] : 12,
+                'stats' => $calcStats,
+                'currentHp' => isset($assRow['current_hp']) ? (int)$assRow['current_hp'] : max(12, $calcStats['hp']),
+                'maxHp' => isset($assRow['max_hp']) ? (int)$assRow['max_hp'] : max(12, $calcStats['hp']),
                 'value' => (int)($assRow['value'] ?? 0),
                 'createdAt' => isset($assRow['robot_created_at']) && (int)$assRow['robot_created_at'] > 0
                     ? (int)$assRow['robot_created_at']
-                    : (int)$assRow['start_time']
+                    : (int)$assRow['start_time'],
+                'battleStats' => [
+                    'wins' => 0,
+                    'losses' => 0,
+                    'totalBattles' => 0
+                ]
             ];
-
-            if (!empty($assRow['battle_stats'])) {
-                $bs = is_string($assRow['battle_stats']) ? json_decode($assRow['battle_stats'], true) : $assRow['battle_stats'];
-                if (is_array($bs)) {
-                    $resultRobot['battleStats'] = $bs;
-                }
-            }
         }
 
         // 旧データ互換用フォールバック

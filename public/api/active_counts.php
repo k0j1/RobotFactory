@@ -38,8 +38,22 @@ try {
             user_id VARCHAR(255) PRIMARY KEY,
             start_time BIGINT NOT NULL,
             end_time BIGINT NOT NULL,
-            result_robot_data JSON NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            duration_ms BIGINT DEFAULT 0,
+            robot_id VARCHAR(255) NOT NULL,
+            robot_name VARCHAR(255) NOT NULL,
+            head_part_id VARCHAR(255),
+            body_part_id VARCHAR(255),
+            arms_part_id VARCHAR(255),
+            legs_part_id VARCHAR(255),
+            current_hp INT DEFAULT 12,
+            max_hp INT DEFAULT 12,
+            value INT DEFAULT 0,
+            robot_created_at BIGINT DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            CONSTRAINT fk_act_ass_head FOREIGN KEY (head_part_id) REFERENCES user_parts(id) ON DELETE SET NULL,
+            CONSTRAINT fk_act_ass_body FOREIGN KEY (body_part_id) REFERENCES user_parts(id) ON DELETE SET NULL,
+            CONSTRAINT fk_act_ass_arms FOREIGN KEY (arms_part_id) REFERENCES user_parts(id) ON DELETE SET NULL,
+            CONSTRAINT fk_act_ass_legs FOREIGN KEY (legs_part_id) REFERENCES user_parts(id) ON DELETE SET NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
         CREATE TABLE IF NOT EXISTS active_requests (

@@ -233,18 +233,10 @@ try {
         body_part_id VARCHAR(255),
         arms_part_id VARCHAR(255),
         legs_part_id VARCHAR(255),
-        hp INT DEFAULT 0,
-        power INT DEFAULT 0,
-        defense INT DEFAULT 0,
-        agility INT DEFAULT 0,
-        dexterity INT DEFAULT 0,
-        intelligence INT DEFAULT 0,
         current_hp INT DEFAULT 12,
         max_hp INT DEFAULT 12,
         value INT DEFAULT 0,
         robot_created_at BIGINT DEFAULT 0,
-        battle_stats JSON,
-        result_robot_data JSON NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         CONSTRAINT fk_act_ass_head FOREIGN KEY (head_part_id) REFERENCES user_parts(id) ON DELETE SET NULL,
         CONSTRAINT fk_act_ass_body FOREIGN KEY (body_part_id) REFERENCES user_parts(id) ON DELETE SET NULL,
@@ -685,18 +677,10 @@ try {
         "ADD COLUMN body_part_id VARCHAR(255) NULL",
         "ADD COLUMN arms_part_id VARCHAR(255) NULL",
         "ADD COLUMN legs_part_id VARCHAR(255) NULL",
-        "ADD COLUMN hp INT DEFAULT 0",
-        "ADD COLUMN power INT DEFAULT 0",
-        "ADD COLUMN defense INT DEFAULT 0",
-        "ADD COLUMN agility INT DEFAULT 0",
-        "ADD COLUMN dexterity INT DEFAULT 0",
-        "ADD COLUMN intelligence INT DEFAULT 0",
         "ADD COLUMN current_hp INT DEFAULT 12",
         "ADD COLUMN max_hp INT DEFAULT 12",
         "ADD COLUMN value INT DEFAULT 0",
-        "ADD COLUMN robot_created_at BIGINT DEFAULT 0",
-        "ADD COLUMN battle_stats JSON NULL",
-        "MODIFY COLUMN result_robot_data JSON NULL"
+        "ADD COLUMN robot_created_at BIGINT DEFAULT 0"
     ];
 
     foreach ($activeAssemblyCols as $colSql) {
@@ -705,7 +689,7 @@ try {
         } catch (PDOException $e) {}
     }
 
-    // 既存レコードがあれば result_robot_data JSON から新列へデータ同期
+    // 既存レコードがあれば result_robot_data JSON から新列へデータ同期（列削除前の安全措置）
     try {
         $checkJsonCol = $pdo->query("SHOW COLUMNS FROM active_robot_assemblies LIKE 'result_robot_data'");
         if ($checkJsonCol && $checkJsonCol->fetch()) {
@@ -719,12 +703,6 @@ try {
                         body_part_id = COALESCE(:body_part_id, body_part_id),
                         arms_part_id = COALESCE(:arms_part_id, arms_part_id),
                         legs_part_id = COALESCE(:legs_part_id, legs_part_id),
-                        hp = COALESCE(:hp, hp),
-                        power = COALESCE(:power, power),
-                        defense = COALESCE(:defense, defense),
-                        agility = COALESCE(:agility, agility),
-                        dexterity = COALESCE(:dexterity, dexterity),
-                        intelligence = COALESCE(:intelligence, intelligence),
                         current_hp = COALESCE(:current_hp, current_hp),
                         max_hp = COALESCE(:max_hp, max_hp),
                         value = COALESCE(:value, value),
@@ -734,7 +712,6 @@ try {
                 while ($assRow = $stmtActAss->fetch(PDO::FETCH_ASSOC)) {
                     $d = json_decode($assRow['result_robot_data'], true);
                     if (!is_array($d)) continue;
-                    $rStats = $d['stats'] ?? [];
                     $rParts = $d['parts'] ?? [];
 
                     $updAssStmt->execute([
@@ -744,12 +721,6 @@ try {
                         ':body_part_id' => $rParts['body']['id'] ?? null,
                         ':arms_part_id' => $rParts['arms']['id'] ?? null,
                         ':legs_part_id' => $rParts['legs']['id'] ?? null,
-                        ':hp' => isset($rStats['hp']) ? (int)$rStats['hp'] : 0,
-                        ':power' => isset($rStats['power']) ? (int)$rStats['power'] : 0,
-                        ':defense' => isset($rStats['defense']) ? (int)$rStats['defense'] : 0,
-                        ':agility' => isset($rStats['agility']) ? (int)$rStats['agility'] : 0,
-                        ':dexterity' => isset($rStats['dexterity']) ? (int)$rStats['dexterity'] : 0,
-                        ':intelligence' => isset($rStats['intelligence']) ? (int)$rStats['intelligence'] : (isset($rStats['int']) ? (int)$rStats['int'] : 0),
                         ':current_hp' => isset($d['currentHp']) ? (int)$d['currentHp'] : 12,
                         ':max_hp' => isset($d['maxHp']) ? (int)$d['maxHp'] : 12,
                         ':value' => isset($d['value']) ? (int)$d['value'] : 0,
@@ -774,6 +745,23 @@ try {
     try { $pdo->exec("ALTER TABLE active_robot_assemblies ADD CONSTRAINT fk_act_ass_body FOREIGN KEY (body_part_id) REFERENCES user_parts(id) ON DELETE SET NULL"); } catch (PDOException $e) {}
     try { $pdo->exec("ALTER TABLE active_robot_assemblies ADD CONSTRAINT fk_act_ass_arms FOREIGN KEY (arms_part_id) REFERENCES user_parts(id) ON DELETE SET NULL"); } catch (PDOException $e) {}
     try { $pdo->exec("ALTER TABLE active_robot_assemblies ADD CONSTRAINT fk_act_ass_legs FOREIGN KEY (legs_part_id) REFERENCES user_parts(id) ON DELETE SET NULL"); } catch (PDOException $e) {}
+
+    // 冗長なカラム（battle_stats, ステータス列, result_robot_data）を安全に削除 (DB v0.11)
+    $dropCols = [
+        'battle_stats',
+        'hp',
+        'power',
+        'defense',
+        'agility',
+        'dexterity',
+        'intelligence',
+        'result_robot_data'
+    ];
+    foreach ($dropCols as $colName) {
+        try {
+            $pdo->exec("ALTER TABLE active_robot_assemblies DROP COLUMN $colName");
+        } catch (PDOException $e) {}
+    }
 
     try {
         $pdo->exec("ALTER TABLE m_parts_encyclopedia ADD COLUMN visual_index INT DEFAULT 0");
