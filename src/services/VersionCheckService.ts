@@ -1,4 +1,4 @@
-export const APP_DB_VERSION = 'v0.11';
+export const APP_DB_VERSION = 'v0.12';
 
 /**
  * バージョン文字列の表記揺れ（V0.2 / Ver.0.2 / v0.2 等）を正規化して比較する

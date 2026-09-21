@@ -601,7 +601,7 @@ try {
         ];
     }
 
-    // 6. active_requests テーブルから受注依頼状態を取得
+    // 6. active_requests テーブルから受注依頼状態を取得 (テーブル列値とrequest_dataの残余データを合成して復元)
     $reqStmt = $pdo->prepare("
         SELECT request_id, rank, reward_g, deadline, request_data 
         FROM active_requests 
@@ -612,20 +612,30 @@ try {
     $reqRow = $reqStmt->fetch();
     $currentRequest = null;
     if ($reqRow && !empty($reqRow['request_id'])) {
+        $extraData = [];
         if (!empty($reqRow['request_data'])) {
-            $rData = json_decode($reqRow['request_data'], true);
+            $rData = is_string($reqRow['request_data']) ? json_decode($reqRow['request_data'], true) : $reqRow['request_data'];
             if (is_array($rData)) {
-                $currentRequest = $rData;
+                $extraData = $rData;
+                // 重複していた旧キーを安全に除去
+                unset(
+                    $extraData['id'],
+                    $extraData['requestId'],
+                    $extraData['request_id'],
+                    $extraData['rank'],
+                    $extraData['rewardG'],
+                    $extraData['reward_g'],
+                    $extraData['deadline']
+                );
             }
         }
-        if (!$currentRequest) {
-            $currentRequest = [
-                'id' => $reqRow['request_id'],
-                'rank' => $reqRow['rank'],
-                'rewardG' => (int)$reqRow['reward_g'],
-                'deadline' => (int)$reqRow['deadline']
-            ];
-        }
+        // テーブルのカラム値を優先して ClientRequest を再構築
+        $currentRequest = array_merge($extraData, [
+            'id' => $reqRow['request_id'],
+            'rank' => $reqRow['rank'],
+            'rewardG' => (int)$reqRow['reward_g'],
+            'deadline' => (int)$reqRow['deadline']
+        ]);
     }
 
     // 7. user_minigame_status テーブルからミニゲーム/バトル演習成績・エレメント数・宝箱数を取得

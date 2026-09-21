@@ -1019,17 +1019,30 @@ try {
     } elseif (!empty($gameData['currentRequest']) && !empty($gameData['currentRequest']['id'])) {
         // 進行中の場合は active_requests テーブルを同期
         $r = $gameData['currentRequest'];
+
+        // request_data のうちテーブルの列（request_id, rank, reward_g, deadline）で保持している情報は除外
+        $rPayload = is_array($r) ? $r : [];
+        unset(
+            $rPayload['id'],
+            $rPayload['requestId'],
+            $rPayload['request_id'],
+            $rPayload['rank'],
+            $rPayload['rewardG'],
+            $rPayload['reward_g'],
+            $rPayload['deadline']
+        );
+
         $stmtReq = $pdo->prepare("
             REPLACE INTO active_requests (user_id, request_id, rank, reward_g, deadline, request_data)
             VALUES (:user_id, :request_id, :rank, :reward_g, :deadline, :request_data)
         ");
         $stmtReq->execute([
             ':user_id' => $actualUserId,
-            ':request_id' => $r['id'],
+            ':request_id' => $r['id'] ?? ($r['requestId'] ?? ''),
             ':rank' => $r['rank'] ?? 'OldMan',
-            ':reward_g' => (int)($r['rewardG'] ?? 0),
+            ':reward_g' => (int)($r['rewardG'] ?? ($r['reward_g'] ?? 0)),
             ':deadline' => (int)($r['deadline'] ?? 0),
-            ':request_data' => json_encode($r, JSON_UNESCAPED_UNICODE)
+            ':request_data' => !empty($rPayload) ? json_encode($rPayload, JSON_UNESCAPED_UNICODE) : null
         ]);
     } else {
         $delReq = $pdo->prepare("DELETE FROM active_requests WHERE user_id = :user_id");

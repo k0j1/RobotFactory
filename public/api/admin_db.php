@@ -945,9 +945,20 @@ try {
             $result['active_assembly'] = $assItem;
 
             // 9. active_requests
-            $arStmt = $pdo->prepare("SELECT * FROM active_requests WHERE user_id IN ($inPlaceholders) ORDER BY id DESC");
+            $arStmt = $pdo->prepare("SELECT * FROM active_requests WHERE user_id IN ($inPlaceholders) LIMIT 1");
             $arStmt->execute($candidateIds);
-            $result['active_request'] = $arStmt->fetch() ?: null;
+            $arRow = $arStmt->fetch();
+            if ($arRow) {
+                if (!empty($arRow['request_data'])) {
+                    $parsed = is_string($arRow['request_data']) ? json_decode($arRow['request_data'], true) : $arRow['request_data'];
+                    if (is_array($parsed)) {
+                        $arRow['client_name'] = $parsed['clientName'] ?? ($parsed['client_name'] ?? null);
+                        $arRow['description'] = $parsed['description'] ?? null;
+                        $arRow['requirements'] = $parsed['requirements'] ?? null;
+                    }
+                }
+            }
+            $result['active_request'] = $arRow ?: null;
 
             // 10. complete_requests
             $crStmt = $pdo->prepare("SELECT * FROM complete_requests WHERE user_id IN ($inPlaceholders) ORDER BY created_at DESC LIMIT 50");

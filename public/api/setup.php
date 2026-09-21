@@ -423,6 +423,37 @@ try {
         // 既に追加されている場合は無視
     }
 
+    // active_requests テーブルの request_data からテーブルで保持している重複カラム（id, rank, rewardG, deadline 等）を削除・クリーンアップ
+    try {
+        $cleanReqStmt = $pdo->query("SELECT user_id, request_data FROM active_requests WHERE request_data IS NOT NULL");
+        if ($cleanReqStmt) {
+            $updReqStmt = $pdo->prepare("UPDATE active_requests SET request_data = :request_data WHERE user_id = :user_id");
+            while ($arRow = $cleanReqStmt->fetch()) {
+                if (!empty($arRow['request_data'])) {
+                    $decoded = is_string($arRow['request_data']) ? json_decode($arRow['request_data'], true) : $arRow['request_data'];
+                    if (is_array($decoded)) {
+                        $dirty = false;
+                        foreach (['id', 'requestId', 'request_id', 'rank', 'rewardG', 'reward_g', 'deadline'] as $dupKey) {
+                            if (array_key_exists($dupKey, $decoded)) {
+                                unset($decoded[$dupKey]);
+                                $dirty = true;
+                            }
+                        }
+                        if ($dirty) {
+                            $newJson = !empty($decoded) ? json_encode($decoded, JSON_UNESCAPED_UNICODE) : null;
+                            $updReqStmt->execute([
+                                ':request_data' => $newJson,
+                                ':user_id' => $arRow['user_id']
+                            ]);
+                        }
+                    }
+                }
+            }
+        }
+    } catch (PDOException $e) {
+        // テーブルが存在しない場合等は安全にスキップ
+    }
+
     // user_minigame_status テーブルに chests_count を追加
     try {
         $pdo->exec("ALTER TABLE user_minigame_status ADD COLUMN chests_count INT DEFAULT 0");
