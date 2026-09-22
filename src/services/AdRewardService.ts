@@ -13,6 +13,8 @@ export interface AdRewardRequest {
 
 export type AdRewardListener = (request: AdRewardRequest | null) => void;
 
+export const REWARD_PAGE_URL = 'https://takahara-books.com/game/robotfactory/reward-page.html';
+
 class AdRewardService {
   private static instance: AdRewardService;
   private currentRequest: AdRewardRequest | null = null;
@@ -52,66 +54,103 @@ class AdRewardService {
   }
 
   /**
-   * Google AdSense H5 Game Ads API (window.adBreak) を通じたリワード広告の再生を試みる
+   * ポップアップ全画面でリワード広告ページを開き、視聴完了後にリワードを付与する
    */
   public requestRewardAd(options: {
     title: string;
     rewardDescription: string;
+    taskType?: string;
   }): Promise<boolean> {
     return new Promise((resolve) => {
-      const { title, rewardDescription } = options;
+      const { title, rewardDescription, taskType = 'shorten_30m' } = options;
 
-      // 1. Google AdSense H5 Game Ads API (window.adBreak) の存在チェック
-      const win = window as any;
-      const hasAdBreak = typeof win.adBreak === 'function';
+      // 画面の利用可能サイズを取得して全画面ポップアップを設定
+      const screenWidth = typeof window !== 'undefined' ? (window.screen.availWidth || window.screen.width || window.innerWidth || 1024) : 1024;
+      const screenHeight = typeof window !== 'undefined' ? (window.screen.availHeight || window.screen.height || window.innerHeight || 768) : 768;
+      const windowFeatures = `width=${screenWidth},height=${screenHeight},left=0,top=0,fullscreen=yes,menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=yes`;
 
-      if (hasAdBreak) {
-        let rewarded = false;
-        try {
-          win.adBreak({
-            type: 'reward',
-            name: 'shorten_task_duration',
-            beforeAd: () => {
-              console.log('[AdRewardService] AdSense adBreak started');
-            },
-            afterAd: () => {
-              console.log('[AdRewardService] AdSense adBreak finished');
-            },
-            beforeReward: (showAdFn: () => void) => {
-              // 広告再生の準備
-              if (typeof showAdFn === 'function') {
-                showAdFn();
-              }
-            },
-            adViewed: () => {
-              console.log('[AdRewardService] AdSense reward viewed successfully');
-              rewarded = true;
-              resolve(true);
-            },
-            adDismissed: () => {
-              console.log('[AdRewardService] AdSense ad dismissed');
-              if (!rewarded) {
-                resolve(false);
-              }
-            },
-            adBreakDone: (placementInfo: any) => {
-              console.log('[AdRewardService] adBreakDone:', placementInfo);
-              if (!rewarded) {
-                // 広告枠の取得失敗や未承認・ブロック時はフォールバックのシミュレーション広告UIへ
-                console.log('[AdRewardService] Fallback to in-app simulation modal');
-                this.openSimulationModal(title, rewardDescription, resolve);
-              }
-            }
-          });
-          return;
-        } catch (adError) {
-          console.warn('[AdRewardService] adBreak invocation failed, fallback to simulation:', adError);
-          // エラー時もフォールバックへ
+      const targetUrl = `${REWARD_PAGE_URL}?type=${encodeURIComponent(taskType)}&t=${Date.now()}`;
+      
+      let popup: Window | null = null;
+      try {
+        popup = window.open(targetUrl, 'RobotFactoryRewardAd', windowFeatures);
+        if (popup) {
+          popup.focus();
         }
+      } catch (e) {
+        console.warn('[AdRewardService] Failed to open popup directly:', e);
       }
 
-      // 2. adBreak が無い環境（ローカル開発、審査中、広告ブロックなど）のフォールバック
-      this.openSimulationModal(title, rewardDescription, resolve);
+      let isResolved = false;
+      let checkTimer: ReturnType<typeof setInterval> | null = null;
+
+      const cleanup = () => {
+        if (checkTimer) {
+          clearInterval(checkTimer);
+          checkTimer = null;
+        }
+        window.removeEventListener('message', handleMessage);
+        window.removeEventListener('storage', handleStorage);
+      };
+
+      const finish = (rewarded: boolean) => {
+        if (isResolved) return;
+        isResolved = true;
+        cleanup();
+        resolve(rewarded);
+      };
+
+      // 1. postMessage による完了通知を受信
+      const handleMessage = (event: MessageEvent) => {
+        if (event.data && (event.data.type === 'ROBOTFACTORY_REWARD_GRANTED' || event.data.type === 'REWARD_AD_COMPLETED')) {
+          console.log('[AdRewardService] Received reward grant message from popup');
+          finish(true);
+        }
+      };
+      window.addEventListener('message', handleMessage);
+
+      // 2. localStorage による完了通知を受信
+      const handleStorage = (event: StorageEvent) => {
+        if (event.key === 'robotfactory_reward_granted') {
+          console.log('[AdRewardService] Received reward grant via localStorage');
+          finish(true);
+        }
+      };
+      window.addEventListener('storage', handleStorage);
+
+      // 3. ポップアップが閉じられたかをポーリング監視
+      if (popup) {
+        checkTimer = setInterval(() => {
+          try {
+            if (popup.closed) {
+              console.log('[AdRewardService] Reward popup was closed by user');
+              // ポップアップが閉じられたらリワード付与完了とする
+              finish(true);
+            }
+          } catch (e) {
+            // cross-origin restrictions might throw on access, ignore
+          }
+        }, 500);
+      } else {
+        // ポップアップブロッカー等で開けなかった場合のフォールバック（別タブで開く試行、またはゲーム内シミュレーション）
+        console.warn('[AdRewardService] Popup blocked or failed to open. Trying new tab or in-app modal.');
+        try {
+          const fallbackTab = window.open(targetUrl, '_blank');
+          if (fallbackTab) {
+            fallbackTab.focus();
+            checkTimer = setInterval(() => {
+              try {
+                if (fallbackTab.closed) {
+                  finish(true);
+                }
+              } catch (e) {}
+            }, 500);
+            return;
+          }
+        } catch (e) {}
+
+        this.openSimulationModal(title, rewardDescription, finish);
+      }
     });
   }
 

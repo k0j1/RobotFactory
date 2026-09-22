@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>リワード獲得 - 動画視聴</title>
+
+  <!-- 1. AdSenseの基本コード（必ず記述） -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2980262928639137"
+       crossorigin="anonymous"></script>
+
+  <style>
+    body {
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      background-color: #f4f6f9;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    .reward-card {
+      background: #ffffff;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      text-align: center;
+      max-width: 400px;
+      width: 100%;
+    }
+    .icon {
+      font-size: 48px;
+      margin-bottom: 15px;
+    }
+    h1 {
+      font-size: 20px;
+      color: #333;
+      margin-bottom: 10px;
+    }
+    p {
+      font-size: 14px;
+      color: #666;
+      line-height: 1.6;
+      margin-bottom: 25px;
+    }
+    .back-btn {
+      display: inline-block;
+      padding: 12px 24px;
+      background-color: #007bff;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: bold;
+      transition: background-color 0.2s;
+      cursor: pointer;
+    }
+    .back-btn:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="reward-card">
+    <div class="icon">🎁</div>
+    <h1>リワードの受取画面</h1>
+    <p>
+      画面上の案内（オファーウォール）に従って動画を最後まで視聴すると、ロックが解除されてリワード（報酬）を獲得できます。
+    </p>
+
+    <!-- 視聴完了後に元の画面やゲームに戻るためのボタン -->
+    <!-- 視聴前はオファーウォールのオーバーレイで隠れるため押せません -->
+    <a href="javascript:handleBackClick()" class="back-btn" id="backBtn">元の画面に戻る</a>
+  </div>
+
+  <script>
+    // 必要に応じて、URLパラメータ（?reward=coins等）を受け取って
+    // 視聴完了時（ページ読み込み時）にローカルストレージやサーバーへ報酬付与フラグを記録する処理を記述
+    const urlParams = new URLSearchParams(window.location.search);
+    const rewardType = urlParams.get('type') || 'shorten_30m';
+
+    function notifyRewardGranted() {
+      try {
+        if (window.opener && !window.opener.closed) {
+          window.opener.postMessage({ type: 'ROBOTFACTORY_REWARD_GRANTED', rewardType: rewardType }, '*');
+        }
+      } catch (e) {}
+      try {
+        localStorage.setItem('robotfactory_reward_granted', JSON.stringify({ type: rewardType, timestamp: Date.now() }));
+      } catch (e) {}
+    }
+
+    if (rewardType) {
+      // 例: 視聴完了後にこのページが表示された（ロックが解除された）タイミングで報酬付与処理を実行
+      // localStorage.setItem('reward_granted', 'true');
+      notifyRewardGranted();
+    }
+
+    function handleBackClick() {
+      notifyRewardGranted();
+      if (window.opener && !window.opener.closed) {
+        window.close();
+      } else {
+        history.back();
+      }
+    }
+  </script>
+</body>
+</html>

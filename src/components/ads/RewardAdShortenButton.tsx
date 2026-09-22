@@ -28,7 +28,8 @@ export const RewardAdShortenButton: React.FC<RewardAdShortenButtonProps> = ({
     try {
       const rewarded = await adRewardService.requestRewardAd({
         title: `${taskName}の完了時間を30分短縮します`,
-        rewardDescription: '完了時間 30分短縮'
+        rewardDescription: '完了時間 30分短縮',
+        taskType
       });
 
       if (rewarded) {
