@@ -260,8 +260,18 @@ try {
             gold_chest INT DEFAULT 0,
             mythic_chest INT DEFAULT 0,
             element INT DEFAULT 0,
+            battle_item JSON NULL,
+            reversi_item JSON NULL,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+        // 既存テーブルへのカラム追加マイグレーション
+        try {
+            $pdo->exec("ALTER TABLE user_item ADD COLUMN battle_item JSON NULL AFTER element");
+        } catch (PDOException $e) {}
+        try {
+            $pdo->exec("ALTER TABLE user_item ADD COLUMN reversi_item JSON NULL AFTER battle_item");
+        } catch (PDOException $e) {}
 
         CREATE TABLE IF NOT EXISTS user_minigame_status (
             user_id VARCHAR(255),
@@ -407,6 +417,13 @@ try {
     unset($saveDataSnapshot['minigameRecords']);        // user_minigame_status
     unset($saveDataSnapshot['repairKits']);             // user_item
     unset($saveDataSnapshot['unopenedChests']);         // user_item
+    unset($saveDataSnapshot['combatEquipments']);       // user_item (battle_item)
+    unset($saveDataSnapshot['combatEquipmentRanks']);   // user_item (battle_item)
+    unset($saveDataSnapshot['activeCombatEquipments']); // user_item (battle_item)
+    unset($saveDataSnapshot['othelloPurchasedMemories']); // user_item (reversi_item)
+    unset($saveDataSnapshot['othelloEquippedMemories']);  // user_item (reversi_item)
+    unset($saveDataSnapshot['reversiPurchasedMemories']); // user_item (reversi_item)
+    unset($saveDataSnapshot['reversiEquippedMemories']);  // user_item (reversi_item)
 
     $jsonGameData = json_encode($saveDataSnapshot, JSON_UNESCAPED_UNICODE);
     $stmtSave = $pdo->prepare("
@@ -1377,7 +1394,7 @@ try {
         }
     }
 
-    // 12. user_item テーブルの同期（修理キット、各宝箱、エレメント）
+    // 12. user_item テーブルの同期（修理キット、各宝箱、エレメント、battle_item、reversi_item）
     $repairKitCount = isset($gameData['repairKits']) ? (int)$gameData['repairKits'] : 0;
     $rawChests = (isset($gameData['unopenedChests']) && is_array($gameData['unopenedChests'])) ? $gameData['unopenedChests'] : [];
     $bronzeChestCount = isset($rawChests['bronze']) ? (int)$rawChests['bronze'] : 0;
@@ -1386,16 +1403,51 @@ try {
     $mythicChestCount = isset($rawChests['mythic']) ? (int)$rawChests['mythic'] : 0;
     $elementCount = isset($gameData['battleElements']) ? (int)$gameData['battleElements'] : 0;
 
+    // 既存の user_item 状況を取得（万が一今回の入力にバトル/リバーシアイテム情報が含まれない場合の消失防止）
+    $existingItemStmt = $pdo->prepare("SELECT battle_item, reversi_item FROM user_item WHERE user_id = :uid LIMIT 1");
+    $existingItemStmt->execute([':uid' => $actualUserId]);
+    $existingItemRow = $existingItemStmt->fetch(PDO::FETCH_ASSOC);
+
+    $hasBattleInput = isset($gameData['combatEquipments']) || isset($gameData['combatEquipmentRanks']) || isset($gameData['activeCombatEquipments']);
+    $hasReversiInput = isset($gameData['reversiPurchasedMemories']) || isset($gameData['othelloPurchasedMemories']) || isset($gameData['reversiEquippedMemories']) || isset($gameData['othelloEquippedMemories']);
+
+    $battleItemJson = null;
+    if ($hasBattleInput) {
+        $battleItem = [
+            'beamSaber' => !empty($gameData['combatEquipments']['beamSaber']),
+            'beamShield' => !empty($gameData['combatEquipments']['beamShield']),
+            'combatEquipments' => $gameData['combatEquipments'] ?? [],
+            'combatEquipmentRanks' => $gameData['combatEquipmentRanks'] ?? [],
+            'activeCombatEquipments' => $gameData['activeCombatEquipments'] ?? []
+        ];
+        $battleItemJson = json_encode($battleItem, JSON_UNESCAPED_UNICODE);
+    } elseif ($existingItemRow && !empty($existingItemRow['battle_item'])) {
+        $battleItemJson = $existingItemRow['battle_item'];
+    }
+
+    $reversiItemJson = null;
+    if ($hasReversiInput) {
+        $reversiItem = [
+            'purchasedMemories' => $gameData['reversiPurchasedMemories'] ?? $gameData['othelloPurchasedMemories'] ?? [],
+            'equippedMemories' => $gameData['reversiEquippedMemories'] ?? $gameData['othelloEquippedMemories'] ?? []
+        ];
+        $reversiItemJson = json_encode($reversiItem, JSON_UNESCAPED_UNICODE);
+    } elseif ($existingItemRow && !empty($existingItemRow['reversi_item'])) {
+        $reversiItemJson = $existingItemRow['reversi_item'];
+    }
+
     $stmtItem = $pdo->prepare("
-        INSERT INTO user_item (user_id, repair_kit, bronze_chest, silver_chest, gold_chest, mythic_chest, element)
-        VALUES (:user_id, :repair_kit, :bronze_chest, :silver_chest, :gold_chest, :mythic_chest, :element)
+        INSERT INTO user_item (user_id, repair_kit, bronze_chest, silver_chest, gold_chest, mythic_chest, element, battle_item, reversi_item)
+        VALUES (:user_id, :repair_kit, :bronze_chest, :silver_chest, :gold_chest, :mythic_chest, :element, :battle_item, :reversi_item)
         ON DUPLICATE KEY UPDATE
             repair_kit = :repair_kit_up,
             bronze_chest = :bronze_chest_up,
             silver_chest = :silver_chest_up,
             gold_chest = :gold_chest_up,
             mythic_chest = :mythic_chest_up,
-            element = :element_up
+            element = :element_up,
+            battle_item = COALESCE(:battle_item_up, user_item.battle_item),
+            reversi_item = COALESCE(:reversi_item_up, user_item.reversi_item)
     ");
     $stmtItem->execute([
         ':user_id' => $actualUserId,
@@ -1405,12 +1457,16 @@ try {
         ':gold_chest' => $goldChestCount,
         ':mythic_chest' => $mythicChestCount,
         ':element' => $elementCount,
+        ':battle_item' => $battleItemJson,
+        ':reversi_item' => $reversiItemJson,
         ':repair_kit_up' => $repairKitCount,
         ':bronze_chest_up' => $bronzeChestCount,
         ':silver_chest_up' => $silverChestCount,
         ':gold_chest_up' => $goldChestCount,
         ':mythic_chest_up' => $mythicChestCount,
-        ':element_up' => $elementCount
+        ':element_up' => $elementCount,
+        ':battle_item_up' => $battleItemJson,
+        ':reversi_item_up' => $reversiItemJson
     ]);
 
     $pdo->commit();

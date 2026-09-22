@@ -54,7 +54,7 @@ export const OthelloStrategyMemoryCard: React.FC<OthelloStrategyMemoryCardProps>
       >
         <div className="flex items-center gap-2">
           <Gi.GiBrain className="text-amber-600 text-xl" />
-          <h3 className={`${theme.typography.h3} text-stone-800`}>オセロ戦術メモリ（思考ルーチン制御）</h3>
+          <h3 className={`${theme.typography.h3} text-stone-800`}>リバーシ戦術メモリ（思考ルーチン制御）</h3>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {/* 折りたたみ状態でもスロット状況がわかるサマリー */}

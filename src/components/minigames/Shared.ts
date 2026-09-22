@@ -427,7 +427,7 @@ export interface MinigameProps {
   onSetSpeed?: (speed: number) => void;
   activeCombatEquipments?: { beamSaber?: boolean; beamShield?: boolean };
   combatEquipmentRanks?: { beamSaber?: CombatEquipmentRank; beamShield?: CombatEquipmentRank };
-  othelloEquippedMemories?: string[]; // オセロ専用装備戦略メモリ (最大3個)
+  othelloEquippedMemories?: string[]; // リバーシ専用装備戦略メモリ (最大3個)
 }
 
 /**

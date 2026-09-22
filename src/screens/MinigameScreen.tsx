@@ -68,7 +68,7 @@ const GAMES: GameDef[] = [
   { 
     id: 'othello', 
     category: 'puzzle', 
-    name: 'オセロ演習', 
+    name: 'リバーシ演習', 
     desc: '挟んで裏返す定番ボードゲーム（Int重視）', 
     rewardText: '勝利報酬: 名声 +0〜100 ＆ エレメント +0〜100 E (Lv.4〜)',
     icon: <Gi.GiCheckeredFlag className="inline text-stone-700" />, 
@@ -292,7 +292,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
         obtainedElements = earnedFame;
 
         if (earnedFame > 0) {
-          (engine as any).addFame(earnedFame, `${selectedGame === 'othello' ? 'オセロ' : selectedGame === 'chess' ? 'チェス' : '演習'}勝利: ${activeOpponent.name}`);
+          (engine as any).addFame(earnedFame, `${selectedGame === 'othello' ? 'リバーシ' : selectedGame === 'chess' ? 'チェス' : '演習'}勝利: ${activeOpponent.name}`);
         }
       } else if (selectedGame === 'defense') {
         stageName = activeDefenseStage.name;
@@ -914,7 +914,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                               </div>
                             )}
 
-                            {/* オセロ専用装備メモリバッジ */}
+                            {/* リバーシ専用装備メモリバッジ */}
                             {selectedGame === 'othello' && (r.othelloEquippedMemories || state.othelloEquippedMemories) && (
                               <div className="flex flex-wrap gap-1 mt-1">
                                 {((r.othelloEquippedMemories && r.othelloEquippedMemories.length > 0)
@@ -1133,7 +1133,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
               </div>
             )}
 
-            {/* 対戦相手選択カード（オセロ・チェス） */}
+            {/* 対戦相手選択カード（リバーシ・チェス） */}
             {requiresOpponent && (
               <Card className="bg-stone-50 border-2 border-stone-300 p-4 shadow-sm flex flex-col justify-between">
                 <div>
@@ -1239,7 +1239,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
             )}
           </div>
 
-          {/* オセロ専用：戦術メモリ（思考ルーチン制御）購入＆装備カード */}
+          {/* リバーシ専用：戦術メモリ（思考ルーチン制御）購入＆装備カード */}
           {selectedGame === 'othello' && (
             <OthelloStrategyMemoryCard
               state={state}

@@ -256,8 +256,18 @@ try {
             gold_chest INT DEFAULT 0,
             mythic_chest INT DEFAULT 0,
             element INT DEFAULT 0,
+            battle_item JSON NULL,
+            reversi_item JSON NULL,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+        // 既存テーブルへのカラム追加マイグレーション
+        try {
+            $pdo->exec("ALTER TABLE user_item ADD COLUMN battle_item JSON NULL AFTER element");
+        } catch (PDOException $e) {}
+        try {
+            $pdo->exec("ALTER TABLE user_item ADD COLUMN reversi_item JSON NULL AFTER battle_item");
+        } catch (PDOException $e) {}
 
         CREATE TABLE IF NOT EXISTS user_minigame_status (
             user_id VARCHAR(255),
@@ -775,9 +785,9 @@ try {
         }
     }
 
-    // 8. user_item テーブルから所持アイテム（修理キット、各宝箱、エレメント）を取得
+    // 8. user_item テーブルから所持アイテム（修理キット、各宝箱、エレメント、battle_item、reversi_item）を取得
     $itemStmt = $pdo->prepare("
-        SELECT repair_kit, bronze_chest, silver_chest, gold_chest, mythic_chest, element
+        SELECT repair_kit, bronze_chest, silver_chest, gold_chest, mythic_chest, element, battle_item, reversi_item
         FROM user_item
         WHERE user_id IN ($inPlaceholders)
         LIMIT 1
@@ -1002,13 +1012,35 @@ try {
         unset($gameData['deliveredRobotsCount']);
         unset($gameData['minigameRecords']);
 
-        // save_data テーブルに残っているアイテム・宝箱・エレメント情報を user_item テーブルへ移行し、save_data から削除
-        $needsSaveDataClean = false;
-        if (isset($gameData['repairKits']) || isset($gameData['unopenedChests']) || isset($gameData['battleElements'])) {
-            $needsSaveDataClean = true;
+        // save_data テーブルに残っているアイテム・宝箱・エレメント・戦闘装備・リバーシ戦術メモリ情報を user_item テーブルへ移行し、save_data から削除
+        $hasSaveItemData = isset($gameData['repairKits']) || isset($gameData['unopenedChests']) || isset($gameData['battleElements']);
+        $hasSaveBattleItem = isset($gameData['combatEquipments']) || isset($gameData['combatEquipmentRanks']) || isset($gameData['activeCombatEquipments']);
+        $hasSaveReversiItem = isset($gameData['othelloPurchasedMemories']) || isset($gameData['othelloEquippedMemories']) || isset($gameData['reversiPurchasedMemories']) || isset($gameData['reversiEquippedMemories']);
+        $needsSaveDataClean = $hasSaveItemData || $hasSaveBattleItem || $hasSaveReversiItem;
+
+        // save_data から移行するバトル装備 JSON の構築
+        $migratedBattleItemJson = null;
+        if ($hasSaveBattleItem) {
+            $migratedBattleItemJson = json_encode([
+                'beamSaber' => !empty($gameData['combatEquipments']['beamSaber']),
+                'beamShield' => !empty($gameData['combatEquipments']['beamShield']),
+                'combatEquipments' => $gameData['combatEquipments'] ?? [],
+                'combatEquipmentRanks' => $gameData['combatEquipmentRanks'] ?? [],
+                'activeCombatEquipments' => $gameData['activeCombatEquipments'] ?? []
+            ], JSON_UNESCAPED_UNICODE);
         }
 
-        if (!$userItemRow && $needsSaveDataClean) {
+        // save_data から移行するリバーシ戦術メモリ JSON の構築
+        $migratedReversiItemJson = null;
+        if ($hasSaveReversiItem) {
+            $migratedReversiItemJson = json_encode([
+                'purchasedMemories' => $gameData['reversiPurchasedMemories'] ?? $gameData['othelloPurchasedMemories'] ?? [],
+                'equippedMemories' => $gameData['reversiEquippedMemories'] ?? $gameData['othelloEquippedMemories'] ?? []
+            ], JSON_UNESCAPED_UNICODE);
+        }
+
+        if (!$userItemRow) {
+            // user_item レコード自体が存在しない場合は、save_data から全アイテムを初期保存
             $rKit = isset($gameData['repairKits']) ? (int)$gameData['repairKits'] : 0;
             $rawChests = (isset($gameData['unopenedChests']) && is_array($gameData['unopenedChests'])) ? $gameData['unopenedChests'] : [];
             $bChest = isset($rawChests['bronze']) ? (int)$rawChests['bronze'] : 0;
@@ -1019,15 +1051,17 @@ try {
 
             try {
                 $insItem = $pdo->prepare("
-                    INSERT INTO user_item (user_id, repair_kit, bronze_chest, silver_chest, gold_chest, mythic_chest, element)
-                    VALUES (:user_id, :repair_kit, :bronze_chest, :silver_chest, :gold_chest, :mythic_chest, :element)
+                    INSERT INTO user_item (user_id, repair_kit, bronze_chest, silver_chest, gold_chest, mythic_chest, element, battle_item, reversi_item)
+                    VALUES (:user_id, :repair_kit, :bronze_chest, :silver_chest, :gold_chest, :mythic_chest, :element, :battle_item, :reversi_item)
                     ON DUPLICATE KEY UPDATE
                         repair_kit = VALUES(repair_kit),
                         bronze_chest = VALUES(bronze_chest),
                         silver_chest = VALUES(silver_chest),
                         gold_chest = VALUES(gold_chest),
                         mythic_chest = VALUES(mythic_chest),
-                        element = VALUES(element)
+                        element = VALUES(element),
+                        battle_item = COALESCE(user_item.battle_item, VALUES(battle_item)),
+                        reversi_item = COALESCE(user_item.reversi_item, VALUES(reversi_item))
                 ");
                 $insItem->execute([
                     ':user_id' => $actualUserId,
@@ -1036,7 +1070,9 @@ try {
                     ':silver_chest' => $sChest,
                     ':gold_chest' => $gChest,
                     ':mythic_chest' => $mChest,
-                    ':element' => $elem
+                    ':element' => $elem,
+                    ':battle_item' => $migratedBattleItemJson,
+                    ':reversi_item' => $migratedReversiItemJson
                 ]);
                 $userItemRow = [
                     'repair_kit' => $rKit,
@@ -1044,22 +1080,64 @@ try {
                     'silver_chest' => $sChest,
                     'gold_chest' => $gChest,
                     'mythic_chest' => $mChest,
-                    'element' => $elem
+                    'element' => $elem,
+                    'battle_item' => $migratedBattleItemJson,
+                    'reversi_item' => $migratedReversiItemJson
                 ];
             } catch (PDOException $e) {}
+        } else {
+            // user_item レコードが既に存在する場合でも、battle_item または reversi_item が未保存で save_data にある場合は補完保存
+            $needsItemUpdate = false;
+            $newBattleItem = $userItemRow['battle_item'];
+            $newReversiItem = $userItemRow['reversi_item'];
+
+            if (empty($userItemRow['battle_item']) && $migratedBattleItemJson !== null) {
+                $newBattleItem = $migratedBattleItemJson;
+                $needsItemUpdate = true;
+            }
+            if (empty($userItemRow['reversi_item']) && $migratedReversiItemJson !== null) {
+                $newReversiItem = $migratedReversiItemJson;
+                $needsItemUpdate = true;
+            }
+
+            if ($needsItemUpdate) {
+                try {
+                    $updItem = $pdo->prepare("
+                        UPDATE user_item 
+                        SET battle_item = COALESCE(battle_item, :b_item),
+                            reversi_item = COALESCE(reversi_item, :r_item)
+                        WHERE user_id = :uid
+                    ");
+                    $updItem->execute([
+                        ':b_item' => $newBattleItem,
+                        ':r_item' => $newReversiItem,
+                        ':uid' => $actualUserId
+                    ]);
+                    $userItemRow['battle_item'] = $newBattleItem;
+                    $userItemRow['reversi_item'] = $newReversiItem;
+                } catch (PDOException $e) {}
+            }
         }
 
+        // save_data には保持しないため、キーを確実に削除
         unset($gameData['repairKits']);
         unset($gameData['unopenedChests']);
         unset($gameData['battleElements']);
+        unset($gameData['combatEquipments']);
+        unset($gameData['combatEquipmentRanks']);
+        unset($gameData['activeCombatEquipments']);
+        unset($gameData['othelloPurchasedMemories']);
+        unset($gameData['othelloEquippedMemories']);
+        unset($gameData['reversiPurchasedMemories']);
+        unset($gameData['reversiEquippedMemories']);
 
-        // save_data テーブル内の JSON をクリーンアップ更新
-        if ($needsSaveDataClean && isset($row['id'])) {
+        // save_data テーブル内の JSON をクリーンアップ更新（battle_item, reversi_item などの重複保存を完全に削除）
+        if ($needsSaveDataClean) {
             try {
-                $cleanSaveStmt = $pdo->prepare("UPDATE save_data SET game_data = :game_data WHERE id = :id");
+                $cleanSaveStmt = $pdo->prepare("UPDATE save_data SET game_data = :game_data WHERE user_id = :user_id");
                 $cleanSaveStmt->execute([
                     ':game_data' => json_encode($gameData, JSON_UNESCAPED_UNICODE),
-                    ':id' => $row['id']
+                    ':user_id' => $actualUserId
                 ]);
             } catch (PDOException $e) {}
         }
@@ -1073,6 +1151,30 @@ try {
                     $dbParts[] = $rp;
                     $existingPartIds[] = $rp['id'];
                 }
+            }
+        }
+
+        // battle_item と reversi_item の復元
+        if ($userItemRow && !empty($userItemRow['battle_item'])) {
+            $bItemData = is_array($userItemRow['battle_item']) ? $userItemRow['battle_item'] : json_decode($userItemRow['battle_item'], true);
+            if (is_array($bItemData)) {
+                $gameData['combatEquipments'] = $bItemData['combatEquipments'] ?? [
+                    'beamSaber' => !empty($bItemData['beamSaber']),
+                    'beamShield' => !empty($bItemData['beamShield'])
+                ];
+                $gameData['combatEquipmentRanks'] = $bItemData['combatEquipmentRanks'] ?? $bItemData['ranks'] ?? [];
+                $gameData['activeCombatEquipments'] = $bItemData['activeCombatEquipments'] ?? $bItemData['active'] ?? [];
+            }
+        }
+        if ($userItemRow && !empty($userItemRow['reversi_item'])) {
+            $rItemData = is_array($userItemRow['reversi_item']) ? $userItemRow['reversi_item'] : json_decode($userItemRow['reversi_item'], true);
+            if (is_array($rItemData)) {
+                $purchased = $rItemData['purchasedMemories'] ?? $rItemData['purchased'] ?? [];
+                $equipped = $rItemData['equippedMemories'] ?? $rItemData['equipped'] ?? [];
+                $gameData['othelloPurchasedMemories'] = $purchased;
+                $gameData['othelloEquippedMemories'] = $equipped;
+                $gameData['reversiPurchasedMemories'] = $purchased;
+                $gameData['reversiEquippedMemories'] = $equipped;
             }
         }
 
@@ -1135,7 +1237,14 @@ try {
                 'silver' => $userItemRow ? (int)$userItemRow['silver_chest'] : 0,
                 'gold' => $userItemRow ? (int)$userItemRow['gold_chest'] : 0,
                 'mythic' => $userItemRow ? (int)$userItemRow['mythic_chest'] : 0,
-            ]
+            ],
+            "combatEquipments" => ($userItemRow && !empty($userItemRow['battle_item'])) ? (json_decode($userItemRow['battle_item'], true)['combatEquipments'] ?? ['beamSaber' => false, 'beamShield' => false]) : ['beamSaber' => false, 'beamShield' => false],
+            "combatEquipmentRanks" => ($userItemRow && !empty($userItemRow['battle_item'])) ? (json_decode($userItemRow['battle_item'], true)['combatEquipmentRanks'] ?? []) : [],
+            "activeCombatEquipments" => ($userItemRow && !empty($userItemRow['battle_item'])) ? (json_decode($userItemRow['battle_item'], true)['activeCombatEquipments'] ?? []) : [],
+            "othelloPurchasedMemories" => ($userItemRow && !empty($userItemRow['reversi_item'])) ? (json_decode($userItemRow['reversi_item'], true)['purchasedMemories'] ?? []) : [],
+            "othelloEquippedMemories" => ($userItemRow && !empty($userItemRow['reversi_item'])) ? (json_decode($userItemRow['reversi_item'], true)['equippedMemories'] ?? []) : [],
+            "reversiPurchasedMemories" => ($userItemRow && !empty($userItemRow['reversi_item'])) ? (json_decode($userItemRow['reversi_item'], true)['purchasedMemories'] ?? []) : [],
+            "reversiEquippedMemories" => ($userItemRow && !empty($userItemRow['reversi_item'])) ? (json_decode($userItemRow['reversi_item'], true)['equippedMemories'] ?? []) : []
         ];
         echo json_encode([
             "success" => true, 

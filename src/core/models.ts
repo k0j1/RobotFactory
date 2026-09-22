@@ -67,7 +67,8 @@ export interface Robot {
     draws: number;
   };
   defenseRegen?: DefenseRegenEffect; // 防衛戦勝利によるリジェネ効果 (12時間・1時間毎HP+1)
-  othelloEquippedMemories?: string[]; // オセロ専用装備戦略メモリ (最大3個)
+  othelloEquippedMemories?: string[]; // リバーシ（オセロ）専用装備戦略メモリ (最大3個)
+  reversiEquippedMemories?: string[]; // リバーシ戦術メモリ (最大3個)
   createdAt: number;
   value: number;
 }
@@ -280,8 +281,10 @@ export interface GameState {
   minigameRecords?: Record<string, { plays: number; wins: number; losses: number; draws: number; elements?: number; chests?: number }>;
   dailyBattleLimits?: Record<string, string[]>; // { "YYYY-MM-DD": ["robotId_categoryId_levelId", ...] }
   minigameDashboardMode?: 'detailed' | 'compact'; // ミニゲーム演習録ダッシュボードの表示モード
-  othelloPurchasedMemories?: string[]; // 購入済みのオセロ戦略メモリID一覧
-  othelloEquippedMemories?: string[]; // 装備中のオセロ戦略メモリID一覧 (最大3個)
+  othelloPurchasedMemories?: string[]; // 購入済みのリバーシ（オセロ）戦略メモリID一覧
+  othelloEquippedMemories?: string[]; // 装備中のリバーシ（オセロ）戦略メモリID一覧 (最大3個)
+  reversiPurchasedMemories?: string[]; // 購入済みのリバーシ戦術メモリID一覧 (user_item.reversi_item 同期)
+  reversiEquippedMemories?: string[]; // 装備中のリバーシ戦術メモリID一覧 (user_item.reversi_item 同期)
 }
 
 export interface FameRankInfo {

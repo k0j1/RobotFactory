@@ -2108,7 +2108,7 @@ export class GameEngine {
   }
 
   /**
-   * オセロ専用戦略メモリをエレメントで購入
+   * リバーシ専用戦術メモリをエレメントで購入
    */
   public buyOthelloMemory(memoryId: OthelloMemoryId, robotId?: string): boolean {
     const memDef = OTHELLO_MEMORIES[memoryId];
@@ -2130,6 +2130,7 @@ export class GameEngine {
     // エレメント消費・購入記録
     this.state.battleElements = currentElements - memDef.cost;
     this.state.othelloPurchasedMemories.push(memoryId);
+    this.state.reversiPurchasedMemories = [...this.state.othelloPurchasedMemories];
 
     // スロット（最大3個）に空きがあれば自動装備
     this.equipOthelloMemory(memoryId, robotId);
@@ -2139,7 +2140,7 @@ export class GameEngine {
   }
 
   /**
-   * オセロ戦略メモリを装備（最大3個までスロット装備可能）
+   * リバーシ戦術メモリを装備（最大3個までスロット装備可能）
    */
   public equipOthelloMemory(memoryId: OthelloMemoryId, robotId?: string, slotIndex?: number): boolean {
     if (!this.state.othelloPurchasedMemories?.includes(memoryId)) {
@@ -2160,6 +2161,7 @@ export class GameEngine {
       list[2] = memoryId;
     }
     this.state.othelloEquippedMemories = list;
+    this.state.reversiEquippedMemories = [...list];
 
     // 2. 選択ロボットが存在する場合は機体にも個別保存
     if (robotId) {
@@ -2175,6 +2177,7 @@ export class GameEngine {
           rList[2] = memoryId;
         }
         targetRobot.othelloEquippedMemories = rList;
+        targetRobot.reversiEquippedMemories = [...rList];
       }
     }
 
@@ -2183,23 +2186,25 @@ export class GameEngine {
   }
 
   /**
-   * オセロ戦略メモリの装備解除
+   * リバーシ戦術メモリの装備解除
    */
   public unequipOthelloMemory(memoryId: OthelloMemoryId, robotId?: string) {
     if (this.state.othelloEquippedMemories) {
       this.state.othelloEquippedMemories = this.state.othelloEquippedMemories.filter(id => id !== memoryId);
+      this.state.reversiEquippedMemories = [...this.state.othelloEquippedMemories];
     }
     if (robotId) {
       const targetRobot = this.state.robots.find(r => r.id === robotId);
       if (targetRobot && targetRobot.othelloEquippedMemories) {
         targetRobot.othelloEquippedMemories = targetRobot.othelloEquippedMemories.filter(id => id !== memoryId);
+        targetRobot.reversiEquippedMemories = [...targetRobot.othelloEquippedMemories];
       }
     }
     this.saveState();
   }
 
   /**
-   * 装備中オセロ戦略メモリの優先順位（スロット順序）入れ替え
+   * 装備中リバーシ戦術メモリの優先順位（スロット順序）入れ替え
    */
   public swapOthelloMemorySlots(fromIndex: number, toIndex: number, robotId?: string) {
     const list = [...(this.state.othelloEquippedMemories || [])];
@@ -2208,6 +2213,7 @@ export class GameEngine {
       list[fromIndex] = list[toIndex];
       list[toIndex] = temp;
       this.state.othelloEquippedMemories = list;
+      this.state.reversiEquippedMemories = [...list];
 
       if (robotId) {
         const targetRobot = this.state.robots.find(r => r.id === robotId);

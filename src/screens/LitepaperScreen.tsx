@@ -25,7 +25,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
         title="ポンコツロボット工房 公式仕様書"
         badge={
           <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300 font-mono font-bold px-1.5 py-0.2 rounded">
-            v0.1.87 (DB v0.13)
+            v0.1.89 (DB v0.14)
           </span>
         }
         rightElement={
@@ -435,7 +435,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                 <p className="text-[10px] text-stone-500 font-sans">
                   ※ 各カテゴリーカードで次ランク昇格までの残り必要勝利数がリアルタイムに表示されます。
                   <br />
-                  ※ <strong>挑戦回数・クリア制限ルール:</strong> すべてのバトル（戦闘演習・オセロ・チェス・弾幕よけ・ピアノ演奏・拠点防衛戦）は、<strong>未勝利であれば1日何回でも再挑戦可能</strong>です。勝利（クリア）したバトル・項目・レベルはロボットごとに「本日クリア済」として自動記録され、翌朝9:00のリセットまで出撃ボタンが無効化されます。また、全ミニゲーム・演習での<strong>エレメント獲得量は獲得名声量と同一</strong>に設定されており、ミニゲーム選択画面でも獲得可能な名声とエレメントが分かりやすく明記されています。各ミニゲームの成績・宝箱数（<code>chests_count</code>）は<code>user_minigame_status</code>テーブルへ、獲得したエレメントや宝箱の所持実数は<code>user_item</code>テーブルへリアルタイムで自動記録・同期されます。
+                  ※ <strong>挑戦回数・クリア制限ルール:</strong> すべてのバトル（戦闘演習・リバーシ・チェス・弾幕よけ・ピアノ演奏・拠点防衛戦）は、<strong>未勝利であれば1日何回でも再挑戦可能</strong>です。勝利（クリア）したバトル・項目・レベルはロボットごとに「本日クリア済」として自動記録され、翌朝9:00のリセットまで出撃ボタンが無効化されます。また、全ミニゲーム・演習での<strong>エレメント獲得量は獲得名声量と同一</strong>に設定されており、ミニゲーム選択画面でも獲得可能な名声とエレメントが分かりやすく明記されています。各ミニゲームの成績・宝箱数（<code>chests_count</code>）は<code>user_minigame_status</code>テーブルへ、獲得したエレメントや宝箱の所持実数は<code>user_item</code>テーブルへリアルタイムで自動記録・同期されます。
                 </p>
               </div>
 
@@ -487,18 +487,18 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                 </div>
 
                 <div className="bg-white p-2.5 rounded-lg border border-stone-200 sm:col-span-2">
-                  <strong className="text-stone-900 block font-bold mb-1">♟️ クラシック頭脳対戦 (オセロ / チェス / 五目並べ / 三目並べ)</strong>
+                  <strong className="text-stone-900 block font-bold mb-1">♟️ クラシック頭脳対戦 (リバーシ / チェス / 五目並べ / 三目並べ)</strong>
                   <p className="text-stone-600">
-                    ロボットの知力(INT)や思考ロジックを試すボードゲーム集。<strong>オセロおよびチェスでは勝利時に専用の宝箱がドロップ</strong>し、回収可能！対局相手のレベルに応じた素材・ゴールド・工房名声および同数のバトルエレメント（Lv.4以上で名声と同数）を獲得できます。未勝利時は1日何回でも繰り返し挑戦できます。
+                    ロボットの知力(INT)や思考ロジックを試すボードゲーム集。<strong>リバーシおよびチェスでは勝利時に専用の宝箱がドロップ</strong>し、回収可能！対局相手のレベルに応じた素材・ゴールド・工房名声および同数のバトルエレメント（Lv.4以上で名声と同数）を獲得できます。未勝利時は1日何回でも繰り返し挑戦できます。
                     <br />
-                    <strong>🧠 オセロ専用 戦術メモリ（思考ルーチン制御）システム:</strong>
-                    オセロでは、バトル勝利などで集めた<strong>エレメント（各150 E）を消費して「戦術メモリ」を購入・アンロック</strong>し、機体選択画面で<strong>最大3つまで装備</strong>することが可能です。装備したスロット順（優先度1 → 優先度2 → 優先度3）に候補手が段階的にフィルタリングされ、ロボットの着手AIの思考ルーチンを自由にカスタマイズ・最適化できます。
+                    <strong>🧠 リバーシ専用 戦術メモリ（思考ルーチン制御）システム:</strong>
+                    リバーシでは、バトル勝利などで集めた<strong>エレメント（各150 E）を消費して「戦術メモリ」を購入・アンロック</strong>し、機体選択画面で<strong>最大3つまで装備</strong>することが可能です。装備したスロット順（優先度1 → 優先度2 → 優先度3）に候補手が段階的にフィルタリングされ、ロボットの着手AIの思考ルーチンを自由にカスタマイズ・最適化できます。
                     <br />
                     ・<strong>最多獲得優先:</strong> 一番石が多く取れる場所へ優先して打つ
                     <br />
                     ・<strong>最少獲得優先:</strong> 一番石が少なく取れる場所へ優先して打つ（相手に手を渡す戦法）
                     <br />
-                    ・<strong>角確保優先:</strong> オセロの要所である四隅の角(Corner)マスを最優先で確保
+                    ・<strong>角確保優先:</strong> リバーシの要所である四隅の角(Corner)マスを最優先で確保
                     <br />
                     ・<strong>外周・端優先:</strong> 安定した辺・端(Edge)のマスを優先して陣地を固める
                     <br />

@@ -68,8 +68,18 @@ try {
         gold_chest INT DEFAULT 0,
         mythic_chest INT DEFAULT 0,
         element INT DEFAULT 0,
+        battle_item JSON NULL,
+        reversi_item JSON NULL,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    // 既存の user_item テーブルに battle_item, reversi_item カラムを追加（マイグレーション）
+    try {
+        $pdo->exec("ALTER TABLE user_item ADD COLUMN battle_item JSON NULL AFTER element");
+    } catch (PDOException $e) {}
+    try {
+        $pdo->exec("ALTER TABLE user_item ADD COLUMN reversi_item JSON NULL AFTER battle_item");
+    } catch (PDOException $e) {}
 
     CREATE TABLE IF NOT EXISTS user_minigame_status (
         user_id VARCHAR(255),
@@ -972,15 +982,17 @@ try {
     try {
         $stmt = $pdo->query("SELECT user_id, game_data FROM save_data");
         $upsertItem = $pdo->prepare("
-            INSERT INTO user_item (user_id, repair_kit, bronze_chest, silver_chest, gold_chest, mythic_chest, element)
-            VALUES (:user_id, :repair_kit, :bronze_chest, :silver_chest, :gold_chest, :mythic_chest, :element)
+            INSERT INTO user_item (user_id, repair_kit, bronze_chest, silver_chest, gold_chest, mythic_chest, element, battle_item, reversi_item)
+            VALUES (:user_id, :repair_kit, :bronze_chest, :silver_chest, :gold_chest, :mythic_chest, :element, :battle_item, :reversi_item)
             ON DUPLICATE KEY UPDATE
-                repair_kit = VALUES(repair_kit),
-                bronze_chest = VALUES(bronze_chest),
-                silver_chest = VALUES(silver_chest),
-                gold_chest = VALUES(gold_chest),
-                mythic_chest = VALUES(mythic_chest),
-                element = VALUES(element)
+                repair_kit = GREATEST(COALESCE(user_item.repair_kit, 0), VALUES(repair_kit)),
+                bronze_chest = GREATEST(COALESCE(user_item.bronze_chest, 0), VALUES(bronze_chest)),
+                silver_chest = GREATEST(COALESCE(user_item.silver_chest, 0), VALUES(silver_chest)),
+                gold_chest = GREATEST(COALESCE(user_item.gold_chest, 0), VALUES(gold_chest)),
+                mythic_chest = GREATEST(COALESCE(user_item.mythic_chest, 0), VALUES(mythic_chest)),
+                element = GREATEST(COALESCE(user_item.element, 0), VALUES(element)),
+                battle_item = COALESCE(user_item.battle_item, VALUES(battle_item)),
+                reversi_item = COALESCE(user_item.reversi_item, VALUES(reversi_item))
         ");
 
         while ($row = $stmt->fetch()) {
@@ -990,7 +1002,10 @@ try {
                 $needsUpdate = false;
 
                 // user_item に該当するデータが存在する場合は移行
-                $hasItemData = isset($data['repairKits']) || isset($data['unopenedChests']) || isset($data['battleElements']);
+                $hasItemData = isset($data['repairKits']) || isset($data['unopenedChests']) || isset($data['battleElements']) || 
+                               isset($data['combatEquipments']) || isset($data['combatEquipmentRanks']) || isset($data['activeCombatEquipments']) ||
+                               isset($data['othelloPurchasedMemories']) || isset($data['othelloEquippedMemories']) ||
+                               isset($data['reversiPurchasedMemories']) || isset($data['reversiEquippedMemories']);
                 if ($hasItemData) {
                     $rKit = isset($data['repairKits']) ? (int)$data['repairKits'] : 0;
                     $chests = (isset($data['unopenedChests']) && is_array($data['unopenedChests'])) ? $data['unopenedChests'] : [];
@@ -1000,6 +1015,25 @@ try {
                     $mChest = isset($chests['mythic']) ? (int)$chests['mythic'] : 0;
                     $elem = isset($data['battleElements']) ? (int)$data['battleElements'] : 0;
 
+                    $bItem = null;
+                    if (isset($data['combatEquipments']) || isset($data['combatEquipmentRanks']) || isset($data['activeCombatEquipments'])) {
+                        $bItem = json_encode([
+                            'beamSaber' => !empty($data['combatEquipments']['beamSaber']),
+                            'beamShield' => !empty($data['combatEquipments']['beamShield']),
+                            'combatEquipments' => $data['combatEquipments'] ?? [],
+                            'combatEquipmentRanks' => $data['combatEquipmentRanks'] ?? [],
+                            'activeCombatEquipments' => $data['activeCombatEquipments'] ?? []
+                        ], JSON_UNESCAPED_UNICODE);
+                    }
+
+                    $rItem = null;
+                    if (isset($data['othelloPurchasedMemories']) || isset($data['othelloEquippedMemories']) || isset($data['reversiPurchasedMemories']) || isset($data['reversiEquippedMemories'])) {
+                        $rItem = json_encode([
+                            'purchasedMemories' => $data['reversiPurchasedMemories'] ?? $data['othelloPurchasedMemories'] ?? [],
+                            'equippedMemories' => $data['reversiEquippedMemories'] ?? $data['othelloEquippedMemories'] ?? []
+                        ], JSON_UNESCAPED_UNICODE);
+                    }
+
                     $upsertItem->execute([
                         ':user_id' => $row['user_id'],
                         ':repair_kit' => $rKit,
@@ -1007,11 +1041,20 @@ try {
                         ':silver_chest' => $sChest,
                         ':gold_chest' => $gChest,
                         ':mythic_chest' => $mChest,
-                        ':element' => $elem
+                        ':element' => $elem,
+                        ':battle_item' => $bItem,
+                        ':reversi_item' => $rItem
                     ]);
                 }
 
-                $keysToRemove = ['parts', 'robots', 'materials', 'gold', 'fame', 'storageSize', 'deliveredRobotsCount', 'starterBonusClaimed', 'repairKits', 'unopenedChests', 'battleElements', 'minigameRecords'];
+                $keysToRemove = [
+                    'parts', 'robots', 'materials', 'gold', 'fame', 'storageSize', 
+                    'deliveredRobotsCount', 'starterBonusClaimed', 'repairKits', 
+                    'unopenedChests', 'battleElements', 'minigameRecords',
+                    'combatEquipments', 'combatEquipmentRanks', 'activeCombatEquipments',
+                    'othelloPurchasedMemories', 'othelloEquippedMemories',
+                    'reversiPurchasedMemories', 'reversiEquippedMemories'
+                ];
                 foreach ($keysToRemove as $k) {
                     if (isset($data[$k])) {
                         unset($data[$k]);

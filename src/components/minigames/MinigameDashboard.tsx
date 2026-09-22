@@ -52,7 +52,7 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
     color: 'from-amber-600 to-yellow-700',
     badgeBg: 'bg-amber-100 text-amber-900 border-amber-300',
     games: [
-      { id: 'othello', name: 'オセロ演習', icon: <Gi.GiInvertedDice3 />, desc: '挟んで裏返す定番リバーシ' },
+      { id: 'othello', name: 'リバーシ演習', icon: <Gi.GiInvertedDice3 />, desc: '挟んで裏返す定番ボードゲーム' },
       { id: 'chess', name: 'チェス演習', icon: <Gi.GiChessRook />, desc: '王手を狙う本格頭脳勝負' }
     ]
   },
