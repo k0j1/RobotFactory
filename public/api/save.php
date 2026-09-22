@@ -265,14 +265,6 @@ try {
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-        // 既存テーブルへのカラム追加マイグレーション
-        try {
-            $pdo->exec("ALTER TABLE user_item ADD COLUMN battle_item JSON NULL AFTER element");
-        } catch (PDOException $e) {}
-        try {
-            $pdo->exec("ALTER TABLE user_item ADD COLUMN reversi_item JSON NULL AFTER battle_item");
-        } catch (PDOException $e) {}
-
         CREATE TABLE IF NOT EXISTS user_minigame_status (
             user_id VARCHAR(255),
             minigame_id VARCHAR(255),
@@ -284,6 +276,13 @@ try {
             PRIMARY KEY (user_id, minigame_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ");
+
+    try {
+        $pdo->exec("ALTER TABLE user_item ADD COLUMN battle_item JSON NULL AFTER element");
+    } catch (PDOException $e) {}
+    try {
+        $pdo->exec("ALTER TABLE user_item ADD COLUMN reversi_item JSON NULL AFTER battle_item");
+    } catch (PDOException $e) {}
 
     try {
         $pdo->exec("ALTER TABLE user_minigame_status ADD COLUMN chests_count INT DEFAULT 0");
@@ -1476,7 +1475,7 @@ try {
         "message" => "All user data saved to appropriate database tables successfully.",
         "userId" => $actualUserId
     ]);
-} catch (PDOException $e) {
+} catch (Throwable $e) {
     $wasInTransaction = false;
     if ($pdo && $pdo->inTransaction()) {
         $wasInTransaction = true;

@@ -73,14 +73,6 @@ try {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-    // 既存の user_item テーブルに battle_item, reversi_item カラムを追加（マイグレーション）
-    try {
-        $pdo->exec("ALTER TABLE user_item ADD COLUMN battle_item JSON NULL AFTER element");
-    } catch (PDOException $e) {}
-    try {
-        $pdo->exec("ALTER TABLE user_item ADD COLUMN reversi_item JSON NULL AFTER battle_item");
-    } catch (PDOException $e) {}
-
     CREATE TABLE IF NOT EXISTS user_minigame_status (
         user_id VARCHAR(255),
         minigame_id VARCHAR(255),
@@ -439,6 +431,14 @@ try {
     } catch (PDOException $e) {
         // 既に追加されている場合は無視
     }
+
+    // 既存の user_item テーブルに battle_item, reversi_item カラムを追加（マイグレーション）
+    try {
+        $pdo->exec("ALTER TABLE user_item ADD COLUMN battle_item JSON NULL AFTER element");
+    } catch (PDOException $e) {}
+    try {
+        $pdo->exec("ALTER TABLE user_item ADD COLUMN reversi_item JSON NULL AFTER battle_item");
+    } catch (PDOException $e) {}
 
     // active_requests テーブルの request_data からテーブルで保持している重複カラム（id, rank, rewardG, deadline 等）を削除・クリーンアップ
     try {
@@ -985,14 +985,14 @@ try {
             INSERT INTO user_item (user_id, repair_kit, bronze_chest, silver_chest, gold_chest, mythic_chest, element, battle_item, reversi_item)
             VALUES (:user_id, :repair_kit, :bronze_chest, :silver_chest, :gold_chest, :mythic_chest, :element, :battle_item, :reversi_item)
             ON DUPLICATE KEY UPDATE
-                repair_kit = GREATEST(COALESCE(user_item.repair_kit, 0), VALUES(repair_kit)),
-                bronze_chest = GREATEST(COALESCE(user_item.bronze_chest, 0), VALUES(bronze_chest)),
-                silver_chest = GREATEST(COALESCE(user_item.silver_chest, 0), VALUES(silver_chest)),
-                gold_chest = GREATEST(COALESCE(user_item.gold_chest, 0), VALUES(gold_chest)),
-                mythic_chest = GREATEST(COALESCE(user_item.mythic_chest, 0), VALUES(mythic_chest)),
-                element = GREATEST(COALESCE(user_item.element, 0), VALUES(element)),
-                battle_item = COALESCE(user_item.battle_item, VALUES(battle_item)),
-                reversi_item = COALESCE(user_item.reversi_item, VALUES(reversi_item))
+                repair_kit = GREATEST(COALESCE(repair_kit, 0), VALUES(repair_kit)),
+                bronze_chest = GREATEST(COALESCE(bronze_chest, 0), VALUES(bronze_chest)),
+                silver_chest = GREATEST(COALESCE(silver_chest, 0), VALUES(silver_chest)),
+                gold_chest = GREATEST(COALESCE(gold_chest, 0), VALUES(gold_chest)),
+                mythic_chest = GREATEST(COALESCE(mythic_chest, 0), VALUES(mythic_chest)),
+                element = GREATEST(COALESCE(element, 0), VALUES(element)),
+                battle_item = COALESCE(battle_item, VALUES(battle_item)),
+                reversi_item = COALESCE(reversi_item, VALUES(reversi_item))
         ");
 
         while ($row = $stmt->fetch()) {
@@ -1070,13 +1070,18 @@ try {
                 }
             }
         }
-    } catch (PDOException $e) {}
+    } catch (Throwable $e) {
+        error_log("save_data cleanup error: " . $e->getMessage());
+    }
 
     echo json_encode([
         "success" => true, 
         "message" => "Database tables setup successfully"
     ]);
-} catch (PDOException $e) {
+} catch (Throwable $e) {
     http_response_code(500);
-    echo json_encode(["error" => $e->getMessage()]);
+    echo json_encode([
+        "error" => $e->getMessage(),
+        "trace" => $e->getTraceAsString()
+    ], JSON_UNESCAPED_UNICODE);
 }
