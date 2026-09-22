@@ -1432,6 +1432,12 @@ export class GameEngine {
     }
 
     if (actualReducedMs > 0) {
+      if (this.isCloudAccount && this.userId && this.isCloudLoaded) {
+        // 広告短縮時は即時DB同期を行い、active_robot_assemblies等のend_timeを即座にMySQLへ反映
+        AuthApiService.getInstance().saveAllDataToTables(this.userId, this.state, true).catch(err => {
+          console.warn('[GameEngine] 広告短縮後の即時DB同期エラー:', err);
+        });
+      }
       this.update();
     }
 
