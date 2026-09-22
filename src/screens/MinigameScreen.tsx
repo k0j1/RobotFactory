@@ -12,6 +12,8 @@ import { PianoGame } from '../components/minigames/PianoGame';
 import { CombatGame } from '../components/minigames/CombatGame';
 import { CombatSetupCard } from '../components/minigames/combat/CombatSetupCard';
 import { CombatVictoryRewardEffect } from '../components/minigames/combat/CombatVictoryRewardEffect';
+import { OthelloStrategyMemoryCard } from '../components/minigames/othello/OthelloStrategyMemoryCard';
+import { OTHELLO_MEMORIES, OthelloMemoryId } from '../core/othelloStrategyData';
 import { DefenseGame } from '../components/minigames/DefenseGame';
 import { MinigameDashboard } from '../components/minigames/MinigameDashboard';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
@@ -482,7 +484,18 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
           combatEquipmentRanks={state.combatEquipmentRanks}
         />
       );
-      case 'othello': return <OthelloGame activeRobot={activeRobot} activeOpponent={opponent} onFinish={handleFinish} speed={speed} isPaused={isPaused} isFinished={battleResult !== null} battleResult={battleResult} />;
+      case 'othello': return (
+        <OthelloGame 
+          activeRobot={activeRobot} 
+          activeOpponent={opponent} 
+          onFinish={handleFinish} 
+          speed={speed} 
+          isPaused={isPaused} 
+          isFinished={battleResult !== null} 
+          battleResult={battleResult} 
+          othelloEquippedMemories={activeRobot.othelloEquippedMemories || state.othelloEquippedMemories || []}
+        />
+      );
       case 'chess': return <ChessGame activeRobot={activeRobot} activeOpponent={opponent} onFinish={handleFinish} speed={speed} isPaused={isPaused} isFinished={battleResult !== null} battleResult={battleResult} />;
       case 'danmaku': return <DanmakuSurvivalGame activeRobot={activeRobot} activeOpponent={opponent} onFinish={handleFinish} speed={speed} isPaused={isPaused} isFinished={battleResult !== null} battleResult={battleResult} difficulty={danmakuDifficulty} />;
       case 'piano': return (
@@ -900,6 +913,24 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                                 </span>
                               </div>
                             )}
+
+                            {/* オセロ専用装備メモリバッジ */}
+                            {selectedGame === 'othello' && (r.othelloEquippedMemories || state.othelloEquippedMemories) && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {((r.othelloEquippedMemories && r.othelloEquippedMemories.length > 0)
+                                  ? r.othelloEquippedMemories 
+                                  : (state.othelloEquippedMemories || [])
+                                ).map((memId, idx) => {
+                                  const mem = OTHELLO_MEMORIES[memId as keyof typeof OTHELLO_MEMORIES];
+                                  if (!mem) return null;
+                                  return (
+                                    <span key={memId} className={`text-[8px] px-1 py-0.2 rounded border font-mono ${mem.badgeColor}`}>
+                                      #{idx + 1} {mem.shortLabel}
+                                    </span>
+                                  );
+                                })}
+                              </div>
+                            )}
                             
                             {isDispatched && (
                               <span className="text-[10px] text-rose-600 font-bold flex items-center gap-1 mt-0.5">
@@ -1165,15 +1196,18 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                                 </div>
                               </div>
                             ) : (
-                              <div className="flex gap-2 text-[10px] font-mono mt-1">
-                                <span className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded border ${selectedCategory === 'puzzle' ? 'font-bold text-blue-800 bg-blue-100 border-blue-300' : 'text-stone-700 bg-stone-100 border-stone-200'}`} title="知性">
-                                  <Gi.GiInspiration className="text-purple-600 text-xs" /> {o.int}
+                              <div className="flex gap-1.5 text-[10px] font-mono mt-1">
+                                <span className={`flex items-center gap-1 px-1.5 py-0.5 rounded border font-bold ${selectedCategory === 'puzzle' ? 'text-blue-900 bg-blue-100 border-blue-300' : 'text-purple-900 bg-purple-50 border-purple-200'}`} title="知性 (Int)">
+                                  <Gi.GiInspiration className="text-purple-600 text-xs" />
+                                  <span>Int {o.int}</span>
                                 </span>
-                                <span className="flex items-center gap-0.5 text-stone-700 bg-stone-100 px-1.5 py-0.5 rounded border border-stone-200" title="行動速度">
-                                  <Gi.GiSpeedometer className="text-amber-500 text-xs" /> {o.agi}
+                                <span className="flex items-center gap-1 px-1.5 py-0.5 rounded border text-amber-900 bg-amber-50 border-amber-200 font-bold" title="行動速度 (Agi)">
+                                  <Gi.GiSpeedometer className="text-amber-500 text-xs" />
+                                  <span>Agi {o.agi}</span>
                                 </span>
-                                <span className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded border ${selectedCategory === 'shooting' ? 'font-bold text-emerald-800 bg-emerald-100 border-emerald-300' : 'text-stone-700 bg-stone-100 border-stone-200'}`} title="回避・操作">
-                                  <Gi.GiCrosshair className="text-emerald-600 text-xs" /> {o.dex}
+                                <span className={`flex items-center gap-1 px-1.5 py-0.5 rounded border font-bold ${selectedCategory === 'shooting' ? 'text-emerald-900 bg-emerald-100 border-emerald-300' : 'text-emerald-900 bg-emerald-50 border-emerald-200'}`} title="回避・操作 (Dex)">
+                                  <Gi.GiCrosshair className="text-emerald-600 text-xs" />
+                                  <span>Dex {o.dex}</span>
                                 </span>
                               </div>
                             )}
@@ -1204,6 +1238,18 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
               </Card>
             )}
           </div>
+
+          {/* オセロ専用：戦術メモリ（思考ルーチン制御）購入＆装備カード */}
+          {selectedGame === 'othello' && (
+            <OthelloStrategyMemoryCard
+              state={state}
+              activeRobot={activeRobot}
+              onBuyMemory={(memId) => engine.buyOthelloMemory(memId, activeRobot?.id)}
+              onEquipMemory={(memId, slotIndex) => engine.equipOthelloMemory(memId, activeRobot?.id, slotIndex)}
+              onUnequipMemory={(memId) => engine.unequipOthelloMemory(memId, activeRobot?.id)}
+              onSwapSlots={(fromIdx, toIdx) => engine.swapOthelloMemorySlots(fromIdx, toIdx, activeRobot?.id)}
+            />
+          )}
             </>
           )}
 

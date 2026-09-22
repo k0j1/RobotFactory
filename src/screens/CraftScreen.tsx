@@ -343,7 +343,7 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
             <PartVisual part={lastCraftedPart} size={100} />
           </div>
           <div className="flex items-center justify-center gap-2 mt-2">
-            <h4 className={theme.typography.h2}>{lastCraftedPart.name}</h4>
+            <h4 className={theme.typography.h2}>{lastCraftedPart?.name || 'パーツ'}</h4>
             <span className="font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded text-sm border border-amber-300">
               {'★'.repeat(lastCraftedPart.rarity || 1)}
             </span>
@@ -370,7 +370,7 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
           <div className="my-2">
             <RobotZoomPreview robot={lastCraftedRobot} baseSize={125} animateCrafting={true} viewportHeightClass="h-40 sm:h-44" />
           </div>
-          <h4 className={`${theme.typography.h2} mt-2`}>{lastCraftedRobot.name}</h4>
+          <h4 className={`${theme.typography.h2} mt-2`}>{lastCraftedRobot?.name || 'ロボット'}</h4>
           <p className="text-xs text-stone-500 mt-0.5">評価額: {lastCraftedRobot.value} G</p>
           <div className="flex flex-wrap justify-center gap-2 mt-4 bg-white/80 p-2.5 rounded-md border border-amber-200 text-xs">
             <div><span className="text-stone-500">HP:</span> <strong className="text-stone-800">{lastCraftedRobot.stats.hp}</strong></div>
@@ -387,23 +387,33 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
       {/* ================= パーツ製造タブの内容 ================= */}
       {tab === 'part' && !lastCraftedPart && (
         <div ref={craftingStatusRef} className="space-y-5">
-          {/* 各パーツ製造項目のステータス＆部位選択バー */}
-          <div className="bg-stone-100 border border-stone-300 rounded-lg p-2.5 shadow-xs">
+          <div>
             <div className="flex justify-between items-center mb-2">
-              <h4 className="font-bold text-xs text-amber-900 mb-1 flex items-center gap-1"><Gi.GiHammerNails className="text-amber-700" /> パーツ部位別ステータス &amp; リアルタイム状況</h4>
+              <h4 className="font-bold text-stone-800 text-sm">１．製造パーツ選択</h4>
               {isPartCrafting && (
                 <span className="text-[11px] font-bold text-blue-700 animate-pulse bg-blue-50 px-2 py-0.5 rounded border border-blue-200 flex items-center gap-1">
                   <Gi.GiStopwatch className="inline text-blue-600" /> {isPartReady ? '完成受取待ち' : `製造中: あと ${partRemainingSec} 秒`}
                 </span>
               )}
             </div>
-
-            {/* 4部位のリアルタイムステータスボタン一覧 */}
+            {/* 各パーツ製造項目のステータス＆部位選択バー */}
+            <div className="bg-stone-100 border border-stone-300 rounded-lg p-2.5 shadow-xs">
+              {/* 4部位のリアルタイムステータスボタン一覧 */}
             <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar items-stretch">
               {partTypes.map(pt => {
                 const isSelected = selectedPartType === pt.id;
                 const isThisPartCrafting = activePart?.partType === pt.id;
                 const isThisPartReady = isThisPartCrafting && isPartReady;
+
+                const getPartIcon = (type: PartType) => {
+                  switch (type) {
+                    case 'head': return <Gi.GiHelmet className="text-amber-700" />;
+                    case 'body': return <Gi.GiChestArmor className="text-amber-700" />;
+                    case 'arms': return <Gi.GiGauntlet className="text-amber-700" />;
+                    case 'legs': return <Gi.GiBoots className="text-amber-700" />;
+                    default: return <Gi.GiCog className="text-amber-700" />;
+                  }
+                };
 
                 return (
                   <button
@@ -412,7 +422,9 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                     className={`relative p-2 rounded-lg border text-left transition-all flex-1 min-w-[120px] shrink-0 flex flex-col justify-between ${isSelected ? 'border-amber-600 bg-white ring-2 ring-amber-300 shadow-sm' : 'border-stone-200 bg-stone-50 hover:border-amber-300 hover:bg-white'}`}
                   >
                     <div className="flex justify-between items-center gap-1">
-                      <span className="font-bold text-xs text-stone-800 whitespace-nowrap flex items-center gap-1"><Gi.GiCog className="text-amber-700" /> {pt.label}</span>
+                      <span className="font-bold text-xs text-stone-800 whitespace-nowrap flex items-center gap-1">
+                        {getPartIcon(pt.id)} {pt.label}
+                      </span>
                       {isThisPartReady ? (
                         <Badge className="bg-emerald-600 text-white text-[9px] sm:text-[10px] animate-bounce px-1.5 py-0.5 leading-none shrink-0">
                           完成！
@@ -462,6 +474,7 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
               })}
             </div>
           </div>
+        </div>
 
           {/* 製造中カード（進行中または完成受け取り待ち） */}
           {activePart && (
@@ -477,7 +490,7 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                     </span>
                   </div>
                   <h3 className="text-base font-bold text-stone-900 mt-1.5">
-                    {activePart.resultPart.name} を加工中
+                    {activePart?.resultPart?.name || 'パーツ'} を加工中
                   </h3>
                 </div>
 
@@ -586,13 +599,11 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
               </div>
             )}
             
-            <p className={theme.typography.body}>作成するパーツの素材を選んでください。</p>
-
             <div className="space-y-4">
               {/* メイン素材選択 */}
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <h4 className="font-bold text-stone-800 text-sm">メイン素材 (3個消費) - 属性・レア度・製造時間を決定</h4>
+                  <h4 className="font-bold text-stone-800 text-sm">２．メイン素材選択 (3個消費)</h4>
                 </div>
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
                   {availableMainMats?.length === 0 && <p className="text-stone-500 col-span-full text-xs font-mono">※製造に必要な素材（3個以上）がありません</p>}
@@ -634,7 +645,7 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
               {/* サブ素材選択 */}
               <div className="pt-2">
                 <div className="flex justify-between items-center mb-2">
-                  <h4 className="font-bold text-stone-800 text-sm">サブ素材 (2個消費) - 追加性能を決定</h4>
+                  <h4 className="font-bold text-stone-800 text-sm">３．サブ素材選択 (2個消費)</h4>
                 </div>
                 <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2">
                   {availableSubMats?.length === 0 && <p className="text-stone-500 col-span-full text-xs font-mono">※サブ素材（2個以上）がありません</p>}
@@ -714,7 +725,7 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                     <ActiveUserCountBadge type="assembly" count={activeAssemblyCount} />
                   </div>
                   <h3 className="text-lg font-bold text-stone-900 mt-1">
-                    「{activeRobot.resultRobot.name}」を組立中
+                    「{activeRobot?.resultRobot?.name || 'ロボット'}」を組立中
                   </h3>
                 </div>
                 <div className="text-right">
@@ -756,14 +767,13 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                 )}
                 
                 {isRobotReady ? (
-                  <div className="w-full px-2">
+                  <div className="w-full px-2 py-2 flex flex-col items-center justify-center">
                     <div className="text-center text-xs font-bold text-emerald-700 mb-2 flex items-center justify-center gap-1">
-                      <Gi.GiSparkles className="text-emerald-500" /> 接合・動作テスト完了！スライダーで各部を点検できます
+                      <Gi.GiSparkles className="text-emerald-500" /> 接合・動作テスト完了！
                     </div>
-                    <RobotZoomPreview 
+                    <RobotVisual 
                       robot={activeRobot.resultRobot} 
-                      baseSize={115} 
-                      viewportHeightClass="h-36 sm:h-40"
+                      size={120} 
                     />
                   </div>
                 ) : (
@@ -839,29 +849,10 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                 </div>
               )}
 
-              {/* 倉庫ロボット保管数ステータス & 満杯警告 */}
-              <div className={`p-2.5 rounded-xl border-2 transition-colors ${
-                isStorageFull 
-                  ? 'bg-red-50 border-red-400 shadow-xs' 
-                  : 'bg-stone-100 border-stone-300'
-              }`}>
-                <div className="flex justify-between items-center">
-                  <span className="font-bold text-xs text-stone-800 flex items-center gap-1.5">
-                    <Gi.GiCardboardBox className={`text-base ${isStorageFull ? 'text-red-600' : 'text-amber-700'}`} />
-                    倉庫ロボット保管枠:
-                  </span>
-                  <span className={`font-mono font-bold text-xs px-2.5 py-0.5 rounded border ${
-                    isStorageFull 
-                      ? 'bg-red-600 text-white border-red-700 animate-pulse' 
-                      : 'bg-white text-stone-800 border-stone-300'
-                  }`}>
-                    {currentRobotsCount} / {storageLimit} 体 {isStorageFull && '（上限到達・満杯）'}
-                  </span>
-                </div>
-
-                {/* 満杯時の詳細案内 & クイック拡張ボタン */}
-                {isStorageFull && (
-                  <div className="mt-2.5 pt-2.5 border-t border-red-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-red-900">
+              {/* 倉庫満杯時の警告案内（満杯時のみ表示） */}
+              {isStorageFull && (
+                <div className="p-3 rounded-xl border-2 bg-red-50 border-red-400 shadow-xs text-red-900">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                     <div className="text-[11px] leading-snug">
                       <p className="font-bold flex items-center gap-1 text-red-800">
                         <Gi.GiHazardSign className="text-red-600 inline shrink-0" />
@@ -893,10 +884,21 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                       </Button>
                     )}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
 
-              <p className="text-xs text-stone-600">各部位のパーツを組み合わせて新しいロボットを組み立てます。</p>
+              {/* 指示文と小さな倉庫ロボット保管枠バッジを同じ行に配置 */}
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <p className="text-xs text-stone-600">各パーツを選択してロボットを組み立てます。</p>
+                <div className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded border flex items-center gap-1 ${
+                  isStorageFull 
+                    ? 'bg-red-600 text-white border-red-700 animate-pulse' 
+                    : 'bg-stone-100 text-stone-800 border-stone-300'
+                }`}>
+                  <Gi.GiCardboardBox className="inline text-amber-700" />
+                  倉庫枠: {currentRobotsCount} / {storageLimit}体 {isStorageFull && '（満杯）'}
+                </div>
+              </div>
               
               {/* プレビューカード */}
               <div className="flex flex-row items-center justify-center p-2 sm:p-4 bg-white border-2 border-stone-300 border-dashed rounded-xl relative overflow-hidden shadow-xs gap-2 sm:gap-4">
@@ -905,27 +907,21 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
                     <h3 className="font-bold text-stone-600 text-[10px] sm:text-xs flex items-center gap-1">
                       <Gi.GiCrosshair className="text-amber-600 inline" /> 外見
                     </h3>
-                    <span className="text-[9px] sm:text-[11px] text-stone-500 hidden sm:inline">スライダーで細部確認</span>
                   </div>
                   
-                  <RobotZoomPreview
-                    robot={{
-                      parts: {
-                        head: heads.find(p => p.id === selectedHead),
-                        body: bodies.find(p => p.id === selectedBody),
-                        arms: arms.find(p => p.id === selectedArms),
-                        legs: legs.find(p => p.id === selectedLegs)
-                      }
-                    }}
-                    baseSize={105}
-                    viewportHeightClass="h-32 sm:h-36"
-                    attributes={Array.from(new Set([
-                      heads.find(p => p.id === selectedHead)?.attribute,
-                      bodies.find(p => p.id === selectedBody)?.attribute,
-                      arms.find(p => p.id === selectedArms)?.attribute,
-                      legs.find(p => p.id === selectedLegs)?.attribute
-                    ].filter(Boolean) as any))}
-                  />
+                  <div className="py-2 flex items-center justify-center">
+                    <RobotVisual
+                      robot={{
+                        parts: {
+                          head: heads.find(p => p.id === selectedHead),
+                          body: bodies.find(p => p.id === selectedBody),
+                          arms: arms.find(p => p.id === selectedArms),
+                          legs: legs.find(p => p.id === selectedLegs)
+                        }
+                      }}
+                      size={110}
+                    />
+                  </div>
                 </div>
                 
                 <div className="w-1/2 flex flex-col items-center justify-center border-l border-stone-200 pl-2 sm:pl-4">

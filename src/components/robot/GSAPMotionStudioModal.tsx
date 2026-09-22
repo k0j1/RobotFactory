@@ -209,7 +209,7 @@ export const GSAPMotionStudioModal: React.FC<GSAPMotionStudioModalProps> = ({
   return (
     <div 
       id="gsap-motion-studio-modal"
-      className="fixed inset-0 z-[100] flex items-center justify-center p-2 pt-16 sm:p-4 bg-black/80 backdrop-blur-sm overflow-y-auto"
+      className="fixed inset-0 z-[100] flex items-start justify-center p-3 pt-24 sm:pt-28 sm:p-6 bg-black/80 backdrop-blur-sm overflow-y-auto"
     >
       <div className="bg-[#faf5ee] border-2 border-[#c29b77] rounded-2xl shadow-2xl max-w-5xl w-full max-h-[94vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         {/* ヘッダー */}
@@ -219,17 +219,9 @@ export const GSAPMotionStudioModal: React.FC<GSAPMotionStudioModalProps> = ({
               <Gi.GiFilmProjector size={20} />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h3 className={`${theme.typography.h3} text-amber-300 tracking-wide font-black`}>
-                  GSAP ロボットモーションスタジオ
-                </h3>
-                <span className="text-[10px] bg-amber-600/90 text-white px-2 py-0.5 rounded-full font-mono font-bold">
-                  Next-Gen Rig Engine
-                </span>
-              </div>
-              <p className="text-xs text-stone-300">
-                パーツ別独立可動・解剖学的ジョイント・武装エフェクトによる多彩なアクション鑑賞
-              </p>
+              <h3 className={`${theme.typography.h3} text-amber-300 tracking-wide font-black`}>
+                モーションスタジオ
+              </h3>
             </div>
           </div>
 
@@ -273,27 +265,6 @@ export const GSAPMotionStudioModal: React.FC<GSAPMotionStudioModalProps> = ({
                 ))}
               </select>
 
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-300 flex items-center gap-0.5">
-                  <Gi.GiStarFormation size={12} />★{maxRarity}
-                </span>
-                <div className="flex items-center gap-1">
-                  {['head', 'body', 'arms', 'legs'].map(partType => {
-                    const part = (currentRobot.parts as any)?.[partType];
-                    if (!part) return null;
-                    return (
-                      <span
-                        key={partType}
-                        className="text-[9px] px-1.5 py-0.2 rounded font-bold text-white shadow-2xs"
-                        style={{ backgroundColor: AttributeColors[part.attribute] || '#78716c' }}
-                      >
-                        {AttributeNames[part.attribute]}
-                      </span>
-                    );
-                  })}
-                </div>
-              </div>
-
               {combinedRobotsList.length > 1 && (
                 <button
                   type="button"
@@ -306,21 +277,8 @@ export const GSAPMotionStudioModal: React.FC<GSAPMotionStudioModalProps> = ({
               )}
             </div>
 
-            {/* ステージ背景 ＆ ジョイントHUD切替 */}
+            {/* ステージ背景切替 */}
             <div className="flex items-center gap-2 flex-wrap">
-              <button
-                type="button"
-                onClick={() => setShowJoints(!showJoints)}
-                className={`px-2.5 py-1 text-xs rounded-lg font-bold transition-all flex items-center gap-1 cursor-pointer border ${
-                  showJoints
-                    ? 'bg-cyan-600 text-white border-cyan-400 shadow-sm ring-2 ring-cyan-400/40'
-                    : 'bg-stone-200 text-stone-700 hover:bg-stone-300 border-stone-300'
-                }`}
-              >
-                <Gi.GiGears size={14} />
-                {showJoints ? 'ボーンHUD ON' : 'ボーンHUD'}
-              </button>
-
               <div className="flex items-center gap-1 bg-stone-200 p-0.5 rounded-lg border border-stone-300">
                 <button
                   type="button"
@@ -709,26 +667,45 @@ export const GSAPMotionStudioModal: React.FC<GSAPMotionStudioModalProps> = ({
                     <div
                       key={pattern.id}
                       onClick={() => setSelectedPatternId(pattern.id)}
-                      className={`p-2.5 rounded-xl border-2 transition-all cursor-pointer flex flex-col justify-between gap-1.5 ${
+                      className={`p-2.5 rounded-xl border-2 transition-all cursor-pointer flex flex-col justify-between gap-2 ${
                         isSelected
                           ? 'bg-amber-500/15 border-amber-500 shadow-sm ring-2 ring-amber-400/40'
                           : 'bg-white border-stone-300 hover:border-amber-300 hover:bg-amber-50/40'
                       }`}
                     >
-                      <div className="flex items-start justify-between gap-1">
-                        <span className={`font-bold text-xs ${isSelected ? 'text-amber-900' : 'text-stone-800'}`}>
-                          {pattern.name}
-                        </span>
-                        <span className="text-[10px] font-mono font-bold bg-stone-100 text-stone-600 px-1.5 py-0.5 rounded border border-stone-200 whitespace-nowrap">
-                          {pattern.duration}s
-                        </span>
+                      <div className="flex items-center gap-2.5">
+                        {/* 縮小ロボットアニメーションプレビュー */}
+                        <div className="w-16 h-16 shrink-0 bg-stone-900 rounded-lg overflow-hidden flex items-center justify-center border border-stone-300 relative shadow-inner">
+                          <div className="scale-[0.32] origin-center pointer-events-none">
+                            <GSAPRobotCanvas
+                              robot={currentRobot}
+                              size={120}
+                              patternId={pattern.id}
+                              speed={1.0}
+                              loop={true}
+                              stageTheme="dark"
+                              hideStageDecorations={true}
+                              showJoints={false}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-1">
+                            <span className={`font-bold text-xs truncate ${isSelected ? 'text-amber-900' : 'text-stone-800'}`}>
+                              {pattern.name}
+                            </span>
+                            <span className="text-[10px] font-mono font-bold bg-stone-100 text-stone-600 px-1.5 py-0.5 rounded border border-stone-200 whitespace-nowrap">
+                              {pattern.duration}s
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-stone-600 line-clamp-2 leading-relaxed mt-0.5">
+                            {pattern.description}
+                          </p>
+                        </div>
                       </div>
 
-                      <p className="text-[11px] text-stone-600 line-clamp-2 leading-relaxed">
-                        {pattern.description}
-                      </p>
-
-                      <div className="flex items-center justify-between pt-1 border-t border-stone-200/60 text-[10px] text-stone-500">
+                      <div className="flex items-center justify-between pt-1.5 border-t border-stone-200/60 text-[10px] text-stone-500">
                         <span className="flex items-center gap-1">
                           {pattern.loop ? <span className="text-emerald-600 font-bold">🔁 ループ</span> : <span className="text-amber-600 font-bold">▶ 1回</span>}
                         </span>

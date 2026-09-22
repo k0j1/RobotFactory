@@ -118,7 +118,7 @@ export const CombatSetupCard: React.FC<CombatSetupCardProps> = ({
       <div className="space-y-2">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {/* ビームサーベル カード */}
-          <div className={`bg-white border rounded-xl p-3 shadow-2xs flex flex-col justify-between gap-2.5 transition-all ${
+          <div className={`bg-white border rounded-xl p-2.5 sm:p-3 shadow-2xs flex flex-col justify-between gap-1.5 transition-all ${
             saberRank === 'legendary' 
               ? 'border-amber-400 bg-linear-to-br from-amber-50/70 via-white to-orange-50/50 shadow-amber-200/50' 
               : saberRank === 'epic'
@@ -129,70 +129,32 @@ export const CombatSetupCard: React.FC<CombatSetupCardProps> = ({
               ? 'border-emerald-300 bg-emerald-50/30'
               : 'border-stone-200'
           }`}>
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex items-start gap-2.5">
-                <div className={`p-2 rounded-xl border shrink-0 ${
+            {/* 1行目: アイコン + 武装名 + ランクバッジ(解放時のみ) ＆ 解放/強化ボタン */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className={`p-1.5 rounded-lg border shrink-0 ${
                   saberRank ? 'bg-amber-100 text-amber-600 border-amber-300' : 'bg-stone-100 text-stone-400 border-stone-200'
                 }`}>
-                  <Gi.GiBroadsword className="text-xl" />
+                  <Gi.GiBroadsword className="text-lg" />
                 </div>
-                <div>
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="font-bold text-xs sm:text-sm text-stone-900">ビームサーベル</span>
-                    {saberRank ? (
-                      <span className={`text-[9px] px-1.5 py-0.2 rounded border font-bold ${COMBAT_EQUIPMENT_RANKS[saberRank].badgeClass}`}>
-                        {COMBAT_EQUIPMENT_RANKS[saberRank].label}
-                      </span>
-                    ) : (
-                      <span className="text-[9px] px-1.5 py-0.2 rounded border bg-stone-100 text-stone-500 border-stone-200 font-bold">
-                        未解放
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-[10px] text-stone-600 font-mono mt-0.5">
-                    {saberRank ? (
-                      <span className="text-red-700 font-bold bg-red-50 px-1.5 py-0.5 rounded border border-red-200 flex items-center gap-1 w-fit">
-                        <Gi.GiBroadsword className="text-xs" />
-                        <span>攻撃力 +{saberBonus}</span>
-                      </span>
-                    ) : (
-                      <span className="text-stone-500 flex items-center gap-1">
-                        <Gi.GiBroadsword className="text-stone-400 text-xs" />
-                        <span>未解放</span>
-                      </span>
-                    )}
-                  </div>
-                </div>
+                <span className="font-bold text-xs sm:text-sm text-stone-900 truncate">
+                  ビームサーベル
+                </span>
+                {/* ランクバッジ（解放済みの場合のみ表示し、未解放バッジは削除） */}
+                {saberRank && (
+                  <span className={`text-[9px] px-1.5 py-0.2 rounded border font-bold shadow-2xs shrink-0 ${COMBAT_EQUIPMENT_RANKS[saberRank].badgeClass}`}>
+                    {COMBAT_EQUIPMENT_RANKS[saberRank].label}
+                  </span>
+                )}
               </div>
 
-              {/* 装備ON/OFFトグル */}
-              {eq.beamSaber && (
-                <button 
-                  onClick={() => onToggleEquipment('beamSaber', !activeEq.beamSaber)}
-                  className={`text-[10px] px-2.5 py-1 font-bold rounded-lg transition-all cursor-pointer shrink-0 border ${
-                    activeEq.beamSaber 
-                      ? 'bg-amber-500 text-white border-amber-600 shadow-xs hover:bg-amber-600' 
-                      : 'bg-stone-100 text-stone-500 border-stone-300 hover:bg-stone-200'
-                  }`}
-                >
-                  {activeEq.beamSaber ? '✓ 装備中' : '装備する'}
-                </button>
-              )}
-            </div>
-
-            {/* ランクアップ / 解放ボタン */}
-            <div className="pt-2 border-t border-stone-100 flex items-center justify-between gap-2 flex-wrap">
-              {nextSaberRank && nextSaberDef ? (
-                <>
-                  <div className="text-[10px] text-stone-600 flex items-center gap-1">
-                    <span className="text-stone-500">次:</span>
-                    <strong className="text-stone-800">{nextSaberDef.label}</strong>
-                    <span className="text-emerald-700 font-bold ml-0.5">(攻 +{nextSaberDef.saberPowerBonus})</span>
-                  </div>
+              {/* 解放 / 強化ボタン または 最高ランク表示 */}
+              <div className="shrink-0">
+                {nextSaberRank && nextSaberDef ? (
                   <button
                     onClick={() => handleUpgrade && handleUpgrade('beamSaber')}
                     disabled={elements < nextSaberDef.cost}
-                    className={`text-[10px] font-bold px-3 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer border ${
+                    className={`text-[10px] font-bold px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer border ${
                       elements >= nextSaberDef.cost
                         ? 'bg-linear-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white border-amber-800 shadow-xs'
                         : 'bg-stone-200 text-stone-400 border-stone-300 cursor-not-allowed'
@@ -203,19 +165,55 @@ export const CombatSetupCard: React.FC<CombatSetupCardProps> = ({
                       {saberRank ? `${nextSaberDef.cost.toLocaleString()} E で強化` : `${nextSaberDef.cost} E で解放`}
                     </span>
                   </button>
-                </>
-              ) : (
-                <div className="w-full text-center py-0.5">
-                  <span className="text-[10px] font-bold text-amber-900 bg-amber-100 px-3 py-0.5 rounded-full border border-amber-300 flex items-center justify-center gap-1 shadow-2xs">
-                    <Gi.GiCrown className="text-amber-600" /> 最高ランク (伝説★5)
+                ) : (
+                  <span className="text-[9px] font-bold text-amber-900 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-300 flex items-center gap-0.5 shadow-2xs">
+                    <Gi.GiCrown className="text-amber-600" /> MAX
                   </span>
-                </div>
+                )}
+              </div>
+            </div>
+
+            {/* 2行目: ステータス ＆ 装備トグルボタン */}
+            <div className="flex items-center justify-between gap-2 pt-1 border-t border-stone-100">
+              <div className="text-[10px] text-stone-600 font-mono flex items-center gap-1.5 flex-wrap">
+                {saberRank ? (
+                  <>
+                    <span className="text-red-700 font-bold bg-red-50 px-1.5 py-0.2 rounded border border-red-200 inline-flex items-center gap-1">
+                      <Gi.GiBroadsword className="text-[10px]" />
+                      <span>POW +{saberBonus}</span>
+                    </span>
+                    {nextSaberRank && nextSaberDef && (
+                      <span className="text-[9px] text-stone-400 font-sans">
+                        (次: POW +{nextSaberDef.saberPowerBonus})
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <span className="text-stone-500 inline-flex items-center gap-1">
+                    <Gi.GiBroadsword className="text-stone-400 text-[10px]" />
+                    <span>未解放 (効果: POW +{nextSaberDef?.saberPowerBonus || 35})</span>
+                  </span>
+                )}
+              </div>
+
+              {/* 装備ON/OFFトグル */}
+              {eq.beamSaber && (
+                <button 
+                  onClick={() => onToggleEquipment('beamSaber', !activeEq.beamSaber)}
+                  className={`text-[10px] px-2.5 py-0.5 font-bold rounded-lg transition-all cursor-pointer shrink-0 border ${
+                    activeEq.beamSaber 
+                      ? 'bg-amber-500 text-white border-amber-600 shadow-xs hover:bg-amber-600' 
+                      : 'bg-stone-100 text-stone-600 border-stone-300 hover:bg-stone-200'
+                  }`}
+                >
+                  {activeEq.beamSaber ? '✓ 装備中' : '装備する'}
+                </button>
               )}
             </div>
           </div>
 
           {/* ビームシールド カード */}
-          <div className={`bg-white border rounded-xl p-3 shadow-2xs flex flex-col justify-between gap-2.5 transition-all ${
+          <div className={`bg-white border rounded-xl p-2.5 sm:p-3 shadow-2xs flex flex-col justify-between gap-1.5 transition-all ${
             shieldRank === 'legendary' 
               ? 'border-amber-400 bg-linear-to-br from-amber-50/70 via-white to-yellow-50/50 shadow-amber-200/50' 
               : shieldRank === 'epic'
@@ -226,70 +224,32 @@ export const CombatSetupCard: React.FC<CombatSetupCardProps> = ({
               ? 'border-emerald-300 bg-emerald-50/30'
               : 'border-stone-200'
           }`}>
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex items-start gap-2.5">
-                <div className={`p-2 rounded-xl border shrink-0 ${
+            {/* 1行目: アイコン + 武装名 + ランクバッジ(解放時のみ) ＆ 解放/強化ボタン */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className={`p-1.5 rounded-lg border shrink-0 ${
                   shieldRank ? 'bg-blue-100 text-blue-600 border-blue-300' : 'bg-stone-100 text-stone-400 border-stone-200'
                 }`}>
-                  <Gi.GiShield className="text-xl" />
+                  <Gi.GiShield className="text-lg" />
                 </div>
-                <div>
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="font-bold text-xs sm:text-sm text-stone-900">ビームシールド</span>
-                    {shieldRank ? (
-                      <span className={`text-[9px] px-1.5 py-0.2 rounded border font-bold ${COMBAT_EQUIPMENT_RANKS[shieldRank].badgeClass}`}>
-                        {COMBAT_EQUIPMENT_RANKS[shieldRank].label}
-                      </span>
-                    ) : (
-                      <span className="text-[9px] px-1.5 py-0.2 rounded border bg-stone-100 text-stone-500 border-stone-200 font-bold">
-                        未解放
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-[10px] text-stone-600 font-mono mt-0.5">
-                    {shieldRank ? (
-                      <span className="text-blue-700 font-bold bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200 flex items-center gap-1 w-fit">
-                        <Gi.GiShield className="text-xs" />
-                        <span>防御力 +{shieldBonus}</span>
-                      </span>
-                    ) : (
-                      <span className="text-stone-500 flex items-center gap-1">
-                        <Gi.GiShield className="text-stone-400 text-xs" />
-                        <span>未解放</span>
-                      </span>
-                    )}
-                  </div>
-                </div>
+                <span className="font-bold text-xs sm:text-sm text-stone-900 truncate">
+                  ビームシールド
+                </span>
+                {/* ランクバッジ（解放済みの場合のみ表示し、未解放バッジは削除） */}
+                {shieldRank && (
+                  <span className={`text-[9px] px-1.5 py-0.2 rounded border font-bold shadow-2xs shrink-0 ${COMBAT_EQUIPMENT_RANKS[shieldRank].badgeClass}`}>
+                    {COMBAT_EQUIPMENT_RANKS[shieldRank].label}
+                  </span>
+                )}
               </div>
 
-              {/* 装備ON/OFFトグル */}
-              {eq.beamShield && (
-                <button 
-                  onClick={() => onToggleEquipment('beamShield', !activeEq.beamShield)}
-                  className={`text-[10px] px-2.5 py-1 font-bold rounded-lg transition-all cursor-pointer shrink-0 border ${
-                    activeEq.beamShield 
-                      ? 'bg-blue-500 text-white border-blue-600 shadow-xs hover:bg-blue-600' 
-                      : 'bg-stone-100 text-stone-500 border-stone-300 hover:bg-stone-200'
-                  }`}
-                >
-                  {activeEq.beamShield ? '✓ 装備中' : '装備する'}
-                </button>
-              )}
-            </div>
-
-            {/* ランクアップ / 解放ボタン */}
-            <div className="pt-2 border-t border-stone-100 flex items-center justify-between gap-2 flex-wrap">
-              {nextShieldRank && nextShieldDef ? (
-                <>
-                  <div className="text-[10px] text-stone-600 flex items-center gap-1">
-                    <span className="text-stone-500">次:</span>
-                    <strong className="text-stone-800">{nextShieldDef.label}</strong>
-                    
-                  </div>
+              {/* 解放 / 強化ボタン または 最高ランク表示 */}
+              <div className="shrink-0">
+                {nextShieldRank && nextShieldDef ? (
                   <button
                     onClick={() => handleUpgrade && handleUpgrade('beamShield')}
                     disabled={elements < nextShieldDef.cost}
-                    className={`text-[10px] font-bold px-3 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer border ${
+                    className={`text-[10px] font-bold px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer border ${
                       elements >= nextShieldDef.cost
                         ? 'bg-linear-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white border-blue-700 shadow-xs'
                         : 'bg-stone-200 text-stone-400 border-stone-300 cursor-not-allowed'
@@ -300,13 +260,49 @@ export const CombatSetupCard: React.FC<CombatSetupCardProps> = ({
                       {shieldRank ? `${nextShieldDef.cost.toLocaleString()} E で強化` : `${nextShieldDef.cost} E で解放`}
                     </span>
                   </button>
-                </>
-              ) : (
-                <div className="w-full text-center py-0.5">
-                  <span className="text-[10px] font-bold text-amber-900 bg-amber-100 px-3 py-0.5 rounded-full border border-amber-300 flex items-center justify-center gap-1 shadow-2xs">
-                    <Gi.GiCrown className="text-amber-600" /> 最高ランク (伝説★5)
+                ) : (
+                  <span className="text-[9px] font-bold text-amber-900 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-300 flex items-center gap-0.5 shadow-2xs">
+                    <Gi.GiCrown className="text-amber-600" /> MAX
                   </span>
-                </div>
+                )}
+              </div>
+            </div>
+
+            {/* 2行目: ステータス ＆ 装備トグルボタン */}
+            <div className="flex items-center justify-between gap-2 pt-1 border-t border-stone-100">
+              <div className="text-[10px] text-stone-600 font-mono flex items-center gap-1.5 flex-wrap">
+                {shieldRank ? (
+                  <>
+                    <span className="text-blue-700 font-bold bg-blue-50 px-1.5 py-0.2 rounded border border-blue-200 inline-flex items-center gap-1">
+                      <Gi.GiShield className="text-[10px]" />
+                      <span>DEF +{shieldBonus}</span>
+                    </span>
+                    {nextShieldRank && nextShieldDef && (
+                      <span className="text-[9px] text-stone-400 font-sans">
+                        (次: DEF +{nextShieldDef.shieldDefenseBonus})
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <span className="text-stone-500 inline-flex items-center gap-1">
+                    <Gi.GiShield className="text-stone-400 text-[10px]" />
+                    <span>未解放 (効果: DEF +{nextShieldDef?.shieldDefenseBonus || 30})</span>
+                  </span>
+                )}
+              </div>
+
+              {/* 装備ON/OFFトグル */}
+              {eq.beamShield && (
+                <button 
+                  onClick={() => onToggleEquipment('beamShield', !activeEq.beamShield)}
+                  className={`text-[10px] px-2.5 py-0.5 font-bold rounded-lg transition-all cursor-pointer shrink-0 border ${
+                    activeEq.beamShield 
+                      ? 'bg-blue-500 text-white border-blue-600 shadow-xs hover:bg-blue-600' 
+                      : 'bg-stone-100 text-stone-600 border-stone-300 hover:bg-stone-200'
+                  }`}
+                >
+                  {activeEq.beamShield ? '✓ 装備中' : '装備する'}
+                </button>
               )}
             </div>
           </div>
@@ -405,16 +401,6 @@ export const CombatSetupCard: React.FC<CombatSetupCardProps> = ({
             <div className="flex items-center gap-2">
               <span className="font-bold text-xs sm:text-sm text-stone-800">対戦相手を選ぶ</span>
               <span className="text-[10px] text-stone-500 font-mono">強さLv 1〜10</span>
-            </div>
-            <div className="flex items-center gap-1.5 text-[10px]">
-              <span className="bg-yellow-100 text-yellow-900 border border-yellow-300 font-bold px-1.5 py-0.2 rounded flex items-center gap-0.5">
-                <Gi.GiTrophyCup className="text-amber-600 text-[9px]" /> 名声
-              </span>
-              <span className="text-stone-400 font-bold">＆</span>
-              <span className="bg-indigo-50 text-indigo-900 border border-indigo-200 font-bold font-mono px-1.5 py-0.2 rounded flex items-center gap-0.5">
-                <Gi.GiAtom className="text-indigo-600 text-[9px]" /> エレメント
-              </span>
-              <span className="text-amber-900 font-bold bg-amber-100/80 px-1 py-0.2 rounded">同数獲得！(Lv4〜)</span>
             </div>
           </div>
           <div className="flex gap-2 overflow-x-auto pt-2.5 pb-2 px-1 custom-scrollbar">

@@ -4,6 +4,7 @@ import { MATERIALS, LOCATIONS, getMaterialCraftableVisuals, STARTER_BONUS_MATERI
 import { AttributeColors } from './models';
 import { getDefenseDailyResetInfo, DefenseResetInfo, getDailyResetDateKey } from '../components/minigames/Shared';
 import { CombatEquipmentType, CombatEquipmentRank, COMBAT_EQUIPMENT_RANKS, getNextEquipmentRank } from './combatEquipmentData';
+import { OTHELLO_MEMORIES, OthelloMemoryId } from './othelloStrategyData';
 import { AuthApiService } from '../services/AuthApiService';
 import { findMasterPartData } from '../data/partsMaster';
 
@@ -41,6 +42,8 @@ const INITIAL_STATE: GameState = {
   completedRequestDeadlines: {},
   craftedRobots: [],
   minigameDashboardMode: 'compact',
+  othelloPurchasedMemories: [],
+  othelloEquippedMemories: [],
 };
 
 const STORAGE_KEY = 'ponkotsu_robot_save';
@@ -2102,6 +2105,118 @@ export class GameEngine {
   public setMinigameDashboardMode(mode: 'detailed' | 'compact') {
     this.state.minigameDashboardMode = mode;
     this.saveState();
+  }
+
+  /**
+   * オセロ専用戦略メモリをエレメントで購入
+   */
+  public buyOthelloMemory(memoryId: OthelloMemoryId, robotId?: string): boolean {
+    const memDef = OTHELLO_MEMORIES[memoryId];
+    if (!memDef) return false;
+
+    if (!this.state.othelloPurchasedMemories) {
+      this.state.othelloPurchasedMemories = [];
+    }
+
+    if (this.state.othelloPurchasedMemories.includes(memoryId)) {
+      return true; // 既に購入済み
+    }
+
+    const currentElements = this.state.battleElements || 0;
+    if (currentElements < memDef.cost) {
+      return false; // エレメント不足
+    }
+
+    // エレメント消費・購入記録
+    this.state.battleElements = currentElements - memDef.cost;
+    this.state.othelloPurchasedMemories.push(memoryId);
+
+    // スロット（最大3個）に空きがあれば自動装備
+    this.equipOthelloMemory(memoryId, robotId);
+
+    this.saveState();
+    return true;
+  }
+
+  /**
+   * オセロ戦略メモリを装備（最大3個までスロット装備可能）
+   */
+  public equipOthelloMemory(memoryId: OthelloMemoryId, robotId?: string, slotIndex?: number): boolean {
+    if (!this.state.othelloPurchasedMemories?.includes(memoryId)) {
+      return false;
+    }
+
+    // 1. グローバル設定の更新
+    if (!this.state.othelloEquippedMemories) {
+      this.state.othelloEquippedMemories = [];
+    }
+    let list = this.state.othelloEquippedMemories.filter(id => id !== memoryId);
+    if (slotIndex !== undefined && slotIndex >= 0 && slotIndex < 3) {
+      list.splice(slotIndex, 0, memoryId);
+      list = list.slice(0, 3);
+    } else if (list.length < 3) {
+      list.push(memoryId);
+    } else {
+      list[2] = memoryId;
+    }
+    this.state.othelloEquippedMemories = list;
+
+    // 2. 選択ロボットが存在する場合は機体にも個別保存
+    if (robotId) {
+      const targetRobot = this.state.robots.find(r => r.id === robotId);
+      if (targetRobot) {
+        let rList = (targetRobot.othelloEquippedMemories || []).filter(id => id !== memoryId);
+        if (slotIndex !== undefined && slotIndex >= 0 && slotIndex < 3) {
+          rList.splice(slotIndex, 0, memoryId);
+          rList = rList.slice(0, 3);
+        } else if (rList.length < 3) {
+          rList.push(memoryId);
+        } else {
+          rList[2] = memoryId;
+        }
+        targetRobot.othelloEquippedMemories = rList;
+      }
+    }
+
+    this.saveState();
+    return true;
+  }
+
+  /**
+   * オセロ戦略メモリの装備解除
+   */
+  public unequipOthelloMemory(memoryId: OthelloMemoryId, robotId?: string) {
+    if (this.state.othelloEquippedMemories) {
+      this.state.othelloEquippedMemories = this.state.othelloEquippedMemories.filter(id => id !== memoryId);
+    }
+    if (robotId) {
+      const targetRobot = this.state.robots.find(r => r.id === robotId);
+      if (targetRobot && targetRobot.othelloEquippedMemories) {
+        targetRobot.othelloEquippedMemories = targetRobot.othelloEquippedMemories.filter(id => id !== memoryId);
+      }
+    }
+    this.saveState();
+  }
+
+  /**
+   * 装備中オセロ戦略メモリの優先順位（スロット順序）入れ替え
+   */
+  public swapOthelloMemorySlots(fromIndex: number, toIndex: number, robotId?: string) {
+    const list = [...(this.state.othelloEquippedMemories || [])];
+    if (fromIndex >= 0 && fromIndex < list.length && toIndex >= 0 && toIndex < list.length) {
+      const temp = list[fromIndex];
+      list[fromIndex] = list[toIndex];
+      list[toIndex] = temp;
+      this.state.othelloEquippedMemories = list;
+
+      if (robotId) {
+        const targetRobot = this.state.robots.find(r => r.id === robotId);
+        if (targetRobot) {
+          targetRobot.othelloEquippedMemories = [...list];
+        }
+      }
+      this.saveState();
+    }
   }
 }
 

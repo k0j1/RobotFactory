@@ -25,7 +25,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
         title="ポンコツロボット工房 公式仕様書"
         badge={
           <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300 font-mono font-bold px-1.5 py-0.2 rounded">
-            v0.1.64 (DB v0.13)
+            v0.1.87 (DB v0.13)
           </span>
         }
         rightElement={
@@ -490,6 +490,24 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                   <strong className="text-stone-900 block font-bold mb-1">♟️ クラシック頭脳対戦 (オセロ / チェス / 五目並べ / 三目並べ)</strong>
                   <p className="text-stone-600">
                     ロボットの知力(INT)や思考ロジックを試すボードゲーム集。<strong>オセロおよびチェスでは勝利時に専用の宝箱がドロップ</strong>し、回収可能！対局相手のレベルに応じた素材・ゴールド・工房名声および同数のバトルエレメント（Lv.4以上で名声と同数）を獲得できます。未勝利時は1日何回でも繰り返し挑戦できます。
+                    <br />
+                    <strong>🧠 オセロ専用 戦術メモリ（思考ルーチン制御）システム:</strong>
+                    オセロでは、バトル勝利などで集めた<strong>エレメント（各150 E）を消費して「戦術メモリ」を購入・アンロック</strong>し、機体選択画面で<strong>最大3つまで装備</strong>することが可能です。装備したスロット順（優先度1 → 優先度2 → 優先度3）に候補手が段階的にフィルタリングされ、ロボットの着手AIの思考ルーチンを自由にカスタマイズ・最適化できます。
+                    <br />
+                    ・<strong>最多獲得優先:</strong> 一番石が多く取れる場所へ優先して打つ
+                    <br />
+                    ・<strong>最少獲得優先:</strong> 一番石が少なく取れる場所へ優先して打つ（相手に手を渡す戦法）
+                    <br />
+                    ・<strong>角確保優先:</strong> オセロの要所である四隅の角(Corner)マスを最優先で確保
+                    <br />
+                    ・<strong>外周・端優先:</strong> 安定した辺・端(Edge)のマスを優先して陣地を固める
+                    <br />
+                    ・<strong>中央・内側優先:</strong> 外周を避けて内側(Center)マスに打つ手堅い戦法
+                    <br />
+                    ・<strong>上半分 / 下半分 / 右半分 / 左半分優先:</strong> 盤面の指定エリアを集中的に制圧・展開する偏向戦術
+                    <br />
+                    ・<strong>🔍 戦術メモリ適用デバッグ表示モード:</strong>
+                    対局画面下部のトグルボタンから、いつでも「戦術メモリ思考デバッグモード」を起動可能。盤面上に<strong>各マスの反転可能石数（+N）、スロット合致マーク（#1〜#3）、対象ゾーンの点線枠、および最終着手ターゲット（★ BEST）</strong>がリアルタイムにオーバーレイ表示されます。また、全合法手（STEP 0）からスロット#1 → #2 → #3を経て最終手に絞り込まれるまでの全ステップを詳細に解説するパイプラインパネルも内蔵されています。
                   </p>
                 </div>
               </div>

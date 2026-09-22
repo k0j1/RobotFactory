@@ -10,7 +10,7 @@ interface DanmakuBullet {
   y: number;
   vx: number;
   vy: number;
-  color?: 'magenta' | 'cyan' | 'amber' | 'emerald';
+  color?: 'magenta' | 'cyan' | 'amber' | 'emerald' | 'red';
   size?: number;
 }
 
@@ -287,7 +287,12 @@ export const DanmakuSurvivalGame: React.FC<DanmakuProps> = ({
       }
 
       // ========================================================
-      // <Gi.GiRocketFlight className="inline text-red-500" /> CONTINUOUS GAPLESS BULLET GENERATION (隙間なき弾幕放射 & 安全ルート保証)
+      // 弾幕パターン生成: レベル別パターン数制御 & 超高難易度調整
+      // ・Lv.1-2: いずれか1つのパターンのみ (弾速0.5x〜)
+      // ・Lv.3-4: 2パターン複合
+      // ・Lv.5-6: 3パターン複合
+      // ・Lv.7-8: 4パターン複合 (狙い撃ち弾含む)
+      // ・Lv.9-10: 全パターン猛烈複合 + 高速狙い撃ち弾 (弾速2.0x)
       // ========================================================
       const t = timeMsRef.current;
       const curFrame = frameCountRef.current;
@@ -296,121 +301,195 @@ export const DanmakuSurvivalGame: React.FC<DanmakuProps> = ({
       const spinDir = seed > 0.5 ? 1 : -1;
       const phaseOffset = seed * 1000;
       const speedMult = currentDiffConfig.bulletSpeedMult;
+      const diffLevel = currentDiffConfig.level || 1;
 
-      // 1. 【常時ベースストリーム】リズミカルに絶え間なく放たれる回転ツインスパイラル（2フレーム毎に交互生成）
-      if (curFrame % 2 === 0) {
-        const baseAngle1 = (t / 450) * Math.PI * 2 * spinDir + (seed * Math.PI);
-        const baseSpeed = 1.3 * speedMult;
-        nextBullets.push({
-          id: bulletIdCounterRef.current++,
-          x: bossX,
-          y: bossY,
-          vx: Math.cos(baseAngle1) * baseSpeed,
-          vy: Math.sin(baseAngle1) * baseSpeed * 0.85 + 0.35 * speedMult,
-          color: 'magenta',
-          size: 3
-        });
-      } else {
-        const baseAngle2 = (t / 450) * Math.PI * 2 * spinDir + (seed * Math.PI) + Math.PI;
-        const baseSpeed = 1.3 * speedMult;
-        nextBullets.push({
-          id: bulletIdCounterRef.current++,
-          x: bossX,
-          y: bossY,
-          vx: Math.cos(baseAngle2) * baseSpeed,
-          vy: Math.sin(baseAngle2) * baseSpeed * 0.85 + 0.35 * speedMult,
-          color: 'magenta',
-          size: 3
-        });
-      }
-
-      // 2. 【高密度ウェーブストリーム】常に左右に連続スイープする弾幕カーテン（2フレーム毎）
-      if (curFrame % 2 === 0) {
-        const sweepAngle = (Math.PI / 2) + Math.sin((t + phaseOffset) / 320) * (Math.PI * 0.38);
-        const sweepSpeed = 1.5 * speedMult;
-        nextBullets.push({
-          id: bulletIdCounterRef.current++,
-          x: bossX,
-          y: bossY,
-          vx: Math.cos(sweepAngle) * sweepSpeed,
-          vy: Math.sin(sweepAngle) * sweepSpeed,
-          color: 'cyan',
-          size: 3
-        });
-      }
-
-      // 3. 【フェーズ別特殊ストリーム（隙間なくシームレスにブレンド）】
-      // パターンが切り替わる間も発射周期が途切れることなく連続生成（必ず安全な抜け道スリットが存在）
-      const phaseIdx = Math.floor(t / 3300) % patternSequenceRef.current.length;
+      // フェーズ管理 (約3秒ごとにメインパターンが切り替わる)
+      const phaseIdx = Math.floor(t / 3000) % patternSequenceRef.current.length;
       const phase = patternSequenceRef.current[phaseIdx];
 
-      if (phase === 0) {
-        // パターンA: 拡散スパイラル（難易度別に角度・WAY数を最適化）
-        if (curFrame % 3 === 0) {
-          const spreadOffset = Math.sin((t + phaseOffset) / 250) * 0.25 * spinDir;
-          const offsets = difficulty === 'hard' 
-            ? [-0.45, -0.15, 0.15, 0.45] 
-            : difficulty === 'easy'
-            ? [-0.32, 0.32]
-            : [-0.38, 0, 0.38];
-
-          offsets.forEach((offsetAngle, idx) => {
-            const angle = (Math.PI / 2) + offsetAngle + spreadOffset;
-            const spd = (1.4 + idx * 0.08) * speedMult;
-            nextBullets.push({
-              id: bulletIdCounterRef.current++,
-              x: bossX,
-              y: bossY,
-              vx: Math.cos(angle) * spd,
-              vy: Math.sin(angle) * spd,
-              color: 'amber',
-              size: 3
-            });
-          });
-        }
-      } else if (phase === 1) {
-        // パターンB: 全方位リングバースト（難易度別にリング弾数を変更）
-        if (curFrame % 6 === 0) {
-          const ringCount = currentDiffConfig.ringCount;
-          const ringRot = (t / 600);
-          for (let i = 0; i < ringCount; i++) {
-            const angle = (Math.PI * 2 * i) / ringCount + ringRot;
-            const spd = 1.25 * speedMult;
-            nextBullets.push({
-              id: bulletIdCounterRef.current++,
-              x: bossX,
-              y: bossY,
-              vx: Math.cos(angle) * spd,
-              vy: Math.sin(angle) * spd * 0.85 + 0.25 * speedMult,
-              color: 'emerald',
-              size: 3.5
-            });
-          }
-        }
-      } else if (phase === 2) {
-        // パターンC: クロス交差ストリーム（3フレーム毎・左右交差の合間に安全ルート）
-        if (curFrame % 3 === 0) {
-          const crossAngleL = (Math.PI / 3) + Math.cos((t + phaseOffset) / 280) * 0.25;
-          const crossAngleR = (2 * Math.PI / 3) - Math.cos((t + phaseOffset) / 280) * 0.25;
-          const crossSpeed = 1.6 * speedMult;
+      // ----------------------------------------------------
+      // パターンA: 回転スパイラルストリーム (Lv.3以上で常時複合、Lv.1-2ではphase===0時のみ単独発射)
+      // ----------------------------------------------------
+      const allowSpiral = diffLevel >= 3 || (diffLevel <= 2 && phase === 0);
+      if (allowSpiral) {
+        const spiralInterval = diffLevel <= 2 ? 4 : (diffLevel <= 5 ? 3 : 2);
+        if (curFrame % spiralInterval === 0) {
+          const baseAngle1 = (t / (diffLevel <= 2 ? 600 : 450)) * Math.PI * 2 * spinDir + (seed * Math.PI);
+          const baseSpeed = 1.3 * speedMult;
           nextBullets.push({
             id: bulletIdCounterRef.current++,
-            x: bossX - 5,
+            x: bossX,
             y: bossY,
-            vx: Math.cos(crossAngleL) * crossSpeed,
-            vy: Math.sin(crossAngleL) * crossSpeed,
+            vx: Math.cos(baseAngle1) * baseSpeed,
+            vy: Math.sin(baseAngle1) * baseSpeed * 0.85 + 0.35 * speedMult,
+            color: 'magenta',
+            size: 3
+          });
+        }
+        // 高レベル(Lv.7以上)ではツインスパイラル(逆位相)が同時に放たれる
+        if (diffLevel >= 7 && curFrame % 2 === 1) {
+          const baseAngle2 = (t / 450) * Math.PI * 2 * spinDir + (seed * Math.PI) + Math.PI;
+          const baseSpeed = 1.35 * speedMult;
+          nextBullets.push({
+            id: bulletIdCounterRef.current++,
+            x: bossX,
+            y: bossY,
+            vx: Math.cos(baseAngle2) * baseSpeed,
+            vy: Math.sin(baseAngle2) * baseSpeed * 0.85 + 0.35 * speedMult,
+            color: 'magenta',
+            size: 3
+          });
+        }
+      }
+
+      // ----------------------------------------------------
+      // パターンB: 左右スイープ弾幕カーテン (Lv.5以上で常時複合、Lv.1-2ではphase===1時のみ単独発射)
+      // ----------------------------------------------------
+      const allowSweep = diffLevel >= 5 || (diffLevel <= 2 && phase === 1);
+      if (allowSweep) {
+        const sweepInterval = diffLevel <= 2 ? 4 : (diffLevel <= 6 ? 3 : 2);
+        if (curFrame % sweepInterval === 0) {
+          const sweepAngle = (Math.PI / 2) + Math.sin((t + phaseOffset) / 320) * (Math.PI * (diffLevel >= 8 ? 0.45 : 0.38));
+          const sweepSpeed = (diffLevel >= 9 ? 1.7 : 1.5) * speedMult;
+          nextBullets.push({
+            id: bulletIdCounterRef.current++,
+            x: bossX,
+            y: bossY,
+            vx: Math.cos(sweepAngle) * sweepSpeed,
+            vy: Math.sin(sweepAngle) * sweepSpeed,
             color: 'cyan',
             size: 3
           });
+        }
+      }
+
+      // ----------------------------------------------------
+      // パターンC: 特殊ストリーム (拡散・リングバースト・クロス)
+      // Lv.1-2では phase===2 の時だけ単独発射
+      // Lv.3以上ではフェーズごとに切り替わり複合
+      // ----------------------------------------------------
+      const allowSpecial = diffLevel >= 3 || (diffLevel <= 2 && phase === 2);
+      if (allowSpecial) {
+        // Lv.1-2のphase===2時はシンプルな単一拡散弾
+        if (diffLevel <= 2) {
+          if (curFrame % 5 === 0) {
+            const spreadAngle = (Math.PI / 2) + Math.sin(t / 400) * 0.3;
+            nextBullets.push({
+              id: bulletIdCounterRef.current++,
+              x: bossX,
+              y: bossY,
+              vx: Math.cos(spreadAngle) * 1.2 * speedMult,
+              vy: Math.sin(spreadAngle) * 1.2 * speedMult,
+              color: 'amber',
+              size: 3
+            });
+          }
+        } else if (phase === 0) {
+          // 拡散弾 (レベルが高いほどWAY数と密度が増加)
+          const spreadInterval = diffLevel >= 8 ? 2 : 3;
+          if (curFrame % spreadInterval === 0) {
+            const spreadOffset = Math.sin((t + phaseOffset) / 250) * 0.25 * spinDir;
+            const offsets = diffLevel >= 8
+              ? [-0.55, -0.35, -0.15, 0.15, 0.35, 0.55]
+              : diffLevel >= 5
+              ? [-0.42, -0.14, 0.14, 0.42]
+              : [-0.30, 0.30];
+
+            offsets.forEach((offsetAngle, idx) => {
+              const angle = (Math.PI / 2) + offsetAngle + spreadOffset;
+              const spd = (1.4 + idx * 0.08) * speedMult;
+              nextBullets.push({
+                id: bulletIdCounterRef.current++,
+                x: bossX,
+                y: bossY,
+                vx: Math.cos(angle) * spd,
+                vy: Math.sin(angle) * spd,
+                color: 'amber',
+                size: 3
+              });
+            });
+          }
+        } else if (phase === 1) {
+          // 全方位リングバースト (難易度別にリング弾数と速度が大幅にスケール)
+          const ringInterval = diffLevel >= 9 ? 4 : (diffLevel >= 6 ? 5 : 6);
+          if (curFrame % ringInterval === 0) {
+            const ringCount = currentDiffConfig.ringCount;
+            const ringRot = (t / 500);
+            for (let i = 0; i < ringCount; i++) {
+              const angle = (Math.PI * 2 * i) / ringCount + ringRot;
+              const spd = 1.35 * speedMult;
+              nextBullets.push({
+                id: bulletIdCounterRef.current++,
+                x: bossX,
+                y: bossY,
+                vx: Math.cos(angle) * spd,
+                vy: Math.sin(angle) * spd * 0.85 + 0.3 * speedMult,
+                color: 'emerald',
+                size: 3.5
+              });
+            }
+          }
+        } else if (phase === 2) {
+          // クロス交差ストリーム
+          const crossInterval = diffLevel >= 8 ? 2 : 3;
+          if (curFrame % crossInterval === 0) {
+            const crossAngleL = (Math.PI / 3) + Math.cos((t + phaseOffset) / 250) * 0.3;
+            const crossAngleR = (2 * Math.PI / 3) - Math.cos((t + phaseOffset) / 250) * 0.3;
+            const crossSpeed = (diffLevel >= 8 ? 1.8 : 1.6) * speedMult;
+            nextBullets.push({
+              id: bulletIdCounterRef.current++,
+              x: bossX - 6,
+              y: bossY,
+              vx: Math.cos(crossAngleL) * crossSpeed,
+              vy: Math.sin(crossAngleL) * crossSpeed,
+              color: 'cyan',
+              size: 3
+            });
+            nextBullets.push({
+              id: bulletIdCounterRef.current++,
+              x: bossX + 6,
+              y: bossY,
+              vx: Math.cos(crossAngleR) * crossSpeed,
+              vy: Math.sin(crossAngleR) * crossSpeed,
+              color: 'amber',
+              size: 3
+            });
+          }
+        }
+      }
+
+      // ----------------------------------------------------
+      // パターンD: 高難易度専用・自機狙い高速ショット (Lv.7以上)
+      // 安全地帯に居座るのを防ぎ、回避判断を強制する赤色高速弾
+      // ----------------------------------------------------
+      if (diffLevel >= 7) {
+        const aimInterval = diffLevel >= 10 ? 10 : (diffLevel >= 9 ? 14 : 20);
+        if (curFrame % aimInterval === 0) {
+          const aimAngle = Math.atan2(playerPosRef.current.y - bossY, playerPosRef.current.x - bossX);
+          const aimSpeed = 2.0 * speedMult;
           nextBullets.push({
             id: bulletIdCounterRef.current++,
-            x: bossX + 5,
+            x: bossX,
             y: bossY,
-            vx: Math.cos(crossAngleR) * crossSpeed,
-            vy: Math.sin(crossAngleR) * crossSpeed,
-            color: 'amber',
-            size: 3
+            vx: Math.cos(aimAngle) * aimSpeed,
+            vy: Math.sin(aimAngle) * aimSpeed,
+            color: 'red',
+            size: 4
           });
+          // Lv.10では左右に広がる3WAY自機狙い弾
+          if (diffLevel >= 10) {
+            [-0.18, 0.18].forEach(fanAngle => {
+              nextBullets.push({
+                id: bulletIdCounterRef.current++,
+                x: bossX,
+                y: bossY,
+                vx: Math.cos(aimAngle + fanAngle) * (aimSpeed * 0.95),
+                vy: Math.sin(aimAngle + fanAngle) * (aimSpeed * 0.95),
+                color: 'red',
+                size: 3.5
+              });
+            });
+          }
         }
       }
 
@@ -623,6 +702,7 @@ export const DanmakuSurvivalGame: React.FC<DanmakuProps> = ({
           if (b.color === 'cyan') bulletStyle = "bg-cyan-400 shadow-[0_0_8px_cyan]";
           if (b.color === 'amber') bulletStyle = "bg-amber-400 shadow-[0_0_8px_orange]";
           if (b.color === 'emerald') bulletStyle = "bg-emerald-400 shadow-[0_0_8px_#34d399]";
+          if (b.color === 'red') bulletStyle = "bg-red-500 shadow-[0_0_10px_#ef4444]";
 
           return (
             <div 

@@ -844,19 +844,21 @@ export const PianoGame: React.FC<PianoGameProps> = ({
           ))}
         </div>
         
-        {/* 背景：演奏会場でロボットがピアノ協奏曲・超絶技巧演奏のアニメーションをループ表示 (SEなし) */}
+        {/* 右上：演奏会場でロボットがピアノ協奏曲・超絶技巧演奏のアニメーションを小さく表示 (SEなし) */}
         {!isFinished && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden">
-            <div className="transform translate-y-1 sm:translate-y-3 scale-95 sm:scale-105 drop-shadow-[0_12px_24px_rgba(0,0,0,0.85)] opacity-90 transition-opacity duration-300">
-              <GSAPRobotCanvas
-                robot={activeRobot}
-                patternId="piano_performance"
-                loop={true}
-                speed={speed || 1.0}
-                isPaused={isPaused}
-                size={230}
-                hideStageDecorations={true}
-              />
+          <div className="absolute top-2 right-2 sm:top-3 sm:right-3 pointer-events-none z-10">
+            <div className="bg-stone-950/70 backdrop-blur-xs p-1 rounded-xl border border-stone-700/60 shadow-lg drop-shadow-[0_4px_12px_rgba(0,0,0,0.7)] flex flex-col items-center">
+              <div className="overflow-hidden rounded-lg flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24">
+                <GSAPRobotCanvas
+                  robot={activeRobot}
+                  patternId="piano_performance"
+                  loop={true}
+                  speed={speed || 1.0}
+                  isPaused={isPaused}
+                  size={96}
+                  hideStageDecorations={true}
+                />
+              </div>
             </div>
           </div>
         )}
