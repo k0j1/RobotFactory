@@ -222,9 +222,9 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
     }
   };
 
-  const handleClaimPart = () => {
+  const handleClaimPart = async () => {
     try {
-      const part = engine.claimCraftedPart();
+      const part = await engine.claimCraftedPart();
       setLastCraftedPart(part);
       triggerConfetti();
     } catch (e: any) {

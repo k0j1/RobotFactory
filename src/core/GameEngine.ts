@@ -1305,7 +1305,7 @@ export class GameEngine {
     return this.state.activePartCraft;
   }
 
-  public claimCraftedPart(): RobotPart {
+  public async claimCraftedPart(): Promise<RobotPart> {
     const target = this.state.activePartCraft || this.state.completePartCraft;
     if (!target) {
       throw new Error("製造中または受取待ちのパーツはありません");
@@ -1345,7 +1345,23 @@ export class GameEngine {
     this.state.activePartCraft = null;
 
     if (this.state.tutorialStep === 2) this.advanceTutorial();
-    this.saveState();
+    this.notifyStateChange();
+
+    if (this.isCloudAccount && this.userId) {
+      try {
+        const res = await AuthApiService.getInstance().saveAllDataToTables(this.userId, this.state, true);
+        if (!res || res.success === false) {
+          console.warn("[GameEngine] complete_part_craftsへの即時同期レスポンス:", res?.error);
+        }
+      } catch (err: any) {
+        console.error("[GameEngine] complete_part_craftsへの即時保存エラー:", err);
+      }
+    } else {
+      this.saveState();
+    }
+
+    this.notifyStateChange();
+    this.update();
     return craftedPart;
   }
 

@@ -153,14 +153,6 @@ try {
         CONSTRAINT fk_legs_part FOREIGN KEY (legs_part_id) REFERENCES user_parts(id) ON DELETE SET NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-    CREATE TABLE IF NOT EXISTS complete_parts (
-        id VARCHAR(255) PRIMARY KEY,
-        user_id VARCHAR(255) NOT NULL,
-        master_id VARCHAR(255) NOT NULL,
-        part_data JSON,
-        completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
     CREATE TABLE IF NOT EXISTS completed_robots (
         id VARCHAR(255) PRIMARY KEY,
         user_id VARCHAR(255) NOT NULL,
@@ -176,11 +168,7 @@ try {
         total_dexterity INT DEFAULT 0,
         total_int INT DEFAULT 0,
         robot_data JSON,
-        completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        CONSTRAINT fk_comp_head FOREIGN KEY (head_part_id) REFERENCES complete_parts(id) ON DELETE SET NULL,
-        CONSTRAINT fk_comp_body FOREIGN KEY (body_part_id) REFERENCES complete_parts(id) ON DELETE SET NULL,
-        CONSTRAINT fk_comp_arms FOREIGN KEY (arms_part_id) REFERENCES complete_parts(id) ON DELETE SET NULL,
-        CONSTRAINT fk_comp_legs FOREIGN KEY (legs_part_id) REFERENCES complete_parts(id) ON DELETE SET NULL
+        completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
     CREATE TABLE IF NOT EXISTS complete_deliveries (
@@ -349,13 +337,6 @@ try {
     
     $pdo->exec($sql);
 
-    // completed_robotsの外部キー制約設定 (すでにある場合への対応)
-    try {
-        $pdo->exec("UPDATE completed_robots SET head_part_id = NULL WHERE head_part_id IS NOT NULL AND head_part_id NOT IN (SELECT id FROM complete_parts)");
-        $pdo->exec("UPDATE completed_robots SET body_part_id = NULL WHERE body_part_id IS NOT NULL AND body_part_id NOT IN (SELECT id FROM complete_parts)");
-        $pdo->exec("UPDATE completed_robots SET arms_part_id = NULL WHERE arms_part_id IS NOT NULL AND arms_part_id NOT IN (SELECT id FROM complete_parts)");
-        $pdo->exec("UPDATE completed_robots SET legs_part_id = NULL WHERE legs_part_id IS NOT NULL AND legs_part_id NOT IN (SELECT id FROM complete_parts)");
-    
     // master_expeditions テーブルに初期データを登録
     $expeditions = [
         ['id' => 'loc1', 'name' => '裏山のスクラップ場', 'unlock_cost' => 0, 'duration_seconds' => 1800, 'required_fame' => 0],
@@ -384,12 +365,17 @@ try {
         ]);
     }
 
-} catch (PDOException $e) {}
-
-    try { $pdo->exec("ALTER TABLE completed_robots ADD CONSTRAINT fk_comp_head FOREIGN KEY (head_part_id) REFERENCES complete_parts(id) ON DELETE SET NULL"); } catch (PDOException $e) {}
-    try { $pdo->exec("ALTER TABLE completed_robots ADD CONSTRAINT fk_comp_body FOREIGN KEY (body_part_id) REFERENCES complete_parts(id) ON DELETE SET NULL"); } catch (PDOException $e) {}
-    try { $pdo->exec("ALTER TABLE completed_robots ADD CONSTRAINT fk_comp_arms FOREIGN KEY (arms_part_id) REFERENCES complete_parts(id) ON DELETE SET NULL"); } catch (PDOException $e) {}
-    try { $pdo->exec("ALTER TABLE completed_robots ADD CONSTRAINT fk_comp_legs FOREIGN KEY (legs_part_id) REFERENCES complete_parts(id) ON DELETE SET NULL"); } catch (PDOException $e) {}
+    // complete_parts テーブルの削除と completed_robots 外部キー制約の解除 (DB v0.18)
+    try { $pdo->exec("ALTER TABLE completed_robots DROP FOREIGN KEY fk_comp_head"); } catch (PDOException $e) {}
+    try { $pdo->exec("ALTER TABLE completed_robots DROP FOREIGN KEY fk_comp_body"); } catch (PDOException $e) {}
+    try { $pdo->exec("ALTER TABLE completed_robots DROP FOREIGN KEY fk_comp_arms"); } catch (PDOException $e) {}
+    try { $pdo->exec("ALTER TABLE completed_robots DROP FOREIGN KEY fk_comp_legs"); } catch (PDOException $e) {}
+    try { $pdo->exec("ALTER TABLE completed_robots DROP FOREIGN KEY fk_completed_robots_head"); } catch (PDOException $e) {}
+    try { $pdo->exec("ALTER TABLE completed_robots DROP FOREIGN KEY fk_completed_robots_body"); } catch (PDOException $e) {}
+    try { $pdo->exec("ALTER TABLE completed_robots DROP FOREIGN KEY fk_completed_robots_arms"); } catch (PDOException $e) {}
+    try { $pdo->exec("ALTER TABLE completed_robots DROP FOREIGN KEY fk_completed_robots_legs"); } catch (PDOException $e) {}
+    try { $pdo->exec("ALTER TABLE complete_parts DROP FOREIGN KEY fk_complete_parts_user_id"); } catch (PDOException $e) {}
+    try { $pdo->exec("DROP TABLE IF EXISTS complete_parts"); } catch (PDOException $e) {}
     
     // --- 追加のマイグレーション（既に存在するテーブルのスキーマ変更） ---
     // CREATE TABLE IF NOT EXISTS では、既存テーブルのカラム追加・削除が行われないための対応

@@ -62,7 +62,6 @@ function getAllDatabaseTables(PDO $pdo): array {
         'complete_robot_disassemblies',
         'complete_part_recycles',
         'completed_robots',
-        'complete_parts',
         'complete_deliveries',
         'master_parts',
         'user_minigame_status',

@@ -73,14 +73,6 @@ try {
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-        CREATE TABLE IF NOT EXISTS complete_parts (
-            id VARCHAR(255) PRIMARY KEY,
-            user_id VARCHAR(255) NOT NULL,
-            master_id VARCHAR(255) NOT NULL,
-            part_data JSON,
-            completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
         CREATE TABLE IF NOT EXISTS completed_robots (
             id VARCHAR(255) PRIMARY KEY,
             user_id VARCHAR(255) NOT NULL,

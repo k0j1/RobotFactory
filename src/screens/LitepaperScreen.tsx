@@ -25,7 +25,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
         title="ポンコツロボット工房 公式仕様書"
         badge={
           <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300 font-mono font-bold px-1.5 py-0.2 rounded">
-            v0.1.101 (DB v0.17)
+            v0.1.102 (DB v0.18)
           </span>
         }
         rightElement={
@@ -227,7 +227,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                     <li><strong>新人技師初回ボーナス:</strong> 初期ユーザー向けに、ロボット1体を即座に組み立てられる☆1素材セット（全24個・すべて☆1ランクのみ）をプレゼント。ヘッド・ボディ・アーム・レッグの4部位（各5個＝計20個必要）を余すことなく組み立て可能です。初回登録時に確実に受取カードが表示され受け取ることができます。</li>
                     <li><strong>図鑑登録・パーツ基準値一覧:</strong> 完成した新機体は自動的に図鑑へ記録されます。また、パーツ図鑑タブではすべてのパーツ形状と、耐久力(HP)・攻撃力(POW)・探索力(DEX)などの「基準値ステータス」を便利なテーブル（表）形式で一覧表示し、比較することができます。</li>
                     <li><strong>Google AdSense リワード広告時短:</strong> パーツ製造およびロボット組立の進行中に動画広告を視聴することで、完了までの所要時間を<strong>1回につき30分短縮</strong>できます。残り時間が30分以内の場合は即座に完成します。</li>
-                    <li><strong>Googleアカウント連携 &amp; クラウドデータ同期 (DB v0.17):</strong> Googleアカウントでログインした場合、オンライン上にゲームデータ（工房ステータス、所持機体、パーツ、遠征、ミニゲーム成績・宝箱数等）が自動的に保存・同期されます。<code>users</code>テーブルの<code>google_id</code>を親キーとして、全24テーブル（<code>user_item</code>, <code>user_material</code>, <code>user_minigame_status</code>, <code>user_parts</code>, <code>user_robots</code>, <code>user_workshop_status</code>, <code>save_data</code>, <code>minigame_rankings</code>, <code>daily_cleared_minigame</code>, 各種active/completeテーブル等）の<code>user_id</code>に厳格な外部キー制約（CASCADE）が設定され、データの参照整合性と安全性が保証されています。マスターパーツテーブルは<code>master_parts</code>（旧<code>m_parts_encyclopedia</code>から名称移行）として管理され、所持パーツテーブル（<code>user_parts</code>）は個別カラム（vitality・power・defense・agility・dexterity・intelligence・attribute・rarity・メイン/サブ素材マスターID等）へ構造化。また、ミニゲーム/演習クリア制限テーブル（<code>daily_cleared_minigame</code>）により機体・ゲーム・難易度ごとのクリア状況が記録され、毎朝9:00（JST）のデイリーリセットを迎えるまで同機体の再クリアが制限されます。</li>
+                    <li><strong>Googleアカウント連携 &amp; クラウドデータ同期 (DB v0.18):</strong> Googleアカウントでログインした場合、オンライン上にゲームデータ（工房ステータス、所持機体、パーツ、遠征、ミニゲーム成績・宝箱数等）が自動的に保存・同期されます。<code>users</code>テーブルの<code>google_id</code>を親キーとして、全23テーブル（<code>user_item</code>, <code>user_material</code>, <code>user_minigame_status</code>, <code>user_parts</code>, <code>user_robots</code>, <code>user_workshop_status</code>, <code>save_data</code>, <code>minigame_rankings</code>, <code>daily_cleared_minigame</code>, <code>complete_part_crafts</code>等の各種active/completeテーブル）の<code>user_id</code>に厳格な外部キー制約（CASCADE）が設定され、データの参照整合性と安全性が保証されています（旧<code>complete_parts</code>テーブルは廃止され、パーツ製造履歴は<code>complete_part_crafts</code>へ統合・正規化）。マスターパーツテーブルは<code>master_parts</code>として管理され、所持パーツテーブル（<code>user_parts</code>）は個別カラム（vitality・power・defense・agility・dexterity・intelligence・attribute・rarity・メイン/サブ素材マスターID等）へ構造化。また、ミニゲーム/演習クリア制限テーブル（<code>daily_cleared_minigame</code>）により機体・ゲーム・難易度ごとのクリア状況が記録され、毎朝9:00（JST）のデイリーリセットを迎えるまで同機体の再クリアが制限されます。</li>
                     <li><strong>他プレイヤーのリアルタイム組立状況表示:</strong> active_robot_assembliesテーブルを参照し、現在他のプレイヤーがロボットを組み立てている場合、組立タブや作業ドックに「他の工房で〇〇人組立中」バッジがリアルタイムに表示されます。</li>
                     <li><strong>GSAPモーションスタジオ:</strong> 漆黒のグランドピアノによる華麗なピアノ協奏曲演奏をはじめ、各種戦闘・アクロバット・仕草など、多彩なモーションをロボットで鑑賞・動作検証できます。</li>
                   </ul>

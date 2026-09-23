@@ -89,7 +89,7 @@ function ensureMasterExpeditions($pdo) {
 function ensureUserForeignKeys($pdo) {
     if (!$pdo) return;
 
-    // 対象24テーブルと外部キー制約名
+    // 対象23テーブルと外部キー制約名
     $userForeignKeyTables = [
         'user_item' => 'fk_user_item_user_id',
         'user_material' => 'fk_user_material_user_id',
@@ -105,7 +105,6 @@ function ensureUserForeignKeys($pdo) {
         'complete_requests' => 'fk_complete_requests_user_id',
         'complete_part_recycles' => 'fk_complete_part_recycles_user_id',
         'complete_part_crafts' => 'fk_complete_part_crafts_user_id',
-        'complete_parts' => 'fk_complete_parts_user_id',
         'complete_expeditions' => 'fk_complete_expeditions_user_id',
         'complete_deliveries' => 'fk_complete_deliveries_user_id',
         'completed_robots' => 'fk_completed_robots_user_id',

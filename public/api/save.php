@@ -76,14 +76,6 @@ try {
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-        CREATE TABLE IF NOT EXISTS complete_parts (
-            id VARCHAR(255) PRIMARY KEY,
-            user_id VARCHAR(255) NOT NULL,
-            master_id VARCHAR(255) NOT NULL,
-            part_data JSON,
-            completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
         CREATE TABLE IF NOT EXISTS completed_robots (
             id VARCHAR(255) PRIMARY KEY,
             user_id VARCHAR(255) NOT NULL,
@@ -797,14 +789,6 @@ try {
             )
         ");
         
-        $stmtCompleteParts = $pdo->prepare("
-            INSERT IGNORE INTO complete_parts (
-                id, user_id, master_id, part_data, completed_at
-            ) VALUES (
-                :id, :user_id, :master_id, :part_data, FROM_UNIXTIME(:completed_at)
-            )
-        ");
-        
         $stmtCompleteDeliveries = $pdo->prepare("
             INSERT IGNORE INTO complete_deliveries (
                 id, user_id, robot_id, robot_name, log_data, completed_at
@@ -821,19 +805,6 @@ try {
             $legsId = !empty($log['parts']['legs']['id']) ? $log['parts']['legs']['id'] : null;
             $stats = $log['stats'] ?? [];
             $completedAt = isset($log['deliveredAt']) ? floor($log['deliveredAt'] / 1000) : time();
-            
-            foreach (['head', 'body', 'arms', 'legs'] as $pKey) {
-                if (!empty($log['parts'][$pKey]['id'])) {
-                    $pData = $log['parts'][$pKey];
-                    $stmtCompleteParts->execute([
-                        ':id' => $pData['id'],
-                        ':user_id' => $actualUserId,
-                        ':master_id' => $pData['name'] ?? $pData['id'],
-                        ':part_data' => json_encode($pData, JSON_UNESCAPED_UNICODE),
-                        ':completed_at' => $completedAt
-                    ]);
-                }
-            }
 
             $stmtDeliveredRobot->execute([
                 ':id' => $log['id'],
@@ -918,29 +889,54 @@ try {
     // =========================================================================
     // 7. パーツ製造（Part Crafts）: 完了時は complete_part_crafts に追加、進行中は active_part_crafts に同期
     // =========================================================================
-    $compC = $gameData['completePartCraft'] ?? $gameData['completedPartCraft'] ?? null;
-    if (!empty($compC) && !empty($compC['partType'])) {
-        // 1. complete_part_crafts テーブルに完了レコードを追加
+    $compCraftsList = [];
+    if (!empty($gameData['completePartCraft']) && !empty($gameData['completePartCraft']['partType'])) {
+        $compCraftsList[] = $gameData['completePartCraft'];
+    }
+    if (!empty($gameData['completedPartCraft']) && !empty($gameData['completedPartCraft']['partType'])) {
+        $compCraftsList[] = $gameData['completedPartCraft'];
+    }
+    if (!empty($gameData['completedPartCrafts']) && is_array($gameData['completedPartCrafts'])) {
+        foreach ($gameData['completedPartCrafts'] as $cp) {
+            if (!empty($cp['partType'])) {
+                $compCraftsList[] = $cp;
+            }
+        }
+    }
+
+    if (!empty($compCraftsList)) {
+        // complete_part_crafts テーブルに完了レコードを確実に重複排除して追加
         $stmtCompCraft = $pdo->prepare("
             INSERT INTO complete_part_crafts (user_id, part_type, main_material_id, sub_material_id, start_time, end_time, result_part_data)
             SELECT :user_id, :part_type, :main_id, :sub_id, :start_time, :end_time, :result_part_data
+            FROM DUAL
             WHERE NOT EXISTS (
                 SELECT 1 FROM complete_part_crafts
                 WHERE user_id = :chk_user_id AND start_time = :chk_start_time AND end_time = :chk_end_time
             )
         ");
-        $stmtCompCraft->execute([
-            ':user_id' => $actualUserId,
-            ':part_type' => $compC['partType'],
-            ':main_id' => $compC['mainMaterialId'] ?? '',
-            ':sub_id' => $compC['subMaterialId'] ?? '',
-            ':start_time' => (int)($compC['startTime'] ?? 0),
-            ':end_time' => (int)($compC['endTime'] ?? 0),
-            ':result_part_data' => json_encode($compC['resultPart'] ?? [], JSON_UNESCAPED_UNICODE),
-            ':chk_user_id' => $actualUserId,
-            ':chk_start_time' => (int)($compC['startTime'] ?? 0),
-            ':chk_end_time' => (int)($compC['endTime'] ?? 0)
-        ]);
+
+        $processedCraftKeys = [];
+        foreach ($compCraftsList as $compC) {
+            $sTime = (int)($compC['startTime'] ?? 0);
+            $eTime = (int)($compC['endTime'] ?? 0);
+            $dedupKey = "{$sTime}_{$eTime}_{$compC['partType']}";
+            if (isset($processedCraftKeys[$dedupKey])) continue;
+            $processedCraftKeys[$dedupKey] = true;
+
+            $stmtCompCraft->execute([
+                ':user_id' => $actualUserId,
+                ':part_type' => $compC['partType'],
+                ':main_id' => $compC['mainMaterialId'] ?? '',
+                ':sub_id' => $compC['subMaterialId'] ?? '',
+                ':start_time' => $sTime,
+                ':end_time' => $eTime,
+                ':result_part_data' => json_encode($compC['resultPart'] ?? [], JSON_UNESCAPED_UNICODE),
+                ':chk_user_id' => $actualUserId,
+                ':chk_start_time' => $sTime,
+                ':chk_end_time' => $eTime
+            ]);
+        }
     }
 
     if (!empty($gameData['activePartCraft']) && !empty($gameData['activePartCraft']['partType'])) {
@@ -1334,31 +1330,6 @@ try {
     $cutoffRobotStmt->execute([':user_id' => $actualUserId]);
     $cutoffTime = $cutoffRobotStmt->fetchColumn();
     if ($cutoffTime !== false && $cutoffTime !== null) {
-        // 先に削除対象のロボットに紐づくパーツIDを取得し、complete_partsから削除
-        $getPrunePartsStmt = $pdo->prepare("
-            SELECT head_part_id, body_part_id, arms_part_id, legs_part_id 
-            FROM completed_robots 
-            WHERE user_id = :user_id AND completed_at <= :cutoff_time
-        ");
-        $getPrunePartsStmt->execute([
-            ':user_id' => $actualUserId,
-            ':cutoff_time' => $cutoffTime
-        ]);
-        
-        $partIdsToDelete = [];
-        while ($row = $getPrunePartsStmt->fetch(PDO::FETCH_ASSOC)) {
-            if (!empty($row['head_part_id'])) $partIdsToDelete[] = $row['head_part_id'];
-            if (!empty($row['body_part_id'])) $partIdsToDelete[] = $row['body_part_id'];
-            if (!empty($row['arms_part_id'])) $partIdsToDelete[] = $row['arms_part_id'];
-            if (!empty($row['legs_part_id'])) $partIdsToDelete[] = $row['legs_part_id'];
-        }
-
-        if (!empty($partIdsToDelete)) {
-            $inQuery = implode(',', array_fill(0, count($partIdsToDelete), '?'));
-            $deletePartsStmt = $pdo->prepare("DELETE FROM complete_parts WHERE id IN ($inQuery)");
-            $deletePartsStmt->execute($partIdsToDelete);
-        }
-
         $pruneRobotStmt = $pdo->prepare("
             DELETE FROM completed_robots
             WHERE user_id = :user_id AND completed_at <= :cutoff_time
