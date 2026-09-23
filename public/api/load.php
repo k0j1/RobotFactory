@@ -128,8 +128,13 @@ try {
             sub_material_id VARCHAR(255) NOT NULL,
             start_time BIGINT NOT NULL,
             end_time BIGINT NOT NULL,
+            result_part_data JSON,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+        try {
+            $pdo->exec("ALTER TABLE active_part_crafts ADD COLUMN result_part_data JSON");
+        } catch (Throwable $e) {}
 
         CREATE TABLE IF NOT EXISTS complete_part_crafts (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -506,7 +511,7 @@ try {
 
     // 4. active_part_crafts テーブルからパーツ製造進行状態を取得
     $craftStmt = $pdo->prepare("
-        SELECT part_type, main_material_id, sub_material_id, start_time, end_time 
+        SELECT part_type, main_material_id, sub_material_id, start_time, end_time, result_part_data 
         FROM active_part_crafts 
         WHERE user_id IN ($inPlaceholders) 
         LIMIT 1
@@ -515,12 +520,20 @@ try {
     $craftRow = $craftStmt->fetch();
     $activePartCraft = null;
     if ($craftRow && !empty($craftRow['part_type'])) {
+        $resultPartDecoded = null;
+        if (!empty($craftRow['result_part_data'])) {
+            $resultPartDecoded = is_array($craftRow['result_part_data'])
+                ? $craftRow['result_part_data']
+                : json_decode($craftRow['result_part_data'], true);
+        }
         $activePartCraft = [
             'partType' => $craftRow['part_type'],
             'mainMaterialId' => $craftRow['main_material_id'],
             'subMaterialId' => !empty($craftRow['sub_material_id']) ? $craftRow['sub_material_id'] : null,
             'startTime' => (int)$craftRow['start_time'],
-            'endTime' => (int)$craftRow['end_time']
+            'endTime' => (int)$craftRow['end_time'],
+            'durationMs' => ((int)$craftRow['end_time'] - (int)$craftRow['start_time']),
+            'resultPart' => $resultPartDecoded
         ];
     }
 

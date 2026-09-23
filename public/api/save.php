@@ -131,8 +131,13 @@ try {
             sub_material_id VARCHAR(255) NOT NULL,
             start_time BIGINT NOT NULL,
             end_time BIGINT NOT NULL,
+            result_part_data JSON,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+        try {
+            $pdo->exec("ALTER TABLE active_part_crafts ADD COLUMN result_part_data JSON");
+        } catch (Throwable $e) {}
 
         CREATE TABLE IF NOT EXISTS complete_part_crafts (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -905,37 +910,41 @@ try {
     }
 
     if (!empty($compCraftsList)) {
-        // complete_part_crafts テーブルに完了レコードを確実に重複排除して追加
-        $stmtCompCraft = $pdo->prepare("
-            INSERT INTO complete_part_crafts (user_id, part_type, main_material_id, sub_material_id, start_time, end_time, result_part_data)
-            SELECT :user_id, :part_type, :main_id, :sub_id, :start_time, :end_time, :result_part_data
-            FROM DUAL
-            WHERE NOT EXISTS (
-                SELECT 1 FROM complete_part_crafts
-                WHERE user_id = :chk_user_id AND start_time = :chk_start_time AND end_time = :chk_end_time
-            )
-        ");
+        try {
+            // complete_part_crafts テーブルに完了レコードを確実に重複排除して追加
+            $stmtCompCraft = $pdo->prepare("
+                INSERT INTO complete_part_crafts (user_id, part_type, main_material_id, sub_material_id, start_time, end_time, result_part_data)
+                SELECT :user_id, :part_type, :main_id, :sub_id, :start_time, :end_time, :result_part_data
+                FROM DUAL
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM complete_part_crafts
+                    WHERE user_id = :chk_user_id AND start_time = :chk_start_time AND end_time = :chk_end_time
+                )
+            ");
 
-        $processedCraftKeys = [];
-        foreach ($compCraftsList as $compC) {
-            $sTime = (int)($compC['startTime'] ?? 0);
-            $eTime = (int)($compC['endTime'] ?? 0);
-            $dedupKey = "{$sTime}_{$eTime}_{$compC['partType']}";
-            if (isset($processedCraftKeys[$dedupKey])) continue;
-            $processedCraftKeys[$dedupKey] = true;
+            $processedCraftKeys = [];
+            foreach ($compCraftsList as $compC) {
+                $sTime = (int)($compC['startTime'] ?? 0);
+                $eTime = (int)($compC['endTime'] ?? 0);
+                $dedupKey = "{$sTime}_{$eTime}_{$compC['partType']}";
+                if (isset($processedCraftKeys[$dedupKey])) continue;
+                $processedCraftKeys[$dedupKey] = true;
 
-            $stmtCompCraft->execute([
-                ':user_id' => $actualUserId,
-                ':part_type' => $compC['partType'],
-                ':main_id' => $compC['mainMaterialId'] ?? '',
-                ':sub_id' => $compC['subMaterialId'] ?? '',
-                ':start_time' => $sTime,
-                ':end_time' => $eTime,
-                ':result_part_data' => json_encode($compC['resultPart'] ?? [], JSON_UNESCAPED_UNICODE),
-                ':chk_user_id' => $actualUserId,
-                ':chk_start_time' => $sTime,
-                ':chk_end_time' => $eTime
-            ]);
+                $stmtCompCraft->execute([
+                    ':user_id' => $actualUserId,
+                    ':part_type' => $compC['partType'],
+                    ':main_id' => $compC['mainMaterialId'] ?? '',
+                    ':sub_id' => $compC['subMaterialId'] ?? '',
+                    ':start_time' => $sTime,
+                    ':end_time' => $eTime,
+                    ':result_part_data' => json_encode($compC['resultPart'] ?? [], JSON_UNESCAPED_UNICODE),
+                    ':chk_user_id' => $actualUserId,
+                    ':chk_start_time' => $sTime,
+                    ':chk_end_time' => $eTime
+                ]);
+            }
+        } catch (Throwable $e) {
+            error_log("complete_part_crafts insert error: " . $e->getMessage());
         }
     }
 
@@ -943,14 +952,15 @@ try {
         // 進行中の場合は active_part_crafts テーブルを同期
         $c = $gameData['activePartCraft'];
         $stmtCraft = $pdo->prepare("
-            INSERT INTO active_part_crafts (user_id, part_type, main_material_id, sub_material_id, start_time, end_time)
-            VALUES (:user_id, :part_type, :main_id, :sub_id, :start_time, :end_time)
+            INSERT INTO active_part_crafts (user_id, part_type, main_material_id, sub_material_id, start_time, end_time, result_part_data)
+            VALUES (:user_id, :part_type, :main_id, :sub_id, :start_time, :end_time, :result_part_data)
             ON DUPLICATE KEY UPDATE
                 part_type = VALUES(part_type),
                 main_material_id = VALUES(main_material_id),
                 sub_material_id = VALUES(sub_material_id),
                 start_time = VALUES(start_time),
-                end_time = VALUES(end_time)
+                end_time = VALUES(end_time),
+                result_part_data = VALUES(result_part_data)
         ");
         $stmtCraft->execute([
             ':user_id' => $actualUserId,
@@ -958,7 +968,8 @@ try {
             ':main_id' => $c['mainMaterialId'] ?? '',
             ':sub_id' => $c['subMaterialId'] ?? '',
             ':start_time' => (int)($c['startTime'] ?? 0),
-            ':end_time' => (int)($c['endTime'] ?? 0)
+            ':end_time' => (int)($c['endTime'] ?? 0),
+            ':result_part_data' => !empty($c['resultPart']) ? json_encode($c['resultPart'], JSON_UNESCAPED_UNICODE) : null
         ]);
     } else {
         $delCraft = $pdo->prepare("DELETE FROM active_part_crafts WHERE user_id = :user_id");

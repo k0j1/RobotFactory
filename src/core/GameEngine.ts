@@ -1305,16 +1305,48 @@ export class GameEngine {
     return this.state.activePartCraft;
   }
 
-  public async claimCraftedPart(): Promise<RobotPart> {
+  public claimCraftedPart(): RobotPart {
     const target = this.state.activePartCraft || this.state.completePartCraft;
     if (!target) {
       throw new Error("製造中または受取待ちのパーツはありません");
     }
-    if (Date.now() < target.endTime) {
+    // わずかなミリ秒差（UI上は0秒表示）での受取拒否を防ぐため500msのバッファを許容
+    if (target.endTime - Date.now() > 500) {
       throw new Error("パーツ製造はまだ完了していません");
     }
 
-    const craftedPart = target.resultPart;
+    let craftedPart = target.resultPart;
+
+    // resultPart が null/undefined の場合のフォールバック（ロード時のデータ補完）
+    if (!craftedPart) {
+      const type = target.partType || 'head';
+      const mainMat = MATERIALS.find(m => m.id === target.mainMaterialId) || MATERIALS[0];
+      const subMat = MATERIALS.find(m => m.id === target.subMaterialId) || MATERIALS[1] || MATERIALS[0];
+      const typeNames: Record<PartType, string> = { head: 'ヘッド', body: 'ボディ', arms: 'アーム', legs: 'レッグ' };
+      const possibleCrafts = getMaterialCraftableVisuals(mainMat);
+      const chosenCraft = possibleCrafts[0] || { visualIndex: 0, rarity: mainMat.rarity || 1 };
+      const craftRarity = chosenCraft.rarity;
+      const name = `${mainMat.name}の${typeNames[type]}`;
+      const generatedStats = this._generatePartStats(type, mainMat, subMat, craftRarity, chosenCraft.visualIndex);
+      const mainMaster = findMasterPartData(type, craftRarity, chosenCraft.visualIndex);
+      const mainEncyclopediaId = mainMaster ? mainMaster.id : `${type[0]}${craftRarity}_${chosenCraft.visualIndex}`;
+      const subPossibleCrafts = getMaterialCraftableVisuals(subMat);
+      const chosenSubCraft = subPossibleCrafts[0] || { visualIndex: 0, rarity: 1 };
+      const subMaster = findMasterPartData(type, chosenSubCraft.rarity, chosenSubCraft.visualIndex);
+      const subEncyclopediaId = subMaster ? subMaster.id : `${type[0]}${chosenSubCraft.rarity}_${chosenSubCraft.visualIndex}`;
+
+      craftedPart = {
+        id: `part_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+        type,
+        name,
+        attribute: mainMat.attribute,
+        rarity: craftRarity as 1 | 2 | 3,
+        stats: generatedStats.stats,
+        visualIndex: chosenCraft.visualIndex,
+        mainMaterialId: mainEncyclopediaId,
+        subMaterialId: subEncyclopediaId,
+      };
+    }
 
     // 製造完了時に確実に master_parts の id がセットされていることを担保
     if (!craftedPart.mainMaterialId || craftedPart.mainMaterialId.startsWith('m_')) {
@@ -1338,6 +1370,7 @@ export class GameEngine {
     // active_part_crafts から complete_part_crafts への移行
     const compPartCraft: import('./models').CompletePartCraft = {
       ...target,
+      resultPart: craftedPart,
       completedAt: Date.now()
     };
     this.state.completePartCraft = compPartCraft;
@@ -1345,19 +1378,13 @@ export class GameEngine {
     this.state.activePartCraft = null;
 
     if (this.state.tutorialStep === 2) this.advanceTutorial();
-    this.notifyStateChange();
+    this.saveState();
 
     if (this.isCloudAccount && this.userId) {
-      try {
-        const res = await AuthApiService.getInstance().saveAllDataToTables(this.userId, this.state, true);
-        if (!res || res.success === false) {
-          console.warn("[GameEngine] complete_part_craftsへの即時同期レスポンス:", res?.error);
-        }
-      } catch (err: any) {
-        console.error("[GameEngine] complete_part_craftsへの即時保存エラー:", err);
-      }
-    } else {
-      this.saveState();
+      // バックグラウンドで即時全テーブル同期を発行（UIをブロックせず即座に非同期送信）
+      AuthApiService.getInstance().saveAllDataToTables(this.userId, this.state, true).catch((err: any) => {
+        console.warn("[GameEngine] complete_part_craftsへの即時保存エラー:", err);
+      });
     }
 
     this.notifyStateChange();
@@ -1440,17 +1467,32 @@ export class GameEngine {
     if (!target) {
       throw new Error("組立中または受取待ちのロボットはありません");
     }
-    if (Date.now() < target.endTime) {
+    if (target.endTime - Date.now() > 500) {
       throw new Error("ロボットの組立はまだ完了していません");
     }
 
-    const assembledRobot = target.resultRobot;
+    let assembledRobot = target.resultRobot;
+    if (!assembledRobot) {
+      // フォールバック: 基本ダミーロボットの生成
+      assembledRobot = {
+        id: `robot_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+        name: '組立ロボット',
+        parts: {} as any,
+        stats: { hp: 12, power: 12, defense: 12, agility: 12, dexterity: 12, intelligence: 12 },
+        currentHp: 12,
+        maxHp: 12,
+        createdAt: Date.now(),
+        value: 100
+      };
+    }
+
     this.state.robots.push(assembledRobot);
     this.recordCraftedRobot(assembledRobot);
 
     // active_robot_assemblies から complete_robot_assemblies への移行
     const compAss: import('./models').CompleteRobotAssembly = {
       ...target,
+      resultRobot: assembledRobot,
       completedAt: Date.now()
     };
     this.state.completeRobotAssembly = compAss;
