@@ -410,12 +410,16 @@ export class GameEngine {
     }
   }
 
+  public notifyStateChange() {
+    this.onStateChange(JSON.parse(JSON.stringify(this.state)));
+  }
+
   private saveState() {
     if (VersionCheckService.isMismatch()) {
       console.warn("[GameEngine] Version mismatch detected. Saving is blocked.");
       return;
     }
-    this.onStateChange(JSON.parse(JSON.stringify(this.state)));
+    this.notifyStateChange();
     if (this.isCloudAccount && this.userId) {
       // ロード完了前の初期ステートをサーバーへ誤送信してDB上のgoldやステータスをゼロクリアしてしまうレースコンディションを完全ガード！
       if (!this.isCloudLoaded) {
@@ -1059,17 +1063,20 @@ export class GameEngine {
       }
       // 一時的に設定して即時同期を試行
       this.state.activeQuest = newQuest;
+      this.notifyStateChange();
       try {
         const res = await AuthApiService.getInstance().saveAllDataToTables(this.userId, this.state, true);
         if (!res || res.success === false) {
           // テーブル追加に失敗した場合はロールバックし、遠征が開始されないようにする
           this.state.activeQuest = null;
+          this.notifyStateChange();
           this.update();
           throw new Error(res?.error || "active_expeditionsテーブルへの遠征データ追加に失敗しました");
         }
       } catch (err: any) {
         // テーブル追加に失敗した場合はロールバックし、遠征が開始されないようにする
         this.state.activeQuest = null;
+        this.notifyStateChange();
         this.update();
         throw new Error(err.message || "active_expeditionsテーブルへの遠征データ追加に失敗しました");
       }
@@ -1079,6 +1086,7 @@ export class GameEngine {
     }
 
     if (this.state.tutorialStep === 0) this.advanceTutorial();
+    this.notifyStateChange();
     this.update();
   }
 

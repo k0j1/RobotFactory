@@ -187,6 +187,7 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
       if (!selectedRobotId) {
         // ロボットが選択されていない場合は即時出発
         await engine.startQuest(locId, undefined);
+        setSelectedRobotId(null);
         setIsStartingQuest(false);
         return;
       }
@@ -196,6 +197,7 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
       setTimeout(async () => {
         try {
           await engine.startQuest(locId, selectedRobotId);
+          setSelectedRobotId(null);
         } catch (e: any) {
           alert(e.message || '遠征の開始に失敗しました');
         } finally {
