@@ -14,20 +14,20 @@ if (!$pdo) {
 try {
     // 各種テーブルの作成
     $sql = "
-    CREATE TABLE IF NOT EXISTS save_data (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        user_id VARCHAR(255) NOT NULL UNIQUE,
-        game_data JSON NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    
     CREATE TABLE IF NOT EXISTS users (
         id INT AUTO_INCREMENT PRIMARY KEY,
         google_id VARCHAR(255) NOT NULL UNIQUE,
         email VARCHAR(255),
         name VARCHAR(255),
         picture TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    CREATE TABLE IF NOT EXISTS save_data (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id VARCHAR(255) NOT NULL UNIQUE,
+        game_data JSON NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -95,7 +95,7 @@ try {
     CREATE TABLE IF NOT EXISTS daily_cleared_minigame (
         id INT AUTO_INCREMENT PRIMARY KEY,
         minigame_id VARCHAR(32) NOT NULL,
-        user_id VARCHAR(64) NOT NULL,
+        user_id VARCHAR(255) NOT NULL,
         robot_id VARCHAR(64) NOT NULL,
         level VARCHAR(32) NOT NULL DEFAULT '1',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -910,7 +910,7 @@ try {
     } catch (PDOException $e) {}
 
     try {
-        $pdo->exec("ALTER TABLE daily_cleared_minigame MODIFY COLUMN user_id VARCHAR(64) NOT NULL");
+        $pdo->exec("ALTER TABLE daily_cleared_minigame MODIFY COLUMN user_id VARCHAR(255) NOT NULL");
         $pdo->exec("ALTER TABLE daily_cleared_minigame MODIFY COLUMN robot_id VARCHAR(64) NOT NULL");
         $pdo->exec("ALTER TABLE daily_cleared_minigame MODIFY COLUMN minigame_id VARCHAR(32) NOT NULL");
         $pdo->exec("ALTER TABLE daily_cleared_minigame MODIFY COLUMN level VARCHAR(32) NOT NULL DEFAULT '1'");
@@ -1182,6 +1182,9 @@ try {
     } catch (Throwable $e) {
         error_log("save_data cleanup error: " . $e->getMessage());
     }
+
+    // 24テーブルに対するusers(google_id)の外部キー制約を適用・保証
+    ensureUserForeignKeys($pdo);
 
     echo json_encode([
         "success" => true, 

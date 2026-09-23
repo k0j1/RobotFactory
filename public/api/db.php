@@ -82,3 +82,126 @@ function ensureMasterExpeditions($pdo) {
         error_log("ensureMasterExpeditions failed: " . $e->getMessage());
     }
 }
+
+/**
+ * usersテーブルのgoogle_idを親キーとして、関連する24テーブルに外部キー制約（ON DELETE CASCADE ON UPDATE CASCADE）を設定・保証する
+ */
+function ensureUserForeignKeys($pdo) {
+    if (!$pdo) return;
+
+    // 対象24テーブルと外部キー制約名
+    $userForeignKeyTables = [
+        'user_item' => 'fk_user_item_user_id',
+        'user_material' => 'fk_user_material_user_id',
+        'user_minigame_status' => 'fk_user_minigame_status_user_id',
+        'user_parts' => 'fk_user_parts_user_id',
+        'user_robots' => 'fk_user_robots_user_id',
+        'user_workshop_status' => 'fk_user_workshop_status_user_id',
+        'save_data' => 'fk_save_data_user_id',
+        'minigame_rankings' => 'fk_minigame_rankings_user_id',
+        'daily_cleared_minigame' => 'fk_daily_cleared_minigame_user_id',
+        'complete_robot_disassemblies' => 'fk_complete_robot_disassemblies_user_id',
+        'complete_robot_assemblies' => 'fk_complete_robot_assemblies_user_id',
+        'complete_requests' => 'fk_complete_requests_user_id',
+        'complete_part_recycles' => 'fk_complete_part_recycles_user_id',
+        'complete_part_crafts' => 'fk_complete_part_crafts_user_id',
+        'complete_parts' => 'fk_complete_parts_user_id',
+        'complete_expeditions' => 'fk_complete_expeditions_user_id',
+        'complete_deliveries' => 'fk_complete_deliveries_user_id',
+        'completed_robots' => 'fk_completed_robots_user_id',
+        'active_robot_disassemblies' => 'fk_active_robot_disassemblies_user_id',
+        'active_robot_assemblies' => 'fk_active_robot_assemblies_user_id',
+        'active_requests' => 'fk_active_requests_user_id',
+        'active_part_recycles' => 'fk_active_part_recycles_user_id',
+        'active_part_crafts' => 'fk_active_part_crafts_user_id',
+        'active_expeditions' => 'fk_active_expeditions_user_id',
+    ];
+
+    try {
+        // 1. users テーブルの存在と google_id の UNIQUE / VARCHAR(255) 定義を保証
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS users (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                google_id VARCHAR(255) NOT NULL UNIQUE,
+                email VARCHAR(255),
+                name VARCHAR(255),
+                picture TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        ");
+
+        // 2. 既存の外部キー制約一覧を取得
+        $existingFks = [];
+        try {
+            $fkStmt = $pdo->query("
+                SELECT TABLE_NAME, CONSTRAINT_NAME 
+                FROM information_schema.TABLE_CONSTRAINTS 
+                WHERE CONSTRAINT_SCHEMA = DATABASE() 
+                  AND CONSTRAINT_TYPE = 'FOREIGN KEY'
+            ");
+            if ($fkStmt) {
+                while ($row = $fkStmt->fetch(PDO::FETCH_ASSOC)) {
+                    $existingFks[$row['TABLE_NAME']][$row['CONSTRAINT_NAME']] = true;
+                }
+            }
+        } catch (Throwable $e) {}
+
+        // 3. 各対象テーブルに対してカラム型統一・クリーンアップ・外部キー制約付与
+        foreach ($userForeignKeyTables as $tableName => $fkName) {
+            // テーブルが存在するか確認
+            try {
+                $checkTable = $pdo->query("SHOW TABLES LIKE '{$tableName}'");
+                if (!$checkTable || $checkTable->rowCount() === 0) {
+                    continue;
+                }
+            } catch (Throwable $e) {
+                continue;
+            }
+
+            // user_id カラムのデータ型を VARCHAR(255) NOT NULL に統一（users.google_id と完全一致）
+            try {
+                $pdo->exec("ALTER TABLE `{$tableName}` MODIFY COLUMN `user_id` VARCHAR(255) NOT NULL");
+            } catch (Throwable $e) {}
+
+            // users.id（連番ID文字列）が user_id に格納されていた古い互換レコードがあれば users.google_id に更新
+            try {
+                $pdo->exec("
+                    UPDATE `{$tableName}` t
+                    JOIN users u ON t.user_id = CAST(u.id AS CHAR)
+                    SET t.user_id = u.google_id
+                    WHERE t.user_id NOT IN (SELECT google_id FROM users)
+                ");
+            } catch (Throwable $e) {}
+
+            // users テーブルに親キーが存在しない孤立レコード（空文字・NULL・削除済等）は事前に削除して外部キー整合性を保護
+            try {
+                $pdo->exec("
+                    DELETE FROM `{$tableName}`
+                    WHERE user_id IS NULL 
+                       OR user_id = '' 
+                       OR user_id NOT IN (SELECT google_id FROM users)
+                ");
+            } catch (Throwable $e) {}
+
+            // すでに外部キー制約が存在していればスキップ
+            if (!empty($existingFks[$tableName][$fkName])) {
+                continue;
+            }
+
+            // 外部キー制約の追加 (ON DELETE CASCADE ON UPDATE CASCADE)
+            try {
+                $pdo->exec("
+                    ALTER TABLE `{$tableName}`
+                    ADD CONSTRAINT `{$fkName}`
+                    FOREIGN KEY (`user_id`) REFERENCES `users` (`google_id`)
+                    ON DELETE CASCADE ON UPDATE CASCADE
+                ");
+            } catch (Throwable $e) {
+                error_log("ensureUserForeignKeys failed for {$tableName} ({$fkName}): " . $e->getMessage());
+            }
+        }
+    } catch (Throwable $e) {
+        error_log("ensureUserForeignKeys fatal error: " . $e->getMessage());
+    }
+}

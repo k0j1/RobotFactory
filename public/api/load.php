@@ -32,6 +32,12 @@ try {
     $userRecord = $uRec ?: null;
     $actualUserId = ($uRec && !empty($uRec['google_id'])) ? $uRec['google_id'] : $userId;
     $numericId = ($uRec && !empty($uRec['id'])) ? (string)$uRec['id'] : null;
+    if (!$uRec) {
+        try {
+            $insU = $pdo->prepare("INSERT IGNORE INTO users (google_id) VALUES (:gid)");
+            $insU->execute([':gid' => $userId]);
+        } catch (Throwable $e) {}
+    }
 
     $stmt = $pdo->prepare("SELECT game_data FROM save_data WHERE user_id = :user_id");
     $stmt->execute([':user_id' => $actualUserId]);
@@ -275,7 +281,7 @@ try {
         CREATE TABLE IF NOT EXISTS daily_cleared_minigame (
             id INT AUTO_INCREMENT PRIMARY KEY,
             minigame_id VARCHAR(32) NOT NULL,
-            user_id VARCHAR(64) NOT NULL,
+            user_id VARCHAR(255) NOT NULL,
             robot_id VARCHAR(64) NOT NULL,
             level VARCHAR(32) NOT NULL DEFAULT '1',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -290,7 +296,7 @@ try {
     } catch (PDOException $e) {}
 
     try {
-        $pdo->exec("ALTER TABLE daily_cleared_minigame MODIFY COLUMN user_id VARCHAR(64) NOT NULL");
+        $pdo->exec("ALTER TABLE daily_cleared_minigame MODIFY COLUMN user_id VARCHAR(255) NOT NULL");
         $pdo->exec("ALTER TABLE daily_cleared_minigame MODIFY COLUMN robot_id VARCHAR(64) NOT NULL");
         $pdo->exec("ALTER TABLE daily_cleared_minigame MODIFY COLUMN minigame_id VARCHAR(32) NOT NULL");
         $pdo->exec("ALTER TABLE daily_cleared_minigame MODIFY COLUMN level VARCHAR(32) NOT NULL DEFAULT '1'");
@@ -339,6 +345,9 @@ try {
 
     // 遠征地マスターテーブルと初期データの存在を保証
     ensureMasterExpeditions($pdo);
+
+    // 24テーブルに対するusers(google_id)の外部キー制約を適用・保証
+    ensureUserForeignKeys($pdo);
 
     // ユーザー識別子の候補リスト（google_id または users.id）
     $candidateUserIds = array_unique(array_filter([$actualUserId, $userId, $numericId]));

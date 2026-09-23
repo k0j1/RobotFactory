@@ -27,6 +27,12 @@ try {
     $uStmt->execute([':u1' => $userId, ':u2' => $userId]);
     $uRec = $uStmt->fetch();
     $actualUserId = ($uRec && !empty($uRec['google_id'])) ? $uRec['google_id'] : $userId;
+    if (!$uRec) {
+        try {
+            $insU = $pdo->prepare("INSERT IGNORE INTO users (google_id) VALUES (:gid)");
+            $insU->execute([':gid' => $actualUserId]);
+        } catch (Throwable $e) {}
+    }
 
     $itemsToAdd = [];
     if (!empty($data['material_id'])) {

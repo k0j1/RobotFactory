@@ -47,6 +47,11 @@ try {
     $actualUserId = $userId;
     if ($userRecord && !empty($userRecord['google_id'])) {
         $actualUserId = $userRecord['google_id'];
+    } else {
+        try {
+            $insU = $pdo->prepare("INSERT IGNORE INTO users (google_id) VALUES (:gid)");
+            $insU->execute([':gid' => $actualUserId]);
+        } catch (Throwable $e) {}
     }
 
     // テーブルの存在を事前に保証

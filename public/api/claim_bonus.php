@@ -27,6 +27,12 @@ try {
     $uStmt->execute([':u1' => $googleId, ':u2' => $googleId]);
     $uRec = $uStmt->fetch();
     $targetId = ($uRec && !empty($uRec['google_id'])) ? $uRec['google_id'] : $googleId;
+    if (!$uRec) {
+        try {
+            $insU = $pdo->prepare("INSERT IGNORE INTO users (google_id) VALUES (:gid)");
+            $insU->execute([':gid' => $targetId]);
+        } catch (Throwable $e) {}
+    }
 
     // 遠征地マスターテーブルと初期データの存在を保証
     ensureMasterExpeditions($pdo);

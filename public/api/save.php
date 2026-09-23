@@ -39,6 +39,11 @@ try {
     $actualUserId = $userId;
     if ($userRecord && !empty($userRecord['google_id'])) {
         $actualUserId = $userRecord['google_id'];
+    } else {
+        try {
+            $insU = $pdo->prepare("INSERT IGNORE INTO users (google_id) VALUES (:gid)");
+            $insU->execute([':gid' => $userId]);
+        } catch (Throwable $e) {}
     }
 
     // テーブルの存在を事前に保証
@@ -279,7 +284,7 @@ try {
         CREATE TABLE IF NOT EXISTS daily_cleared_minigame (
             id INT AUTO_INCREMENT PRIMARY KEY,
             minigame_id VARCHAR(32) NOT NULL,
-            user_id VARCHAR(64) NOT NULL,
+            user_id VARCHAR(255) NOT NULL,
             robot_id VARCHAR(64) NOT NULL,
             level VARCHAR(32) NOT NULL DEFAULT '1',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -294,7 +299,7 @@ try {
     } catch (PDOException $e) {}
 
     try {
-        $pdo->exec("ALTER TABLE daily_cleared_minigame MODIFY COLUMN user_id VARCHAR(64) NOT NULL");
+        $pdo->exec("ALTER TABLE daily_cleared_minigame MODIFY COLUMN user_id VARCHAR(255) NOT NULL");
         $pdo->exec("ALTER TABLE daily_cleared_minigame MODIFY COLUMN robot_id VARCHAR(64) NOT NULL");
         $pdo->exec("ALTER TABLE daily_cleared_minigame MODIFY COLUMN minigame_id VARCHAR(32) NOT NULL");
         $pdo->exec("ALTER TABLE daily_cleared_minigame MODIFY COLUMN level VARCHAR(32) NOT NULL DEFAULT '1'");
@@ -406,6 +411,9 @@ try {
             $pdo->exec("ALTER TABLE active_robot_disassemblies DROP COLUMN result_parts_data");
         }
     } catch (PDOException $e) {}
+
+    // 24テーブルに対するusers(google_id)の外部キー制約を適用・保証
+    ensureUserForeignKeys($pdo);
 
     $pdo->beginTransaction();
 

@@ -38,6 +38,12 @@ try {
     $uStmt->execute([':u1' => $userId, ':u2' => $userId]);
     $uRec = $uStmt->fetch();
     $actualUserId = ($uRec && !empty($uRec['google_id'])) ? $uRec['google_id'] : $userId;
+    if (!$uRec) {
+        try {
+            $insU = $pdo->prepare("INSERT IGNORE INTO users (google_id) VALUES (:gid)");
+            $insU->execute([':gid' => $actualUserId]);
+        } catch (Throwable $e) {}
+    }
 
     // 遠征地マスター情報の取得
     $locStmt = $pdo->prepare("SELECT * FROM master_expeditions WHERE id = :id LIMIT 1");
