@@ -192,6 +192,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
 
   const handleCloseModal = () => {
     setIsAnimating(true);
+    engine.clearCompletedQuest();
     setTimeout(() => {
       setIsAnimating(false);
       setLootResult(null);

@@ -167,38 +167,45 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
     }
   };
 
+  const [isStartingQuest, setIsStartingQuest] = useState(false);
+
   const handleCloseModal = () => {
     setIsAnimating(true);
+    engine.clearCompletedQuest();
     setTimeout(() => {
       setIsAnimating(false);
       setLootResult(null);
     }, 2000);
   };
 
-  const handleStartQuest = (locId: string) => {
+  const handleStartQuest = async (locId: string) => {
     // 進行中のクエストがあるかチェック（二重送信防止）
-    if (state.activeQuest) return;
+    if (state.activeQuest || isStartingQuest) return;
     
+    setIsStartingQuest(true);
     try {
       if (!selectedRobotId) {
         // ロボットが選択されていない場合は即時出発
-        engine.startQuest(locId, undefined);
+        await engine.startQuest(locId, undefined);
+        setIsStartingQuest(false);
         return;
       }
 
       setDepartingState({ isDeparting: true, locId });
       
-      setTimeout(() => {
+      setTimeout(async () => {
         try {
-          engine.startQuest(locId, selectedRobotId);
-          setDepartingState({ isDeparting: false, locId: null });
+          await engine.startQuest(locId, selectedRobotId);
         } catch (e: any) {
           alert(e.message || '遠征の開始に失敗しました');
+        } finally {
           setDepartingState({ isDeparting: false, locId: null });
+          setIsStartingQuest(false);
         }
       }, 1500); // 1.5秒のアニメーション
     } catch (e: any) {
       alert(e.message || '遠征の開始に失敗しました');
+      setIsStartingQuest(false);
     }
   };
 
@@ -1027,13 +1034,7 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
                   <div className="w-1.5 h-0.5 bg-[#7a5530] rotate-75" />
                 </div>
 
-                {/* 上部真鍮銘板プレート */}
-                <div className="flex justify-center mb-2">
-                  <div className="px-3 py-0.5 rounded bg-gradient-to-r from-[#eedcc8] to-[#e4ceb6] border border-[#c5a786] text-[#5e3814] font-bold text-[10px] sm:text-xs tracking-wider shadow-2xs font-mono flex items-center gap-1.5">
-                    <span className="text-amber-700 font-black">⚙</span>
-                    <span>EXPEDITION REPORT // 遠征素材受取</span>
-                  </div>
-                </div>
+
 
                 <div className="text-center relative z-10">
                   <motion.h2 

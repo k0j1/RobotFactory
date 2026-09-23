@@ -1006,14 +1006,31 @@ export class GameEngine {
   }
 
   // Quest
-  public startQuest(locationId: string, robotId?: string) {
-    if (this.state.activeQuest) return;
-    const loc = LOCATIONS.find(l => l.id === locationId);
-    if (!loc) return;
-
-    if (robotId && this.isRobotAutoDispatched(robotId)) {
-      throw new Error("このロボットは自動探索中です");
+  public async startQuest(locationId: string, robotId?: string): Promise<void> {
+    if (this.state.activeQuest) {
+      throw new Error("既に遠征中です");
     }
+    const loc = LOCATIONS.find(l => l.id === locationId);
+    if (!loc) {
+      throw new Error("指定された遠征先が見つかりません");
+    }
+
+    if (robotId) {
+      if (this.isRobotAutoDispatched(robotId)) {
+        throw new Error("このロボットは自動探索中です");
+      }
+      const robot = this.state.robots.find(r => r.id === robotId);
+      if (!robot) {
+        throw new Error("指定されたロボットが見つかりません");
+      }
+      if ((robot.currentHp ?? 10) <= 0) {
+        throw new Error("このロボットは大破しているため遠征に出せません");
+      }
+    }
+
+    // 以前の完了データが残っている場合は確実に初期化
+    this.state.completeQuest = null;
+    this.state.completedQuest = null;
 
     let timeReduction = 0;
     if (robotId) {
@@ -1028,13 +1045,46 @@ export class GameEngine {
     const weather = this.getLocationWeather(locationId, Date.now());
     const finalDuration = Math.floor(Math.max(3000, loc.baseTimeMs - timeReduction) * weather.timeMultiplier);
 
-    this.state.activeQuest = {
+    const newQuest: import('./models').ActiveQuest = {
       locationId,
       startTime: Date.now(),
       endTime: Date.now() + Math.floor(finalDuration),
       dispatchedRobotId: robotId
     };
+
+    // クラウドモードの場合: active_expeditions テーブルへの即時書き込みを検証
+    if (this.isCloudAccount && this.userId) {
+      if (!this.isCloudLoaded) {
+        throw new Error("データの初回読み込みが完了していないため、遠征を開始できません。少々お待ちください。");
+      }
+      // 一時的に設定して即時同期を試行
+      this.state.activeQuest = newQuest;
+      try {
+        const res = await AuthApiService.getInstance().saveAllDataToTables(this.userId, this.state, true);
+        if (!res || res.success === false) {
+          // テーブル追加に失敗した場合はロールバックし、遠征が開始されないようにする
+          this.state.activeQuest = null;
+          this.update();
+          throw new Error(res?.error || "active_expeditionsテーブルへの遠征データ追加に失敗しました");
+        }
+      } catch (err: any) {
+        // テーブル追加に失敗した場合はロールバックし、遠征が開始されないようにする
+        this.state.activeQuest = null;
+        this.update();
+        throw new Error(err.message || "active_expeditionsテーブルへの遠征データ追加に失敗しました");
+      }
+    } else {
+      this.state.activeQuest = newQuest;
+      this.saveState();
+    }
+
     if (this.state.tutorialStep === 0) this.advanceTutorial();
+    this.update();
+  }
+
+  public clearCompletedQuest() {
+    this.state.completeQuest = null;
+    this.state.completedQuest = null;
     this.saveState();
   }
 

@@ -865,7 +865,7 @@ try {
     }
 
     // =========================================================================
-    // 6. 遠征（Expeditions）: 完了時は complete_expeditions に追加後に active_expeditions から削除
+    // 6. 遠征（Expeditions）: 完了時は complete_expeditions に追加、進行中は active_expeditions に同期
     // =========================================================================
     $compQ = $gameData['completeQuest'] ?? $gameData['completedQuest'] ?? null;
     if (!empty($compQ) && !empty($compQ['locationId'])) {
@@ -889,15 +889,19 @@ try {
             ':chk_start_time' => (int)($compQ['startTime'] ?? 0),
             ':chk_end_time' => (int)($compQ['endTime'] ?? 0)
         ]);
-        // 2. complete に追加完了後、対となる active_expeditions から確実に削除
-        $delExp = $pdo->prepare("DELETE FROM active_expeditions WHERE user_id = :user_id");
-        $delExp->execute([':user_id' => $actualUserId]);
-    } elseif (!empty($gameData['activeQuest']) && !empty($gameData['activeQuest']['locationId'])) {
-        // 進行中の場合は active_expeditions テーブルを同期
+    }
+
+    if (!empty($gameData['activeQuest']) && !empty($gameData['activeQuest']['locationId'])) {
+        // 2. 進行中の場合は active_expeditions テーブルを同期
         $q = $gameData['activeQuest'];
         $stmtExp = $pdo->prepare("
-            REPLACE INTO active_expeditions (user_id, location_id, start_time, end_time, dispatched_robot_id)
+            INSERT INTO active_expeditions (user_id, location_id, start_time, end_time, dispatched_robot_id)
             VALUES (:user_id, :location_id, :start_time, :end_time, :dispatched_robot_id)
+            ON DUPLICATE KEY UPDATE
+                location_id = VALUES(location_id),
+                start_time = VALUES(start_time),
+                end_time = VALUES(end_time),
+                dispatched_robot_id = VALUES(dispatched_robot_id)
         ");
         $stmtExp->execute([
             ':user_id' => $actualUserId,
@@ -912,7 +916,7 @@ try {
     }
 
     // =========================================================================
-    // 7. パーツ製造（Part Crafts）: 完了時は complete_part_crafts に追加後に active_part_crafts から削除
+    // 7. パーツ製造（Part Crafts）: 完了時は complete_part_crafts に追加、進行中は active_part_crafts に同期
     // =========================================================================
     $compC = $gameData['completePartCraft'] ?? $gameData['completedPartCraft'] ?? null;
     if (!empty($compC) && !empty($compC['partType'])) {
@@ -932,21 +936,25 @@ try {
             ':sub_id' => $compC['subMaterialId'] ?? '',
             ':start_time' => (int)($compC['startTime'] ?? 0),
             ':end_time' => (int)($compC['endTime'] ?? 0),
-            ':result_part_data' => json_encode($compC['resultPart'] ?? [], JSON_UNESCAPED_UNICODE)
-,
+            ':result_part_data' => json_encode($compC['resultPart'] ?? [], JSON_UNESCAPED_UNICODE),
             ':chk_user_id' => $actualUserId,
             ':chk_start_time' => (int)($compC['startTime'] ?? 0),
             ':chk_end_time' => (int)($compC['endTime'] ?? 0)
         ]);
-        // 2. complete に追加完了後、対となる active_part_crafts から確実に削除
-        $delCraft = $pdo->prepare("DELETE FROM active_part_crafts WHERE user_id = :user_id");
-        $delCraft->execute([':user_id' => $actualUserId]);
-    } elseif (!empty($gameData['activePartCraft']) && !empty($gameData['activePartCraft']['partType'])) {
+    }
+
+    if (!empty($gameData['activePartCraft']) && !empty($gameData['activePartCraft']['partType'])) {
         // 進行中の場合は active_part_crafts テーブルを同期
         $c = $gameData['activePartCraft'];
         $stmtCraft = $pdo->prepare("
-            REPLACE INTO active_part_crafts (user_id, part_type, main_material_id, sub_material_id, start_time, end_time)
+            INSERT INTO active_part_crafts (user_id, part_type, main_material_id, sub_material_id, start_time, end_time)
             VALUES (:user_id, :part_type, :main_id, :sub_id, :start_time, :end_time)
+            ON DUPLICATE KEY UPDATE
+                part_type = VALUES(part_type),
+                main_material_id = VALUES(main_material_id),
+                sub_material_id = VALUES(sub_material_id),
+                start_time = VALUES(start_time),
+                end_time = VALUES(end_time)
         ");
         $stmtCraft->execute([
             ':user_id' => $actualUserId,
@@ -962,7 +970,7 @@ try {
     }
 
     // =========================================================================
-    // 8. ロボット組立（Robot Assemblies）: 完了時は complete_robot_assemblies に追加後に active_robot_assemblies から削除
+    // 8. ロボット組立（Robot Assemblies）: 完了時は complete_robot_assemblies に追加、進行中は active_robot_assemblies に同期
     // =========================================================================
     $compA = $gameData['completeRobotAssembly'] ?? $gameData['completedRobotAssembly'] ?? null;
     if (!empty($compA) && !empty($compA['startTime'])) {
@@ -984,10 +992,9 @@ try {
             ':chk_start_time' => (int)($compA['startTime'] ?? 0),
             ':chk_end_time' => (int)($compA['endTime'] ?? 0)
         ]);
-        // 2. complete に追加完了後、対となる active_robot_assemblies から確実に削除
-        $delAss = $pdo->prepare("DELETE FROM active_robot_assemblies WHERE user_id = :user_id");
-        $delAss->execute([':user_id' => $actualUserId]);
-    } elseif (!empty($gameData['activeRobotAssembly']) && !empty($gameData['activeRobotAssembly']['startTime'])) {
+    }
+
+    if (!empty($gameData['activeRobotAssembly']) && !empty($gameData['activeRobotAssembly']['startTime'])) {
         // 進行中の場合は active_robot_assemblies テーブルを同期（全データを個別列化・パーツIDを外部キー保存）
         $a = $gameData['activeRobotAssembly'];
         $robot = $a['resultRobot'] ?? [];
@@ -1016,7 +1023,7 @@ try {
         $robotName = !empty($robot['name']) ? $robot['name'] : '組立中ロボット';
 
         $stmtAss = $pdo->prepare("
-            REPLACE INTO active_robot_assemblies (
+            INSERT INTO active_robot_assemblies (
                 user_id, start_time, end_time, duration_ms,
                 robot_id, robot_name,
                 head_part_id, body_part_id, arms_part_id, legs_part_id,
@@ -1026,7 +1033,20 @@ try {
                 :robot_id, :robot_name,
                 :head_part_id, :body_part_id, :arms_part_id, :legs_part_id,
                 :current_hp, :max_hp, :value, :robot_created_at
-            )
+            ) ON DUPLICATE KEY UPDATE
+                start_time = VALUES(start_time),
+                end_time = VALUES(end_time),
+                duration_ms = VALUES(duration_ms),
+                robot_id = VALUES(robot_id),
+                robot_name = VALUES(robot_name),
+                head_part_id = VALUES(head_part_id),
+                body_part_id = VALUES(body_part_id),
+                arms_part_id = VALUES(arms_part_id),
+                legs_part_id = VALUES(legs_part_id),
+                current_hp = VALUES(current_hp),
+                max_hp = VALUES(max_hp),
+                value = VALUES(value),
+                robot_created_at = VALUES(robot_created_at)
         ");
         $stmtAss->execute([
             ':user_id' => $actualUserId,
@@ -1050,7 +1070,7 @@ try {
     }
 
     // =========================================================================
-    // 9. 依頼納品（Requests）: 完了時は complete_requests に追加後に active_requests から削除
+    // 9. 依頼納品（Requests）: 完了時は complete_requests に追加、進行中は active_requests に同期
     // =========================================================================
     $compR = $gameData['completeRequest'] ?? $gameData['completedRequest'] ?? null;
     if (!empty($compR) && !empty($compR['requestId'])) {
@@ -1071,18 +1091,13 @@ try {
             ':reward_g' => $rewardG,
             ':deadline' => (int)($compR['deadline'] ?? 0),
             ':delivered_robot_id' => $compR['deliveredRobotId'] ?? null,
-            ':request_data' => json_encode($compR['requestData'] ?? [], JSON_UNESCAPED_UNICODE)
-,
+            ':request_data' => json_encode($compR['requestData'] ?? [], JSON_UNESCAPED_UNICODE),
             ':chk_user_id' => $actualUserId,
             ':chk_request_id' => $compR['requestId'],
             ':chk_deadline' => (int)($compR['deadline'] ?? 0)
         ]);
 
-        // 2. complete に追加完了後、対となる active_requests から確実に削除
-        $delReq = $pdo->prepare("DELETE FROM active_requests WHERE user_id = :user_id");
-        $delReq->execute([':user_id' => $actualUserId]);
-
-        // 3. 依頼完了時のトランザクション内で獲得したGおよび名声(fame)を user_workshop_status テーブルに確実に加算・記録
+        // 2. 依頼完了時のトランザクション内で獲得したGおよび名声(fame)を user_workshop_status テーブルに確実に加算・記録
         $rewardFame = (int)($compR['rewardFame'] ?? ($compR['reward_fame'] ?? 0));
         if ($rewardFame <= 0) {
             $rRank = $compR['rank'] ?? 'OldMan';
@@ -1105,7 +1120,9 @@ try {
                 ':up_earned_fame' => $rewardFame
             ]);
         }
-    } elseif (!empty($gameData['currentRequest']) && !empty($gameData['currentRequest']['id'])) {
+    }
+
+    if (!empty($gameData['currentRequest']) && !empty($gameData['currentRequest']['id'])) {
         // 進行中の場合は active_requests テーブルを同期
         $r = $gameData['currentRequest'];
 
@@ -1122,8 +1139,14 @@ try {
         );
 
         $stmtReq = $pdo->prepare("
-            REPLACE INTO active_requests (user_id, request_id, rank, reward_g, deadline, request_data)
+            INSERT INTO active_requests (user_id, request_id, rank, reward_g, deadline, request_data)
             VALUES (:user_id, :request_id, :rank, :reward_g, :deadline, :request_data)
+            ON DUPLICATE KEY UPDATE
+                request_id = VALUES(request_id),
+                rank = VALUES(rank),
+                reward_g = VALUES(reward_g),
+                deadline = VALUES(deadline),
+                request_data = VALUES(request_data)
         ");
         $stmtReq->execute([
             ':user_id' => $actualUserId,
@@ -1139,7 +1162,7 @@ try {
     }
 
     // =========================================================================
-    // 10. ロボット解体（Robot Disassemblies）: 完了時は complete_robot_disassemblies に追加後に active_robot_disassemblies から削除
+    // 10. ロボット解体（Robot Disassemblies）: 完了時は complete_robot_disassemblies に追加、進行中は active_robot_disassemblies に同期
     // =========================================================================
     $compD = $gameData['completeRobotDisassembly'] ?? $gameData['completedRobotDisassembly'] ?? null;
     if (!empty($compD) && !empty($compD['startTime'])) {
@@ -1157,16 +1180,14 @@ try {
             ':robot_id' => $compD['robotClone']['id'] ?? '',
             ':start_time' => (int)($compD['startTime'] ?? 0),
             ':end_time' => (int)($compD['endTime'] ?? 0),
-            ':result_parts_data' => json_encode($compD['resultParts'] ?? [], JSON_UNESCAPED_UNICODE)
-,
+            ':result_parts_data' => json_encode($compD['resultParts'] ?? [], JSON_UNESCAPED_UNICODE),
             ':chk_user_id' => $actualUserId,
             ':chk_start_time' => (int)($compD['startTime'] ?? 0),
             ':chk_end_time' => (int)($compD['endTime'] ?? 0)
         ]);
-        // 2. complete に追加完了後、対となる active_robot_disassemblies から確実に削除
-        $delDisass = $pdo->prepare("DELETE FROM active_robot_disassemblies WHERE user_id = :user_id");
-        $delDisass->execute([':user_id' => $actualUserId]);
-    } elseif (!empty($gameData['activeRobotDisassembly']) && !empty($gameData['activeRobotDisassembly']['startTime'])) {
+    }
+
+    if (!empty($gameData['activeRobotDisassembly']) && !empty($gameData['activeRobotDisassembly']['startTime'])) {
         // 進行中の場合は active_robot_disassemblies テーブルを同期 (パーツIDを個別カラムで保持)
         $ad = $gameData['activeRobotDisassembly'];
         $robClone = $ad['robotClone'] ?? [];
@@ -1191,11 +1212,18 @@ try {
         }
 
         $stmtDisass = $pdo->prepare("
-            REPLACE INTO active_robot_disassemblies (
+            INSERT INTO active_robot_disassemblies (
                 user_id, robot_id, head_part_id, body_part_id, arms_part_id, legs_part_id, start_time, end_time
             ) VALUES (
                 :user_id, :robot_id, :head_part_id, :body_part_id, :arms_part_id, :legs_part_id, :start_time, :end_time
-            )
+            ) ON DUPLICATE KEY UPDATE
+                robot_id = VALUES(robot_id),
+                head_part_id = VALUES(head_part_id),
+                body_part_id = VALUES(body_part_id),
+                arms_part_id = VALUES(arms_part_id),
+                legs_part_id = VALUES(legs_part_id),
+                start_time = VALUES(start_time),
+                end_time = VALUES(end_time)
         ");
         $stmtDisass->execute([
             ':user_id' => $actualUserId,
@@ -1213,7 +1241,7 @@ try {
     }
 
     // =========================================================================
-    // 11. パーツリサイクル（Part Recycles）: 完了時は complete_part_recycles に追加後に active_part_recycles から削除
+    // 11. パーツリサイクル（Part Recycles）: 完了時は complete_part_recycles に追加、進行中は active_part_recycles に同期
     // =========================================================================
     $compRec = $gameData['completePartRecycle'] ?? $gameData['completedPartRecycle'] ?? null;
     if (!empty($compRec) && !empty($compRec['startTime'])) {
@@ -1231,21 +1259,24 @@ try {
             ':part_id' => $compRec['partClone']['id'] ?? '',
             ':start_time' => (int)($compRec['startTime'] ?? 0),
             ':end_time' => (int)($compRec['endTime'] ?? 0),
-            ':result_materials_data' => json_encode($compRec['resultMaterials'] ?? [], JSON_UNESCAPED_UNICODE)
-,
+            ':result_materials_data' => json_encode($compRec['resultMaterials'] ?? [], JSON_UNESCAPED_UNICODE),
             ':chk_user_id' => $actualUserId,
             ':chk_start_time' => (int)($compRec['startTime'] ?? 0),
             ':chk_end_time' => (int)($compRec['endTime'] ?? 0)
         ]);
-        // 2. complete に追加完了後、対となる active_part_recycles から確実に削除
-        $delRec = $pdo->prepare("DELETE FROM active_part_recycles WHERE user_id = :user_id");
-        $delRec->execute([':user_id' => $actualUserId]);
-    } elseif (!empty($gameData['activePartRecycle']) && !empty($gameData['activePartRecycle']['startTime'])) {
+    }
+
+    if (!empty($gameData['activePartRecycle']) && !empty($gameData['activePartRecycle']['startTime'])) {
         // 進行中の場合は active_part_recycles テーブルを同期
         $ar = $gameData['activePartRecycle'];
         $stmtRec = $pdo->prepare("
-            REPLACE INTO active_part_recycles (user_id, part_id, start_time, end_time, result_materials_data)
+            INSERT INTO active_part_recycles (user_id, part_id, start_time, end_time, result_materials_data)
             VALUES (:user_id, :part_id, :start_time, :end_time, :result_materials_data)
+            ON DUPLICATE KEY UPDATE
+                part_id = VALUES(part_id),
+                start_time = VALUES(start_time),
+                end_time = VALUES(end_time),
+                result_materials_data = VALUES(result_materials_data)
         ");
         $stmtRec->execute([
             ':user_id' => $actualUserId,
