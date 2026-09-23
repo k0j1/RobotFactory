@@ -832,7 +832,7 @@ export class GameEngine {
 
     this.saveState();
 
-    if (this.isCloudAccount && this.userId && this.isCloudLoaded) {
+    if (this.isCloudAccount && this.userId) {
       AuthApiService.getInstance().saveAllDataToTables(this.userId, this.state, true).catch(err => {
         console.warn('[GameEngine] デイリークリア記録の即時DB同期エラー:', err);
       });

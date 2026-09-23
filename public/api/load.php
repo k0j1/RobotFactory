@@ -274,10 +274,10 @@ try {
 
         CREATE TABLE IF NOT EXISTS daily_cleared_minigame (
             id INT AUTO_INCREMENT PRIMARY KEY,
-            minigame_id VARCHAR(100) NOT NULL,
-            user_id VARCHAR(255) NOT NULL,
-            robot_id VARCHAR(255) NOT NULL,
-            level VARCHAR(100) NOT NULL DEFAULT '1',
+            minigame_id VARCHAR(32) NOT NULL,
+            user_id VARCHAR(64) NOT NULL,
+            robot_id VARCHAR(64) NOT NULL,
+            level VARCHAR(32) NOT NULL DEFAULT '1',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             UNIQUE KEY uq_daily_clear (user_id, robot_id, minigame_id, level),
             INDEX idx_user_robot (user_id, robot_id),
@@ -290,7 +290,10 @@ try {
     } catch (PDOException $e) {}
 
     try {
-        $pdo->exec("ALTER TABLE daily_cleared_minigame MODIFY COLUMN level VARCHAR(100) NOT NULL DEFAULT '1'");
+        $pdo->exec("ALTER TABLE daily_cleared_minigame MODIFY COLUMN user_id VARCHAR(64) NOT NULL");
+        $pdo->exec("ALTER TABLE daily_cleared_minigame MODIFY COLUMN robot_id VARCHAR(64) NOT NULL");
+        $pdo->exec("ALTER TABLE daily_cleared_minigame MODIFY COLUMN minigame_id VARCHAR(32) NOT NULL");
+        $pdo->exec("ALTER TABLE daily_cleared_minigame MODIFY COLUMN level VARCHAR(32) NOT NULL DEFAULT '1'");
     } catch (PDOException $e) {}
 
     // 毎朝9:00基準の期限切れデイリークリアレコードの削除
@@ -836,6 +839,15 @@ try {
     ");
     $dailyClearStmt->execute(array_values($candidateUserIds));
     $dbDailyCleared = [];
+    $nowJst = new DateTime('now', new DateTimeZone('Asia/Tokyo'));
+    $todayDateKey = $nowJst->format('Y-m-d');
+    if ((int)$nowJst->format('H') < 9) {
+        $yesterdayJst = clone $nowJst;
+        $yesterdayJst->modify('-1 day');
+        $todayDateKey = $yesterdayJst->format('Y-m-d');
+    }
+    $dbDailyCleared[$todayDateKey] = [];
+
     while ($dcRow = $dailyClearStmt->fetch(PDO::FETCH_ASSOC)) {
         $rId = (string)$dcRow['robot_id'];
         $mId = (string)$dcRow['minigame_id'];
@@ -847,6 +859,7 @@ try {
             $dbDailyCleared[$rId][$mId] = [];
         }
         $dbDailyCleared[$rId][$mId][$lvl] = true;
+        $dbDailyCleared[$todayDateKey][] = "{$rId}_{$mId}_{$lvl}";
     }
 
     // 9. user_parts テーブルから所持パーツ一覧を取得（個別カラムからRobotPartオブジェクトを完全復元）
@@ -1086,24 +1099,22 @@ try {
                 foreach ($gameData['dailyBattleLimits'] as $k1 => $v1) {
                     // パターン1: 日付キー { "YYYY-MM-DD": ["robotId_categoryId_levelId", ...] }
                     if (is_array($v1) && preg_match('/^\d{4}-\d{2}-\d{2}$/', (string)$k1)) {
-                        if ((string)$k1 === $todayDateKey) {
-                            foreach ($v1 as $limitItem) {
-                                if (is_string($limitItem)) {
-                                    $parts = explode('_', $limitItem);
-                                    if (count($parts) >= 3) {
-                                        $lvlVal = array_pop($parts);
-                                        $mId = array_pop($parts);
-                                        $rId = implode('_', $parts);
-                                        $insDailyMigrate->execute([
-                                            ':user_id' => $actualUserId,
-                                            ':robot_id' => (string)$rId,
-                                            ':minigame_id' => (string)$mId,
-                                            ':level' => (string)$lvlVal
-                                        ]);
-                                        if (!isset($dbDailyCleared[(string)$rId])) $dbDailyCleared[(string)$rId] = [];
-                                        if (!isset($dbDailyCleared[(string)$rId][(string)$mId])) $dbDailyCleared[(string)$rId][(string)$mId] = [];
-                                        $dbDailyCleared[(string)$rId][(string)$mId][(string)$lvlVal] = true;
-                                    }
+                        foreach ($v1 as $limitItem) {
+                            if (is_string($limitItem)) {
+                                $parts = explode('_', $limitItem);
+                                if (count($parts) >= 3) {
+                                    $lvlVal = array_pop($parts);
+                                    $mId = array_pop($parts);
+                                    $rId = implode('_', $parts);
+                                    $insDailyMigrate->execute([
+                                        ':user_id' => $actualUserId,
+                                        ':robot_id' => (string)$rId,
+                                        ':minigame_id' => (string)$mId,
+                                        ':level' => (string)$lvlVal
+                                    ]);
+                                    if (!isset($dbDailyCleared[(string)$rId])) $dbDailyCleared[(string)$rId] = [];
+                                    if (!isset($dbDailyCleared[(string)$rId][(string)$mId])) $dbDailyCleared[(string)$rId][(string)$mId] = [];
+                                    $dbDailyCleared[(string)$rId][(string)$mId][(string)$lvlVal] = true;
                                 }
                             }
                         }

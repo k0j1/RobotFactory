@@ -94,10 +94,10 @@ try {
 
     CREATE TABLE IF NOT EXISTS daily_cleared_minigame (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        minigame_id VARCHAR(100) NOT NULL,
-        user_id VARCHAR(255) NOT NULL,
-        robot_id VARCHAR(255) NOT NULL,
-        level INT DEFAULT 1,
+        minigame_id VARCHAR(32) NOT NULL,
+        user_id VARCHAR(64) NOT NULL,
+        robot_id VARCHAR(64) NOT NULL,
+        level VARCHAR(32) NOT NULL DEFAULT '1',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         UNIQUE KEY uq_daily_clear (user_id, robot_id, minigame_id, level),
         INDEX idx_user_robot (user_id, robot_id),
@@ -910,7 +910,10 @@ try {
     } catch (PDOException $e) {}
 
     try {
-        $pdo->exec("ALTER TABLE daily_cleared_minigame MODIFY COLUMN level VARCHAR(100) NOT NULL DEFAULT '1'");
+        $pdo->exec("ALTER TABLE daily_cleared_minigame MODIFY COLUMN user_id VARCHAR(64) NOT NULL");
+        $pdo->exec("ALTER TABLE daily_cleared_minigame MODIFY COLUMN robot_id VARCHAR(64) NOT NULL");
+        $pdo->exec("ALTER TABLE daily_cleared_minigame MODIFY COLUMN minigame_id VARCHAR(32) NOT NULL");
+        $pdo->exec("ALTER TABLE daily_cleared_minigame MODIFY COLUMN level VARCHAR(32) NOT NULL DEFAULT '1'");
     } catch (PDOException $e) {}
 
     try {
@@ -1108,21 +1111,19 @@ try {
 
                     foreach ($data['dailyBattleLimits'] as $k1 => $v1) {
                         if (is_array($v1) && preg_match('/^\d{4}-\d{2}-\d{2}$/', (string)$k1)) {
-                            if ((string)$k1 === $todayDateKey) {
-                                foreach ($v1 as $limitItem) {
-                                    if (is_string($limitItem)) {
-                                        $parts = explode('_', $limitItem);
-                                        if (count($parts) >= 3) {
-                                            $lvlVal = array_pop($parts);
-                                            $mId = array_pop($parts);
-                                            $rId = implode('_', $parts);
-                                            $insertDailyStmt->execute([
-                                                ':user_id' => $row['user_id'],
-                                                ':robot_id' => (string)$rId,
-                                                ':minigame_id' => (string)$mId,
-                                                ':level' => (string)$lvlVal
-                                            ]);
-                                        }
+                            foreach ($v1 as $limitItem) {
+                                if (is_string($limitItem)) {
+                                    $parts = explode('_', $limitItem);
+                                    if (count($parts) >= 3) {
+                                        $lvlVal = array_pop($parts);
+                                        $mId = array_pop($parts);
+                                        $rId = implode('_', $parts);
+                                        $insertDailyStmt->execute([
+                                            ':user_id' => $row['user_id'],
+                                            ':robot_id' => (string)$rId,
+                                            ':minigame_id' => (string)$mId,
+                                            ':level' => (string)$lvlVal
+                                        ]);
                                     }
                                 }
                             }
