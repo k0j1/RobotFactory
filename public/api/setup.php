@@ -203,23 +203,25 @@ try {
 
     CREATE TABLE IF NOT EXISTS active_part_crafts (
         user_id VARCHAR(255) PRIMARY KEY,
-        part_type VARCHAR(50) NOT NULL,
-        main_material_id VARCHAR(255) NOT NULL,
-        sub_material_id VARCHAR(255) NOT NULL,
-        start_time BIGINT NOT NULL,
-        end_time BIGINT NOT NULL,
+        part_type VARCHAR(50) NOT NULL DEFAULT 'head',
+        main_material_id VARCHAR(255) NOT NULL DEFAULT '',
+        sub_material_id VARCHAR(255) NULL DEFAULT '',
+        start_time BIGINT NOT NULL DEFAULT 0,
+        end_time BIGINT NOT NULL DEFAULT 0,
+        result_part_data JSON NULL,
+        duration_ms BIGINT DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
     CREATE TABLE IF NOT EXISTS complete_part_crafts (
         id INT AUTO_INCREMENT PRIMARY KEY,
         user_id VARCHAR(255) NOT NULL,
-        part_type VARCHAR(50) NOT NULL,
-        main_material_id VARCHAR(255) NOT NULL,
-        sub_material_id VARCHAR(255) NOT NULL,
-        start_time BIGINT NOT NULL,
-        end_time BIGINT NOT NULL,
-        result_part_data JSON,
+        part_type VARCHAR(50) NOT NULL DEFAULT 'head',
+        main_material_id VARCHAR(255) NOT NULL DEFAULT '',
+        sub_material_id VARCHAR(255) NULL DEFAULT '',
+        start_time BIGINT NOT NULL DEFAULT 0,
+        end_time BIGINT NOT NULL DEFAULT 0,
+        result_part_data JSON NULL,
         completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         INDEX idx_comp_craft_user (user_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -429,6 +431,20 @@ try {
     } catch (PDOException $e) {
         // 既に追加されている場合は無視
     }
+
+    // active_part_crafts テーブルのカラム拡張・互換マイグレーション
+    try { $pdo->exec("ALTER TABLE active_part_crafts ADD COLUMN result_part_data JSON NULL"); } catch (PDOException $e) {}
+    try { $pdo->exec("ALTER TABLE active_part_crafts ADD COLUMN duration_ms BIGINT DEFAULT 0"); } catch (PDOException $e) {}
+    try { $pdo->exec("ALTER TABLE active_part_crafts MODIFY COLUMN sub_material_id VARCHAR(255) NULL DEFAULT ''"); } catch (PDOException $e) {}
+
+    // complete_part_crafts テーブルのカラム拡張・互換マイグレーション
+    try { $pdo->exec("ALTER TABLE complete_part_crafts ADD COLUMN part_type VARCHAR(50) NOT NULL DEFAULT 'head'"); } catch (PDOException $e) {}
+    try { $pdo->exec("ALTER TABLE complete_part_crafts ADD COLUMN main_material_id VARCHAR(255) NOT NULL DEFAULT ''"); } catch (PDOException $e) {}
+    try { $pdo->exec("ALTER TABLE complete_part_crafts ADD COLUMN sub_material_id VARCHAR(255) NULL DEFAULT ''"); } catch (PDOException $e) {}
+    try { $pdo->exec("ALTER TABLE complete_part_crafts ADD COLUMN start_time BIGINT NOT NULL DEFAULT 0"); } catch (PDOException $e) {}
+    try { $pdo->exec("ALTER TABLE complete_part_crafts ADD COLUMN end_time BIGINT NOT NULL DEFAULT 0"); } catch (PDOException $e) {}
+    try { $pdo->exec("ALTER TABLE complete_part_crafts ADD COLUMN result_part_data JSON NULL"); } catch (PDOException $e) {}
+    try { $pdo->exec("ALTER TABLE complete_part_crafts MODIFY COLUMN sub_material_id VARCHAR(255) NULL DEFAULT ''"); } catch (PDOException $e) {}
 
     // 既存の user_item テーブルに battle_item, reversi_item カラムを追加（マイグレーション）
     try {

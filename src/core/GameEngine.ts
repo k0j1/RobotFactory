@@ -1314,7 +1314,40 @@ export class GameEngine {
       throw new Error("パーツ製造はまだ完了していません");
     }
 
-    const craftedPart = target.resultPart;
+    let craftedPart = target.resultPart;
+
+    // target.resultPart が未設定の場合の自己修復フォールバック
+    if (!craftedPart) {
+      const pType: PartType = target.partType || 'head';
+      const mainMat = MATERIALS.find(m => m.id === target.mainMaterialId) || MATERIALS[0];
+      const subMat = MATERIALS.find(m => m.id === target.subMaterialId) || MATERIALS[1] || MATERIALS[0];
+      const typeNames: Record<PartType, string> = { head: 'ヘッド', body: 'ボディ', arms: 'アーム', legs: 'レッグ' };
+      const possibleCrafts = getMaterialCraftableVisuals(mainMat);
+      const chosenCraft = possibleCrafts[0] || { rarity: 1, visualIndex: 0 };
+      const craftRarity = chosenCraft.rarity;
+      const generatedStats = this._generatePartStats(pType, mainMat, subMat, craftRarity, chosenCraft.visualIndex);
+
+      const mainMaster = findMasterPartData(pType, craftRarity, chosenCraft.visualIndex);
+      const mainEncyclopediaId = mainMaster ? mainMaster.id : `${pType[0]}${craftRarity}_${chosenCraft.visualIndex}`;
+
+      const subPossibleCrafts = getMaterialCraftableVisuals(subMat);
+      const chosenSubCraft = subPossibleCrafts[0] || { rarity: 1, visualIndex: 0 };
+      const subMaster = findMasterPartData(pType, chosenSubCraft.rarity, chosenSubCraft.visualIndex);
+      const subEncyclopediaId = subMaster ? subMaster.id : `${pType[0]}${chosenSubCraft.rarity}_${chosenSubCraft.visualIndex}`;
+
+      craftedPart = {
+        id: `part_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+        type: pType,
+        name: `${mainMat.name}の${typeNames[pType]}`,
+        attribute: mainMat.attribute,
+        rarity: craftRarity as 1 | 2 | 3,
+        stats: generatedStats.stats,
+        visualIndex: chosenCraft.visualIndex,
+        mainMaterialId: mainEncyclopediaId,
+        subMaterialId: subEncyclopediaId,
+      };
+      target.resultPart = craftedPart;
+    }
 
     // 製造完了時に確実に master_parts の id がセットされていることを担保
     if (!craftedPart.mainMaterialId || craftedPart.mainMaterialId.startsWith('m_')) {
@@ -1338,7 +1371,8 @@ export class GameEngine {
     // active_part_crafts から complete_part_crafts への移行
     const compPartCraft: import('./models').CompletePartCraft = {
       ...target,
-      completedAt: Date.now()
+      completedAt: Date.now(),
+      resultPart: craftedPart
     };
     this.state.completePartCraft = compPartCraft;
     this.state.completedPartCraft = compPartCraft;
