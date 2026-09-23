@@ -11,11 +11,7 @@ if (!$pdo) {
 }
 
 try {
-    try {
-        $stmt = $pdo->query("SELECT * FROM master_parts ORDER BY rarity ASC, part_type ASC, id ASC");
-    } catch (PDOException $e) {
-        $stmt = $pdo->query("SELECT * FROM m_parts_encyclopedia ORDER BY rarity ASC, part_type ASC, id ASC");
-    }
+    $stmt = $pdo->query("SELECT * FROM master_parts ORDER BY rarity ASC, part_type ASC, id ASC");
     $parts = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     echo json_encode([

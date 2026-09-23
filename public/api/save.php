@@ -281,13 +281,21 @@ try {
             minigame_id VARCHAR(100) NOT NULL,
             user_id VARCHAR(255) NOT NULL,
             robot_id VARCHAR(255) NOT NULL,
-            level INT DEFAULT 1,
+            level VARCHAR(100) NOT NULL DEFAULT '1',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             UNIQUE KEY uq_daily_clear (user_id, robot_id, minigame_id, level),
             INDEX idx_user_robot (user_id, robot_id),
             INDEX idx_created_at (created_at)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ");
+
+    try {
+        $pdo->exec("DROP TABLE IF EXISTS m_parts_encyclopedia");
+    } catch (PDOException $e) {}
+
+    try {
+        $pdo->exec("ALTER TABLE daily_cleared_minigame MODIFY COLUMN level VARCHAR(100) NOT NULL DEFAULT '1'");
+    } catch (PDOException $e) {}
 
     // 毎朝9:00基準の期限切れデイリークリアレコードの削除
     try {
@@ -1519,14 +1527,14 @@ try {
                         if (is_string($limitItem)) {
                             $parts = explode('_', $limitItem);
                             if (count($parts) >= 3) {
-                                $rId = $parts[0];
-                                $mId = $parts[1];
-                                $lvlNum = is_numeric($parts[2]) ? (int)$parts[2] : 1;
+                                $lvlVal = array_pop($parts);
+                                $mId = array_pop($parts);
+                                $rId = implode('_', $parts);
                                 $stmtDcm->execute([
                                     ':user_id' => $actualUserId,
                                     ':robot_id' => (string)$rId,
                                     ':minigame_id' => (string)$mId,
-                                    ':level' => $lvlNum
+                                    ':level' => (string)$lvlVal
                                 ]);
                             }
                         }
@@ -1539,12 +1547,11 @@ try {
                     if (is_array($lvlMap)) {
                         foreach ($lvlMap as $lvlKey => $isCleared) {
                             if ($isCleared) {
-                                $lvlNum = is_numeric($lvlKey) ? (int)$lvlKey : 1;
                                 $stmtDcm->execute([
                                     ':user_id' => $actualUserId,
                                     ':robot_id' => $rId,
                                     ':minigame_id' => (string)$mId,
-                                    ':level' => $lvlNum
+                                    ':level' => (string)$lvlKey
                                 ]);
                             }
                         }
@@ -1553,7 +1560,7 @@ try {
                             ':user_id' => $actualUserId,
                             ':robot_id' => $rId,
                             ':minigame_id' => (string)$mId,
-                            ':level' => 1
+                            ':level' => '1'
                         ]);
                     }
                 }

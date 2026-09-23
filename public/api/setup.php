@@ -895,15 +895,22 @@ try {
         $pdo->exec("ALTER TABLE active_robot_disassemblies ADD CONSTRAINT fk_act_disass_legs FOREIGN KEY (legs_part_id) REFERENCES user_parts(id) ON DELETE SET NULL");
     } catch (PDOException $e) {}
 
-    // m_parts_encyclopedia から master_parts へのテーブル名変更マイグレーション
+    // m_parts_encyclopedia の完全削除（master_partsへ完全移行済み）
     try {
-        $checkOld = $pdo->query("SHOW TABLES LIKE 'm_parts_encyclopedia'");
         $checkNew = $pdo->query("SHOW TABLES LIKE 'master_parts'");
-        $hasOld = $checkOld && $checkOld->fetch();
         $hasNew = $checkNew && $checkNew->fetch();
-        if ($hasOld && !$hasNew) {
-            $pdo->exec("RENAME TABLE m_parts_encyclopedia TO master_parts");
+        if (!$hasNew) {
+            $checkOld = $pdo->query("SHOW TABLES LIKE 'm_parts_encyclopedia'");
+            $hasOld = $checkOld && $checkOld->fetch();
+            if ($hasOld) {
+                $pdo->exec("RENAME TABLE m_parts_encyclopedia TO master_parts");
+            }
         }
+        $pdo->exec("DROP TABLE IF EXISTS m_parts_encyclopedia");
+    } catch (PDOException $e) {}
+
+    try {
+        $pdo->exec("ALTER TABLE daily_cleared_minigame MODIFY COLUMN level VARCHAR(100) NOT NULL DEFAULT '1'");
     } catch (PDOException $e) {}
 
     try {
@@ -1106,14 +1113,14 @@ try {
                                     if (is_string($limitItem)) {
                                         $parts = explode('_', $limitItem);
                                         if (count($parts) >= 3) {
-                                            $rId = $parts[0];
-                                            $mId = $parts[1];
-                                            $lvlNum = is_numeric($parts[2]) ? (int)$parts[2] : 1;
+                                            $lvlVal = array_pop($parts);
+                                            $mId = array_pop($parts);
+                                            $rId = implode('_', $parts);
                                             $insertDailyStmt->execute([
                                                 ':user_id' => $row['user_id'],
                                                 ':robot_id' => (string)$rId,
                                                 ':minigame_id' => (string)$mId,
-                                                ':level' => $lvlNum
+                                                ':level' => (string)$lvlVal
                                             ]);
                                         }
                                     }
@@ -1125,12 +1132,11 @@ try {
                                 if (is_array($lvlMap)) {
                                     foreach ($lvlMap as $lvlKey => $isCleared) {
                                         if ($isCleared) {
-                                            $lvlNum = is_numeric($lvlKey) ? (int)$lvlKey : 1;
                                             $insertDailyStmt->execute([
                                                 ':user_id' => $row['user_id'],
                                                 ':robot_id' => $rId,
                                                 ':minigame_id' => (string)$mId,
-                                                ':level' => $lvlNum
+                                                ':level' => (string)$lvlKey
                                             ]);
                                         }
                                     }
@@ -1139,7 +1145,7 @@ try {
                                         ':user_id' => $row['user_id'],
                                         ':robot_id' => $rId,
                                         ':minigame_id' => (string)$mId,
-                                        ':level' => 1
+                                        ':level' => '1'
                                     ]);
                                 }
                             }
