@@ -135,10 +135,6 @@ try {
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-        try {
-            $pdo->exec("ALTER TABLE active_part_crafts ADD COLUMN result_part_data JSON");
-        } catch (Throwable $e) {}
-
         CREATE TABLE IF NOT EXISTS complete_part_crafts (
             id INT AUTO_INCREMENT PRIMARY KEY,
             user_id VARCHAR(255) NOT NULL,
@@ -333,6 +329,10 @@ try {
 
     try {
         $pdo->exec("ALTER TABLE active_requests ADD COLUMN request_data JSON");
+    } catch (PDOException $e) {}
+
+    try {
+        $pdo->exec("ALTER TABLE active_part_crafts ADD COLUMN result_part_data JSON");
     } catch (PDOException $e) {}
 
     $partColsSave = [
