@@ -774,13 +774,30 @@ export class GameEngine {
     if (!this.state.dailyBattleLimits) {
       this.state.dailyBattleLimits = {};
     }
-    const keys = Object.keys(this.state.dailyBattleLimits);
-    for (const k of keys) {
-      if (k !== today) {
-        delete this.state.dailyBattleLimits[k];
+    const limits = this.state.dailyBattleLimits;
+
+    // Check direct structure from DB: { [robotId]: { [categoryId]: { [levelId]: true } } }
+    if (limits[robotId] && typeof limits[robotId] === 'object' && !Array.isArray(limits[robotId])) {
+      const catMap = limits[robotId];
+      if (catMap[categoryId]) {
+        if (typeof catMap[categoryId] === 'object') {
+          if (catMap[categoryId][levelId] || catMap[categoryId][String(levelId)]) {
+            return true;
+          }
+        } else if (catMap[categoryId]) {
+          return true;
+        }
       }
     }
-    const todayRecords = this.state.dailyBattleLimits[today] || [];
+
+    // Check date-keyed structure: { [todayDateKey]: ['robotId_categoryId_levelId', ...] }
+    const keys = Object.keys(limits);
+    for (const k of keys) {
+      if (k.match(/^\d{4}-\d{2}-\d{2}$/) && k !== today && Array.isArray(limits[k])) {
+        delete limits[k];
+      }
+    }
+    const todayRecords = Array.isArray(limits[today]) ? limits[today] : [];
     const key = `${robotId}_${categoryId}_${levelId}`;
     return todayRecords.includes(key);
   }
@@ -792,17 +809,33 @@ export class GameEngine {
     }
     const keys = Object.keys(this.state.dailyBattleLimits);
     for (const k of keys) {
-      if (k !== today) {
+      if (k.match(/^\d{4}-\d{2}-\d{2}$/) && k !== today) {
         delete this.state.dailyBattleLimits[k];
       }
     }
-    if (!this.state.dailyBattleLimits[today]) {
+    if (!Array.isArray(this.state.dailyBattleLimits[today])) {
       this.state.dailyBattleLimits[today] = [];
     }
     const key = `${robotId}_${categoryId}_${levelId}`;
     if (!this.state.dailyBattleLimits[today].includes(key)) {
       this.state.dailyBattleLimits[today].push(key);
-      this.saveState();
+    }
+
+    // DB同期用の構造化マップも併せて設定
+    if (!this.state.dailyBattleLimits[robotId] || typeof this.state.dailyBattleLimits[robotId] !== 'object' || Array.isArray(this.state.dailyBattleLimits[robotId])) {
+      this.state.dailyBattleLimits[robotId] = {};
+    }
+    if (!this.state.dailyBattleLimits[robotId][categoryId] || typeof this.state.dailyBattleLimits[robotId][categoryId] !== 'object' || Array.isArray(this.state.dailyBattleLimits[robotId][categoryId])) {
+      this.state.dailyBattleLimits[robotId][categoryId] = {};
+    }
+    this.state.dailyBattleLimits[robotId][categoryId][String(levelId)] = true;
+
+    this.saveState();
+
+    if (this.isCloudAccount && this.userId && this.isCloudLoaded) {
+      AuthApiService.getInstance().saveAllDataToTables(this.userId, this.state, true).catch(err => {
+        console.warn('[GameEngine] デイリークリア記録の即時DB同期エラー:', err);
+      });
     }
   }
 
@@ -1091,7 +1124,7 @@ export class GameEngine {
   }
 
   private _generatePartStats(type: PartType, mainMat: Material, subMat: Material, rarity: number = 1, visualIndex: number = 0) {
-    // m_parts_encyclopedia テーブルのマスター基準値を取得
+    // master_parts テーブルのマスター基準値を取得
     const masterData = findMasterPartData(type, rarity, visualIndex);
 
     let baseHp = 0;
@@ -1175,11 +1208,11 @@ export class GameEngine {
 
     const generatedStats = this._generatePartStats(type, mainMat, subMat, craftRarity, chosenCraft.visualIndex);
 
-    // メイン素材から生成されるパーツの m_parts_encyclopedia ID を取得
+    // メイン素材から生成されるパーツの master_parts ID を取得
     const mainMaster = findMasterPartData(type, craftRarity, chosenCraft.visualIndex);
     const mainEncyclopediaId = mainMaster ? mainMaster.id : `${type[0]}${craftRarity}_${chosenCraft.visualIndex}`;
 
-    // サブ素材に対応する m_parts_encyclopedia ID を取得
+    // サブ素材に対応する master_parts ID を取得
     const subPossibleCrafts = getMaterialCraftableVisuals(subMat);
     const chosenSubCraft = subPossibleCrafts[Math.floor(Math.random() * subPossibleCrafts.length)] || subPossibleCrafts[0];
     const subMaster = findMasterPartData(type, chosenSubCraft.rarity, chosenSubCraft.visualIndex);
@@ -1225,7 +1258,7 @@ export class GameEngine {
 
     const craftedPart = target.resultPart;
 
-    // 製造完了時に確実に m_parts_encyclopedia の id がセットされていることを担保
+    // 製造完了時に確実に master_parts の id がセットされていることを担保
     if (!craftedPart.mainMaterialId || craftedPart.mainMaterialId.startsWith('m_')) {
       const mainMaster = findMasterPartData(craftedPart.type, craftedPart.rarity, craftedPart.visualIndex);
       craftedPart.mainMaterialId = mainMaster ? mainMaster.id : `${craftedPart.type[0]}${craftedPart.rarity}_${craftedPart.visualIndex}`;
@@ -1470,11 +1503,11 @@ export class GameEngine {
 
     const generatedStats = this._generatePartStats(type, mainMat, subMat, craftRarity, chosenCraft.visualIndex);
 
-    // メイン素材から生成されるパーツの m_parts_encyclopedia ID を取得
+    // メイン素材から生成されるパーツの master_parts ID を取得
     const mainMaster = findMasterPartData(type, craftRarity, chosenCraft.visualIndex);
     const mainEncyclopediaId = mainMaster ? mainMaster.id : `${type[0]}${craftRarity}_${chosenCraft.visualIndex}`;
 
-    // サブ素材に対応する m_parts_encyclopedia ID を取得
+    // サブ素材に対応する master_parts ID を取得
     const subPossibleCrafts = getMaterialCraftableVisuals(subMat);
     const chosenSubCraft = subPossibleCrafts[Math.floor(Math.random() * subPossibleCrafts.length)] || subPossibleCrafts[0];
     const subMaster = findMasterPartData(type, chosenSubCraft.rarity, chosenSubCraft.visualIndex);

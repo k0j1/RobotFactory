@@ -32,7 +32,7 @@ try {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-    CREATE TABLE IF NOT EXISTS m_parts_encyclopedia (
+    CREATE TABLE IF NOT EXISTS master_parts (
         id VARCHAR(255) PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         part_type VARCHAR(50) NOT NULL,
@@ -90,6 +90,18 @@ try {
         user_id VARCHAR(255) NOT NULL,
         high_score INT NOT NULL,
         achieved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    CREATE TABLE IF NOT EXISTS daily_cleared_minigame (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        minigame_id VARCHAR(100) NOT NULL,
+        user_id VARCHAR(255) NOT NULL,
+        robot_id VARCHAR(255) NOT NULL,
+        level INT DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uq_daily_clear (user_id, robot_id, minigame_id, level),
+        INDEX idx_user_robot (user_id, robot_id),
+        INDEX idx_created_at (created_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
     CREATE TABLE IF NOT EXISTS master_expeditions (
@@ -883,11 +895,22 @@ try {
         $pdo->exec("ALTER TABLE active_robot_disassemblies ADD CONSTRAINT fk_act_disass_legs FOREIGN KEY (legs_part_id) REFERENCES user_parts(id) ON DELETE SET NULL");
     } catch (PDOException $e) {}
 
+    // m_parts_encyclopedia から master_parts へのテーブル名変更マイグレーション
     try {
-        $pdo->exec("ALTER TABLE m_parts_encyclopedia ADD COLUMN visual_index INT DEFAULT 0");
+        $checkOld = $pdo->query("SHOW TABLES LIKE 'm_parts_encyclopedia'");
+        $checkNew = $pdo->query("SHOW TABLES LIKE 'master_parts'");
+        $hasOld = $checkOld && $checkOld->fetch();
+        $hasNew = $checkNew && $checkNew->fetch();
+        if ($hasOld && !$hasNew) {
+            $pdo->exec("RENAME TABLE m_parts_encyclopedia TO master_parts");
+        }
     } catch (PDOException $e) {}
 
-    // m_parts_encyclopedia のマスターデータ挿入・シード
+    try {
+        $pdo->exec("ALTER TABLE master_parts ADD COLUMN visual_index INT DEFAULT 0");
+    } catch (PDOException $e) {}
+
+    // master_parts のマスターデータ挿入・シード
     $catalogParts = [
         // Head: INT特化、他低め
         ['h1_0', 'ベーシックヘッド', 'head', 'neutral', 1, 0, 15, 3, 10, 10, 10, 35],
@@ -957,13 +980,27 @@ try {
     ];
 
     $stmtInsert = $pdo->prepare("
-        INSERT INTO m_parts_encyclopedia (id, name, part_type, attribute, rarity, visual_index, base_hp, base_power, base_defense, base_agility, base_dexterity, base_int)
+        INSERT INTO master_parts (id, name, part_type, attribute, rarity, visual_index, base_hp, base_power, base_defense, base_agility, base_dexterity, base_int)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE name=VALUES(name), part_type=VALUES(part_type), attribute=VALUES(attribute), rarity=VALUES(rarity), visual_index=VALUES(visual_index), base_hp=VALUES(base_hp), base_power=VALUES(base_power), base_defense=VALUES(base_defense), base_agility=VALUES(base_agility), base_dexterity=VALUES(base_dexterity), base_int=VALUES(base_int)
     ");
     foreach ($catalogParts as $p) {
         $stmtInsert->execute($p);
     }
+
+    // 毎朝9:00基準の期限切れデイリークリアレコードの削除
+    try {
+        $nowJst = new DateTime('now', new DateTimeZone('Asia/Tokyo'));
+        $cutoffJst = clone $nowJst;
+        if ((int)$nowJst->format('H') >= 9) {
+            $cutoffJst->setTime(9, 0, 0);
+        } else {
+            $cutoffJst->modify('-1 day')->setTime(9, 0, 0);
+        }
+        $cutoffStr = $cutoffJst->setTimezone(new DateTimeZone(date_default_timezone_get()))->format('Y-m-d H:i:s');
+        $delDailyStmt = $pdo->prepare("DELETE FROM daily_cleared_minigame WHERE created_at < :cutoff");
+        $delDailyStmt->execute([':cutoff' => $cutoffStr]);
+    } catch (Throwable $e) {}
     try {
         $pdo->exec("UPDATE user_robots SET head_part_id = NULL WHERE head_part_id IS NOT NULL AND head_part_id NOT IN (SELECT id FROM user_parts)");
         $pdo->exec("UPDATE user_robots SET body_part_id = NULL WHERE body_part_id IS NOT NULL AND body_part_id NOT IN (SELECT id FROM user_parts)");
@@ -1047,10 +1084,75 @@ try {
                     ]);
                 }
 
+                // dailyBattleLimits が save_data 内に存在する場合、daily_cleared_minigame テーブルへ移行
+                if (!empty($data['dailyBattleLimits']) && is_array($data['dailyBattleLimits'])) {
+                    $insertDailyStmt = $pdo->prepare("
+                        INSERT INTO daily_cleared_minigame (user_id, robot_id, minigame_id, level, created_at)
+                        VALUES (:user_id, :robot_id, :minigame_id, :level, CURRENT_TIMESTAMP)
+                        ON DUPLICATE KEY UPDATE created_at = CURRENT_TIMESTAMP
+                    ");
+                    $nowJst = new DateTime('now', new DateTimeZone('Asia/Tokyo'));
+                    $todayDateKey = $nowJst->format('Y-m-d');
+                    if ((int)$nowJst->format('H') < 9) {
+                        $yesterdayJst = clone $nowJst;
+                        $yesterdayJst->modify('-1 day');
+                        $todayDateKey = $yesterdayJst->format('Y-m-d');
+                    }
+
+                    foreach ($data['dailyBattleLimits'] as $k1 => $v1) {
+                        if (is_array($v1) && preg_match('/^\d{4}-\d{2}-\d{2}$/', (string)$k1)) {
+                            if ((string)$k1 === $todayDateKey) {
+                                foreach ($v1 as $limitItem) {
+                                    if (is_string($limitItem)) {
+                                        $parts = explode('_', $limitItem);
+                                        if (count($parts) >= 3) {
+                                            $rId = $parts[0];
+                                            $mId = $parts[1];
+                                            $lvlNum = is_numeric($parts[2]) ? (int)$parts[2] : 1;
+                                            $insertDailyStmt->execute([
+                                                ':user_id' => $row['user_id'],
+                                                ':robot_id' => (string)$rId,
+                                                ':minigame_id' => (string)$mId,
+                                                ':level' => $lvlNum
+                                            ]);
+                                        }
+                                    }
+                                }
+                            }
+                        } elseif (is_array($v1)) {
+                            $rId = (string)$k1;
+                            foreach ($v1 as $mId => $lvlMap) {
+                                if (is_array($lvlMap)) {
+                                    foreach ($lvlMap as $lvlKey => $isCleared) {
+                                        if ($isCleared) {
+                                            $lvlNum = is_numeric($lvlKey) ? (int)$lvlKey : 1;
+                                            $insertDailyStmt->execute([
+                                                ':user_id' => $row['user_id'],
+                                                ':robot_id' => $rId,
+                                                ':minigame_id' => (string)$mId,
+                                                ':level' => $lvlNum
+                                            ]);
+                                        }
+                                    }
+                                } elseif ($lvlMap) {
+                                    $insertDailyStmt->execute([
+                                        ':user_id' => $row['user_id'],
+                                        ':robot_id' => $rId,
+                                        ':minigame_id' => (string)$mId,
+                                        ':level' => 1
+                                    ]);
+                                }
+                            }
+                        }
+                    }
+                    unset($data['dailyBattleLimits']);
+                    $needsUpdate = true;
+                }
+
                 $keysToRemove = [
                     'parts', 'robots', 'materials', 'gold', 'fame', 'storageSize', 
                     'deliveredRobotsCount', 'starterBonusClaimed', 'repairKits', 
-                    'unopenedChests', 'battleElements', 'minigameRecords',
+                    'unopenedChests', 'battleElements', 'minigameRecords', 'dailyBattleLimits',
                     'combatEquipments', 'combatEquipmentRanks', 'activeCombatEquipments',
                     'othelloPurchasedMemories', 'othelloEquippedMemories',
                     'reversiPurchasedMemories', 'reversiEquippedMemories'

@@ -34,8 +34,8 @@ export interface RobotPart {
     draws: number;
   };
   visualIndex: number;
-  mainMaterialId?: string; // m_parts_encyclopedia のマスターパーツID
-  subMaterialId?: string;  // サブ素材に対応する m_parts_encyclopedia のマスターパーツID
+  mainMaterialId?: string; // master_parts のマスターパーツID
+  subMaterialId?: string;  // サブ素材に対応する master_parts のマスターパーツID
 }
 
 export interface Material {
@@ -279,7 +279,7 @@ export interface GameState {
   combatEquipmentRanks?: { beamSaber?: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'; beamShield?: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary' }; // 各戦闘専用装備のランク (Common -> Uncommon -> Rare -> Epic -> Legendary)
   activeCombatEquipments?: { beamSaber?: boolean; beamShield?: boolean }; // 戦闘出撃時に有効化する装備
   minigameRecords?: Record<string, { plays: number; wins: number; losses: number; draws: number; elements?: number; chests?: number }>;
-  dailyBattleLimits?: Record<string, string[]>; // { "YYYY-MM-DD": ["robotId_categoryId_levelId", ...] }
+  dailyBattleLimits?: Record<string, any>; // { [date]: string[] } または { [robotId]: { [categoryId]: { [level]: boolean } } }
   minigameDashboardMode?: 'detailed' | 'compact'; // ミニゲーム演習録ダッシュボードの表示モード
   othelloPurchasedMemories?: string[]; // 購入済みのリバーシ（オセロ）戦略メモリID一覧
   othelloEquippedMemories?: string[]; // 装備中のリバーシ（オセロ）戦略メモリID一覧 (最大3個)

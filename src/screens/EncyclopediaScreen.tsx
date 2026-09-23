@@ -189,7 +189,7 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
           setDbPartStats(statsMap);
         }
       })
-      .catch(err => console.error("Failed to load m_parts_encyclopedia:", err));
+      .catch(err => console.error("Failed to load master_parts:", err));
   }, []);
 
   // GSAP モーションスタジオのモーダル状態

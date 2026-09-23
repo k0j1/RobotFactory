@@ -27,7 +27,7 @@ export default function App() {
   const { state, engine } = useGameState(user?.google_id);
   const [view, setView] = useState('title');
 
-  // アプリ起動時に背景画像をプリロード & parts-masterからm_parts_encyclopedia基準値をフェッチ
+  // アプリ起動時に背景画像をプリロード & parts-masterからmaster_parts基準値をフェッチ
   useEffect(() => {
     fetchPartsMaster().catch((err) => {
       console.warn('[App] fetchPartsMaster notice:', err);

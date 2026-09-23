@@ -271,7 +271,33 @@ try {
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (user_id, minigame_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+        CREATE TABLE IF NOT EXISTS daily_cleared_minigame (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            minigame_id VARCHAR(100) NOT NULL,
+            user_id VARCHAR(255) NOT NULL,
+            robot_id VARCHAR(255) NOT NULL,
+            level INT DEFAULT 1,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY uq_daily_clear (user_id, robot_id, minigame_id, level),
+            INDEX idx_user_robot (user_id, robot_id),
+            INDEX idx_created_at (created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ");
+
+    // 毎朝9:00基準の期限切れデイリークリアレコードの削除
+    try {
+        $nowJst = new DateTime('now', new DateTimeZone('Asia/Tokyo'));
+        $cutoffJst = clone $nowJst;
+        if ((int)$nowJst->format('H') >= 9) {
+            $cutoffJst->setTime(9, 0, 0);
+        } else {
+            $cutoffJst->modify('-1 day')->setTime(9, 0, 0);
+        }
+        $cutoffStr = $cutoffJst->setTimezone(new DateTimeZone(date_default_timezone_get()))->format('Y-m-d H:i:s');
+        $delDailyStmt = $pdo->prepare("DELETE FROM daily_cleared_minigame WHERE created_at < :cutoff");
+        $delDailyStmt->execute([':cutoff' => $cutoffStr]);
+    } catch (Throwable $e) {}
 
     try {
         $pdo->exec("ALTER TABLE user_item ADD COLUMN battle_item JSON NULL AFTER element");
@@ -794,6 +820,27 @@ try {
     $itemStmt->execute(array_values($candidateUserIds));
     $userItemRow = $itemStmt->fetch(PDO::FETCH_ASSOC);
 
+    // 8.5 daily_cleared_minigame テーブルから本日のクリア済み記録を取得
+    $dailyClearStmt = $pdo->prepare("
+        SELECT minigame_id, robot_id, level, created_at 
+        FROM daily_cleared_minigame 
+        WHERE user_id IN ($inPlaceholders)
+    ");
+    $dailyClearStmt->execute(array_values($candidateUserIds));
+    $dbDailyCleared = [];
+    while ($dcRow = $dailyClearStmt->fetch(PDO::FETCH_ASSOC)) {
+        $rId = (string)$dcRow['robot_id'];
+        $mId = (string)$dcRow['minigame_id'];
+        $lvl = (string)$dcRow['level'];
+        if (!isset($dbDailyCleared[$rId])) {
+            $dbDailyCleared[$rId] = [];
+        }
+        if (!isset($dbDailyCleared[$rId][$mId])) {
+            $dbDailyCleared[$rId][$mId] = [];
+        }
+        $dbDailyCleared[$rId][$mId][$lvl] = true;
+    }
+
     // 9. user_parts テーブルから所持パーツ一覧を取得（個別カラムからRobotPartオブジェクトを完全復元）
     $partsStmt = $pdo->prepare("
         SELECT * 
@@ -1011,11 +1058,89 @@ try {
         unset($gameData['deliveredRobotsCount']);
         unset($gameData['minigameRecords']);
 
+        // save_data テーブルに残っているミニゲームクリア制限データを daily_cleared_minigame テーブルへ移行
+        $hasSaveDailyBattleLimits = !empty($gameData['dailyBattleLimits']) && is_array($gameData['dailyBattleLimits']);
+        if ($hasSaveDailyBattleLimits) {
+            try {
+                $insDailyMigrate = $pdo->prepare("
+                    INSERT INTO daily_cleared_minigame (user_id, robot_id, minigame_id, level, created_at)
+                    VALUES (:user_id, :robot_id, :minigame_id, :level, CURRENT_TIMESTAMP)
+                    ON DUPLICATE KEY UPDATE created_at = CURRENT_TIMESTAMP
+                ");
+                $nowJst = new DateTime('now', new DateTimeZone('Asia/Tokyo'));
+                $todayDateKey = $nowJst->format('Y-m-d');
+                if ((int)$nowJst->format('H') < 9) {
+                    $yesterdayJst = clone $nowJst;
+                    $yesterdayJst->modify('-1 day');
+                    $todayDateKey = $yesterdayJst->format('Y-m-d');
+                }
+
+                foreach ($gameData['dailyBattleLimits'] as $k1 => $v1) {
+                    // パターン1: 日付キー { "YYYY-MM-DD": ["robotId_categoryId_levelId", ...] }
+                    if (is_array($v1) && preg_match('/^\d{4}-\d{2}-\d{2}$/', (string)$k1)) {
+                        if ((string)$k1 === $todayDateKey) {
+                            foreach ($v1 as $limitItem) {
+                                if (is_string($limitItem)) {
+                                    $parts = explode('_', $limitItem);
+                                    if (count($parts) >= 3) {
+                                        $rId = $parts[0];
+                                        $mId = $parts[1];
+                                        $lvlNum = is_numeric($parts[2]) ? (int)$parts[2] : 1;
+                                        $insDailyMigrate->execute([
+                                            ':user_id' => $actualUserId,
+                                            ':robot_id' => (string)$rId,
+                                            ':minigame_id' => (string)$mId,
+                                            ':level' => $lvlNum
+                                        ]);
+                                        if (!isset($dbDailyCleared[(string)$rId])) $dbDailyCleared[(string)$rId] = [];
+                                        if (!isset($dbDailyCleared[(string)$rId][(string)$mId])) $dbDailyCleared[(string)$rId][(string)$mId] = [];
+                                        $dbDailyCleared[(string)$rId][(string)$mId][(string)$lvlNum] = true;
+                                    }
+                                }
+                            }
+                        }
+                    } elseif (is_array($v1)) {
+                        // パターン2: 機体IDキー { [robotId]: { [minigameId]: { [level]: true } } }
+                        $rId = (string)$k1;
+                        foreach ($v1 as $mId => $lvlMap) {
+                            if (is_array($lvlMap)) {
+                                foreach ($lvlMap as $lvlKey => $isCleared) {
+                                    if ($isCleared) {
+                                        $lvlNum = is_numeric($lvlKey) ? (int)$lvlKey : 1;
+                                        $insDailyMigrate->execute([
+                                            ':user_id' => $actualUserId,
+                                            ':robot_id' => $rId,
+                                            ':minigame_id' => (string)$mId,
+                                            ':level' => $lvlNum
+                                        ]);
+                                        if (!isset($dbDailyCleared[$rId])) $dbDailyCleared[$rId] = [];
+                                        if (!isset($dbDailyCleared[$rId][(string)$mId])) $dbDailyCleared[$rId][(string)$mId] = [];
+                                        $dbDailyCleared[$rId][(string)$mId][(string)$lvlNum] = true;
+                                    }
+                                }
+                            } elseif ($lvlMap) {
+                                $insDailyMigrate->execute([
+                                    ':user_id' => $actualUserId,
+                                    ':robot_id' => $rId,
+                                    ':minigame_id' => (string)$mId,
+                                    ':level' => 1
+                                ]);
+                                if (!isset($dbDailyCleared[$rId])) $dbDailyCleared[$rId] = [];
+                                if (!isset($dbDailyCleared[$rId][(string)$mId])) $dbDailyCleared[$rId][(string)$mId] = [];
+                                $dbDailyCleared[$rId][(string)$mId]['1'] = true;
+                            }
+                        }
+                    }
+                }
+            } catch (Throwable $e) {}
+        }
+        unset($gameData['dailyBattleLimits']);
+
         // save_data テーブルに残っているアイテム・宝箱・エレメント・戦闘装備・リバーシ戦術メモリ情報を user_item テーブルへ移行し、save_data から削除
         $hasSaveItemData = isset($gameData['repairKits']) || isset($gameData['unopenedChests']) || isset($gameData['battleElements']);
         $hasSaveBattleItem = isset($gameData['combatEquipments']) || isset($gameData['combatEquipmentRanks']) || isset($gameData['activeCombatEquipments']);
         $hasSaveReversiItem = isset($gameData['othelloPurchasedMemories']) || isset($gameData['othelloEquippedMemories']) || isset($gameData['reversiPurchasedMemories']) || isset($gameData['reversiEquippedMemories']);
-        $needsSaveDataClean = $hasSaveItemData || $hasSaveBattleItem || $hasSaveReversiItem;
+        $needsSaveDataClean = $hasSaveDailyBattleLimits || $hasSaveItemData || $hasSaveBattleItem || $hasSaveReversiItem;
 
         // save_data から移行するバトル装備 JSON の構築
         $migratedBattleItemJson = null;
@@ -1195,6 +1320,7 @@ try {
         $gameData['currentRequest'] = $currentRequest;
         $gameData['battleElements'] = $userItemRow ? (int)$userItemRow['element'] : $battleElements;
         $gameData['minigameRecords'] = $dbMinigameRecords;
+        $gameData['dailyBattleLimits'] = $dbDailyCleared;
         $gameData['repairKits'] = $userItemRow ? (int)$userItemRow['repair_kit'] : 0;
         $gameData['unopenedChests'] = [
             'bronze' => $userItemRow ? (int)$userItemRow['bronze_chest'] : 0,
@@ -1230,6 +1356,7 @@ try {
             "currentRequest" => $currentRequest,
             "battleElements" => $userItemRow ? (int)$userItemRow['element'] : $battleElements,
             "minigameRecords" => $dbMinigameRecords,
+            "dailyBattleLimits" => $dbDailyCleared,
             "repairKits" => $userItemRow ? (int)$userItemRow['repair_kit'] : 0,
             "unopenedChests" => [
                 'bronze' => $userItemRow ? (int)$userItemRow['bronze_chest'] : 0,

@@ -18,7 +18,7 @@ export interface PartMasterData {
 }
 
 /**
- * m_parts_encyclopedia テーブルの標準マスターデータシード
+ * master_parts テーブルの標準マスターデータシード
  */
 export const DEFAULT_PARTS_MASTER: PartMasterData[] = [
   // Head: INT特化、他低め
@@ -91,7 +91,7 @@ export const DEFAULT_PARTS_MASTER: PartMasterData[] = [
 let masterCache: PartMasterData[] = DEFAULT_PARTS_MASTER;
 
 /**
- * APIから最新の m_parts_encyclopedia テーブルの基準値を非同期フェッチしてキャッシュを更新
+ * APIから最新の master_parts テーブルの基準値を非同期フェッチしてキャッシュを更新
  */
 export async function fetchPartsMaster(): Promise<PartMasterData[]> {
   try {

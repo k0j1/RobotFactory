@@ -66,12 +66,12 @@ export function findMainMaterialForPart(part: RobotPart): Material {
 }
 
 /**
- * パーツの基準値（m_parts_encyclopediaテーブル標準設計値）および実測値との差分を計算する
+ * パーツの基準値（master_partsテーブル標準設計値）および実測値との差分を計算する
  */
 export function calculatePartBaseline(part: RobotPart): PartBaselineReport {
   const mainMat = findMainMaterialForPart(part);
 
-  // m_parts_encyclopedia のマスターデータから基準値を取得
+  // master_parts のマスターデータから基準値を取得
   const masterData = findMasterPartData(part.type, part.rarity, part.visualIndex) || findMasterPartByNameOrId(part.name);
 
   let baseHp = 0;

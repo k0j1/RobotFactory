@@ -64,9 +64,10 @@ function getAllDatabaseTables(PDO $pdo): array {
         'completed_robots',
         'complete_parts',
         'complete_deliveries',
-        'm_parts_encyclopedia',
+        'master_parts',
         'user_minigame_status',
-        'minigame_rankings'
+        'minigame_rankings',
+        'daily_cleared_minigame'
     ];
 
     $merged = array_unique(array_merge($knownTables, $tables));
@@ -981,6 +982,15 @@ try {
             $uiStmt = $pdo->prepare("SELECT * FROM user_item WHERE user_id IN ($inPlaceholders) LIMIT 1");
             $uiStmt->execute($candidateIds);
             $result['user_item'] = $uiStmt->fetch() ?: null;
+
+            // 13. daily_cleared_minigame
+            try {
+                $dcmStmt = $pdo->prepare("SELECT * FROM daily_cleared_minigame WHERE user_id IN ($inPlaceholders) ORDER BY created_at DESC");
+                $dcmStmt->execute($candidateIds);
+                $result['daily_cleared_minigame'] = $dcmStmt->fetchAll();
+            } catch (Throwable $e) {
+                $result['daily_cleared_minigame'] = [];
+            }
 
             echo json_encode([
                 'success' => true,
