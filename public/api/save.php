@@ -639,10 +639,8 @@ try {
         } catch (Exception $e) {}
     }
 
-    // 4. user_parts テーブルの同期（part_data JSONを廃止し、すべてのパーツ属性を個別カラムに格納）
-    $delPartsStmt = $pdo->prepare("DELETE FROM user_parts WHERE user_id = :user_id");
-    $delPartsStmt->execute([':user_id' => $actualUserId]);
-
+    // 4. user_parts テーブルの同期（個別カラム形式で保持、既存レコードの created_at は保護し余計な一括削除を行わない）
+    // ※ 過去に実行されていた DELETE FROM user_parts は未装備パーツ(is_equipped=0)の消失および全パーツの created_at 更新を引き起こしていたため完全撤廃
     $stmtPart = $pdo->prepare("
         INSERT INTO user_parts (
             id, user_id, master_part_id, part_type, name, attribute, rarity, visual_index,
@@ -903,7 +901,8 @@ try {
     }
 
     // =========================================================================
-    // 7. パーツ製造（Part Crafts）: 完了時は complete_part_crafts に追加、進行中は active_part_crafts に同期
+    // 7. パーツ製造（Part Crafts）: 完了時は complete_part_crafts に追加、user_partsへも同期、active_part_crafts は削除/更新
+    //    ※これらすべての操作は同一トランザクション内で実行され、失敗時は全ロールバックされます
     // =========================================================================
     $compCraftsList = [];
     if (!empty($gameData['completePartCraft'])) {
@@ -950,11 +949,50 @@ try {
             if (isset($processedCraftKeys[$dedupKey])) continue;
             $processedCraftKeys[$dedupKey] = true;
 
+            // 1. 製造パーツ情報（resultPart）の抽出・復元
             $resultPart = $compC['resultPart'] ?? null;
             if (empty($resultPart) && !empty($compC['result_part_data'])) {
                 $resultPart = is_string($compC['result_part_data']) ? json_decode($compC['result_part_data'], true) : $compC['result_part_data'];
             }
 
+            // resultPart が空の場合、gameData['parts'] から該当パーツを検索して補完
+            if (empty($resultPart) && !empty($gameData['parts']) && is_array($gameData['parts'])) {
+                foreach (array_reverse($gameData['parts']) as $gp) {
+                    $gpType = $gp['type'] ?? $gp['part_type'] ?? '';
+                    if ($gpType === $pType) {
+                        $resultPart = $gp;
+                        break;
+                    }
+                }
+            }
+
+            // それでも空の場合は最低限のパーツ情報を自己構築
+            if (empty($resultPart)) {
+                $resultPart = [
+                    'id' => 'part_' . ($compAtMs > 0 ? $compAtMs : time() * 1000) . '_' . substr(md5(uniqid()), 0, 7),
+                    'type' => $pType,
+                    'name' => '完成パーツ (' . $pType . ')',
+                    'attribute' => 'Fire',
+                    'rarity' => 1,
+                    'visualIndex' => 0,
+                    'stats' => ['hp' => 10, 'power' => 5, 'defense' => 5, 'agility' => 5, 'dexterity' => 5, 'intelligence' => 5],
+                    'mainMaterialId' => $mainMatId,
+                    'subMaterialId' => $subMatId
+                ];
+            }
+
+            // 2. complete_part_crafts 追加と同時に user_parts テーブルにも確実にパーツを同期・追加（同一トランザクション内）
+            if (!empty($resultPart) && is_array($resultPart)) {
+                try {
+                    $partParams = $extractPartParams($resultPart, $actualUserId, 0);
+                    $stmtPart->execute($partParams);
+                } catch (Exception $e) {
+                    error_log("[save.php] user_parts sync from craft result failed: " . $e->getMessage());
+                    throw $e; // トランザクションロールバックを誘発
+                }
+            }
+
+            // 3. complete_part_crafts テーブルへレコード追加
             $stmtCompCraft->execute([
                 ':ins_user_id' => $actualUserId,
                 ':ins_part_type' => $pType,
@@ -971,6 +1009,7 @@ try {
         }
     }
 
+    // 4. active_part_crafts テーブルの同期または削除（同一トランザクション内）
     if (!empty($gameData['activePartCraft']) && (!empty($gameData['activePartCraft']['partType']) || !empty($gameData['activePartCraft']['type']))) {
         // 進行中の場合は active_part_crafts テーブルを同期
         $c = $gameData['activePartCraft'];
@@ -1003,6 +1042,7 @@ try {
             ':duration_ms' => $durationMs > 0 ? $durationMs : 30000
         ]);
     } else {
+        // 製造完了・受取済みの場合は active_part_crafts から確実に削除
         $delCraft = $pdo->prepare("DELETE FROM active_part_crafts WHERE user_id IN ($inPlaceholders)");
         $delCraft->execute(array_values($candidateUserIds));
     }
