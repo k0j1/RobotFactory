@@ -128,7 +128,6 @@ try {
             sub_material_id VARCHAR(255) NOT NULL,
             start_time BIGINT NOT NULL,
             end_time BIGINT NOT NULL,
-            result_part_data JSON,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -329,10 +328,6 @@ try {
     } catch (PDOException $e) {}
 
     try {
-        $pdo->exec("ALTER TABLE active_part_crafts ADD COLUMN result_part_data JSON");
-    } catch (PDOException $e) {}
-
-    try {
         $pdo->exec("ALTER TABLE user_workshop_status ADD COLUMN request_earned_gold INT DEFAULT 0");
     } catch (PDOException $e) {}
 
@@ -511,7 +506,7 @@ try {
 
     // 4. active_part_crafts テーブルからパーツ製造進行状態を取得
     $craftStmt = $pdo->prepare("
-        SELECT part_type, main_material_id, sub_material_id, start_time, end_time, result_part_data 
+        SELECT part_type, main_material_id, sub_material_id, start_time, end_time 
         FROM active_part_crafts 
         WHERE user_id IN ($inPlaceholders) 
         LIMIT 1
@@ -520,20 +515,12 @@ try {
     $craftRow = $craftStmt->fetch();
     $activePartCraft = null;
     if ($craftRow && !empty($craftRow['part_type'])) {
-        $resultPartDecoded = null;
-        if (!empty($craftRow['result_part_data'])) {
-            $resultPartDecoded = is_array($craftRow['result_part_data'])
-                ? $craftRow['result_part_data']
-                : json_decode($craftRow['result_part_data'], true);
-        }
         $activePartCraft = [
             'partType' => $craftRow['part_type'],
             'mainMaterialId' => $craftRow['main_material_id'],
             'subMaterialId' => !empty($craftRow['sub_material_id']) ? $craftRow['sub_material_id'] : null,
             'startTime' => (int)$craftRow['start_time'],
-            'endTime' => (int)$craftRow['end_time'],
-            'durationMs' => ((int)$craftRow['end_time'] - (int)$craftRow['start_time']),
-            'resultPart' => $resultPartDecoded
+            'endTime' => (int)$craftRow['end_time']
         ];
     }
 
@@ -1041,6 +1028,32 @@ try {
         }
     }
 
+    // 10.5. complete_part_crafts テーブルから製造完了リストを取得
+    $compCraftStmt = $pdo->prepare("
+        SELECT part_type, main_material_id, sub_material_id, start_time, end_time, result_part_data, completed_at
+        FROM complete_part_crafts
+        WHERE user_id IN ($inPlaceholders)
+        ORDER BY completed_at DESC, id DESC
+        LIMIT 100
+    ");
+    $compCraftStmt->execute(array_values($candidateUserIds));
+    $dbCompletedPartCrafts = [];
+    while ($cpRow = $compCraftStmt->fetch()) {
+        $resultPart = null;
+        if (!empty($cpRow['result_part_data'])) {
+            $resultPart = json_decode($cpRow['result_part_data'], true);
+        }
+        $dbCompletedPartCrafts[] = [
+            'partType' => $cpRow['part_type'],
+            'mainMaterialId' => $cpRow['main_material_id'] ?? '',
+            'subMaterialId' => $cpRow['sub_material_id'] ?? null,
+            'startTime' => (int)($cpRow['start_time'] ?? 0),
+            'endTime' => (int)($cpRow['end_time'] ?? 0),
+            'completedAt' => !empty($cpRow['completed_at']) ? strtotime($cpRow['completed_at']) * 1000 : (int)($cpRow['end_time'] ?? 0),
+            'resultPart' => $resultPart
+        ];
+    }
+
     // 名声(fame)が0または過小な場合の自己修復・ゼロ防止フェイルセーフ:
     // 過去のセーブスナップショット、納品履歴、ミニゲーム勝利実績から正当な名声を自動復元
     $snapshotFame = 0;
@@ -1347,6 +1360,9 @@ try {
         $gameData['unlockedLocations'] = $unlockedLocationsVal;
         $gameData['activeQuest'] = $activeQuest;
         $gameData['activePartCraft'] = $activePartCraft;
+        $gameData['completePartCraft'] = !empty($dbCompletedPartCrafts) ? $dbCompletedPartCrafts[0] : null;
+        $gameData['completedPartCraft'] = !empty($dbCompletedPartCrafts) ? $dbCompletedPartCrafts[0] : null;
+        $gameData['completedPartCrafts'] = $dbCompletedPartCrafts;
         $gameData['activeRobotAssembly'] = $activeAssembly;
         $gameData['activeRobotDisassembly'] = $activeRobotDisassembly;
         $gameData['currentRequest'] = $currentRequest;
@@ -1383,6 +1399,9 @@ try {
             "unlockedLocations" => $unlockedLocationsVal,
             "activeQuest" => $activeQuest,
             "activePartCraft" => $activePartCraft,
+            "completePartCraft" => !empty($dbCompletedPartCrafts) ? $dbCompletedPartCrafts[0] : null,
+            "completedPartCraft" => !empty($dbCompletedPartCrafts) ? $dbCompletedPartCrafts[0] : null,
+            "completedPartCrafts" => $dbCompletedPartCrafts,
             "activeRobotAssembly" => $activeAssembly,
             "activeRobotDisassembly" => $activeRobotDisassembly,
             "currentRequest" => $currentRequest,

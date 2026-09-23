@@ -178,15 +178,15 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
   const isPartCrafting = !!activePart;
   const partRemainingMs = activePart ? Math.max(0, activePart.endTime - Date.now()) : 0;
   const partRemainingSec = Math.ceil(partRemainingMs / 1000);
-  const isPartReady = isPartCrafting && partRemainingMs <= 500;
-  const partProgress = activePart ? Math.min(100, Math.max(0, ((Date.now() - activePart.startTime) / (activePart.durationMs || 1)) * 100)) : 0;
+  const isPartReady = isPartCrafting && partRemainingMs <= 0;
+  const partProgress = activePart ? Math.min(100, Math.max(0, ((Date.now() - activePart.startTime) / activePart.durationMs) * 100)) : 0;
 
   const activeRobot = state.activeRobotAssembly;
   const isRobotAssembling = !!activeRobot;
   const robotRemainingMs = activeRobot ? Math.max(0, activeRobot.endTime - Date.now()) : 0;
   const robotRemainingSec = Math.ceil(robotRemainingMs / 1000);
-  const isRobotReady = isRobotAssembling && robotRemainingMs <= 500;
-  const robotProgress = activeRobot ? Math.min(100, Math.max(0, ((Date.now() - activeRobot.startTime) / (activeRobot.durationMs || 1)) * 100)) : 0;
+  const isRobotReady = isRobotAssembling && robotRemainingMs <= 0;
+  const robotProgress = activeRobot ? Math.min(100, Math.max(0, ((Date.now() - activeRobot.startTime) / activeRobot.durationMs) * 100)) : 0;
 
   // 倉庫上限・空き枠判定ロジック
   const currentRobotsCount = state.robots?.length || 0;
@@ -222,17 +222,19 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
     }
   };
 
-  const handleClaimPart = () => {
+  const [isClaimingPart, setIsClaimingPart] = useState<boolean>(false);
+
+  const handleClaimPart = async () => {
+    if (isClaimingPart) return;
+    setIsClaimingPart(true);
     try {
-      const part = engine.claimCraftedPart();
+      const part = await engine.claimCraftedPart();
       setLastCraftedPart(part);
       triggerConfetti();
-      // 完成結果カードへスムーズスクロール
-      setTimeout(() => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }, 50);
     } catch (e: any) {
-      alert(e.message || 'パーツの受け取りに失敗しました');
+      alert(e.message);
+    } finally {
+      setIsClaimingPart(false);
     }
   };
 
@@ -261,11 +263,8 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
       const robot = engine.claimAssembledRobot();
       setLastCraftedRobot(robot);
       triggerConfetti();
-      setTimeout(() => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }, 50);
     } catch (e: any) {
-      alert(e.message || 'ロボットの受け取りに失敗しました');
+      alert(e.message);
     }
   };
 
@@ -341,7 +340,7 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
 
       {/* ================= パーツ完成結果ダイアログ / カード ================= */}
       {tab === 'part' && lastCraftedPart && (
-        <Card className="text-center bg-amber-50 border-2 border-amber-300 shadow-md animate-fade-in p-5 sm:p-6">
+        <div className="text-center bg-amber-50 border-2 border-amber-300 shadow-md animate-fade-in">
           <Badge className="bg-emerald-600 text-white mb-2 px-3 py-1 font-bold text-sm flex items-center justify-center gap-1.5 w-fit mx-auto">
             <Gi.GiSparkles className="inline text-amber-200" /> パーツ完成 <Gi.GiSparkles className="inline text-amber-200" />
           </Badge>
@@ -364,26 +363,8 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
             <div><span className="text-stone-500">Dex:</span> <strong className="text-stone-800">{lastCraftedPart.stats.dexterity}</strong></div>
             <div><span className="text-stone-500">Int:</span> <strong className="text-stone-800">{lastCraftedPart.stats.intelligence}</strong></div>
           </div>
-          <div className="mt-5 flex flex-col sm:flex-row gap-3 justify-center">
-            <Button 
-              size="lg" 
-              className="bg-amber-600 hover:bg-amber-500 text-white font-bold"
-              onClick={() => {
-                setLastCraftedPart(null);
-                setTab('robot');
-              }}
-            >
-              <Gi.GiSpanner className="inline mr-1.5" /> 続けてロボットを組み立てる
-            </Button>
-            <Button 
-              size="lg" 
-              variant="outline"
-              onClick={() => setLastCraftedPart(null)}
-            >
-              続けてパーツを製造する
-            </Button>
-          </div>
-        </Card>
+          <Button className="mt-5" size="lg" onClick={() => setLastCraftedPart(null)}>閉じる</Button>
+        </div>
       )}
 
       {/* ================= ロボット完成結果ダイアログ / カード ================= */}

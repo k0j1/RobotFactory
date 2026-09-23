@@ -252,6 +252,7 @@ export interface GameState {
   // 互換性のためのcompleted_*表記
   completedQuest?: CompletedQuest | null;
   completedPartCraft?: CompletedPartCraft | null;
+  completedPartCrafts?: CompletePartCraft[];
   completedRobotAssembly?: CompletedRobotAssembly | null;
   completedRobotDisassembly?: CompletedRobotDisassembly | null;
   completedPartRecycle?: CompletedPartRecycle | null;
