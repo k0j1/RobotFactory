@@ -81,8 +81,8 @@ try {
         ]);
     }
 
-    // save_data テーブルのJSONスナップショットも同期
-    $saveStmt = $pdo->prepare("SELECT game_data FROM save_data WHERE user_id = :user_id LIMIT 1");
+    // user_save_data テーブルのJSONスナップショットも同期
+    $saveStmt = $pdo->prepare("SELECT game_data FROM user_save_data WHERE user_id = :user_id LIMIT 1");
     $saveStmt->execute([':user_id' => $targetId]);
     $saveRow = $saveStmt->fetch();
 
@@ -95,7 +95,7 @@ try {
         $gameData['materials'] = [];
     }
 
-    // user_material テーブルの最新全所持素材を取得して save_data に反映
+    // user_material テーブルの最新全所持素材を取得して user_save_data に反映
     $allMatStmt = $pdo->prepare("SELECT material_id, count FROM user_material WHERE user_id = :user_id");
     $allMatStmt->execute([':user_id' => $targetId]);
     $allMatRows = $allMatStmt->fetchAll();
@@ -116,7 +116,7 @@ try {
 
     $jsonSave = json_encode($gameData, JSON_UNESCAPED_UNICODE);
     $upSaveStmt = $pdo->prepare("
-        INSERT INTO save_data (user_id, game_data)
+        INSERT INTO user_save_data (user_id, game_data)
         VALUES (:user_id, :game_data)
         ON DUPLICATE KEY UPDATE game_data = :update_data
     ");

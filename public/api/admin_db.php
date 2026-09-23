@@ -32,7 +32,7 @@ function getAllDatabaseTables(PDO $pdo): array {
         if ($stmt) {
             while ($row = $stmt->fetch(PDO::FETCH_NUM)) {
                 if (!empty($row[0])) {
-                    $tables[] = $row[0];
+                    $tables[] = strtolower(trim($row[0]));
                 }
             }
         }
@@ -47,7 +47,7 @@ function getAllDatabaseTables(PDO $pdo): array {
         'user_parts',
         'user_robots',
         'view_user_robots_total_stats',
-        'save_data',
+        'user_save_data',
         'user_item',
         'active_expeditions',
         'active_robot_assemblies',
@@ -55,29 +55,34 @@ function getAllDatabaseTables(PDO $pdo): array {
         'active_part_crafts',
         'active_robot_disassemblies',
         'active_part_recycles',
-        'complete_requests',
-        'complete_expeditions',
-        'complete_robot_assemblies',
-        'complete_part_crafts',
-        'complete_robot_disassemblies',
-        'complete_part_recycles',
         'completed_robots',
         'complete_deliveries',
         'master_parts',
         'user_minigame_status',
-        'minigame_rankings',
-        'daily_cleared_minigame'
+        'stats_minigame_rankings',
+        'completed_daily_minigame'
     ];
 
-    $merged = array_unique(array_merge($knownTables, $tables));
+    $merged = array_unique(array_merge(array_map('strtolower', $knownTables), $tables));
     $validTables = [];
+    $excludedTables = [
+        'complete_parts',
+        'completed_parts',
+        'complete_expeditions',
+        'complete_part_crafts',
+        'complete_part_recycles',
+        'complete_requests',
+        'complete_robot_assemblies',
+        'complete_robot_disassemblies'
+    ];
     foreach ($merged as $t) {
-        if (preg_match('/^[a-zA-Z0-9_]+$/', $t)) {
-            $validTables[] = $t;
+        $tClean = strtolower(trim($t));
+        if (preg_match('/^[a-z0-9_]+$/', $tClean) && !in_array($tClean, $excludedTables, true)) {
+            $validTables[] = $tClean;
         }
     }
     sort($validTables);
-    return $validTables;
+    return array_unique($validTables);
 }
 
 $action = $_GET['action'] ?? $_POST['action'] ?? 'get_summary';
@@ -580,8 +585,8 @@ try {
                     ':battle_stats' => $battleStats
                 ]);
 
-                // 3. save_data テーブル内の robots 配列も同期（存在する場合）
-                $sdStmt = $pdo->prepare("SELECT game_data FROM save_data WHERE user_id = :uid LIMIT 1");
+                // 3. user_save_data テーブル内の robots 配列も同期（存在する場合）
+                $sdStmt = $pdo->prepare("SELECT game_data FROM user_save_data WHERE user_id = :uid LIMIT 1");
                 $sdStmt->execute([':uid' => $targetUserId]);
                 $sdRow = $sdStmt->fetch();
                 if ($sdRow && !empty($sdRow['game_data'])) {
@@ -602,7 +607,7 @@ try {
                         if (!$replaced) {
                             $gData['robots'][] = $robot;
                         }
-                        $upd = $pdo->prepare("UPDATE save_data SET game_data = :gd WHERE user_id = :uid");
+                        $upd = $pdo->prepare("UPDATE user_save_data SET game_data = :gd WHERE user_id = :uid");
                         $upd->execute([
                             ':gd' => json_encode($gData, JSON_UNESCAPED_UNICODE),
                             ':uid' => $targetUserId
@@ -856,7 +861,7 @@ try {
                 'materials' => [],
                 'parts' => [],
                 'robots' => [],
-                'save_data' => null,
+                'user_save_data' => null,
                 'active_expedition' => null,
                 'active_expeditions' => [],
                 'active_assembly' => null,
@@ -870,7 +875,7 @@ try {
             $uStmt->execute([':uid' => $userId, ':uid2' => $userId, ':uid3' => $userId, ':uid4' => $userId]);
             $foundUser = $uStmt->fetch(PDO::FETCH_ASSOC);
 
-            // 直接マッチしなかった場合、他テーブル（workshop_status, save_data等）のuser_idからusersテーブルを逆引き
+            // 直接マッチしなかった場合、他テーブル（workshop_status, user_save_data等）のuser_idからusersテーブルを逆引き
             if (!$foundUser) {
                 $revStmt = $pdo->prepare("
                     SELECT u.id, u.google_id, u.email, u.name, u.picture, u.created_at, u.updated_at 
@@ -878,7 +883,7 @@ try {
                     WHERE u.google_id IN (
                         SELECT user_id FROM user_workshop_status WHERE user_id = :uid1
                         UNION
-                        SELECT user_id FROM save_data WHERE user_id = :uid2
+                        SELECT user_id FROM user_save_data WHERE user_id = :uid2
                     )
                     LIMIT 1
                 ");
@@ -917,10 +922,12 @@ try {
             $rStmt->execute($candidateIds);
             $result['robots'] = $rStmt->fetchAll();
 
-            // 6. save_data
-            $sStmt = $pdo->prepare("SELECT id, user_id, updated_at, LENGTH(game_data) as json_size, game_data FROM save_data WHERE user_id IN ($inPlaceholders) LIMIT 1");
+            // 6. user_save_data
+            $sStmt = $pdo->prepare("SELECT id, user_id, updated_at, LENGTH(game_data) as json_size, game_data FROM user_save_data WHERE user_id IN ($inPlaceholders) LIMIT 1");
             $sStmt->execute($candidateIds);
-            $result['save_data'] = $sStmt->fetch() ?: null;
+            $sData = $sStmt->fetch() ?: null;
+            $result['user_save_data'] = $sData;
+            $result['save_data'] = $sData; // 後方互換用キー補完
 
             // 7. active_expeditions
             $aeStmt = $pdo->prepare("SELECT * FROM active_expeditions WHERE user_id IN ($inPlaceholders) ORDER BY id DESC");
@@ -982,12 +989,15 @@ try {
             $uiStmt->execute($candidateIds);
             $result['user_item'] = $uiStmt->fetch() ?: null;
 
-            // 13. daily_cleared_minigame
+            // 13. completed_daily_minigame
             try {
-                $dcmStmt = $pdo->prepare("SELECT * FROM daily_cleared_minigame WHERE user_id IN ($inPlaceholders) ORDER BY created_at DESC");
+                $dcmStmt = $pdo->prepare("SELECT * FROM completed_daily_minigame WHERE user_id IN ($inPlaceholders) ORDER BY created_at DESC");
                 $dcmStmt->execute($candidateIds);
-                $result['daily_cleared_minigame'] = $dcmStmt->fetchAll();
+                $dcmList = $dcmStmt->fetchAll();
+                $result['completed_daily_minigame'] = $dcmList;
+                $result['daily_cleared_minigame'] = $dcmList; // 後方互換用キー補完
             } catch (Throwable $e) {
+                $result['completed_daily_minigame'] = [];
                 $result['daily_cleared_minigame'] = [];
             }
 
