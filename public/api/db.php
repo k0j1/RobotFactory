@@ -146,7 +146,7 @@ function ensureUserForeignKeys($pdo) {
             }
         } catch (Throwable $e) {}
 
-        // 3. 各対象テーブルに対してカラム型統一・クリーンアップ・外部キー制約付与
+        // 3. 各対象テーブルに対してInnoDB化・カラム型統一・クリーンアップ・外部キー制約付与
         foreach ($userForeignKeyTables as $tableName => $fkName) {
             // テーブルが存在するか確認
             try {
@@ -157,6 +157,11 @@ function ensureUserForeignKeys($pdo) {
             } catch (Throwable $e) {
                 continue;
             }
+
+            // トランザクション対応のためストレージエンジンを確実にInnoDBへ統一
+            try {
+                $pdo->exec("ALTER TABLE `{$tableName}` ENGINE = InnoDB");
+            } catch (Throwable $e) {}
 
             // user_id カラムのデータ型を VARCHAR(255) NOT NULL に統一（users.google_id と完全一致）
             try {

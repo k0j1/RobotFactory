@@ -420,6 +420,9 @@ try {
         }
     } catch (PDOException $e) {}
 
+    // 遠征地マスターテーブルと初期データの存在を保証
+    ensureMasterExpeditions($pdo);
+
     // 24テーブルに対するusers(google_id)の外部キー制約を適用・保証
     ensureUserForeignKeys($pdo);
 
@@ -427,35 +430,64 @@ try {
 
     // 2. save_data テーブルにゲーム全体のスナップショットを保存 (UPSERT)
     // 廃止された starterBonusClaimed などの変数は完全に除去して保存
-    // 他の個別テーブルで管理・保存されるデータ（active_* テーブルや個別テーブル）は save_data テーブルには重複して追加・保存しない
+    // 他の個別テーブルで管理・保存されるデータ（active_* / complete_* テーブルや個別テーブル）は save_data テーブルには一切含めず完全排除
     $saveDataSnapshot = $gameData;
     unset($saveDataSnapshot['starterBonusClaimed']);
 
     // activeが付いたテーブルに保存される情報
     unset($saveDataSnapshot['activeQuest']);            // active_expeditions
+    unset($saveDataSnapshot['activeExpedition']);
+    unset($saveDataSnapshot['activeExpeditions']);
     unset($saveDataSnapshot['activePartCraft']);        // active_part_crafts
+    unset($saveDataSnapshot['activePartCrafts']);
     unset($saveDataSnapshot['activeRobotAssembly']);    // active_robot_assemblies
+    unset($saveDataSnapshot['activeRobotAssemblies']);
     unset($saveDataSnapshot['activeRobotDisassembly']); // active_robot_disassemblies
+    unset($saveDataSnapshot['activeRobotDisassemblies']);
     unset($saveDataSnapshot['activePartRecycle']);       // active_part_recycles
+    unset($saveDataSnapshot['activePartRecycles']);
     unset($saveDataSnapshot['currentRequest']);         // active_requests
+    unset($saveDataSnapshot['activeRequest']);
+    unset($saveDataSnapshot['activeRequests']);
 
-    // completeが付いたテーブルに保存される情報
+    // completeが付いたテーブルに保存される情報（製造完了したパーツ情報等はsave_dataには含めずcomplete_part_crafts/user_partsにのみ保存）
     unset($saveDataSnapshot['completeQuest']);          // complete_expeditions
     unset($saveDataSnapshot['completedQuest']);
+    unset($saveDataSnapshot['completeExpedition']);
+    unset($saveDataSnapshot['completedExpedition']);
+    unset($saveDataSnapshot['completeExpeditions']);
+    unset($saveDataSnapshot['completedExpeditions']);
     unset($saveDataSnapshot['completePartCraft']);      // complete_part_crafts
-    unset($saveDataSnapshot['completedPartCraft']);
+    unset($saveDataSnapshot['completedPartCraft']);     // complete_part_crafts
+    unset($saveDataSnapshot['completePartCrafts']);     // complete_part_crafts
+    unset($saveDataSnapshot['completedPartCrafts']);    // complete_part_crafts
+    unset($saveDataSnapshot['completePart']);           // complete_part_crafts
+    unset($saveDataSnapshot['completedPart']);          // complete_part_crafts
+    unset($saveDataSnapshot['completeParts']);          // complete_part_crafts
+    unset($saveDataSnapshot['completedParts']);         // complete_part_crafts
     unset($saveDataSnapshot['completeRobotAssembly']);  // complete_robot_assemblies
     unset($saveDataSnapshot['completedRobotAssembly']);
+    unset($saveDataSnapshot['completeRobotAssemblies']);
+    unset($saveDataSnapshot['completedRobotAssemblies']);
     unset($saveDataSnapshot['completeRobotDisassembly']); // complete_robot_disassemblies
     unset($saveDataSnapshot['completedRobotDisassembly']);
+    unset($saveDataSnapshot['completeRobotDisassemblies']);
+    unset($saveDataSnapshot['completedRobotDisassemblies']);
     unset($saveDataSnapshot['completePartRecycle']);     // complete_part_recycles
     unset($saveDataSnapshot['completedPartRecycle']);
+    unset($saveDataSnapshot['completePartRecycles']);
+    unset($saveDataSnapshot['completedPartRecycles']);
     unset($saveDataSnapshot['completeRequest']);        // complete_requests
     unset($saveDataSnapshot['completedRequest']);
+    unset($saveDataSnapshot['completeRequests']);
+    unset($saveDataSnapshot['completedRequests']);
+    unset($saveDataSnapshot['completeDeliveries']);
+    unset($saveDataSnapshot['completedDeliveries']);
 
     // その他の個別テーブルに保存される情報も重複排除（fameはフェイルセーフのためsave_dataにもバックアップ保持）
     unset($saveDataSnapshot['robots']);                 // user_robots
     unset($saveDataSnapshot['parts']);                  // user_parts
+    unset($saveDataSnapshot['craftedParts']);           // user_parts
     unset($saveDataSnapshot['craftedRobots']);          // craftedRobots
     unset($saveDataSnapshot['deliveredLogs']);          // deliveredLogs
     unset($saveDataSnapshot['materials']);              // user_material
@@ -491,8 +523,6 @@ try {
     ]);
 
     // 3. user_workshop_status テーブルに工房ステータスを保存 (UPSERT)
-    // 遠征地マスターテーブルと初期データの存在を保証
-    ensureMasterExpeditions($pdo);
 
     $numericId = ($userRecord && !empty($userRecord['id'])) ? (string)$userRecord['id'] : null;
     $candidateUserIds = array_unique(array_filter([$actualUserId, $userId, $numericId]));
