@@ -174,14 +174,14 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
   const estimatedRobotDuration = hasSelectedAllParts ? engine.getRobotAssembleDuration(selectedHead, selectedBody, selectedArms, selectedLegs) : 60000;
 
   // Active Craft Statuses
-  const activePart = state.activePartCraft || state.completePartCraft;
+  const activePart = state.activePartCraft;
   const isPartCrafting = !!activePart;
   const partRemainingMs = activePart ? Math.max(0, activePart.endTime - Date.now()) : 0;
   const partRemainingSec = Math.ceil(partRemainingMs / 1000);
   const isPartReady = isPartCrafting && partRemainingMs <= 500;
   const partProgress = activePart ? Math.min(100, Math.max(0, ((Date.now() - activePart.startTime) / (activePart.durationMs || 1)) * 100)) : 0;
 
-  const activeRobot = state.activeRobotAssembly || state.completeRobotAssembly;
+  const activeRobot = state.activeRobotAssembly;
   const isRobotAssembling = !!activeRobot;
   const robotRemainingMs = activeRobot ? Math.max(0, activeRobot.endTime - Date.now()) : 0;
   const robotRemainingSec = Math.ceil(robotRemainingMs / 1000);

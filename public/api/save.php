@@ -846,25 +846,30 @@ try {
     $compQ = $gameData['completeQuest'] ?? $gameData['completedQuest'] ?? null;
     if (!empty($compQ) && !empty($compQ['locationId'])) {
         // 1. complete_expeditions テーブルに完了レコードを追加
-        $stmtCompExp = $pdo->prepare("
-            INSERT INTO complete_expeditions (user_id, location_id, start_time, end_time, dispatched_robot_id, reward_data)
-            SELECT :user_id, :location_id, :start_time, :end_time, :dispatched_robot_id, :reward_data
-            WHERE NOT EXISTS (
-                SELECT 1 FROM complete_expeditions
-                WHERE user_id = :chk_user_id AND start_time = :chk_start_time AND end_time = :chk_end_time
-            )
-        ");
-        $stmtCompExp->execute([
-            ':user_id' => $actualUserId,
-            ':location_id' => $compQ['locationId'],
-            ':start_time' => (int)($compQ['startTime'] ?? 0),
-            ':end_time' => (int)($compQ['endTime'] ?? 0),
-            ':dispatched_robot_id' => $compQ['dispatchedRobotId'] ?? null,
-            ':reward_data' => json_encode($compQ['rewardData'] ?? [], JSON_UNESCAPED_UNICODE),
-            ':chk_user_id' => $actualUserId,
-            ':chk_start_time' => (int)($compQ['startTime'] ?? 0),
-            ':chk_end_time' => (int)($compQ['endTime'] ?? 0)
-        ]);
+        try {
+            $chkExp = $pdo->prepare("SELECT id FROM complete_expeditions WHERE user_id = :uid AND start_time = :st AND end_time = :et LIMIT 1");
+            $chkExp->execute([
+                ':uid' => $actualUserId,
+                ':st' => (int)($compQ['startTime'] ?? 0),
+                ':et' => (int)($compQ['endTime'] ?? 0)
+            ]);
+            if (!$chkExp->fetch()) {
+                $stmtCompExp = $pdo->prepare("
+                    INSERT INTO complete_expeditions (user_id, location_id, start_time, end_time, dispatched_robot_id, reward_data)
+                    VALUES (:user_id, :location_id, :start_time, :end_time, :dispatched_robot_id, :reward_data)
+                ");
+                $stmtCompExp->execute([
+                    ':user_id' => $actualUserId,
+                    ':location_id' => $compQ['locationId'],
+                    ':start_time' => (int)($compQ['startTime'] ?? 0),
+                    ':end_time' => (int)($compQ['endTime'] ?? 0),
+                    ':dispatched_robot_id' => $compQ['dispatchedRobotId'] ?? null,
+                    ':reward_data' => json_encode($compQ['rewardData'] ?? [], JSON_UNESCAPED_UNICODE)
+                ]);
+            }
+        } catch (Throwable $e) {
+            error_log("complete_expeditions insert error: " . $e->getMessage());
+        }
     }
 
     if (!empty($gameData['activeQuest']) && !empty($gameData['activeQuest']['locationId'])) {
@@ -912,14 +917,10 @@ try {
     if (!empty($compCraftsList)) {
         try {
             // complete_part_crafts テーブルに完了レコードを確実に重複排除して追加
+            $chkCraft = $pdo->prepare("SELECT id FROM complete_part_crafts WHERE user_id = :uid AND start_time = :st AND end_time = :et LIMIT 1");
             $stmtCompCraft = $pdo->prepare("
                 INSERT INTO complete_part_crafts (user_id, part_type, main_material_id, sub_material_id, start_time, end_time, result_part_data)
-                SELECT :user_id, :part_type, :main_id, :sub_id, :start_time, :end_time, :result_part_data
-                FROM DUAL
-                WHERE NOT EXISTS (
-                    SELECT 1 FROM complete_part_crafts
-                    WHERE user_id = :chk_user_id AND start_time = :chk_start_time AND end_time = :chk_end_time
-                )
+                VALUES (:user_id, :part_type, :main_id, :sub_id, :start_time, :end_time, :result_part_data)
             ");
 
             $processedCraftKeys = [];
@@ -930,18 +931,22 @@ try {
                 if (isset($processedCraftKeys[$dedupKey])) continue;
                 $processedCraftKeys[$dedupKey] = true;
 
-                $stmtCompCraft->execute([
-                    ':user_id' => $actualUserId,
-                    ':part_type' => $compC['partType'],
-                    ':main_id' => $compC['mainMaterialId'] ?? '',
-                    ':sub_id' => $compC['subMaterialId'] ?? '',
-                    ':start_time' => $sTime,
-                    ':end_time' => $eTime,
-                    ':result_part_data' => json_encode($compC['resultPart'] ?? [], JSON_UNESCAPED_UNICODE),
-                    ':chk_user_id' => $actualUserId,
-                    ':chk_start_time' => $sTime,
-                    ':chk_end_time' => $eTime
+                $chkCraft->execute([
+                    ':uid' => $actualUserId,
+                    ':st' => $sTime,
+                    ':et' => $eTime
                 ]);
+                if (!$chkCraft->fetch()) {
+                    $stmtCompCraft->execute([
+                        ':user_id' => $actualUserId,
+                        ':part_type' => $compC['partType'],
+                        ':main_id' => $compC['mainMaterialId'] ?? '',
+                        ':sub_id' => $compC['subMaterialId'] ?? '',
+                        ':start_time' => $sTime,
+                        ':end_time' => $eTime,
+                        ':result_part_data' => json_encode($compC['resultPart'] ?? [], JSON_UNESCAPED_UNICODE)
+                    ]);
+                }
             }
         } catch (Throwable $e) {
             error_log("complete_part_crafts insert error: " . $e->getMessage());
@@ -982,23 +987,28 @@ try {
     $compA = $gameData['completeRobotAssembly'] ?? $gameData['completedRobotAssembly'] ?? null;
     if (!empty($compA) && !empty($compA['startTime'])) {
         // 1. complete_robot_assemblies テーブルに完了レコードを追加
-        $stmtCompAss = $pdo->prepare("
-            INSERT INTO complete_robot_assemblies (user_id, start_time, end_time, result_robot_data)
-            SELECT :user_id, :start_time, :end_time, :result_robot_data
-            WHERE NOT EXISTS (
-                SELECT 1 FROM complete_robot_assemblies
-                WHERE user_id = :chk_user_id AND start_time = :chk_start_time AND end_time = :chk_end_time
-            )
-        ");
-        $stmtCompAss->execute([
-            ':user_id' => $actualUserId,
-            ':start_time' => (int)($compA['startTime'] ?? 0),
-            ':end_time' => (int)($compA['endTime'] ?? 0),
-            ':result_robot_data' => json_encode($compA['resultRobot'] ?? [], JSON_UNESCAPED_UNICODE),
-            ':chk_user_id' => $actualUserId,
-            ':chk_start_time' => (int)($compA['startTime'] ?? 0),
-            ':chk_end_time' => (int)($compA['endTime'] ?? 0)
-        ]);
+        try {
+            $chkAss = $pdo->prepare("SELECT id FROM complete_robot_assemblies WHERE user_id = :uid AND start_time = :st AND end_time = :et LIMIT 1");
+            $chkAss->execute([
+                ':uid' => $actualUserId,
+                ':st' => (int)($compA['startTime'] ?? 0),
+                ':et' => (int)($compA['endTime'] ?? 0)
+            ]);
+            if (!$chkAss->fetch()) {
+                $stmtCompAss = $pdo->prepare("
+                    INSERT INTO complete_robot_assemblies (user_id, start_time, end_time, result_robot_data)
+                    VALUES (:user_id, :start_time, :end_time, :result_robot_data)
+                ");
+                $stmtCompAss->execute([
+                    ':user_id' => $actualUserId,
+                    ':start_time' => (int)($compA['startTime'] ?? 0),
+                    ':end_time' => (int)($compA['endTime'] ?? 0),
+                    ':result_robot_data' => json_encode($compA['resultRobot'] ?? [], JSON_UNESCAPED_UNICODE)
+                ]);
+            }
+        } catch (Throwable $e) {
+            error_log("complete_robot_assemblies insert error: " . $e->getMessage());
+        }
     }
 
     if (!empty($gameData['activeRobotAssembly']) && !empty($gameData['activeRobotAssembly']['startTime'])) {
@@ -1083,26 +1093,31 @@ try {
     if (!empty($compR) && !empty($compR['requestId'])) {
         $rewardG = (int)($compR['rewardG'] ?? 0);
         // 1. complete_requests テーブルに完了レコードを追加
-        $stmtCompReq = $pdo->prepare("
-            INSERT INTO complete_requests (user_id, request_id, rank, reward_g, deadline, delivered_robot_id, request_data)
-            SELECT :user_id, :request_id, :rank, :reward_g, :deadline, :delivered_robot_id, :request_data
-            WHERE NOT EXISTS (
-                SELECT 1 FROM complete_requests
-                WHERE user_id = :chk_user_id AND request_id = :chk_request_id AND deadline = :chk_deadline
-            )
-        ");
-        $stmtCompReq->execute([
-            ':user_id' => $actualUserId,
-            ':request_id' => $compR['requestId'],
-            ':rank' => $compR['rank'] ?? 'OldMan',
-            ':reward_g' => $rewardG,
-            ':deadline' => (int)($compR['deadline'] ?? 0),
-            ':delivered_robot_id' => $compR['deliveredRobotId'] ?? null,
-            ':request_data' => json_encode($compR['requestData'] ?? [], JSON_UNESCAPED_UNICODE),
-            ':chk_user_id' => $actualUserId,
-            ':chk_request_id' => $compR['requestId'],
-            ':chk_deadline' => (int)($compR['deadline'] ?? 0)
-        ]);
+        try {
+            $chkReq = $pdo->prepare("SELECT id FROM complete_requests WHERE user_id = :uid AND request_id = :rid AND deadline = :dl LIMIT 1");
+            $chkReq->execute([
+                ':uid' => $actualUserId,
+                ':rid' => $compR['requestId'],
+                ':dl' => (int)($compR['deadline'] ?? 0)
+            ]);
+            if (!$chkReq->fetch()) {
+                $stmtCompReq = $pdo->prepare("
+                    INSERT INTO complete_requests (user_id, request_id, rank, reward_g, deadline, delivered_robot_id, request_data)
+                    VALUES (:user_id, :request_id, :rank, :reward_g, :deadline, :delivered_robot_id, :request_data)
+                ");
+                $stmtCompReq->execute([
+                    ':user_id' => $actualUserId,
+                    ':request_id' => $compR['requestId'],
+                    ':rank' => $compR['rank'] ?? 'OldMan',
+                    ':reward_g' => $rewardG,
+                    ':deadline' => (int)($compR['deadline'] ?? 0),
+                    ':delivered_robot_id' => $compR['deliveredRobotId'] ?? null,
+                    ':request_data' => json_encode($compR['requestData'] ?? [], JSON_UNESCAPED_UNICODE)
+                ]);
+            }
+        } catch (Throwable $e) {
+            error_log("complete_requests insert error: " . $e->getMessage());
+        }
 
         // 2. 依頼完了時のトランザクション内で獲得したGおよび名声(fame)を user_workshop_status テーブルに確実に加算・記録
         $rewardFame = (int)($compR['rewardFame'] ?? ($compR['reward_fame'] ?? 0));
@@ -1174,24 +1189,29 @@ try {
     $compD = $gameData['completeRobotDisassembly'] ?? $gameData['completedRobotDisassembly'] ?? null;
     if (!empty($compD) && !empty($compD['startTime'])) {
         // 1. complete_robot_disassemblies テーブルに完了レコードを追加
-        $stmtCompDis = $pdo->prepare("
-            INSERT INTO complete_robot_disassemblies (user_id, robot_id, start_time, end_time, result_parts_data)
-            SELECT :user_id, :robot_id, :start_time, :end_time, :result_parts_data
-            WHERE NOT EXISTS (
-                SELECT 1 FROM complete_robot_disassemblies
-                WHERE user_id = :chk_user_id AND start_time = :chk_start_time AND end_time = :chk_end_time
-            )
-        ");
-        $stmtCompDis->execute([
-            ':user_id' => $actualUserId,
-            ':robot_id' => $compD['robotClone']['id'] ?? '',
-            ':start_time' => (int)($compD['startTime'] ?? 0),
-            ':end_time' => (int)($compD['endTime'] ?? 0),
-            ':result_parts_data' => json_encode($compD['resultParts'] ?? [], JSON_UNESCAPED_UNICODE),
-            ':chk_user_id' => $actualUserId,
-            ':chk_start_time' => (int)($compD['startTime'] ?? 0),
-            ':chk_end_time' => (int)($compD['endTime'] ?? 0)
-        ]);
+        try {
+            $chkDis = $pdo->prepare("SELECT id FROM complete_robot_disassemblies WHERE user_id = :uid AND start_time = :st AND end_time = :et LIMIT 1");
+            $chkDis->execute([
+                ':uid' => $actualUserId,
+                ':st' => (int)($compD['startTime'] ?? 0),
+                ':et' => (int)($compD['endTime'] ?? 0)
+            ]);
+            if (!$chkDis->fetch()) {
+                $stmtCompDis = $pdo->prepare("
+                    INSERT INTO complete_robot_disassemblies (user_id, robot_id, start_time, end_time, result_parts_data)
+                    VALUES (:user_id, :robot_id, :start_time, :end_time, :result_parts_data)
+                ");
+                $stmtCompDis->execute([
+                    ':user_id' => $actualUserId,
+                    ':robot_id' => $compD['robotClone']['id'] ?? '',
+                    ':start_time' => (int)($compD['startTime'] ?? 0),
+                    ':end_time' => (int)($compD['endTime'] ?? 0),
+                    ':result_parts_data' => json_encode($compD['resultParts'] ?? [], JSON_UNESCAPED_UNICODE)
+                ]);
+            }
+        } catch (Throwable $e) {
+            error_log("complete_robot_disassemblies insert error: " . $e->getMessage());
+        }
     }
 
     if (!empty($gameData['activeRobotDisassembly']) && !empty($gameData['activeRobotDisassembly']['startTime'])) {
@@ -1253,24 +1273,29 @@ try {
     $compRec = $gameData['completePartRecycle'] ?? $gameData['completedPartRecycle'] ?? null;
     if (!empty($compRec) && !empty($compRec['startTime'])) {
         // 1. complete_part_recycles テーブルに完了レコードを追加
-        $stmtCompRec = $pdo->prepare("
-            INSERT INTO complete_part_recycles (user_id, part_id, start_time, end_time, result_materials_data)
-            SELECT :user_id, :part_id, :start_time, :end_time, :result_materials_data
-            WHERE NOT EXISTS (
-                SELECT 1 FROM complete_part_recycles
-                WHERE user_id = :chk_user_id AND start_time = :chk_start_time AND end_time = :chk_end_time
-            )
-        ");
-        $stmtCompRec->execute([
-            ':user_id' => $actualUserId,
-            ':part_id' => $compRec['partClone']['id'] ?? '',
-            ':start_time' => (int)($compRec['startTime'] ?? 0),
-            ':end_time' => (int)($compRec['endTime'] ?? 0),
-            ':result_materials_data' => json_encode($compRec['resultMaterials'] ?? [], JSON_UNESCAPED_UNICODE),
-            ':chk_user_id' => $actualUserId,
-            ':chk_start_time' => (int)($compRec['startTime'] ?? 0),
-            ':chk_end_time' => (int)($compRec['endTime'] ?? 0)
-        ]);
+        try {
+            $chkRec = $pdo->prepare("SELECT id FROM complete_part_recycles WHERE user_id = :uid AND start_time = :st AND end_time = :et LIMIT 1");
+            $chkRec->execute([
+                ':uid' => $actualUserId,
+                ':st' => (int)($compRec['startTime'] ?? 0),
+                ':et' => (int)($compRec['endTime'] ?? 0)
+            ]);
+            if (!$chkRec->fetch()) {
+                $stmtCompRec = $pdo->prepare("
+                    INSERT INTO complete_part_recycles (user_id, part_id, start_time, end_time, result_materials_data)
+                    VALUES (:user_id, :part_id, :start_time, :end_time, :result_materials_data)
+                ");
+                $stmtCompRec->execute([
+                    ':user_id' => $actualUserId,
+                    ':part_id' => $compRec['partClone']['id'] ?? '',
+                    ':start_time' => (int)($compRec['startTime'] ?? 0),
+                    ':end_time' => (int)($compRec['endTime'] ?? 0),
+                    ':result_materials_data' => json_encode($compRec['resultMaterials'] ?? [], JSON_UNESCAPED_UNICODE)
+                ]);
+            }
+        } catch (Throwable $e) {
+            error_log("complete_part_recycles insert error: " . $e->getMessage());
+        }
     }
 
     if (!empty($gameData['activePartRecycle']) && !empty($gameData['activePartRecycle']['startTime'])) {
