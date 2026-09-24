@@ -437,7 +437,7 @@ try {
             ]);
 
             // actualUserId以外の別IDレコードを削除して統合
-            $cleanStmt = $pdo->prepare("DELETE FROM user_workshop_status WHERE user_id IN ($inPlaceholders) AND user_id != :act_uid");
+            $cleanStmt = $pdo->prepare("DELETE FROM user_workshop_status WHERE user_id IN ($inPlaceholders) AND user_id != ?");
             $params = array_values($candidateUserIds);
             $params[] = $actualUserId;
             $cleanStmt->execute($params);

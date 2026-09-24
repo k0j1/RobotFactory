@@ -677,7 +677,7 @@ try {
     // 重複していた別IDレコードがあれば削除して actualUserId に一元化
     if (count($existingRows) > 1 && !empty($actualUserId)) {
         try {
-            $cleanStmt = $pdo->prepare("DELETE FROM user_workshop_status WHERE user_id IN ($inPlaceholders) AND user_id != :act_uid");
+            $cleanStmt = $pdo->prepare("DELETE FROM user_workshop_status WHERE user_id IN ($inPlaceholders) AND user_id != ?");
             $params = array_values($candidateUserIds);
             $params[] = $actualUserId;
             $cleanStmt->execute($params);
@@ -1077,7 +1077,7 @@ try {
                 WHERE user_id = :chk_user_id
                   AND (
                     (:chk_part_id != '' AND result_part_data LIKE :chk_part_id_like)
-                    OR (:chk_start_time > 0 AND :chk_end_time > 0 AND start_time = :chk_start_time AND end_time = :chk_end_time)
+                    OR (:chk_start_time_gt > 0 AND :chk_end_time_gt > 0 AND start_time = :chk_start_time_eq AND end_time = :chk_end_time_eq)
                   )
             )
         ");
@@ -1159,8 +1159,10 @@ try {
                 ':chk_user_id' => $actualUserId,
                 ':chk_part_id' => $partId,
                 ':chk_part_id_like' => '%' . $partId . '%',
-                ':chk_start_time' => $sTime,
-                ':chk_end_time' => $eTime
+                ':chk_start_time_gt' => $sTime,
+                ':chk_end_time_gt' => $eTime,
+                ':chk_start_time_eq' => $sTime,
+                ':chk_end_time_eq' => $eTime
             ]);
         }
     }
@@ -1212,26 +1214,28 @@ try {
         $robotId = !empty($compA['resultRobot']['id']) ? (string)$compA['resultRobot']['id'] : '';
         $stmtCompAss = $pdo->prepare("
             INSERT INTO complete_robot_assemblies (user_id, start_time, end_time, result_robot_data)
-            SELECT :user_id, :start_time, :end_time, :result_robot_data
+            SELECT :ins_user_id, :ins_start_time, :ins_end_time, :ins_result_robot_data
             WHERE NOT EXISTS (
                 SELECT 1 FROM complete_robot_assemblies
                 WHERE user_id = :chk_user_id
                   AND (
                     (:chk_robot_id != '' AND result_robot_data LIKE :chk_robot_id_like)
-                    OR (:chk_start_time > 0 AND :chk_end_time > 0 AND start_time = :chk_start_time AND end_time = :chk_end_time)
+                    OR (:chk_start_time_gt > 0 AND :chk_end_time_gt > 0 AND start_time = :chk_start_time_eq AND end_time = :chk_end_time_eq)
                   )
             )
         ");
         $stmtCompAss->execute([
-            ':user_id' => $actualUserId,
-            ':start_time' => (int)($compA['startTime'] ?? 0),
-            ':end_time' => (int)($compA['endTime'] ?? 0),
-            ':result_robot_data' => json_encode($compA['resultRobot'] ?? [], JSON_UNESCAPED_UNICODE),
+            ':ins_user_id' => $actualUserId,
+            ':ins_start_time' => (int)($compA['startTime'] ?? 0),
+            ':ins_end_time' => (int)($compA['endTime'] ?? 0),
+            ':ins_result_robot_data' => json_encode($compA['resultRobot'] ?? [], JSON_UNESCAPED_UNICODE),
             ':chk_user_id' => $actualUserId,
             ':chk_robot_id' => $robotId,
             ':chk_robot_id_like' => '%' . $robotId . '%',
-            ':chk_start_time' => (int)($compA['startTime'] ?? 0),
-            ':chk_end_time' => (int)($compA['endTime'] ?? 0)
+            ':chk_start_time_gt' => (int)($compA['startTime'] ?? 0),
+            ':chk_end_time_gt' => (int)($compA['endTime'] ?? 0),
+            ':chk_start_time_eq' => (int)($compA['startTime'] ?? 0),
+            ':chk_end_time_eq' => (int)($compA['endTime'] ?? 0)
         ]);
     }
 
