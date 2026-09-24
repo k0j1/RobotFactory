@@ -736,8 +736,10 @@ try {
         $rawMainMat = $part['mainMaterialId'] ?? $part['main_material_id'] ?? null;
         $rawSubMat = $part['subMaterialId'] ?? $part['sub_material_id'] ?? null;
 
+        $partId = !empty($part['id']) ? (string)$part['id'] : ('part_' . floor(microtime(true) * 1000) . '_' . substr(md5(uniqid()), 0, 7));
+
         return [
-            ':id' => $part['id'],
+            ':id' => $partId,
             ':user_id' => $userId,
             ':master_id' => $part['name'] ?? $part['id'],
             ':part_type' => $pType,
@@ -836,6 +838,107 @@ try {
             ]);
         }
     }
+
+    // =========================================================================
+    // 5.1 user_material テーブルの同期（所持素材数）: user_parts / user_robots と同一のトランザクション基本ブロック内で確実に処理
+    // =========================================================================
+    $delMatStmt = $pdo->prepare("DELETE FROM user_material WHERE user_id = :user_id");
+    $delMatStmt->execute([':user_id' => $actualUserId]);
+
+    if (!empty($gameData['materials']) && is_array($gameData['materials'])) {
+        $stmtMat = $pdo->prepare("
+            INSERT INTO user_material (user_id, material_id, count)
+            VALUES (:user_id, :material_id, :count)
+            ON DUPLICATE KEY UPDATE count = :up_count
+        ");
+        foreach ($gameData['materials'] as $matId => $matCount) {
+            $countVal = (int)$matCount;
+            if ($countVal > 0) {
+                $stmtMat->execute([
+                    ':user_id' => $actualUserId,
+                    ':material_id' => (string)$matId,
+                    ':count' => $countVal,
+                    ':up_count' => $countVal
+                ]);
+            }
+        }
+    }
+
+    // =========================================================================
+    // 5.2 user_item テーブルの同期（修理キット、宝箱、アイテム）
+    // =========================================================================
+    $repairKitCount = isset($gameData['repairKits']) ? (int)$gameData['repairKits'] : 0;
+    $rawChests = (isset($gameData['unopenedChests']) && is_array($gameData['unopenedChests'])) ? $gameData['unopenedChests'] : [];
+    $bronzeChestCount = isset($rawChests['bronze']) ? (int)$rawChests['bronze'] : 0;
+    $silverChestCount = isset($rawChests['silver']) ? (int)$rawChests['silver'] : 0;
+    $goldChestCount = isset($rawChests['gold']) ? (int)$rawChests['gold'] : 0;
+    $mythicChestCount = isset($rawChests['mythic']) ? (int)$rawChests['mythic'] : 0;
+    $elementCount = isset($gameData['battleElements']) ? (int)$gameData['battleElements'] : 0;
+
+    $existingItemStmt = $pdo->prepare("SELECT battle_item, reversi_item FROM user_item WHERE user_id = :uid LIMIT 1");
+    $existingItemStmt->execute([':uid' => $actualUserId]);
+    $existingItemRow = $existingItemStmt->fetch(PDO::FETCH_ASSOC);
+
+    $hasBattleInput = isset($gameData['combatEquipments']) || isset($gameData['combatEquipmentRanks']) || isset($gameData['activeCombatEquipments']);
+    $hasReversiInput = isset($gameData['reversiPurchasedMemories']) || isset($gameData['othelloPurchasedMemories']) || isset($gameData['reversiEquippedMemories']) || isset($gameData['othelloEquippedMemories']);
+
+    $battleItemJson = null;
+    if ($hasBattleInput) {
+        $battleItem = [
+            'beamSaber' => !empty($gameData['combatEquipments']['beamSaber']),
+            'beamShield' => !empty($gameData['combatEquipments']['beamShield']),
+            'combatEquipments' => $gameData['combatEquipments'] ?? [],
+            'combatEquipmentRanks' => $gameData['combatEquipmentRanks'] ?? [],
+            'activeCombatEquipments' => $gameData['activeCombatEquipments'] ?? []
+        ];
+        $battleItemJson = json_encode($battleItem, JSON_UNESCAPED_UNICODE);
+    } elseif ($existingItemRow && !empty($existingItemRow['battle_item'])) {
+        $battleItemJson = $existingItemRow['battle_item'];
+    }
+
+    $reversiItemJson = null;
+    if ($hasReversiInput) {
+        $reversiItem = [
+            'purchasedMemories' => $gameData['reversiPurchasedMemories'] ?? $gameData['othelloPurchasedMemories'] ?? [],
+            'equippedMemories' => $gameData['reversiEquippedMemories'] ?? $gameData['othelloEquippedMemories'] ?? []
+        ];
+        $reversiItemJson = json_encode($reversiItem, JSON_UNESCAPED_UNICODE);
+    } elseif ($existingItemRow && !empty($existingItemRow['reversi_item'])) {
+        $reversiItemJson = $existingItemRow['reversi_item'];
+    }
+
+    $stmtItem = $pdo->prepare("
+        INSERT INTO user_item (user_id, repair_kit, bronze_chest, silver_chest, gold_chest, mythic_chest, element, battle_item, reversi_item)
+        VALUES (:user_id, :repair_kit, :bronze_chest, :silver_chest, :gold_chest, :mythic_chest, :element, :battle_item, :reversi_item)
+        ON DUPLICATE KEY UPDATE
+            repair_kit = :repair_kit_up,
+            bronze_chest = :bronze_chest_up,
+            silver_chest = :silver_chest_up,
+            gold_chest = :gold_chest_up,
+            mythic_chest = :mythic_chest_up,
+            element = :element_up,
+            battle_item = COALESCE(:battle_item_up, user_item.battle_item),
+            reversi_item = COALESCE(:reversi_item_up, user_item.reversi_item)
+    ");
+    $stmtItem->execute([
+        ':user_id' => $actualUserId,
+        ':repair_kit' => $repairKitCount,
+        ':bronze_chest' => $bronzeChestCount,
+        ':silver_chest' => $silverChestCount,
+        ':gold_chest' => $goldChestCount,
+        ':mythic_chest' => $mythicChestCount,
+        ':element' => $elementCount,
+        ':battle_item' => $battleItemJson,
+        ':reversi_item' => $reversiItemJson,
+        ':repair_kit_up' => $repairKitCount,
+        ':bronze_chest_up' => $bronzeChestCount,
+        ':silver_chest_up' => $silverChestCount,
+        ':gold_chest_up' => $goldChestCount,
+        ':mythic_chest_up' => $mythicChestCount,
+        ':element_up' => $elementCount,
+        ':battle_item_up' => $battleItemJson,
+        ':reversi_item_up' => $reversiItemJson
+    ]);
 
     if (!empty($gameData['deliveredLogs']) && is_array($gameData['deliveredLogs'])) {
         $stmtDeliveredRobot = $pdo->prepare("
@@ -1543,104 +1646,6 @@ try {
         ':wins_up' => 0,
         ':elements_count_up' => 0,
         ':chests_count_up' => $totalUnopenedChests
-    ]);
-
-    // 11. user_material テーブルの同期（所持素材数）
-    $delMatStmt = $pdo->prepare("DELETE FROM user_material WHERE user_id = :user_id");
-    $delMatStmt->execute([':user_id' => $actualUserId]);
-
-    if (!empty($gameData['materials']) && is_array($gameData['materials'])) {
-        $stmtMat = $pdo->prepare("
-            INSERT INTO user_material (user_id, material_id, count)
-            VALUES (:user_id, :material_id, :count)
-            ON DUPLICATE KEY UPDATE count = :up_count
-        ");
-        foreach ($gameData['materials'] as $matId => $matCount) {
-            $countVal = (int)$matCount;
-            if ($countVal > 0) {
-                $stmtMat->execute([
-                    ':user_id' => $actualUserId,
-                    ':material_id' => (string)$matId,
-                    ':count' => $countVal,
-                    ':up_count' => $countVal
-                ]);
-            }
-        }
-    }
-
-    // 12. user_item テーブルの同期（修理キット、各宝箱、エレメント、battle_item、reversi_item）
-    $repairKitCount = isset($gameData['repairKits']) ? (int)$gameData['repairKits'] : 0;
-    $rawChests = (isset($gameData['unopenedChests']) && is_array($gameData['unopenedChests'])) ? $gameData['unopenedChests'] : [];
-    $bronzeChestCount = isset($rawChests['bronze']) ? (int)$rawChests['bronze'] : 0;
-    $silverChestCount = isset($rawChests['silver']) ? (int)$rawChests['silver'] : 0;
-    $goldChestCount = isset($rawChests['gold']) ? (int)$rawChests['gold'] : 0;
-    $mythicChestCount = isset($rawChests['mythic']) ? (int)$rawChests['mythic'] : 0;
-    $elementCount = isset($gameData['battleElements']) ? (int)$gameData['battleElements'] : 0;
-
-    // 既存の user_item 状況を取得（万が一今回の入力にバトル/リバーシアイテム情報が含まれない場合の消失防止）
-    $existingItemStmt = $pdo->prepare("SELECT battle_item, reversi_item FROM user_item WHERE user_id = :uid LIMIT 1");
-    $existingItemStmt->execute([':uid' => $actualUserId]);
-    $existingItemRow = $existingItemStmt->fetch(PDO::FETCH_ASSOC);
-
-    $hasBattleInput = isset($gameData['combatEquipments']) || isset($gameData['combatEquipmentRanks']) || isset($gameData['activeCombatEquipments']);
-    $hasReversiInput = isset($gameData['reversiPurchasedMemories']) || isset($gameData['othelloPurchasedMemories']) || isset($gameData['reversiEquippedMemories']) || isset($gameData['othelloEquippedMemories']);
-
-    $battleItemJson = null;
-    if ($hasBattleInput) {
-        $battleItem = [
-            'beamSaber' => !empty($gameData['combatEquipments']['beamSaber']),
-            'beamShield' => !empty($gameData['combatEquipments']['beamShield']),
-            'combatEquipments' => $gameData['combatEquipments'] ?? [],
-            'combatEquipmentRanks' => $gameData['combatEquipmentRanks'] ?? [],
-            'activeCombatEquipments' => $gameData['activeCombatEquipments'] ?? []
-        ];
-        $battleItemJson = json_encode($battleItem, JSON_UNESCAPED_UNICODE);
-    } elseif ($existingItemRow && !empty($existingItemRow['battle_item'])) {
-        $battleItemJson = $existingItemRow['battle_item'];
-    }
-
-    $reversiItemJson = null;
-    if ($hasReversiInput) {
-        $reversiItem = [
-            'purchasedMemories' => $gameData['reversiPurchasedMemories'] ?? $gameData['othelloPurchasedMemories'] ?? [],
-            'equippedMemories' => $gameData['reversiEquippedMemories'] ?? $gameData['othelloEquippedMemories'] ?? []
-        ];
-        $reversiItemJson = json_encode($reversiItem, JSON_UNESCAPED_UNICODE);
-    } elseif ($existingItemRow && !empty($existingItemRow['reversi_item'])) {
-        $reversiItemJson = $existingItemRow['reversi_item'];
-    }
-
-    $stmtItem = $pdo->prepare("
-        INSERT INTO user_item (user_id, repair_kit, bronze_chest, silver_chest, gold_chest, mythic_chest, element, battle_item, reversi_item)
-        VALUES (:user_id, :repair_kit, :bronze_chest, :silver_chest, :gold_chest, :mythic_chest, :element, :battle_item, :reversi_item)
-        ON DUPLICATE KEY UPDATE
-            repair_kit = :repair_kit_up,
-            bronze_chest = :bronze_chest_up,
-            silver_chest = :silver_chest_up,
-            gold_chest = :gold_chest_up,
-            mythic_chest = :mythic_chest_up,
-            element = :element_up,
-            battle_item = COALESCE(:battle_item_up, user_item.battle_item),
-            reversi_item = COALESCE(:reversi_item_up, user_item.reversi_item)
-    ");
-    $stmtItem->execute([
-        ':user_id' => $actualUserId,
-        ':repair_kit' => $repairKitCount,
-        ':bronze_chest' => $bronzeChestCount,
-        ':silver_chest' => $silverChestCount,
-        ':gold_chest' => $goldChestCount,
-        ':mythic_chest' => $mythicChestCount,
-        ':element' => $elementCount,
-        ':battle_item' => $battleItemJson,
-        ':reversi_item' => $reversiItemJson,
-        ':repair_kit_up' => $repairKitCount,
-        ':bronze_chest_up' => $bronzeChestCount,
-        ':silver_chest_up' => $silverChestCount,
-        ':gold_chest_up' => $goldChestCount,
-        ':mythic_chest_up' => $mythicChestCount,
-        ':element_up' => $elementCount,
-        ':battle_item_up' => $battleItemJson,
-        ':reversi_item_up' => $reversiItemJson
     ]);
 
     // 13. completed_daily_minigame テーブルの同期（本日クリア済みミニゲーム/演習の記録）

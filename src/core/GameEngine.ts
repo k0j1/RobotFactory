@@ -1314,6 +1314,13 @@ export class GameEngine {
       throw new Error("パーツ製造はまだ完了していません");
     }
 
+    // DBロールバック発生時のクライアントステート復旧用スナップショット
+    const prevActiveCraft = this.state.activePartCraft;
+    const prevCompleteCraft = this.state.completePartCraft;
+    const prevCompletedCraft = this.state.completedPartCraft;
+    const prevCompletedCraftsList = [...(this.state.completedPartCrafts || [])];
+    const prevParts = [...this.state.parts];
+
     let craftedPart = target.resultPart;
 
     // target.resultPart が未設定の場合の自己修復フォールバック
@@ -1394,10 +1401,19 @@ export class GameEngine {
       try {
         const res = await AuthApiService.getInstance().saveAllDataToTables(this.userId, this.state, true);
         if (!res || res.success === false) {
-          console.warn("[GameEngine] complete_part_craftsへの即時同期レスポンス:", res?.error);
+          throw new Error(res?.error || "データベース保存に失敗しました");
         }
       } catch (err: any) {
         console.error("[GameEngine] complete_part_craftsへの即時保存エラー:", err);
+        // DB更新失敗時はクライアントステートを元の製造中状態へロールバック
+        this.state.activePartCraft = prevActiveCraft;
+        this.state.completePartCraft = prevCompleteCraft;
+        this.state.completedPartCraft = prevCompletedCraft;
+        this.state.completedPartCrafts = prevCompletedCraftsList;
+        this.state.parts = prevParts;
+        this.notifyStateChange();
+        this.update();
+        throw err;
       }
     } else {
       this.saveState();
@@ -1478,7 +1494,7 @@ export class GameEngine {
     return this.state.activeRobotAssembly;
   }
 
-  public claimAssembledRobot(): Robot {
+  public async claimAssembledRobot(): Promise<Robot> {
     const target = this.state.activeRobotAssembly || this.state.completeRobotAssembly;
     if (!target) {
       throw new Error("組立中または受取待ちのロボットはありません");
@@ -1486,6 +1502,11 @@ export class GameEngine {
     if (Date.now() < target.endTime) {
       throw new Error("ロボットの組立はまだ完了していません");
     }
+
+    const prevActiveAssembly = this.state.activeRobotAssembly;
+    const prevCompleteAssembly = this.state.completeRobotAssembly;
+    const prevCompletedAssembly = this.state.completedRobotAssembly;
+    const prevRobots = [...this.state.robots];
 
     const assembledRobot = target.resultRobot;
     this.state.robots.push(assembledRobot);
@@ -1501,7 +1522,30 @@ export class GameEngine {
     this.state.activeRobotAssembly = null;
 
     if (this.state.tutorialStep === 2) this.advanceTutorial();
-    this.saveState();
+    this.notifyStateChange();
+
+    if (this.isCloudAccount && this.userId) {
+      try {
+        const res = await AuthApiService.getInstance().saveAllDataToTables(this.userId, this.state, true);
+        if (!res || res.success === false) {
+          throw new Error(res?.error || "データベース保存に失敗しました");
+        }
+      } catch (err: any) {
+        console.error("[GameEngine] complete_robot_assembliesへの即時保存エラー:", err);
+        this.state.activeRobotAssembly = prevActiveAssembly;
+        this.state.completeRobotAssembly = prevCompleteAssembly;
+        this.state.completedRobotAssembly = prevCompletedAssembly;
+        this.state.robots = prevRobots;
+        this.notifyStateChange();
+        this.update();
+        throw err;
+      }
+    } else {
+      this.saveState();
+    }
+
+    this.notifyStateChange();
+    this.update();
     return assembledRobot;
   }
 

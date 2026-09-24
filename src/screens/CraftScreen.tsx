@@ -258,9 +258,9 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
     }
   };
 
-  const handleClaimRobot = () => {
+  const handleClaimRobot = async () => {
     try {
-      const robot = engine.claimAssembledRobot();
+      const robot = await engine.claimAssembledRobot();
       setLastCraftedRobot(robot);
       triggerConfetti();
     } catch (e: any) {
