@@ -353,14 +353,32 @@ export class GameEngine {
       if (!parsed.clientAffection) { parsed.clientAffection = { King: 1, Noble: 1, OldMan: 1 }; }
       if (!parsed.completedRequestDeadlines) { parsed.completedRequestDeadlines = {}; }
       
-      if (parsed.parts) {
-        parsed.parts.forEach(p => {
+      // Ensure robots array exists and deduplicate by robot ID
+      if (parsed.robots && Array.isArray(parsed.robots)) {
+        const seenRobotIds = new Set<string>();
+        parsed.robots = parsed.robots.filter((r: any) => {
+          if (!r || !r.id) return false;
+          if (seenRobotIds.has(r.id)) return false;
+          seenRobotIds.add(r.id);
+          return true;
+        });
+      } else {
+        parsed.robots = [];
+      }
+
+      // Ensure parts array exists and deduplicate by part ID
+      if (parsed.parts && Array.isArray(parsed.parts)) {
+        const seenPartIds = new Set<string>();
+        parsed.parts = parsed.parts.filter((p: any) => {
+          if (!p || !p.id) return false;
           if (p.stats && p.stats.intelligence === undefined) {
             p.stats.intelligence = 1;
           }
+          if (seenPartIds.has(p.id)) return false;
+          seenPartIds.add(p.id);
+          return true;
         });
-      }
-      if (!parsed.parts) {
+      } else {
         parsed.parts = [];
       }
 
@@ -1509,7 +1527,9 @@ export class GameEngine {
     const prevRobots = [...this.state.robots];
 
     const assembledRobot = target.resultRobot;
-    this.state.robots.push(assembledRobot);
+    if (!this.state.robots.some(r => r.id === assembledRobot.id)) {
+      this.state.robots.push(assembledRobot);
+    }
     this.recordCraftedRobot(assembledRobot);
 
     // active_robot_assemblies から complete_robot_assemblies への移行
@@ -1735,7 +1755,9 @@ export class GameEngine {
       value: (head.rarity + body.rarity + arms.rarity + legs.rarity) * 20
     };
 
-    this.state.robots.push(newRobot);
+    if (!this.state.robots.some(r => r.id === newRobot.id)) {
+      this.state.robots.push(newRobot);
+    }
     this.recordCraftedRobot(newRobot);
     if (this.state.tutorialStep === 2) this.advanceTutorial();
     this.saveState();

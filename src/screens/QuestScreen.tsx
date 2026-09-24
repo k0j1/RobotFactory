@@ -606,7 +606,7 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
           </button>
           
           {/* ロボット一覧 */}
-          {state.robots.map(r => {
+          {state.robots.map((r, idx) => {
             const isAutoDispatched = state.autoDispatches?.some(d => d.robotId === r.id);
             const isQuestDispatched = state.activeQuest?.dispatchedRobotId === r.id;
             const isSelected = selectedRobotId === r.id;
@@ -614,7 +614,7 @@ export const QuestScreen: React.FC<{ state: GameState, engine: GameEngine, onNav
             
             return (
               <button 
-                key={r.id}
+                key={`${r.id}-${idx}`}
                 onClick={() => !isDisabled && setSelectedRobotId(r.id)}
                 disabled={isDisabled}
                 className={`snap-start shrink-0 w-22 sm:w-26 h-26 sm:h-28 rounded-lg flex flex-col items-center justify-center transition-all relative border-2 cursor-pointer backdrop-blur-xs ${

@@ -258,8 +258,8 @@ export const GSAPMotionStudioModal: React.FC<GSAPMotionStudioModalProps> = ({
                 value={currentRobot.id}
                 onChange={e => setSelectedRobotId(e.target.value)}
               >
-                {combinedRobotsList.map(r => (
-                  <option key={r.id} value={r.id}>
+                {combinedRobotsList.map((r, idx) => (
+                  <option key={`${r.id}-${idx}`} value={r.id}>
                     {r.name}
                   </option>
                 ))}

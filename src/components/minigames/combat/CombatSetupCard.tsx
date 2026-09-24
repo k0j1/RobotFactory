@@ -317,7 +317,7 @@ export const CombatSetupCard: React.FC<CombatSetupCardProps> = ({
             <span className="text-[10px] text-stone-500 font-mono">{state.robots.length} 体保有</span>
           </div>
           <div className="flex gap-2 overflow-x-auto pt-2.5 pb-2 px-1 custom-scrollbar">
-            {state.robots.map(r => {
+            {state.robots.map((r, idx) => {
               const isSelected = selectedRobotId === r.id;
               const hp = r.currentHp ?? 12;
               const isHpLow = hp < 1;
@@ -326,7 +326,7 @@ export const CombatSetupCard: React.FC<CombatSetupCardProps> = ({
 
               return (
                 <button
-                  key={r.id}
+                  key={`${r.id}-${idx}`}
                   onClick={() => !isHpLow && setSelectedRobotId(r.id)}
                   disabled={isHpLow}
                   className={`shrink-0 relative rounded-xl border-2 transition-all p-1 bg-white overflow-visible cursor-pointer ${

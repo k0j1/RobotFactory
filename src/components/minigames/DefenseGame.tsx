@@ -1159,16 +1159,16 @@ export const DefenseGame: React.FC<DefenseGameProps> = ({
 
         {/* レイヤーC: 敵ロボット (Kenney公式スプライト + アイコンフォールバック) */}
         <div className="absolute inset-0 pointer-events-none z-20">
-          {renderEnemies.map(enemy => (
-            <EnemyRobotView key={enemy.id} enemy={enemy} />
+          {renderEnemies.map((enemy, idx) => (
+            <EnemyRobotView key={`${enemy.id}-${idx}`} enemy={enemy} />
           ))}
         </div>
 
         {/* レイヤーD: 組み立てられたロボットたち（RobotVisualの全身姿で防衛台座に配置） */}
         <div className="absolute inset-0 z-30">
-          {renderTowers.map(tower => (
+          {renderTowers.map((tower, idx) => (
             <DefenseTowerView
-              key={tower.id}
+              key={`${tower.id}-${idx}`}
               tower={tower}
               isSelected={selectedTowerId === tower.id}
               onSelect={() => {

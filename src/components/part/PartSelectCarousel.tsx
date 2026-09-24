@@ -165,11 +165,11 @@ export const PartSelectCarousel: React.FC<PartSelectCarouselProps> = ({
                 選択できるパーツがありません
               </div>
             ) : (
-              parts.map((p) => {
+              parts.map((p, idx) => {
                 const isSelected = selectedId === p.id;
                 return (
                   <button
-                    key={p.id}
+                    key={`${p.id}-${idx}`}
                     type="button"
                     onClick={() => handleSelectPart(p.id)}
                     className={`snap-center shrink-0 w-32 flex flex-col items-center p-2 rounded-xl border-2 transition-all cursor-pointer shadow-2xs relative ${

@@ -448,14 +448,14 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
             </Card>
           ) : (
             <div className="space-y-3">
-              {uniqueCraftedRobots.map(robot => {
+              {uniqueCraftedRobots.map((robot, idx) => {
                 const isOwned = state.robots.some(r => r.id === robot.id);
                 const isDelivered = state.deliveredLogs.some(l => l.id === robot.id);
                 const statusLabel = isOwned ? 'owned' : isDelivered ? 'delivered' : 'archived';
 
                 return (
                   <RobotGalleryCard
-                    key={robot.id}
+                    key={`${robot.id}-${idx}`}
                     robot={robot}
                     statusLabel={statusLabel}
                     onOpenMotionStudio={(r) => {
@@ -672,8 +672,8 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
             <p className="text-stone-500 text-center py-8">まだ納品されたロボットはありません。</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {filteredHistory.map(log => (
-                <Card key={`${log.id}-${log.deliveredAt}`} className="flex items-center gap-4">
+              {filteredHistory.map((log, idx) => (
+                <Card key={`${log.id}-${log.deliveredAt ?? idx}-${idx}`} className="flex items-center gap-4">
                   <div className="bg-stone-100 rounded p-2">
                     <RobotVisual robot={{ parts: log.parts } as any} size={64} />
                   </div>

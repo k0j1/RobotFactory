@@ -537,7 +537,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                   自動探索中の機体はいません
                 </div>
               ) : (
-                state.autoDispatches.map(d => {
+                state.autoDispatches.map((d, idx) => {
                   const dRobot = state.robots.find(r => r.id === d.robotId);
                   const dLoc = LOCATIONS.find(l => l.id === d.locationId);
                   const intervalMs = engine.getAutoDispatchIntervalMs(d.robotId, d.locationId);
@@ -548,7 +548,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
 
                   return (
                     <div 
-                      key={d.id} 
+                      key={`${d.id}-${idx}`} 
                       className={`p-2 rounded-lg border flex items-center justify-between gap-2 text-xs ${
                         isResting ? 'bg-red-50 border-red-300' : pending > 0 ? 'bg-emerald-50 border-emerald-400' : 'bg-[#fffdfa] border-[#dcc5b0]'
                       }`}
@@ -833,7 +833,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
             </div>
           )}
           {/* 自動探索ロボット一覧 (Auto Dispatches) */}
-          {state.autoDispatches?.map(d => {
+          {state.autoDispatches?.map((d, idx) => {
               const dRobot = state.robots.find(r => r.id === d.robotId);
               const dLoc = LOCATIONS.find(l => l.id === d.locationId);
               const intervalMs = engine.getAutoDispatchIntervalMs(d.robotId, d.locationId);
@@ -845,7 +845,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
               const weather = dLoc ? engine.getLocationWeather(dLoc.id, Date.now()) : null;
 
               return (
-                <div key={d.id} className={`p-3 rounded-xl border-2 shadow-2xs transition-all ${isResting ? 'bg-red-50/90 border-red-300 ring-1 ring-red-200' : pending > 0 ? 'bg-emerald-50/90 border-emerald-400 ring-1 ring-emerald-200' : 'bg-[#fffdfa] border-[#dcc5b0]'}`}>
+                <div key={`${d.id}-${idx}`} className={`p-3 rounded-xl border-2 shadow-2xs transition-all ${isResting ? 'bg-red-50/90 border-red-300 ring-1 ring-red-200' : pending > 0 ? 'bg-emerald-50/90 border-emerald-400 ring-1 ring-emerald-200' : 'bg-[#fffdfa] border-[#dcc5b0]'}`}>
                   {/* ロボット探索アニメーション */}
                   {dRobot && (
                     <div className="w-full bg-stone-900 rounded-lg overflow-hidden border-2 border-[#b89578] relative mb-2 shadow-2xs">
@@ -1071,8 +1071,8 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                 {state.robots
                   .filter(r => !state.autoDispatches?.some(d => d.robotId === r.id))
                   .filter(r => state.activeQuest?.dispatchedRobotId !== r.id)
-                  .map(r => (
-                  <option key={r.id} value={r.id} disabled={(r.currentHp ?? 12) <= 1}>
+                  .map((r, idx) => (
+                  <option key={`${r.id}-${idx}`} value={r.id} disabled={(r.currentHp ?? 12) <= 1}>
                     {r.name} (HP: {r.currentHp ?? 12}/{r.maxHp ?? 12} | Agi: {r.stats.agility})
                   </option>
                 ))}

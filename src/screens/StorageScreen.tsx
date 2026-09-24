@@ -1593,14 +1593,14 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
               {(!state.robots || state.robots.length === 0) ? (
                 <p className="text-center text-stone-500 py-6 text-xs font-bold">保管中のロボットがいません</p>
               ) : (
-                state.robots.map((r) => {
+                state.robots.map((r, idx) => {
                   const maxHp = r.maxHp ?? 12;
                   const currentHp = r.currentHp ?? 12;
                   const isDamaged = currentHp < maxHp;
                   const hpPercent = Math.max(0, Math.min(100, (currentHp / maxHp) * 100));
 
                   return (
-                    <div key={r.id} className={`p-3 rounded-xl border transition-all ${isDamaged ? 'bg-white border-amber-300 shadow-xs' : 'bg-stone-100/70 border-stone-200'}`}>
+                    <div key={`${r.id}-${idx}`} className={`p-3 rounded-xl border transition-all ${isDamaged ? 'bg-white border-amber-300 shadow-xs' : 'bg-stone-100/70 border-stone-200'}`}>
                       <div className="flex justify-between items-start gap-2 mb-1.5">
                         <div className="flex items-center gap-2 min-w-0">
                           <span className="font-bold text-xs text-stone-800 truncate">{r.name}</span>

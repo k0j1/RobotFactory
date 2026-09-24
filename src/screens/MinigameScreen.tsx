@@ -798,7 +798,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                     ロボットがいません。「制作」タブでロボットを組み立ててください。
                   </div>
                 ) : (
-                  state.robots.map(r => {
+                  state.robots.map((r, idx) => {
                     const isDispatched = engine.isRobotAutoDispatched(r.id) || state.activeQuest?.dispatchedRobotId === r.id;
                     const hp = r.currentHp ?? 12;
                     const maxHp = r.maxHp ?? 12;
@@ -838,7 +838,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
 
                     return (
                       <button
-                        key={r.id}
+                        key={`${r.id}-${idx}`}
                         onClick={handleSelect}
                         disabled={isDispatched || isHpLow || (selectedGame === 'defense' && !isSelected && selectedDefenseRobotIds.length >= activeDefenseStage.maxRobots)}
                         className={`w-full text-left p-2.5 rounded-xl border-2 transition-all relative overflow-visible ${
@@ -1716,10 +1716,10 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                 <p className="text-xs text-stone-400 mb-1 font-bold">出撃後の耐久力 (HP)</p>
                 {selectedGame === 'defense' ? (
                   <div className="space-y-1">
-                    {selectedDefenseRobotIds.map(id => {
+                    {selectedDefenseRobotIds.map((id, idx) => {
                       const r = state.robots.find(robot => robot.id === id);
                       return r ? (
-                        <div key={id} className="flex justify-between items-center gap-4 text-sm w-full">
+                        <div key={`${id}-${idx}`} className="flex justify-between items-center gap-4 text-sm w-full">
                           <span className="text-stone-300 text-xs truncate max-w-[100px]">{r.name}</span>
                           <div className="flex items-center gap-2 font-mono font-bold">
                             <span className="text-stone-300">{r.currentHp ?? 12}</span>

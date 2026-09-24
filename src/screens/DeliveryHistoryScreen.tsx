@@ -69,11 +69,11 @@ export const DeliveryHistoryScreen: React.FC<{ state: GameState; onBack: () => v
         </Card>
       ) : (
         <div className="grid gap-3">
-          {history.map((log) => {
+          {history.map((log, idx) => {
             const totalStats = Object.values(log.stats || {}).reduce((acc: number, val: any) => acc + (typeof val === 'number' ? val : 0), 0);
             
             return (
-              <Card key={log.id} className="border border-stone-200 bg-white hover:border-blue-300 transition-colors">
+              <Card key={`${log.id}-${log.deliveredAt ?? idx}-${idx}`} className="border border-stone-200 bg-white hover:border-blue-300 transition-colors">
                 <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
                   <div className="flex-shrink-0 w-20 h-20 bg-stone-100 rounded-lg flex items-center justify-center p-1 border border-stone-200 relative">
                     <RobotVisual robot={log as any} size={64} />
