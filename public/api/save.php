@@ -1074,7 +1074,11 @@ try {
             SELECT :ins_user_id, :ins_part_type, :ins_main_id, :ins_sub_id, :ins_start_time, :ins_end_time, :ins_result_part_data, FROM_UNIXTIME(:ins_completed_at)
             WHERE NOT EXISTS (
                 SELECT 1 FROM complete_part_crafts
-                WHERE user_id = :chk_user_id AND start_time = :chk_start_time AND end_time = :chk_end_time
+                WHERE user_id = :chk_user_id
+                  AND (
+                    (:chk_part_id != '' AND result_part_data LIKE :chk_part_id_like)
+                    OR (:chk_start_time > 0 AND :chk_end_time > 0 AND start_time = :chk_start_time AND end_time = :chk_end_time)
+                  )
             )
         ");
 
@@ -1087,15 +1091,6 @@ try {
             $eTime = (int)($compC['endTime'] ?? 0);
             $compAtMs = (int)($compC['completedAt'] ?? ($eTime > 0 ? $eTime : (time() * 1000)));
             $compAtSec = (int)floor($compAtMs / 1000);
-
-            if ($sTime === 0 && $eTime === 0) {
-                $sTime = $compAtMs > 0 ? ($compAtMs - 30000) : (time() * 1000 - 30000);
-                $eTime = $compAtMs > 0 ? $compAtMs : (time() * 1000);
-            }
-
-            $dedupKey = "{$sTime}_{$eTime}_{$pType}";
-            if (isset($processedCraftKeys[$dedupKey])) continue;
-            $processedCraftKeys[$dedupKey] = true;
 
             // 1. 製造パーツ情報（resultPart）の抽出・復元
             $resultPart = $compC['resultPart'] ?? null;
@@ -1129,6 +1124,17 @@ try {
                 ];
             }
 
+            $partId = !empty($resultPart['id']) ? (string)$resultPart['id'] : '';
+
+            if ($sTime === 0 && $eTime === 0) {
+                $sTime = $compAtMs > 0 ? ($compAtMs - 30000) : (time() * 1000 - 30000);
+                $eTime = $compAtMs > 0 ? $compAtMs : (time() * 1000);
+            }
+
+            $dedupKey = !empty($partId) ? $partId : "{$sTime}_{$eTime}_{$pType}";
+            if (isset($processedCraftKeys[$dedupKey])) continue;
+            $processedCraftKeys[$dedupKey] = true;
+
             // 2. complete_part_crafts 追加と同時に user_parts テーブルにも確実にパーツを同期・追加（同一トランザクション内）
             if (!empty($resultPart) && is_array($resultPart)) {
                 try {
@@ -1151,6 +1157,8 @@ try {
                 ':ins_result_part_data' => !empty($resultPart) ? json_encode($resultPart, JSON_UNESCAPED_UNICODE) : null,
                 ':ins_completed_at' => $compAtSec > 0 ? $compAtSec : time(),
                 ':chk_user_id' => $actualUserId,
+                ':chk_part_id' => $partId,
+                ':chk_part_id_like' => '%' . $partId . '%',
                 ':chk_start_time' => $sTime,
                 ':chk_end_time' => $eTime
             ]);
@@ -1201,12 +1209,17 @@ try {
     $compA = $gameData['completeRobotAssembly'] ?? $gameData['completedRobotAssembly'] ?? null;
     if (!empty($compA) && !empty($compA['startTime'])) {
         // 1. complete_robot_assemblies テーブルに完了レコードを追加
+        $robotId = !empty($compA['resultRobot']['id']) ? (string)$compA['resultRobot']['id'] : '';
         $stmtCompAss = $pdo->prepare("
             INSERT INTO complete_robot_assemblies (user_id, start_time, end_time, result_robot_data)
             SELECT :user_id, :start_time, :end_time, :result_robot_data
             WHERE NOT EXISTS (
                 SELECT 1 FROM complete_robot_assemblies
-                WHERE user_id = :chk_user_id AND start_time = :chk_start_time AND end_time = :chk_end_time
+                WHERE user_id = :chk_user_id
+                  AND (
+                    (:chk_robot_id != '' AND result_robot_data LIKE :chk_robot_id_like)
+                    OR (:chk_start_time > 0 AND :chk_end_time > 0 AND start_time = :chk_start_time AND end_time = :chk_end_time)
+                  )
             )
         ");
         $stmtCompAss->execute([
@@ -1215,6 +1228,8 @@ try {
             ':end_time' => (int)($compA['endTime'] ?? 0),
             ':result_robot_data' => json_encode($compA['resultRobot'] ?? [], JSON_UNESCAPED_UNICODE),
             ':chk_user_id' => $actualUserId,
+            ':chk_robot_id' => $robotId,
+            ':chk_robot_id_like' => '%' . $robotId . '%',
             ':chk_start_time' => (int)($compA['startTime'] ?? 0),
             ':chk_end_time' => (int)($compA['endTime'] ?? 0)
         ]);
