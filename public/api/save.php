@@ -1136,7 +1136,7 @@ try {
             if (isset($processedCraftKeys[$dedupKey])) continue;
             $processedCraftKeys[$dedupKey] = true;
 
-            // 同一の part_id または同一の start_time かつ end_time を持つレコードが既にテーブルに存在する場合はエラーとする
+            // 同一の part_id または同一の start_time かつ end_time を持つレコードが既にテーブルに存在するかチェック
             $stmtCheckDup->execute([
                 ':chk_part_id' => $partId,
                 ':chk_part_id_like' => '%' . $partId . '%',
@@ -1147,6 +1147,8 @@ try {
             ]);
             $existingCraft = $stmtCheckDup->fetch(PDO::FETCH_ASSOC);
             if ($existingCraft) {
+                // すでに complete_part_crafts テーブルに同一レコードが存在する場合：
+                // 二重登録(INSERT)はスキップし、user_parts へのパーツ同期と active_part_crafts からの削除を確実に完遂させる
                 $dupReasons = [];
                 if (!empty($partId) && !empty($existingCraft['result_part_data']) && strpos($existingCraft['result_part_data'], $partId) !== false) {
                     $dupReasons[] = "同一のpart_id('{$partId}')";
@@ -1155,9 +1157,20 @@ try {
                     $dupReasons[] = "同一のstart_time({$sTime})かつend_time({$eTime})";
                 }
                 $reasonDesc = !empty($dupReasons) ? implode('および', $dupReasons) : "レコードID: {$existingCraft['id']}";
-                $errMsg = "complete_part_craftsテーブルに{$reasonDesc}を持つレコードが既に存在するため、受取処理をエラーとしました。";
-                error_log("[save.php] duplicate complete_part_crafts: " . $errMsg);
-                throw new Exception($errMsg);
+                error_log("[save.php] duplicate complete_part_crafts detected ({$reasonDesc}). Skipping duplicate insert, syncing user_parts, and proceeding to cleanup active_part_crafts.");
+
+                // 2. complete_part_crafts への重複追加はスキップするが、user_parts テーブルへのパーツ同期は確実に行う
+                if (!empty($resultPart) && is_array($resultPart)) {
+                    try {
+                        $partParams = $extractPartParams($resultPart, $actualUserId, 0);
+                        $stmtPart->execute($partParams);
+                    } catch (Exception $e) {
+                        error_log("[save.php] user_parts sync from existing craft result notice: " . $e->getMessage());
+                    }
+                }
+
+                // 重複INSERTはスキップして正常に active_part_crafts の削除・コミットへ進む
+                continue;
             }
 
             // 2. complete_part_crafts 追加と同時に user_parts テーブルにも確実にパーツを同期・追加（同一トランザクション内）

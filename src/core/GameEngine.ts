@@ -384,6 +384,22 @@ export class GameEngine {
 
       // Clear craftedRobots to not keep/display past or unowned robots
       parsed.craftedRobots = [];
+
+      // 既に受取済みのパーツが activePartCraft や completePartCraft に残っている場合の自動クリーンアップ
+      if (parsed.activePartCraft && parsed.parts && Array.isArray(parsed.parts)) {
+        const activePartId = parsed.activePartCraft.resultPart?.id;
+        if (activePartId && parsed.parts.some((p: any) => p && p.id === activePartId)) {
+          console.log(`[GameEngine] 既に所持パーツ一覧に存在するパーツ(${activePartId})のため、activePartCraftを自己修復クリーンアップしました。`);
+          parsed.activePartCraft = null;
+        }
+      }
+      if (parsed.completePartCraft && parsed.parts && Array.isArray(parsed.parts)) {
+        const compPartId = parsed.completePartCraft.resultPart?.id;
+        if (compPartId && parsed.parts.some((p: any) => p && p.id === compPartId)) {
+          console.log(`[GameEngine] 既に所持パーツ一覧に存在するパーツ(${compPartId})のため、completePartCraftを自己修復クリーンアップしました。`);
+          parsed.completePartCraft = null;
+        }
+      }
       
       if (!parsed.deliveredLogs) {
         parsed.deliveredLogs = [];
@@ -1427,7 +1443,23 @@ export class GameEngine {
         this.saveState();
       } catch (err: any) {
         console.error("[GameEngine] complete_part_craftsへの即時保存エラー:", err);
-        // DB更新失敗時はクライアントステートを元の製造中状態へロールバック
+        const errMsg = String(err?.message || "");
+        // 既にDBに登録済みのエラーが返ってきた場合、サーバー側で受取完了済みであるためロールバックせず完了を確定
+        if (errMsg.includes("complete_part_crafts") || errMsg.includes("同一のpart_id") || errMsg.includes("既に存在")) {
+          console.warn("[GameEngine] complete_part_craftsに既に登録済みのため、受取完了状態を確定して自己修復しました。");
+          this.state.activePartCraft = null;
+          this.state.completePartCraft = null;
+          this.state.completedPartCraft = null;
+          if (!this.state.parts.some(p => p.id === craftedPart.id)) {
+            this.state.parts.push(craftedPart);
+          }
+          this.saveState();
+          this.notifyStateChange();
+          this.update();
+          return craftedPart;
+        }
+
+        // それ以外の致命的DB更新失敗時はクライアントステートを元の製造中状態へロールバック
         this.state.activePartCraft = prevActiveCraft;
         this.state.completePartCraft = prevCompleteCraft;
         this.state.completedPartCraft = prevCompletedCraft;
