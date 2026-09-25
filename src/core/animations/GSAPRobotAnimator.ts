@@ -2053,6 +2053,37 @@ export function mountTearsEffect(container: HTMLElement, mode: 'drops' | 'founta
 }
 
 /**
+ * 照れ・愛情ハート浮遊エフェクト（照れ笑い・スリスリ時にぽわぽわ浮かぶハートマーク）
+ */
+export function mountHeartFloatEffect(container: HTMLElement): {
+  wrapper: HTMLDivElement;
+  hearts: SVGGElement;
+  cleanup: () => void;
+} {
+  const wrapper = document.createElement('div');
+  const uid = 'heart_' + Math.random().toString(36).substring(2, 7);
+  wrapper.className = 'absolute inset-0 pointer-events-none opacity-0 will-change-transform';
+  wrapper.innerHTML = `
+    <svg viewBox="0 0 300 300" class="w-full h-full filter drop-shadow-[0_0_8px_rgba(244,63,94,0.7)]">
+      <g id="${uid}-hearts">
+        <path d="M 0,0 C -6,-10 -18,-6 -14,4 C -10,12 0,18 0,18 C 0,18 10,12 14,4 C 18,-6 6,-10 0,0 Z" fill="#fb7185" transform="translate(185, 90) scale(0.9)"/>
+        <path d="M 0,0 C -5,-8 -15,-5 -12,3 C -8,10 0,15 0,15 C 0,15 8,10 12,3 C 15,-5 5,-8 0,0 Z" fill="#fda4af" transform="translate(115, 95) scale(0.7)"/>
+        <path d="M 0,0 C -4,-7 -12,-4 -10,2 C -7,8 0,12 0,12 C 0,12 7,8 10,2 C 12,-4 4,-7 0,0 Z" fill="#f43f5e" transform="translate(200, 65) scale(0.6)"/>
+      </g>
+    </svg>
+  `;
+  container.appendChild(wrapper);
+  const hearts = wrapper.querySelector(`#${uid}-hearts`) as SVGGElement;
+  return {
+    wrapper,
+    hearts,
+    cleanup: () => {
+      if (wrapper.parentNode) wrapper.parentNode.removeChild(wrapper);
+    }
+  };
+}
+
+/**
  * 軽快な音符エフェクト（スキップ時に頭上にふわふわ浮かぶ♪♫マーク）
  */
 export function mountMusicNotesEffect(container: HTMLElement): {
@@ -2090,6 +2121,173 @@ export function mountMusicNotesEffect(container: HTMLElement): {
     note1,
     note2,
     note3,
+    cleanup: () => {
+      if (wrapper.parentNode) wrapper.parentNode.removeChild(wrapper);
+    }
+  };
+}
+
+/**
+ * 困惑・クエスチョンマークエフェクト（頭上にぽこんと浮かぶ「？」マーク）
+ */
+export function mountQuestionMarkEffect(container: HTMLElement): {
+  wrapper: HTMLDivElement;
+  mark1: SVGGElement;
+  mark2: SVGGElement;
+  cleanup: () => void;
+} {
+  const wrapper = document.createElement('div');
+  const uid = 'qmark_' + Math.random().toString(36).substring(2, 7);
+  wrapper.className = 'absolute inset-0 pointer-events-none opacity-0 will-change-transform';
+  wrapper.innerHTML = `
+    <svg viewBox="0 0 300 300" class="w-full h-full filter drop-shadow-[0_2px_8px_rgba(168,85,247,0.6)]">
+      <!-- メインの？マーク（頭上右上） -->
+      <g id="${uid}-mark1" transform="translate(180, 50)">
+        <text x="0" y="0" font-size="34" font-weight="900" font-family="monospace, sans-serif" fill="#c084fc" stroke="#7e22ce" stroke-width="1.5" text-anchor="middle">?</text>
+      </g>
+      <!-- サブの小さな？マーク（頭上左上） -->
+      <g id="${uid}-mark2" transform="translate(115, 65)">
+        <text x="0" y="0" font-size="22" font-weight="900" font-family="monospace, sans-serif" fill="#e9d5ff" stroke="#9333ea" stroke-width="1.2" text-anchor="middle">?</text>
+      </g>
+    </svg>
+  `;
+  container.appendChild(wrapper);
+  const mark1 = wrapper.querySelector(`#${uid}-mark1`) as SVGGElement;
+  const mark2 = wrapper.querySelector(`#${uid}-mark2`) as SVGGElement;
+  return {
+    wrapper,
+    mark1,
+    mark2,
+    cleanup: () => {
+      if (wrapper.parentNode) wrapper.parentNode.removeChild(wrapper);
+    }
+  };
+}
+
+/**
+ * 閃き・電球ピッカーンエフェクト（頭上に現れる💡と光彩スパーク）
+ */
+export function mountInspirationBulbEffect(container: HTMLElement): {
+  wrapper: HTMLDivElement;
+  bulb: SVGGElement;
+  rays: SVGGElement;
+  cleanup: () => void;
+} {
+  const wrapper = document.createElement('div');
+  const uid = 'bulb_' + Math.random().toString(36).substring(2, 7);
+  wrapper.className = 'absolute inset-0 pointer-events-none opacity-0 will-change-transform';
+  wrapper.innerHTML = `
+    <svg viewBox="0 0 300 300" class="w-full h-full filter drop-shadow-[0_0_12px_rgba(250,204,21,0.8)]">
+      <!-- 放射光線 -->
+      <g id="${uid}-rays" transform="translate(150, 45)" stroke="#fbbf24" stroke-width="3" stroke-linecap="round">
+        <line x1="0" y1="-26" x2="0" y2="-18" />
+        <line x1="18" y1="-18" x2="13" y2="-13" />
+        <line x1="26" y1="0" x2="18" y2="0" />
+        <line x1="-18" y1="-18" x2="-13" y2="-13" />
+        <line x1="-26" y1="0" x2="-18" y2="0" />
+      </g>
+      <!-- 電球本体 -->
+      <g id="${uid}-bulb" transform="translate(150, 48)">
+        <!-- ガラス球 -->
+        <path d="M -12,-8 C -12,-16 12,-16 12,-8 C 12,-2 6,4 5,8 L -5,8 C -6,4 -12,-2 -12,-8 Z" fill="#fef08a" stroke="#eab308" stroke-width="2"/>
+        <!-- フィラメント輝き -->
+        <circle cx="0" cy="-8" r="4" fill="#ffffff" />
+        <!-- 口金 -->
+        <rect x="-4" y="9" width="8" height="4" rx="1" fill="#94a3b8" stroke="#64748b" stroke-width="1"/>
+      </g>
+    </svg>
+  `;
+  container.appendChild(wrapper);
+  const bulb = wrapper.querySelector(`#${uid}-bulb`) as SVGGElement;
+  const rays = wrapper.querySelector(`#${uid}-rays`) as SVGGElement;
+  return {
+    wrapper,
+    bulb,
+    rays,
+    cleanup: () => {
+      if (wrapper.parentNode) wrapper.parentNode.removeChild(wrapper);
+    }
+  };
+}
+
+/**
+ * 焦り・冷や汗タラリエフェクト（こめかみから落ちる巨大な汗滴💦）
+ */
+export function mountSweatDropEffect(container: HTMLElement): {
+  wrapper: HTMLDivElement;
+  sweatL: SVGGElement;
+  sweatR: SVGGElement;
+  cleanup: () => void;
+} {
+  const wrapper = document.createElement('div');
+  const uid = 'sweat_' + Math.random().toString(36).substring(2, 7);
+  wrapper.className = 'absolute inset-0 pointer-events-none opacity-0 will-change-transform';
+  wrapper.innerHTML = `
+    <svg viewBox="0 0 300 300" class="w-full h-full filter drop-shadow-[0_2px_8px_rgba(56,189,248,0.7)]">
+      <!-- 左こめかみの大汗 -->
+      <g id="${uid}-sweatL" transform="translate(116, 75)">
+        <path d="M 0,0 C -4,6 -6,14 0,18 C 6,14 4,6 0,0 Z" fill="#38bdf8" stroke="#0284c7" stroke-width="1.2" opacity="0.95" />
+      </g>
+      <!-- 右こめかみの小汗 -->
+      <g id="${uid}-sweatR" transform="translate(184, 82)">
+        <path d="M 0,0 C -3,4 -4,10 0,13 C 4,10 3,4 0,0 Z" fill="#7dd3fc" stroke="#0ea5e9" stroke-width="1" opacity="0.85" />
+      </g>
+    </svg>
+  `;
+  container.appendChild(wrapper);
+  const sweatL = wrapper.querySelector(`#${uid}-sweatL`) as SVGGElement;
+  const sweatR = wrapper.querySelector(`#${uid}-sweatR`) as SVGGElement;
+  return {
+    wrapper,
+    sweatL,
+    sweatR,
+    cleanup: () => {
+      if (wrapper.parentNode) wrapper.parentNode.removeChild(wrapper);
+    }
+  };
+}
+
+/**
+ * 燃える闘志・火炎オーラエフェクト（気合注入時に周囲に立ち上る炎柱🔥）
+ */
+export function mountFireAuraEffect(container: HTMLElement): {
+  wrapper: HTMLDivElement;
+  flameCore: SVGGElement;
+  flameSparks: SVGGElement;
+  cleanup: () => void;
+} {
+  const wrapper = document.createElement('div');
+  const uid = 'fire_' + Math.random().toString(36).substring(2, 7);
+  wrapper.className = 'absolute inset-0 pointer-events-none opacity-0 will-change-transform';
+  wrapper.innerHTML = `
+    <svg viewBox="0 0 300 300" class="w-full h-full filter drop-shadow-[0_0_16px_rgba(239,68,68,0.85)]">
+      <defs>
+        <linearGradient id="${uid}-flame-grad" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0%" stop-color="#ef4444" stop-opacity="0.9" />
+          <stop offset="50%" stop-color="#f97316" stop-opacity="0.95" />
+          <stop offset="100%" stop-color="#fde047" stop-opacity="1" />
+        </linearGradient>
+      </defs>
+      <!-- 炎の揺らめき -->
+      <g id="${uid}-flameCore" transform="translate(150, 180)">
+        <path d="M -45,35 Q -60,-15 -25,-45 Q -40,-85 0,-120 Q 40,-85 25,-45 Q 60,-15 45,35 Z" fill="url(#${uid}-flame-grad)" opacity="0.75" />
+      </g>
+      <!-- 火の粉スパーク -->
+      <g id="${uid}-flameSparks" transform="translate(150, 140)">
+        <circle cx="-35" cy="-20" r="3" fill="#fef08a" />
+        <circle cx="38" cy="-40" r="2.5" fill="#fef08a" />
+        <circle cx="-15" cy="-70" r="3.5" fill="#ffffff" />
+        <circle cx="20" cy="-85" r="2" fill="#fed7aa" />
+      </g>
+    </svg>
+  `;
+  container.appendChild(wrapper);
+  const flameCore = wrapper.querySelector(`#${uid}-flameCore`) as SVGGElement;
+  const flameSparks = wrapper.querySelector(`#${uid}-flameSparks`) as SVGGElement;
+  return {
+    wrapper,
+    flameCore,
+    flameSparks,
     cleanup: () => {
       if (wrapper.parentNode) wrapper.parentNode.removeChild(wrapper);
     }
@@ -2743,6 +2941,751 @@ export class DisappointedSlumpAnimation extends BaseRobotAnimation {
   }
 }
 
+/**
+ * 怒り・地団駄プンプン (Angry Tantrum)
+ * 拳を握りしめて全身をブルブル震わせ、左右の足で床をドンドン地団駄を踏みながらプンプン怒る！
+ */
+export class AngryTantrumAnimation extends BaseRobotAnimation {
+  id = 'angry_tantrum';
+  seMarkers: AnimationSEMarker[] = [
+    { time: 0.1, label: 'ブチギレ💢蒸気噴出', type: 'charge' },
+    { time: 0.3, label: 'ドンドン！地団駄ステップ', type: 'hit' },
+    { time: 0.7, label: '地団駄連打', type: 'hit' },
+    { time: 1.1, label: 'プンプン怒り震え', type: 'spark' }
+  ];
+  name = '怒り・地団駄プンプン (Angry Tantrum)';
+  category = RobotAnimationCategory.EMOTION;
+  duration = 1.6;
+  loop = true;
+  description = '拳を握りしめて全身をブルブル震わせ、左右の足で床をドンドン地団駄を踏みながらプンプン怒る！';
+  technicalHighlights = [
+    '頭部 (Head) の怒りマーク 💢 と左右スチーム蒸気エフェクト (mountAngryMarksEffect)',
+    '左右脚部 (LegLeft/LegRight) の独立・高速地団駄ステップ (Duration: 0.12s)',
+    '拳を握りしめたArmLeft/ArmRightの高周波ジッターシェイク'
+  ];
+
+  build(refs: RobotDOMRefs, tl: gsap.core.Timeline): void {
+    this.resetElements(refs, tl);
+    const { container, head, body, arms, armLeft, armRight, legLeft, legRight, fxContainer, auraOverlay } = refs;
+
+    let angryFx: { wrapper: HTMLDivElement; marks: SVGGElement; steam: SVGGElement; cleanup: () => void } | null = null;
+    if (fxContainer && typeof document !== 'undefined') {
+      angryFx = mountAngryMarksEffect(fxContainer);
+      tl.set(angryFx.wrapper, { opacity: 0 });
+    }
+    tl.eventCallback('onComplete', () => { angryFx?.cleanup(); });
+
+    // 赤い怒りオーラ
+    if (auraOverlay) {
+      tl.to(auraOverlay, { opacity: 0.45, scale: 1.05, duration: 0.25, ease: 'power2.out' });
+    }
+
+    // 怒りマーク出現＆脈動
+    if (angryFx) {
+      tl.to(angryFx.wrapper, { opacity: 1, duration: 0.2 }, '<')
+        .to(angryFx.marks, { scale: 1.25, transformOrigin: 'center center', repeat: 5, yoyo: true, duration: 0.15, ease: 'sine.inOut' }, '<')
+        .to(angryFx.steam, { y: -8, opacity: 1, repeat: 3, yoyo: true, duration: 0.2, ease: 'power1.out' }, '<');
+    }
+
+    // 両腕をグッと曲げて構える
+    if (armLeft) tl.to(armLeft, { rotation: 40, x: 6, y: -6, duration: 0.2, ease: 'back.out(2)' }, '<');
+    if (armRight) tl.to(armRight, { rotation: -40, x: -6, y: -6, duration: 0.2, ease: 'back.out(2)' }, '<');
+    if (!armLeft && !armRight && arms) tl.to(arms, { y: -8, scaleX: 0.95, duration: 0.2 }, '<');
+
+    // 頭部をぐっと前に突き出す
+    if (head) tl.to(head, { y: 4, scale: 1.05, duration: 0.2 }, '<');
+
+    // 左右の足でドンドン地団駄を踏む（左右交互ステップ）
+    const stompTimeline = gsap.timeline({ repeat: 2 });
+    if (legLeft) stompTimeline.to(legLeft, { y: -10, rotation: -12, scaleY: 0.9, duration: 0.12, ease: 'power2.in' })
+                              .to(legLeft, { y: 0, rotation: 0, scaleY: 1.05, duration: 0.08, ease: 'power3.out' });
+    if (legRight) stompTimeline.to(legRight, { y: -10, rotation: 12, scaleY: 0.9, duration: 0.12, ease: 'power2.in' }, '>-0.04')
+                               .to(legRight, { y: 0, rotation: 0, scaleY: 1.05, duration: 0.08, ease: 'power3.out' });
+    tl.add(stompTimeline, '+=0.05');
+
+    // 全身の高周波ブルブル震え
+    if (container) {
+      tl.to(container, { x: 'random(-5, 5)', y: 'random(-2, 2)', duration: 0.05, repeat: 8, ease: 'none' }, '<');
+    }
+
+    // 最後にプシュ〜と力を抜いて戻る
+    const all = [container, head, body, arms, armLeft, armRight, legLeft, legRight].filter(Boolean);
+    tl.to(all, { x: 0, y: 0, rotation: 0, scale: 1, scaleX: 1, scaleY: 1, duration: 0.35, ease: 'power2.out' });
+    if (auraOverlay) tl.to(auraOverlay, { opacity: 0, duration: 0.25 }, '<');
+  }
+}
+
+/**
+ * 号泣・大泣きスプラッシュ (Weeping Tears)
+ * 両腕を目元に当てて肩を激しく上下させ、左右に噴水のように涙を飛ばして大号泣！
+ */
+export class WeepingTearsAnimation extends BaseRobotAnimation {
+  id = 'weeping_tears';
+  seMarkers: AnimationSEMarker[] = [
+    { time: 0.2, label: 'うっ…ぐすん（しゃくり上げ）', type: 'charge' },
+    { time: 0.6, label: 'うわぁぁん！涙スプラッシュ', type: 'spark' },
+    { time: 1.2, label: 'しゃくり泣きバウンス', type: 'spark' }
+  ];
+  name = '号泣・大泣きスプラッシュ (Weeping Tears)';
+  category = RobotAnimationCategory.EMOTION;
+  duration = 1.8;
+  loop = true;
+  description = '両腕を目元に当てて肩を激しく上下させ、左右に噴水のように涙を飛ばして大号泣！';
+  technicalHighlights = [
+    '大号泣噴水スプラッシュ涙エフェクト (mountTearsEffect)',
+    '左右腕 (ArmLeft/ArmRight) の目元ゴシゴシ顔覆いポジション',
+    'しゃくり上げるようなBody/Headの垂直スタッカートバウンス'
+  ];
+
+  build(refs: RobotDOMRefs, tl: gsap.core.Timeline): void {
+    this.resetElements(refs, tl);
+    const { container, head, body, arms, armLeft, armRight, legLeft, legRight, fxContainer, auraOverlay } = refs;
+
+    let tearsFx: { wrapper: HTMLDivElement; leftTears: SVGGElement; rightTears: SVGGElement; cleanup: () => void } | null = null;
+    if (fxContainer && typeof document !== 'undefined') {
+      tearsFx = mountTearsEffect(fxContainer, 'fountain');
+      tl.set(tearsFx.wrapper, { opacity: 0 });
+    }
+    tl.eventCallback('onComplete', () => { tearsFx?.cleanup(); });
+
+    // 青い涙オーラ
+    if (auraOverlay) {
+      tl.to(auraOverlay, { opacity: 0.35, scale: 0.98, duration: 0.3 });
+    }
+
+    // 1. 両腕を目元に当ててうつむく
+    if (head) tl.to(head, { y: 6, rotation: 8, duration: 0.25, ease: 'power2.out' }, '<');
+    if (armLeft) tl.to(armLeft, { rotation: 55, x: 10, y: -16, duration: 0.25, ease: 'back.out(1.5)' }, '<');
+    if (armRight) tl.to(armRight, { rotation: -55, x: -10, y: -16, duration: 0.25, ease: 'back.out(1.5)' }, '<');
+    if (!armLeft && !armRight && arms) tl.to(arms, { y: -12, rotation: -90, duration: 0.25 }, '<');
+
+    // 2. 涙スプラッシュ噴出＆激しいしゃくり上げ
+    if (tearsFx) {
+      tl.to(tearsFx.wrapper, { opacity: 1, duration: 0.2 }, '+=0.1')
+        .to([tearsFx.leftTears, tearsFx.rightTears], { scale: 1.25, transformOrigin: 'center center', repeat: 6, yoyo: true, duration: 0.12, ease: 'sine.inOut' }, '<');
+    }
+
+    // 肩と頭を激しくしゃくり上げる（ヒック、ヒック）
+    const hiccup = gsap.timeline({ repeat: 4 });
+    hiccup.to([head, body].filter(Boolean), { y: '-=4', duration: 0.08, ease: 'power2.out' })
+          .to([head, body].filter(Boolean), { y: '+=4', duration: 0.1, ease: 'bounce.out' });
+    tl.add(hiccup, '<');
+
+    // 腕で目をゴシゴシこする動き
+    if (armLeft) tl.to(armLeft, { x: '+=3', rotation: '+=8', repeat: 5, yoyo: true, duration: 0.1 }, '<');
+    if (armRight) tl.to(armRight, { x: '-=3', rotation: '-=8', repeat: 5, yoyo: true, duration: 0.1 }, '<');
+
+    // 3. 元に戻る
+    const all = [container, head, body, arms, armLeft, armRight, legLeft, legRight].filter(Boolean);
+    tl.to(all, { x: 0, y: 0, rotation: 0, scale: 1, duration: 0.35, ease: 'power2.out' }, '+=0.1');
+    if (auraOverlay) tl.to(auraOverlay, { opacity: 0, duration: 0.2 }, '<');
+  }
+}
+
+/**
+ * 照れ笑い・もじもじ (Shy Blushing)
+ * 両手の指先を前でもじもじと突き合わせ、首を恥ずかしそうに傾けながら身体を小さく揺らす。
+ */
+export class ShyBlushingAnimation extends BaseRobotAnimation {
+  id = 'shy_blushing';
+  seMarkers: AnimationSEMarker[] = [
+    { time: 0.2, label: 'もじもじ内股ポーズ', type: 'spark' },
+    { time: 0.6, label: '指先ちょんちょん合図', type: 'spark' },
+    { time: 1.2, label: '照れ隠し首かしげ', type: 'spark' }
+  ];
+  name = '照れ笑い・もじもじ (Shy Blushing)';
+  category = RobotAnimationCategory.EMOTION;
+  duration = 2.0;
+  loop = true;
+  description = '両手の指先を前でもじもじと突き合わせ、首を恥ずかしそうに傾けながら身体を小さく揺らす。';
+  technicalHighlights = [
+    'ハート浮遊エフェクト (mountHeartFloatEffect) とほんのりピンクオーラ',
+    '左右腕 (ArmLeft/ArmRight) の前方指先ちょんちょん連動',
+    '内股気味な左右レッグの恥ずかしげな内傾倒 (Rotation: ±8deg)'
+  ];
+
+  build(refs: RobotDOMRefs, tl: gsap.core.Timeline): void {
+    this.resetElements(refs, tl);
+    const { container, head, body, arms, armLeft, armRight, legLeft, legRight, fxContainer, auraOverlay } = refs;
+
+    let heartFx: { wrapper: HTMLDivElement; hearts: SVGGElement; cleanup: () => void } | null = null;
+    if (fxContainer && typeof document !== 'undefined') {
+      heartFx = mountHeartFloatEffect(fxContainer);
+      tl.set(heartFx.wrapper, { opacity: 0 });
+    }
+    tl.eventCallback('onComplete', () => { heartFx?.cleanup(); });
+
+    // ほんのりピンクオーラ
+    if (auraOverlay) {
+      tl.to(auraOverlay, { opacity: 0.3, scale: 1.02, duration: 0.4, ease: 'sine.inOut' });
+    }
+
+    // 内股ポーズ
+    if (legLeft) tl.to(legLeft, { rotation: 8, x: 2, duration: 0.3, ease: 'power1.out' }, '<');
+    if (legRight) tl.to(legRight, { rotation: -8, x: -2, duration: 0.3, ease: 'power1.out' }, '<');
+
+    // 首を恥ずかしそうに傾ける
+    if (head) tl.to(head, { rotation: -16, x: -3, y: 2, duration: 0.35, ease: 'back.out(1.5)' }, '<');
+
+    // 指先を胸の前で合わせる（ちょんちょん）
+    if (armLeft) tl.to(armLeft, { rotation: 35, x: 10, y: -4, duration: 0.35, ease: 'power2.out' }, '<');
+    if (armRight) tl.to(armRight, { rotation: -35, x: -10, y: -4, duration: 0.35, ease: 'power2.out' }, '<');
+    if (!armLeft && !armRight && arms) tl.to(arms, { y: -4, scaleX: 0.95, duration: 0.35 }, '<');
+
+    // ハートがふわふわ浮かぶ
+    if (heartFx) {
+      tl.to(heartFx.wrapper, { opacity: 1, duration: 0.3 }, '+=0.1')
+        .to(heartFx.hearts, { y: -16, opacity: 0.9, duration: 1.2, ease: 'sine.out' }, '<');
+    }
+
+    // 指先をちょんちょん動かす（もじもじリピート）
+    if (armLeft) tl.to(armLeft, { x: 8, duration: 0.25, repeat: 3, yoyo: true, ease: 'sine.inOut' }, '<');
+    if (armRight) tl.to(armRight, { x: -8, duration: 0.25, repeat: 3, yoyo: true, ease: 'sine.inOut' }, '<');
+
+    // 身体を照れくさそうに左右にゆらゆら
+    if (container) {
+      tl.to(container, { rotation: 3, duration: 0.4, repeat: 2, yoyo: true, ease: 'sine.inOut' }, '<');
+    }
+
+    // 元に戻る
+    const all = [container, head, body, arms, armLeft, armRight, legLeft, legRight].filter(Boolean);
+    tl.to(all, { x: 0, y: 0, rotation: 0, scale: 1, duration: 0.4, ease: 'power2.out' });
+    if (auraOverlay) tl.to(auraOverlay, { opacity: 0, duration: 0.3 }, '<');
+  }
+}
+
+/**
+ * ドヤ顔・胸張りふんぞり返り (Smug Pride)
+ * 両手を腰に当て、胸（Body）をグッと反らせて顎を上げ、誇らしげに「どうだ！」とふんぞり返る。
+ */
+export class SmugPrideAnimation extends BaseRobotAnimation {
+  id = 'smug_pride';
+  seMarkers: AnimationSEMarker[] = [
+    { time: 0.2, label: 'キリッ！腰当てポーズ', type: 'charge' },
+    { time: 0.5, label: '胸張り顎上げ（ドヤァ！）', type: 'spark' },
+    { time: 1.1, label: '自信満々バウンス', type: 'spark' }
+  ];
+  name = 'ドヤ顔・胸張りふんぞり返り (Smug Pride)';
+  category = RobotAnimationCategory.EMOTION;
+  duration = 1.8;
+  loop = true;
+  description = '両手を腰に当て、胸（Body）をグッと反らせて顎を上げ、誇らしげに「どうだ！」とふんぞり返る。';
+  technicalHighlights = [
+    '両腕 (ArmLeft/ArmRight) の威風堂々たる腰当てポーズ (Rotation: ±45deg)',
+    'Bodyの前方反り (ScaleY: 1.05, Y: -6px) と顎上げ (Head Rotation: -18deg)',
+    'キラリと光る自信満々のキラーン・スパークル'
+  ];
+
+  build(refs: RobotDOMRefs, tl: gsap.core.Timeline): void {
+    this.resetElements(refs, tl);
+    const { container, head, body, arms, armLeft, armRight, legLeft, legRight, sparkles, auraOverlay } = refs;
+
+    // スパークル点灯
+    if (sparkles) {
+      tl.to(sparkles, { opacity: 1, duration: 0.3, ease: 'power2.out' });
+    }
+    if (auraOverlay) {
+      tl.to(auraOverlay, { opacity: 0.3, scale: 1.04, duration: 0.3, ease: 'power2.out' }, '<');
+    }
+
+    // 1. 両手を腰に当て、足をドシッと開く
+    if (armLeft) tl.to(armLeft, { rotation: -50, x: -8, y: 4, duration: 0.3, ease: 'back.out(2)' }, '<');
+    if (armRight) tl.to(armRight, { rotation: 50, x: 8, y: 4, duration: 0.3, ease: 'back.out(2)' }, '<');
+    if (legLeft) tl.to(legLeft, { x: -4, rotation: -6, duration: 0.3 }, '<');
+    if (legRight) tl.to(legRight, { x: 4, rotation: 6, duration: 0.3 }, '<');
+
+    // 2. 胸（Body）をグッと張って反らせ、頭を上に向けてドヤッ！
+    if (body) tl.to(body, { y: -6, scaleY: 1.06, scaleX: 0.98, duration: 0.35, ease: 'back.out(2)' }, '<0.1');
+    if (head) tl.to(head, { rotation: -18, y: -8, duration: 0.35, ease: 'back.out(2)' }, '<');
+
+    // 誇らしげにふんぞり返ってゆったり揺れる（ふふん♪）
+    if (container) {
+      tl.to(container, { y: -4, duration: 0.35, repeat: 2, yoyo: true, ease: 'sine.inOut' });
+    }
+    if (head) {
+      tl.to(head, { rotation: -14, duration: 0.35, repeat: 2, yoyo: true, ease: 'sine.inOut' }, '<');
+    }
+
+    // 元に戻る
+    const all = [container, head, body, arms, armLeft, armRight, legLeft, legRight].filter(Boolean);
+    tl.to(all, { x: 0, y: 0, rotation: 0, scale: 1, scaleX: 1, scaleY: 1, duration: 0.4, ease: 'power2.out' });
+    if (sparkles) tl.to(sparkles, { opacity: 0, duration: 0.3 }, '<');
+    if (auraOverlay) tl.to(auraOverlay, { opacity: 0, duration: 0.3 }, '<');
+  }
+}
+
+/**
+ * ビクッ！驚愕・硬直 (Shock Startled)
+ * 何かにビックリして真上に垂直ホップ！手足をピンと伸ばして硬直したあと、ガクガク震える。
+ */
+export class ShockStartledAnimation extends BaseRobotAnimation {
+  id = 'shock_startled';
+  seMarkers: AnimationSEMarker[] = [
+    { time: 0.05, label: 'ビクッ！瞬間跳躍', type: 'spark' },
+    { time: 0.25, label: '硬直ガクガクシェイク', type: 'hit' },
+    { time: 0.85, label: 'ハッと我に返る', type: 'charge' }
+  ];
+  name = 'ビクッ！驚愕・硬直 (Shock Startled)';
+  category = RobotAnimationCategory.EMOTION;
+  duration = 1.5;
+  loop = true;
+  description = '何かにビックリして真上に垂直ホップ！手足をピンと伸ばして硬直したあと、ガクガク震える。';
+  technicalHighlights = [
+    '初速ゼロからの瞬間垂直跳躍 (Y: -28px, Elastic.out)',
+    '全身全部位のピンと伸びた硬直スケール (ScaleY: 1.15, ScaleX: 0.88)',
+    '着地後の小刻みな全身ガクブル震え (Freq: 25Hz)'
+  ];
+
+  build(refs: RobotDOMRefs, tl: gsap.core.Timeline): void {
+    this.resetElements(refs, tl);
+    const { container, head, body, arms, armLeft, armRight, legLeft, legRight, sparkles, auraOverlay } = refs;
+
+    // 1. ビクッ！！真上へ瞬間大ジャンプ
+    if (container) {
+      tl.to(container, { y: -28, duration: 0.12, ease: 'power3.out' });
+    }
+    // 全身ピーンと硬直
+    if (head) tl.to(head, { y: -10, scale: 1.12, duration: 0.12, ease: 'power3.out' }, '<');
+    if (body) tl.to(body, { scaleY: 1.18, scaleX: 0.85, duration: 0.12 }, '<');
+    if (armLeft) tl.to(armLeft, { rotation: 80, x: -14, y: -10, duration: 0.12, ease: 'elastic.out(1, 0.3)' }, '<');
+    if (armRight) tl.to(armRight, { rotation: -80, x: 14, y: -10, duration: 0.12, ease: 'elastic.out(1, 0.3)' }, '<');
+    if (legLeft) tl.to(legLeft, { scaleY: 1.25, rotation: -10, duration: 0.12 }, '<');
+    if (legRight) tl.to(legRight, { scaleY: 1.25, rotation: 10, duration: 0.12 }, '<');
+    if (auraOverlay) tl.to(auraOverlay, { opacity: 0.5, scale: 1.2, duration: 0.1 }, '<');
+
+    // 2. ドスンと着地して硬直
+    if (container) {
+      tl.to(container, { y: 4, duration: 0.15, ease: 'bounce.out' }, '+=0.05');
+    }
+    if (body) tl.to(body, { scaleY: 0.92, scaleX: 1.08, duration: 0.15, ease: 'bounce.out' }, '<');
+
+    // 3. ガクガクブルブル小刻みに震える
+    if (container) {
+      tl.to(container, { x: 'random(-4, 4)', y: 'random(2, 6)', duration: 0.04, repeat: 14, ease: 'none' });
+    }
+    if (head) {
+      tl.to(head, { rotation: 'random(-6, 6)', duration: 0.04, repeat: 14, ease: 'none' }, '<');
+    }
+
+    // 4. ハッと我に返って姿勢を整える
+    const all = [container, head, body, arms, armLeft, armRight, legLeft, legRight].filter(Boolean);
+    tl.to(all, { x: 0, y: 0, rotation: 0, scale: 1, scaleX: 1, scaleY: 1, duration: 0.3, ease: 'back.out(2)' });
+    if (auraOverlay) tl.to(auraOverlay, { opacity: 0, duration: 0.2 }, '<');
+  }
+}
+
+/**
+ * 手拍子・拍手喝采 (Clapping Applause)
+ * 両腕を胸の前でパチパチパチ！とリズミカルに打ち合わせ、上半身を弾ませて大絶賛の拍手！
+ */
+export class ClappingApplauseAnimation extends BaseRobotAnimation {
+  id = 'clapping_applause';
+  seMarkers: AnimationSEMarker[] = [
+    { time: 0.15, label: 'パチパチパチ！拍手スタート', type: 'spark' },
+    { time: 0.45, label: '高速クラッピング', type: 'hit' },
+    { time: 0.85, label: '称賛バウンス拍手', type: 'spark' }
+  ];
+  name = '手拍子・拍手喝采 (Clapping Applause)';
+  category = RobotAnimationCategory.EMOTION;
+  duration = 1.4;
+  loop = true;
+  description = '両腕を胸の前でパチパチパチ！とリズミカルに打ち合わせ、上半身を弾ませて大絶賛の拍手！';
+  technicalHighlights = [
+    '左右腕 (ArmLeft/ArmRight) の胸前高速クラッピング連動 (連続パチパチ)',
+    '拍手に同期したBodyとHeadのウキウキ垂直バウンス',
+    '飛び散る称賛のスパークル (Sparkles)'
+  ];
+
+  build(refs: RobotDOMRefs, tl: gsap.core.Timeline): void {
+    this.resetElements(refs, tl);
+    const { container, head, body, arms, armLeft, armRight, legLeft, legRight, sparkles } = refs;
+
+    // スパークル点灯
+    if (sparkles) {
+      tl.to(sparkles, { opacity: 1, duration: 0.2 });
+    }
+
+    // 胸の前に腕を寄せる
+    if (armLeft) tl.to(armLeft, { rotation: 25, x: 8, y: -8, duration: 0.18, ease: 'power2.out' }, '<');
+    if (armRight) tl.to(armRight, { rotation: -25, x: -8, y: -8, duration: 0.18, ease: 'power2.out' }, '<');
+    if (!armLeft && !armRight && arms) tl.to(arms, { y: -8, scaleX: 0.9, duration: 0.18 }, '<');
+
+    // 高速パチパチ！拍手連動（6回拍手）
+    const clapTl = gsap.timeline({ repeat: 5 });
+    if (armLeft) clapTl.to(armLeft, { x: 14, rotation: 32, duration: 0.08, ease: 'power3.in' })
+                       .to(armLeft, { x: 6, rotation: 20, duration: 0.08, ease: 'power2.out' });
+    if (armRight) clapTl.to(armRight, { x: -14, rotation: -32, duration: 0.08, ease: 'power3.in' }, '<')
+                        .to(armRight, { x: -6, rotation: -20, duration: 0.08, ease: 'power2.out' });
+    // 拍手に同期して全身がウキウキ跳ねる
+    if (container) clapTl.to(container, { y: -6, duration: 0.08, ease: 'sine.out' }, '<')
+                         .to(container, { y: 0, duration: 0.08, ease: 'bounce.out' });
+    if (head) clapTl.to(head, { rotation: 6, duration: 0.08, ease: 'sine.inOut' }, '<')
+                    .to(head, { rotation: -6, duration: 0.08, ease: 'sine.inOut' });
+    tl.add(clapTl);
+
+    // 元に戻る
+    const all = [container, head, body, arms, armLeft, armRight, legLeft, legRight].filter(Boolean);
+    tl.to(all, { x: 0, y: 0, rotation: 0, scale: 1, duration: 0.3, ease: 'power2.out' });
+    if (sparkles) tl.to(sparkles, { opacity: 0, duration: 0.2 }, '<');
+  }
+}
+
+/**
+ * 首をぶんぶん・お断り (Head Shake "No")
+ * 「ダメダメ！」「それは無理！」と頭を左右にぶんぶん振り、両手を顔の前でクロスさせて全力拒否。
+ */
+export class HeadShakeNoAnimation extends BaseRobotAnimation {
+  id = 'head_shake_no';
+  seMarkers: AnimationSEMarker[] = [
+    { time: 0.15, label: 'バッテンガード構え', type: 'charge' },
+    { time: 0.35, label: 'ぶんぶん首振り拒絶', type: 'hit' },
+    { time: 0.85, label: 'お断りステップ', type: 'spark' }
+  ];
+  name = '首をぶんぶん・お断り (Head Shake "No")';
+  category = RobotAnimationCategory.EMOTION;
+  duration = 1.6;
+  loop = true;
+  description = '「ダメダメ！」「それは無理！」と頭を左右にぶんぶん振り、両手を顔の前でクロスさせて全力拒否。';
+  technicalHighlights = [
+    '頭部 (Head) の高速・大振りな左右首振り (Rotation: ±28deg)',
+    '左右腕 (ArmLeft/ArmRight) の顔前交差バッテンディフェンス',
+    '少し後ずさりするような足元のステップ'
+  ];
+
+  build(refs: RobotDOMRefs, tl: gsap.core.Timeline): void {
+    this.resetElements(refs, tl);
+    const { container, head, body, arms, armLeft, armRight, legLeft, legRight } = refs;
+
+    // 1. 両腕を胸の前でクロス（バッテン）
+    if (armLeft) tl.to(armLeft, { rotation: 65, x: 12, y: -12, duration: 0.25, ease: 'back.out(2)' });
+    if (armRight) tl.to(armRight, { rotation: -65, x: -12, y: -12, duration: 0.25, ease: 'back.out(2)' }, '<');
+    if (!armLeft && !armRight && arms) tl.to(arms, { y: -10, rotation: -90, scaleX: 0.9, duration: 0.25 }, '<');
+
+    // 身体を少し後ろに引く
+    if (container) tl.to(container, { y: 4, scale: 0.96, duration: 0.25, ease: 'power2.out' }, '<');
+
+    // 2. 頭部を左右に大きくぶんぶん振る（4往復）
+    if (head) {
+      tl.to(head, { rotation: 28, x: 4, duration: 0.12, ease: 'sine.inOut' })
+        .to(head, { rotation: -28, x: -4, duration: 0.12, repeat: 7, yoyo: true, ease: 'sine.inOut' });
+    }
+
+    // 腕も少しイヤイヤと左右に振る
+    if (armLeft) tl.to(armLeft, { rotation: 50, duration: 0.12, repeat: 7, yoyo: true, ease: 'sine.inOut' }, '<');
+    if (armRight) tl.to(armRight, { rotation: -50, duration: 0.12, repeat: 7, yoyo: true, ease: 'sine.inOut' }, '<');
+
+    // 3. 元に戻る
+    const all = [container, head, body, arms, armLeft, armRight, legLeft, legRight].filter(Boolean);
+    tl.to(all, { x: 0, y: 0, rotation: 0, scale: 1, duration: 0.35, ease: 'power2.out' });
+  }
+}
+
+/**
+ * 居眠り・舟漕ぎハッと起き (Sleepy Nod-Off)
+ * 身体がゆらゆら揺れ、頭がカクン…カクン…と沈み込み、倒れそうになった瞬間「ハッ！」と起きる。
+ */
+export class SleepyNodOffAnimation extends BaseRobotAnimation {
+  id = 'sleepy_nodoff';
+  seMarkers: AnimationSEMarker[] = [
+    { time: 0.4, label: 'ゆらゆらウトウト舟漕ぎ', type: 'charge' },
+    { time: 1.1, label: 'カクン…頭部急降下', type: 'hit' },
+    { time: 1.7, label: 'ハッ！？飛び起きリカバリー', type: 'spark' }
+  ];
+  name = '居眠り・舟漕ぎハッと起き (Sleepy Nod-Off)';
+  category = RobotAnimationCategory.EMOTION;
+  duration = 2.4;
+  loop = true;
+  description = '身体がゆらゆら揺れ、頭がカクン…カクン…と沈み込み、倒れそうになった瞬間「ハッ！」と起きる。';
+  technicalHighlights = [
+    'Sine.inOut による緩やかな舟漕ぎ前後スウェイ',
+    '頭部 (Head) の段階的なガクンガクン落下 (Y: +6px -> +14px)',
+    '目覚め瞬間のBack.out 急速リカバリー'
+  ];
+
+  build(refs: RobotDOMRefs, tl: gsap.core.Timeline): void {
+    this.resetElements(refs, tl);
+    const { container, head, body, arms, armLeft, armRight, legLeft, legRight } = refs;
+
+    // 1. ゆっくり身体がゆらゆら…ウトウト舟を漕ぐ
+    tl.to(container, { y: 2, rotation: 2, duration: 0.6, ease: 'sine.inOut' });
+    if (armLeft) tl.to(armLeft, { rotation: 8, duration: 0.6, ease: 'sine.inOut' }, '<');
+    if (armRight) tl.to(armRight, { rotation: -8, duration: 0.6, ease: 'sine.inOut' }, '<');
+
+    // 頭がカクン（1段階目）
+    if (head) tl.to(head, { rotation: 12, y: 6, duration: 0.25, ease: 'power2.in' }, '+=0.1')
+                .to(head, { rotation: 8, y: 4, duration: 0.4, ease: 'sine.out' });
+
+    // さらにゆら〜りと傾いて頭がガククン！（2段階目の限界落下）
+    tl.to(container, { y: 6, rotation: 5, duration: 0.5, ease: 'power1.in' });
+    if (head) tl.to(head, { rotation: 28, y: 16, duration: 0.2, ease: 'power2.in' }, '<0.2');
+    if (body) tl.to(body, { rotation: 8, duration: 0.2 }, '<');
+
+    // 2. 「ハッ！！」と飛び起きて姿勢を正す！
+    tl.to(container, { y: -8, rotation: 0, duration: 0.15, ease: 'power3.out' });
+    if (head) tl.to(head, { y: -4, rotation: -6, duration: 0.15, ease: 'back.out(3)' }, '<');
+    if (armLeft) tl.to(armLeft, { rotation: -20, x: -4, duration: 0.15, ease: 'power3.out' }, '<');
+    if (armRight) tl.to(armRight, { rotation: 20, x: 4, duration: 0.15, ease: 'power3.out' }, '<');
+
+    // 周りをキョロキョロ見回して何事もなかったように澄ます
+    if (head) {
+      tl.to(head, { rotation: 10, duration: 0.2, ease: 'power1.inOut' })
+        .to(head, { rotation: -10, duration: 0.2, ease: 'power1.inOut' })
+        .to(head, { rotation: 0, y: 0, duration: 0.2, ease: 'power2.out' });
+    }
+
+    // 元に戻る
+    const all = [container, head, body, arms, armLeft, armRight, legLeft, legRight].filter(Boolean);
+    tl.to(all, { x: 0, y: 0, rotation: 0, scale: 1, duration: 0.3, ease: 'power2.out' });
+  }
+}
+
+/**
+ * スリスリ・甘えん坊ハグ (Affectionate Nuzzle)
+ * マスターに撫でてほしそうに頭をスリスリ擦り寄せ、両手を伸ばして抱きつくように身体を揺らす。
+ */
+export class AffectionateNuzzleAnimation extends BaseRobotAnimation {
+  id = 'affectionate_nuzzle';
+  seMarkers: AnimationSEMarker[] = [
+    { time: 0.2, label: 'ハートぽわぽわ出現', type: 'spark' },
+    { time: 0.5, label: '甘えん坊スリスリ首傾げ', type: 'charge' },
+    { time: 1.2, label: 'ハグおねだりスウェイ', type: 'spark' }
+  ];
+  name = 'スリスリ・甘えん坊ハグ (Affectionate Nuzzle)';
+  category = RobotAnimationCategory.EMOTION;
+  duration = 2.0;
+  loop = true;
+  description = 'マスターに撫でてほしそうに頭をスリスリ擦り寄せ、両手を伸ばして抱きつくように身体を揺らす。';
+  technicalHighlights = [
+    'ハート浮遊エフェクト (mountHeartFloatEffect)',
+    '頭部 (Head) の優美なスリスリ回転・平行移動連動',
+    '腕を前に出して抱きしめを求めるアームリーチポーズ'
+  ];
+
+  build(refs: RobotDOMRefs, tl: gsap.core.Timeline): void {
+    this.resetElements(refs, tl);
+    const { container, head, body, arms, armLeft, armRight, legLeft, legRight, fxContainer, auraOverlay } = refs;
+
+    let heartFx: { wrapper: HTMLDivElement; hearts: SVGGElement; cleanup: () => void } | null = null;
+    if (fxContainer && typeof document !== 'undefined') {
+      heartFx = mountHeartFloatEffect(fxContainer);
+      tl.set(heartFx.wrapper, { opacity: 0 });
+    }
+    tl.eventCallback('onComplete', () => { heartFx?.cleanup(); });
+
+    // 温かいピンクのオーラ
+    if (auraOverlay) {
+      tl.to(auraOverlay, { opacity: 0.4, scale: 1.05, duration: 0.4 });
+    }
+
+    // 両腕を前に広げておねだりハグの姿勢
+    if (armLeft) tl.to(armLeft, { rotation: 45, x: 8, y: -6, duration: 0.35, ease: 'sine.out' });
+    if (armRight) tl.to(armRight, { rotation: -45, x: -8, y: -6, duration: 0.35, ease: 'sine.out' }, '<');
+    if (!armLeft && !armRight && arms) tl.to(arms, { y: -6, duration: 0.35 }, '<');
+
+    // ハート出現
+    if (heartFx) {
+      tl.to(heartFx.wrapper, { opacity: 1, duration: 0.3 }, '<')
+        .to(heartFx.hearts, { y: -18, opacity: 0.9, duration: 1.3, ease: 'power1.out' }, '<');
+    }
+
+    // 頭を右斜め前に寄せて「スリスリ…」
+    if (head) {
+      tl.to(head, { rotation: 22, x: 8, y: 3, duration: 0.45, ease: 'sine.inOut' })
+        .to(head, { rotation: -22, x: -8, y: 3, duration: 0.5, ease: 'sine.inOut' })
+        .to(head, { rotation: 18, x: 6, y: 2, duration: 0.45, ease: 'sine.inOut' });
+    }
+
+    // 身体全体も優しく左右に揺れる
+    if (container) {
+      tl.to(container, { x: 4, rotation: 3, duration: 0.45, ease: 'sine.inOut' }, '<')
+        .to(container, { x: -4, rotation: -3, duration: 0.5, ease: 'sine.inOut' })
+        .to(container, { x: 0, rotation: 0, duration: 0.45, ease: 'sine.inOut' });
+    }
+
+    // 元に戻る
+    const all = [container, head, body, arms, armLeft, armRight, legLeft, legRight].filter(Boolean);
+    tl.to(all, { x: 0, y: 0, rotation: 0, scale: 1, duration: 0.4, ease: 'power2.out' });
+    if (auraOverlay) tl.to(auraOverlay, { opacity: 0, duration: 0.3 }, '<');
+  }
+}
+
+/**
+ * 勝利のガッツポーズ (Victory Fist Pump)
+ * 腰を低く落として力を溜めたあと、片腕を天高くグッと突き上げて力強くガッツポーズ！
+ */
+export class VictoryFistPumpAnimation extends BaseRobotAnimation {
+  id = 'victory_fist_pump';
+  seMarkers: AnimationSEMarker[] = [
+    { time: 0.2, label: 'タメ（沈み込みチャージ）', type: 'charge' },
+    { time: 0.45, label: '渾身のガッツポーズ突き上げ！', type: 'hit' },
+    { time: 0.9, label: '勝利の余韻バウンス', type: 'spark' }
+  ];
+  name = '勝利のガッツポーズ (Victory Fist Pump)';
+  category = RobotAnimationCategory.EMOTION;
+  duration = 1.6;
+  loop = true;
+  description = '腰を低く落として力を溜めたあと、片腕を天高くグッと突き上げて力強くガッツポーズ！';
+  technicalHighlights = [
+    'ため動作（スクワット沈み込み）からの力強い上方突き上げ',
+    '右腕 (ArmRight) の直上フルパワー・フィストレイズ (Y: -22px, Rotation: -170deg)',
+    '左腕 (ArmLeft) の胸元引き締めガッツガード'
+  ];
+
+  build(refs: RobotDOMRefs, tl: gsap.core.Timeline): void {
+    this.resetElements(refs, tl);
+    const { container, head, body, arms, armLeft, armRight, legLeft, legRight, sparkles, auraOverlay } = refs;
+
+    // 1. グッとしゃがんで力をタメる
+    tl.to(container, { y: 10, scaleY: 0.92, duration: 0.25, ease: 'power2.in' });
+    if (legLeft) tl.to(legLeft, { scaleY: 0.85, duration: 0.25 }, '<');
+    if (legRight) tl.to(legRight, { scaleY: 0.85, duration: 0.25 }, '<');
+    if (armLeft) tl.to(armLeft, { rotation: 30, y: 4, duration: 0.25 }, '<');
+    if (armRight) tl.to(armRight, { rotation: -30, y: 4, duration: 0.25 }, '<');
+    if (head) tl.to(head, { y: 4, rotation: 6, duration: 0.25 }, '<');
+
+    // 2. 「よっしゃあ！」一気に突き上げる！
+    tl.to(container, { y: -16, scaleY: 1.08, duration: 0.2, ease: 'power3.out' });
+    if (legLeft) tl.to(legLeft, { scaleY: 1.1, duration: 0.2 }, '<');
+    if (legRight) tl.to(legRight, { scaleY: 1.1, duration: 0.2 }, '<');
+
+    // 右腕を天高く突き上げる！
+    if (armRight) tl.to(armRight, { rotation: -165, x: 10, y: -22, duration: 0.2, ease: 'back.out(2)' }, '<');
+    // 左腕は胸元でガッツポーズ
+    if (armLeft) tl.to(armLeft, { rotation: 50, x: 8, y: -8, duration: 0.2, ease: 'back.out(2)' }, '<');
+    if (!armLeft && !armRight && arms) tl.to(arms, { y: -16, rotation: -45, duration: 0.2 }, '<');
+
+    // 頭部は上を向く
+    if (head) tl.to(head, { rotation: -16, y: -8, duration: 0.2, ease: 'back.out(2)' }, '<');
+
+    // スパークル点灯
+    if (sparkles) tl.to(sparkles, { opacity: 1, duration: 0.2 }, '<');
+    if (auraOverlay) tl.to(auraOverlay, { opacity: 0.4, scale: 1.08, duration: 0.2 }, '<');
+
+    // 勝利のポーズで力強くバウンス保持
+    tl.to(container, { y: -12, duration: 0.25, repeat: 2, yoyo: true, ease: 'sine.inOut' });
+
+    // 元に戻る
+    const all = [container, head, body, arms, armLeft, armRight, legLeft, legRight].filter(Boolean);
+    tl.to(all, { x: 0, y: 0, rotation: 0, scale: 1, scaleY: 1, duration: 0.35, ease: 'power2.out' });
+    if (sparkles) tl.to(sparkles, { opacity: 0, duration: 0.2 }, '<');
+    if (auraOverlay) tl.to(auraOverlay, { opacity: 0, duration: 0.2 }, '<');
+  }
+}
+
+/**
+ * お腹を抱えて大爆笑 (Belly Laugh)
+ * 両手でお腹（Body）を抱え込み、上体を前後に大きく折って「あっはっは！」と大爆笑！
+ */
+export class BellyLaughAnimation extends BaseRobotAnimation {
+  id = 'belly_laugh';
+  seMarkers: AnimationSEMarker[] = [
+    { time: 0.1, label: 'プッ…お腹抱え込み', type: 'spark' },
+    { time: 0.3, label: 'あっはっは！大爆笑バウンス', type: 'hit' },
+    { time: 0.8, label: '笑い転げ仰け反り', type: 'spark' },
+    { time: 1.3, label: '息も絶え絶え爆笑', type: 'hit' }
+  ];
+  name = 'お腹を抱えて大爆笑 (Belly Laugh)';
+  category = RobotAnimationCategory.EMOTION;
+  duration = 1.8;
+  loop = true;
+  description = '両手でお腹（Body）を抱え込み、上体を前後に大きく折って「あっはっは！」と大爆笑！';
+  technicalHighlights = [
+    '両腕 (ArmLeft/ArmRight) のお腹ホールドポジション',
+    '上体 (Body/Head) の前屈みと仰け反りのダイナミック往復',
+    '笑い転げるような高速スタッカートバウンス'
+  ];
+
+  build(refs: RobotDOMRefs, tl: gsap.core.Timeline): void {
+    this.resetElements(refs, tl);
+    const { container, head, body, arms, armLeft, armRight, legLeft, legRight, sparkles } = refs;
+
+    // スパークル点灯
+    if (sparkles) tl.to(sparkles, { opacity: 1, duration: 0.2 });
+
+    // 両手でお腹を抱える
+    if (armLeft) tl.to(armLeft, { rotation: 40, x: 8, y: 4, duration: 0.2, ease: 'power2.out' }, '<');
+    if (armRight) tl.to(armRight, { rotation: -40, x: -8, y: 4, duration: 0.2, ease: 'power2.out' }, '<');
+    if (!armLeft && !armRight && arms) tl.to(arms, { y: 4, scaleX: 0.9, duration: 0.2 }, '<');
+
+    // 前屈みになって大笑い（クスクス〜アハハ！）
+    const laughCycle = gsap.timeline({ repeat: 3 });
+    // 前に折れ曲がる
+    laughCycle.to([head, body].filter(Boolean), { rotation: 16, y: 6, duration: 0.14, ease: 'power2.in' })
+              // 後ろに大きく仰け反ってワハハ！
+              .to([head, body].filter(Boolean), { rotation: -18, y: -6, duration: 0.16, ease: 'back.out(2)' });
+    // 全身が小刻みに上下に笑い跳ねる
+    laughCycle.to(container, { y: -8, duration: 0.1, yoyo: true, repeat: 1, ease: 'sine.inOut' }, '<');
+    tl.add(laughCycle);
+
+    // 笑いすぎて足元もバタバタ
+    if (legLeft) tl.to(legLeft, { y: -4, rotation: -6, duration: 0.15, repeat: 5, yoyo: true, ease: 'sine.inOut' }, '<');
+    if (legRight) tl.to(legRight, { y: -4, rotation: 6, duration: 0.15, repeat: 5, yoyo: true, ease: 'sine.inOut' }, '<');
+
+    // 元に戻る
+    const all = [container, head, body, arms, armLeft, armRight, legLeft, legRight].filter(Boolean);
+    tl.to(all, { x: 0, y: 0, rotation: 0, scale: 1, duration: 0.35, ease: 'power2.out' });
+    if (sparkles) tl.to(sparkles, { opacity: 0, duration: 0.2 }, '<');
+  }
+}
+
+/**
+ * バイバイ・大きく手を振る (Friendly Wave)
+ * 片腕を高く上げて手のひらを左右にパタパタ大きく元気に振り、笑顔でバイバイ！
+ */
+export class FriendlyWaveAnimation extends BaseRobotAnimation {
+  id = 'friendly_wave';
+  seMarkers: AnimationSEMarker[] = [
+    { time: 0.15, label: 'ハイウェイブ腕上げ！', type: 'spark' },
+    { time: 0.35, label: 'パタパタお手振りスタート', type: 'hit' },
+    { time: 0.85, label: 'ご機嫌ステップ手振り', type: 'spark' }
+  ];
+  name = 'バイバイ・大きく手を振る (Friendly Wave)';
+  category = RobotAnimationCategory.EMOTION;
+  duration = 1.5;
+  loop = true;
+  description = '片腕を高く上げて手のひらを左右にパタパタ大きく元気に振り、笑顔でバイバイ！';
+  technicalHighlights = [
+    '右腕 (ArmRight) の頭上ハイウェイブスイング (Rotation: -120deg 〜 -160deg)',
+    '首をかしげた愛らしい笑顔の傾斜',
+    '片足立ちでピョンピョン弾むリズムステップ'
+  ];
+
+  build(refs: RobotDOMRefs, tl: gsap.core.Timeline): void {
+    this.resetElements(refs, tl);
+    const { container, head, body, arms, armLeft, armRight, legLeft, legRight, sparkles } = refs;
+
+    // スパークル点灯
+    if (sparkles) tl.to(sparkles, { opacity: 1, duration: 0.2 });
+
+    // 首を可愛く傾げる
+    if (head) tl.to(head, { rotation: -14, x: -3, duration: 0.25, ease: 'back.out(2)' });
+    // 左腕は腰に添える
+    if (armLeft) tl.to(armLeft, { rotation: -20, x: -4, y: 2, duration: 0.25 }, '<');
+
+    // 右腕を頭上に高く掲げる！
+    if (armRight) tl.to(armRight, { rotation: -140, x: 8, y: -18, duration: 0.25, ease: 'back.out(2)' }, '<');
+    if (!armRight && arms) tl.to(arms, { rotation: -40, y: -10, duration: 0.25 }, '<');
+
+    // 右腕をパタパタパタと左右に振る（手を振るアニメーション）
+    if (armRight) {
+      tl.to(armRight, { rotation: -165, duration: 0.12, repeat: 7, yoyo: true, ease: 'sine.inOut' });
+    }
+
+    // 足元も楽しそうに軽やかにステップ
+    const stepTl = gsap.timeline({ repeat: 2 });
+    if (legRight) stepTl.to(legRight, { y: -6, rotation: 8, duration: 0.15, ease: 'sine.out' })
+                        .to(legRight, { y: 0, rotation: 0, duration: 0.15, ease: 'sine.in' });
+    if (container) stepTl.to(container, { y: -4, duration: 0.15, ease: 'sine.out' }, '<')
+                         .to(container, { y: 0, duration: 0.15, ease: 'sine.in' });
+    tl.add(stepTl, '<');
+
+    // 元に戻る
+    const all = [container, head, body, arms, armLeft, armRight, legLeft, legRight].filter(Boolean);
+    tl.to(all, { x: 0, y: 0, rotation: 0, scale: 1, duration: 0.35, ease: 'power2.out' });
+    if (sparkles) tl.to(sparkles, { opacity: 0, duration: 0.2 }, '<');
+  }
+}
+
 
 
 
@@ -2833,6 +3776,482 @@ export class JoyfulSkippingAnimation extends BaseRobotAnimation {
     tl.to(all, { x: 0, y: 0, rotation: 0, scale: 1, scaleY: 1, duration: 0.3, ease: 'power2.out' });
     if (sparkles) tl.to(sparkles, { opacity: 0, duration: 0.2 }, '<');
     if (notesFx) tl.to(notesFx.wrapper, { opacity: 0, duration: 0.2 }, '<');
+  }
+}
+
+/**
+ * 困惑・頭ポリポリ (Puzzled Scratch)
+ * 首をかしげながら右腕で頭をポリポリ。頭上にクエスチョンマーク「？」が浮かぶ。
+ */
+export class PuzzledScratchHeadAnimation extends BaseRobotAnimation {
+  id = 'puzzled_scratch';
+  seMarkers: AnimationSEMarker[] = [
+    { time: 0.15, label: '首かしげ・クエスチョン？', type: 'spark' },
+    { time: 0.45, label: 'ポリポリ頭かき', type: 'charge' },
+    { time: 0.95, label: 'さらにポリポリ', type: 'charge' },
+    { time: 1.4, label: '疑問フリーズ', type: 'spark' }
+  ];
+  name = '困惑・頭ポリポリ (Puzzled Scratch)';
+  category = RobotAnimationCategory.EMOTION;
+  duration = 2.0;
+  loop = true;
+  description = '首を「ん？」と大きく傾げ、右手で頭部をポリポリと掻く。頭上にクエスチョンマーク「？」がぽこんと浮かんで首をかしげる。';
+  technicalHighlights = [
+    '頭部 (Head) の非対称な傾斜 (Rotation: 24deg, X: +4px)',
+    '右腕 (ArmRight) を頭頂部まで引き上げる掻き動作 (Rotation: -110deg)',
+    '掻く瞬間の高周波微振動 (Scratch Vibration: 10Hz)',
+    '頭上に浮かぶクエスチョンマーク (mountQuestionMarkEffect)'
+  ];
+
+  build(refs: RobotDOMRefs, tl: gsap.core.Timeline): void {
+    this.resetElements(refs, tl);
+    const { container, head, body, arms, armLeft, armRight, legLeft, legRight, fxContainer } = refs;
+
+    let qmarkFx: { wrapper: HTMLDivElement; mark1: SVGGElement; mark2: SVGGElement; cleanup: () => void } | null = null;
+    if (fxContainer && typeof document !== 'undefined') {
+      qmarkFx = mountQuestionMarkEffect(fxContainer);
+      tl.set(qmarkFx.wrapper, { opacity: 0 });
+    }
+
+    tl.eventCallback('onComplete', () => {
+      qmarkFx?.cleanup();
+    });
+
+    // 1. 首をかしげて「ん？」
+    tl.to(container, { y: 2, duration: 0.25, ease: 'power1.out' });
+    if (head) tl.to(head, { rotation: 24, x: 5, y: 3, duration: 0.28, ease: 'back.out(2)' }, '<');
+    if (body) tl.to(body, { rotation: -3, duration: 0.28 }, '<');
+
+    // クエスチョンマークがぽこんと出現
+    if (qmarkFx) {
+      tl.to(qmarkFx.wrapper, { opacity: 1, duration: 0.2 }, '<0.1');
+      tl.fromTo(qmarkFx.mark1, { scale: 0, transformOrigin: 'center center' }, { scale: 1.2, duration: 0.25, ease: 'back.out(2.5)' }, '<');
+      tl.to(qmarkFx.mark1, { scale: 1, duration: 0.15 }, '>');
+      tl.fromTo(qmarkFx.mark2, { scale: 0, transformOrigin: 'center center' }, { scale: 1, duration: 0.2, ease: 'back.out(2)' }, '<0.1');
+    }
+
+    // 2. 右手を頭の上に持っていく
+    if (armRight) {
+      tl.to(armRight, { rotation: -105, x: -6, y: -16, duration: 0.35, ease: 'power2.out' }, '-=0.15');
+      // ポリポリポリ…と頭を掻く
+      tl.to(armRight, { rotation: -115, x: -8, y: -18, duration: 0.08, repeat: 7, yoyo: true, ease: 'sine.inOut' });
+    } else if (arms) {
+      tl.to(arms, { rotation: -18, y: -6, duration: 0.3 });
+    }
+    if (armLeft) {
+      tl.to(armLeft, { rotation: 12, y: 2, duration: 0.3 }, '<');
+    }
+
+    // 頭も掻きに合わせて小刻みにゆれる
+    if (head) {
+      tl.to(head, { rotation: 20, duration: 0.1, repeat: 5, yoyo: true, ease: 'sine.inOut' }, '<');
+    }
+
+    // 3. 一瞬「どういうこと…？」とポカーンと静止
+    tl.to(container, { y: 3, duration: 0.4, ease: 'sine.inOut' });
+
+    // 4. 基本姿勢へ復帰
+    const all = [container, head, body, arms, armLeft, armRight, legLeft, legRight].filter(Boolean);
+    tl.to(all, { x: 0, y: 0, rotation: 0, scale: 1, duration: 0.35, ease: 'power2.out' });
+    if (qmarkFx) tl.to(qmarkFx.wrapper, { opacity: 0, duration: 0.2 }, '<');
+  }
+}
+
+/**
+ * 閃き・電球ピッカーン (Eureka Inspiration)
+ * 「ピンときた！」と頭上に電球マーク💡がパッと点灯！背筋をピンと伸ばして人差し指をピッと立てるひらめきアクション。
+ */
+export class SparklingEyesInspirationAnimation extends BaseRobotAnimation {
+  id = 'sparkling_inspiration';
+  seMarkers: AnimationSEMarker[] = [
+    { time: 0.1, label: '思案中...', type: 'charge' },
+    { time: 0.35, label: 'ピッカーン！💡閃き音', type: 'spark' },
+    { time: 0.7, label: '自信満々ポーズ', type: 'hit' }
+  ];
+  name = '閃き・電球ピッカーン (Eureka Inspiration)';
+  category = RobotAnimationCategory.EMOTION;
+  duration = 1.8;
+  loop = true;
+  description = '「ピンときた！」と頭上に電球マーク💡がパッと点灯！背筋をピンと伸ばして人差し指をピッと立てるひらめきアクション。';
+  technicalHighlights = [
+    '思案うつむきから瞬間的な覚醒跳ね起き (Y: -8px, ScaleY: 1.06)',
+    '右腕 (ArmRight) の人差し指アップ指向ポーズ (Rotation: -90deg)',
+    '頭上に輝く発光電球と放射光線 (mountInspirationBulbEffect)',
+    '胸部・眼部オーラの閃光パルス (Aura Burst)'
+  ];
+
+  build(refs: RobotDOMRefs, tl: gsap.core.Timeline): void {
+    this.resetElements(refs, tl);
+    const { container, head, body, arms, armLeft, armRight, legLeft, legRight, fxContainer, auraOverlay, sparkles } = refs;
+
+    let bulbFx: { wrapper: HTMLDivElement; bulb: SVGGElement; rays: SVGGElement; cleanup: () => void } | null = null;
+    if (fxContainer && typeof document !== 'undefined') {
+      bulbFx = mountInspirationBulbEffect(fxContainer);
+      tl.set(bulbFx.wrapper, { opacity: 0 });
+    }
+
+    tl.eventCallback('onComplete', () => {
+      bulbFx?.cleanup();
+    });
+
+    // 1. 少しうつむいて考えている
+    tl.to(container, { y: 4, scaleY: 0.97, duration: 0.25, ease: 'power1.out' });
+    if (head) tl.to(head, { y: 6, rotation: -8, duration: 0.25 }, '<');
+    if (armRight) tl.to(armRight, { rotation: -15, duration: 0.25 }, '<');
+    if (armLeft) tl.to(armLeft, { rotation: 15, duration: 0.25 }, '<');
+
+    // 2. ピッカーン！！電球が点灯してピンと跳ね起きる
+    tl.to(container, { y: -10, scaleY: 1.06, duration: 0.18, ease: 'back.out(2.2)' });
+    if (head) tl.to(head, { y: -6, rotation: 0, scale: 1.08, duration: 0.18, ease: 'back.out(2)' }, '<');
+    if (body) tl.to(body, { scaleY: 1.05, duration: 0.18 }, '<');
+    if (armRight) tl.to(armRight, { rotation: -95, x: -4, y: -16, duration: 0.18, ease: 'back.out(2.5)' }, '<');
+    if (armLeft) tl.to(armLeft, { rotation: 25, y: -4, duration: 0.18 }, '<');
+    if (!armRight && !armLeft && arms) tl.to(arms, { y: -10, rotation: -15, duration: 0.18 }, '<');
+
+    // 電球の出現＆放電フラッシュ
+    if (bulbFx) {
+      tl.to(bulbFx.wrapper, { opacity: 1, duration: 0.1 }, '<');
+      tl.fromTo(bulbFx.bulb, { scale: 0, transformOrigin: 'center center' }, { scale: 1.25, duration: 0.2, ease: 'back.out(3)' }, '<');
+      tl.to(bulbFx.bulb, { scale: 1.0, duration: 0.15 }, '>');
+      tl.fromTo(bulbFx.rays, { scale: 0.5, opacity: 0, transformOrigin: 'center center' }, { scale: 1.3, opacity: 1, duration: 0.25, ease: 'power2.out' }, '<');
+      tl.to(bulbFx.rays, { scale: 1.1, opacity: 0.6, duration: 0.3, repeat: 2, yoyo: true }, '>');
+    }
+
+    if (auraOverlay) {
+      tl.to(auraOverlay, { opacity: 0.6, scale: 1.08, duration: 0.15 }, '<');
+      tl.to(auraOverlay, { opacity: 0.2, duration: 0.4 }, '>');
+    }
+    if (sparkles) {
+      tl.to(sparkles, { opacity: 1, duration: 0.15 }, '<');
+    }
+
+    // 3. 得意げにコクッと頷く
+    tl.to(container, { y: -4, duration: 0.3, ease: 'sine.inOut' });
+    if (head) {
+      tl.to(head, { y: -2, rotation: 4, duration: 0.15 })
+        .to(head, { y: -5, rotation: 0, duration: 0.15 });
+    }
+
+    // 4. 基本姿勢へ復帰
+    const all = [container, head, body, arms, armLeft, armRight, legLeft, legRight].filter(Boolean);
+    tl.to(all, { x: 0, y: 0, rotation: 0, scale: 1, scaleY: 1, duration: 0.35, ease: 'power2.out' });
+    if (bulbFx) tl.to(bulbFx.wrapper, { opacity: 0, duration: 0.2 }, '<');
+    if (auraOverlay) tl.to(auraOverlay, { opacity: 0, duration: 0.2 }, '<');
+    if (sparkles) tl.to(sparkles, { opacity: 0, duration: 0.2 }, '<');
+  }
+}
+
+/**
+ * 焦り・冷や汗タラリ (Flustered Sweat)
+ * 「ヤバいヤバい！」と青ざめて大汗タラリ💦。両手を胸の前で激しくバタバタと振って大慌てするコミカルな焦りモーション。
+ */
+export class SweatDropFlusteredAnimation extends BaseRobotAnimation {
+  id = 'sweat_drop_flustered';
+  seMarkers: AnimationSEMarker[] = [
+    { time: 0.1, label: '大焦り！冷や汗タラリ', type: 'spark' },
+    { time: 0.35, label: '手バタバタ大慌て', type: 'charge' },
+    { time: 0.8, label: 'バタバタ継続', type: 'charge' },
+    { time: 1.2, label: 'ふぅ…一息', type: 'hit' }
+  ];
+  name = '焦り・冷や汗タラリ (Flustered Sweat)';
+  category = RobotAnimationCategory.EMOTION;
+  duration = 1.8;
+  loop = true;
+  description = '「ヤバいヤバい！」と青ざめて大汗タラリ💦。両手を胸の前で激しくバタバタと振って大慌てするコミカルな焦りモーション。';
+  technicalHighlights = [
+    '左右こめかみからの大粒の冷や汗滴下 (mountSweatDropEffect)',
+    '両腕 (ArmLeft/ArmRight) の胸前超高速バタバタ振り (Flapping: 12Hz)',
+    '身体全体の小刻みな焦りジッター振動 (X: ±3px)',
+    '青ざめオーラ (Blue Panic Aura)'
+  ];
+
+  build(refs: RobotDOMRefs, tl: gsap.core.Timeline): void {
+    this.resetElements(refs, tl);
+    const { container, head, body, arms, armLeft, armRight, legLeft, legRight, fxContainer, auraOverlay } = refs;
+
+    let sweatFx: { wrapper: HTMLDivElement; sweatL: SVGGElement; sweatR: SVGGElement; cleanup: () => void } | null = null;
+    if (fxContainer && typeof document !== 'undefined') {
+      sweatFx = mountSweatDropEffect(fxContainer);
+      tl.set(sweatFx.wrapper, { opacity: 0 });
+    }
+
+    tl.eventCallback('onComplete', () => {
+      sweatFx?.cleanup();
+    });
+
+    // 青ざめオーラ
+    if (auraOverlay) {
+      tl.to(auraOverlay, { opacity: 0.4, scale: 1.02, duration: 0.2 });
+    }
+
+    // 1. ビクッ！と身を引いて焦る
+    tl.to(container, { y: 6, scaleY: 0.95, duration: 0.2, ease: 'power2.out' });
+    if (head) tl.to(head, { y: 4, rotation: -6, duration: 0.2 }, '<');
+
+    // 冷や汗がタラリタラリと滴り落ちる
+    if (sweatFx) {
+      tl.to(sweatFx.wrapper, { opacity: 1, duration: 0.15 }, '<');
+      tl.to(sweatFx.sweatL, { y: 22, opacity: 0.9, duration: 0.7, repeat: 1, ease: 'power1.in' }, '<');
+      tl.to(sweatFx.sweatR, { y: 18, opacity: 0.8, duration: 0.6, repeat: 1, ease: 'power1.in' }, '<0.1');
+    }
+
+    // 2. 両手を胸の前で激しくバタバタ！！
+    if (armLeft) {
+      tl.to(armLeft, { rotation: 35, x: 6, y: -8, duration: 0.15 })
+        .to(armLeft, { rotation: -15, x: 2, y: -4, duration: 0.08, repeat: 9, yoyo: true, ease: 'sine.inOut' });
+    }
+    if (armRight) {
+      tl.to(armRight, { rotation: -35, x: -6, y: -8, duration: 0.15 }, '<')
+        .to(armRight, { rotation: 15, x: -2, y: -4, duration: 0.08, repeat: 9, yoyo: true, ease: 'sine.inOut' }, '<');
+    }
+    if (!armLeft && !armRight && arms) {
+      tl.to(arms, { y: -8, rotation: 15, duration: 0.08, repeat: 9, yoyo: true });
+    }
+
+    // 全身の細かなジッター震え
+    tl.to(container, { x: 3, duration: 0.05, repeat: 15, yoyo: true, ease: 'sine.inOut' }, '<');
+    if (head) {
+      tl.to(head, { rotation: 4, duration: 0.06, repeat: 12, yoyo: true, ease: 'sine.inOut' }, '<');
+    }
+
+    // 3. 基本姿勢へ復帰
+    const all = [container, head, body, arms, armLeft, armRight, legLeft, legRight].filter(Boolean);
+    tl.to(all, { x: 0, y: 0, rotation: 0, scale: 1, scaleY: 1, duration: 0.35, ease: 'power2.out' });
+    if (sweatFx) tl.to(sweatFx.wrapper, { opacity: 0, duration: 0.2 }, '<');
+    if (auraOverlay) tl.to(auraOverlay, { opacity: 0, duration: 0.2 }, '<');
+  }
+}
+
+/**
+ * ときめき・胸キュン鼓動 (Heart Flutter Love)
+ * 大好きな相手を見て胸のコアがドクン！ドクン！と激しく脈動💓。全身をクネクネさせながらハートが泉のように湧き出すメロメロ状態。
+ */
+export class HeartFlutterInLoveAnimation extends BaseRobotAnimation {
+  id = 'heart_flutter_love';
+  seMarkers: AnimationSEMarker[] = [
+    { time: 0.15, label: '一目惚れ！ドクン💓', type: 'hit' },
+    { time: 0.5, label: '胸キュン脈動💓💓', type: 'hit' },
+    { time: 0.9, label: 'メロメロハート乱舞', type: 'spark' }
+  ];
+  name = 'ときめき・胸キュン鼓動 (Heart Flutter Love)';
+  category = RobotAnimationCategory.EMOTION;
+  duration = 2.0;
+  loop = true;
+  description = '大好きな相手を見て胸のコアがドクン！ドクン！と激しく脈動💓。全身をクネクネさせながらハートが泉のように湧き出すメロメロ状態。';
+  technicalHighlights = [
+    '胸部コアの二段鼓動パルス (Heartbeat Expansion: 1.15x)',
+    '両手 (ArmLeft/ArmRight) を胸に当ててもじもじする仕草',
+    '溢れ出る無数のピンクハート浮遊 (mountHeartFloatEffect)',
+    'ロマンチックな温かいピンクパルスオーラ'
+  ];
+
+  build(refs: RobotDOMRefs, tl: gsap.core.Timeline): void {
+    this.resetElements(refs, tl);
+    const { container, head, body, arms, armLeft, armRight, legLeft, legRight, fxContainer, auraOverlay } = refs;
+
+    let heartFx: { wrapper: HTMLDivElement; hearts: SVGGElement; cleanup: () => void } | null = null;
+    if (fxContainer && typeof document !== 'undefined') {
+      heartFx = mountHeartFloatEffect(fxContainer);
+      tl.set(heartFx.wrapper, { opacity: 0 });
+    }
+
+    tl.eventCallback('onComplete', () => {
+      heartFx?.cleanup();
+    });
+
+    // ほんのりピンクオーラ
+    if (auraOverlay) {
+      tl.to(auraOverlay, { opacity: 0.45, scale: 1.05, duration: 0.3 });
+    }
+
+    // 1. ドクン！1回目の胸キュン
+    tl.to(container, { scale: 1.08, duration: 0.12, ease: 'power2.out' })
+      .to(container, { scale: 1.0, duration: 0.12, ease: 'power2.in' })
+      // ドクン！2回目の大脈動
+      .to(container, { scale: 1.12, duration: 0.14, ease: 'power2.out' })
+      .to(container, { scale: 1.0, duration: 0.16, ease: 'power2.in' });
+
+    if (body) {
+      tl.to(body, { scale: 1.15, duration: 0.12, ease: 'power2.out' }, '<-0.38')
+        .to(body, { scale: 1.0, duration: 0.12 })
+        .to(body, { scale: 1.2, duration: 0.14, ease: 'power2.out' })
+        .to(body, { scale: 1.0, duration: 0.16 });
+    }
+
+    // ハートがフワフワ湧き上がる
+    if (heartFx) {
+      tl.to(heartFx.wrapper, { opacity: 1, duration: 0.2 }, '<-0.2')
+        .to(heartFx.hearts, { y: -25, scale: 1.2, duration: 1.1, ease: 'power1.out' }, '<');
+    }
+
+    // 2. 両手を胸元に重ねてうっとり体を揺らす
+    if (armLeft) {
+      tl.to(armLeft, { rotation: 48, x: 8, y: -6, duration: 0.3, ease: 'power2.out' }, '+=0.05');
+    }
+    if (armRight) {
+      tl.to(armRight, { rotation: -48, x: -8, y: -6, duration: 0.3, ease: 'power2.out' }, '<');
+    }
+    if (!armLeft && !armRight && arms) {
+      tl.to(arms, { y: -6, scaleX: 0.9, duration: 0.3 }, '<');
+    }
+
+    // 首をかしげてうっとり
+    if (head) {
+      tl.to(head, { rotation: 16, y: 3, duration: 0.3, ease: 'sine.inOut' }, '<');
+    }
+
+    // 身体を左右にくねくね
+    tl.to(container, { rotation: -4, duration: 0.3, ease: 'sine.inOut' })
+      .to(container, { rotation: 4, duration: 0.3, ease: 'sine.inOut' });
+
+    // 3. 基本姿勢へ復帰
+    const all = [container, head, body, arms, armLeft, armRight, legLeft, legRight].filter(Boolean);
+    tl.to(all, { x: 0, y: 0, rotation: 0, scale: 1, scaleY: 1, duration: 0.35, ease: 'power2.out' });
+    if (heartFx) tl.to(heartFx.wrapper, { opacity: 0, duration: 0.2 }, '<');
+    if (auraOverlay) tl.to(auraOverlay, { opacity: 0, duration: 0.2 }, '<');
+  }
+}
+
+/**
+ * 闘志全開・気合注入 (Determined Focus)
+ * 「よし、やるぞ！」と両拳を胸の前でガツンと打ち合わせ！周囲に燃え盛る火炎闘気🔥をまとって鋭く構える熱血モーション。
+ */
+export class DeterminedFocusAnimation extends BaseRobotAnimation {
+  id = 'determined_focus';
+  seMarkers: AnimationSEMarker[] = [
+    { time: 0.2, label: '気合の構え', type: 'charge' },
+    { time: 0.45, label: 'ガツン！拳の衝突音', type: 'hit' },
+    { time: 0.7, label: 'ゴオオォッ！闘気爆発🔥', type: 'spark' },
+    { time: 1.3, label: '気迫維持', type: 'charge' }
+  ];
+  name = '闘志全開・気合注入 (Determined Focus)';
+  category = RobotAnimationCategory.EMOTION;
+  duration = 2.0;
+  loop = true;
+  description = '「よし、やるぞ！」と両拳を胸の前でガツンと打ち合わせ！周囲に燃え盛る火炎闘気🔥をまとって鋭く構える熱血モーション。';
+  technicalHighlights = [
+    '重厚な重心の沈み込み (Deep Combat Stance: Y: +8px, ScaleY: 0.94)',
+    '胸前での左右の拳クラッシュ (Fist Clash: Rotation: ±55deg, X: ±14px)',
+    '燃え盛る火炎闘気オーラ展開 (mountFireAuraEffect)',
+    '闘気解放時の全身スクリーンシェイク微動'
+  ];
+
+  build(refs: RobotDOMRefs, tl: gsap.core.Timeline): void {
+    this.resetElements(refs, tl);
+    const { container, head, body, arms, armLeft, armRight, legLeft, legRight, fxContainer, auraOverlay, sparkles } = refs;
+
+    let fireFx: { wrapper: HTMLDivElement; flameCore: SVGGElement; flameSparks: SVGGElement; cleanup: () => void } | null = null;
+    if (fxContainer && typeof document !== 'undefined') {
+      fireFx = mountFireAuraEffect(fxContainer);
+      tl.set(fireFx.wrapper, { opacity: 0 });
+    }
+
+    tl.eventCallback('onComplete', () => {
+      fireFx?.cleanup();
+    });
+
+    // 1. グッと重心を下げて両腕を広げる（溜め）
+    tl.to(container, { y: 6, scaleY: 0.95, duration: 0.25, ease: 'power2.out' });
+    if (legLeft) tl.to(legLeft, { x: -6, rotation: -8, duration: 0.25 }, '<');
+    if (legRight) tl.to(legRight, { x: 6, rotation: 8, duration: 0.25 }, '<');
+    if (armLeft) tl.to(armLeft, { rotation: -30, x: -10, y: -4, duration: 0.25 }, '<');
+    if (armRight) tl.to(armRight, { rotation: 30, x: 10, y: -4, duration: 0.25 }, '<');
+
+    // 2. ガツン！！両拳を胸の前で勢いよく衝突させる！
+    tl.to(container, { y: 2, scaleY: 1.02, duration: 0.12, ease: 'back.out(2)' });
+    if (armLeft) tl.to(armLeft, { rotation: 58, x: 14, y: -8, duration: 0.12, ease: 'power3.in' }, '<');
+    if (armRight) tl.to(armRight, { rotation: -58, x: -14, y: -8, duration: 0.12, ease: 'power3.in' }, '<');
+    if (!armLeft && !armRight && arms) tl.to(arms, { y: -8, scaleX: 0.85, duration: 0.12 }, '<');
+    if (head) tl.to(head, { y: 3, rotation: -2, duration: 0.12 }, '<');
+
+    // 衝突の衝撃火花
+    if (sparkles) {
+      tl.to(sparkles, { opacity: 1, duration: 0.1 }, '<');
+    }
+
+    // 3. ゴオオォッ！全身から燃え盛る闘気エフェクトが爆発！
+    if (fireFx) {
+      tl.to(fireFx.wrapper, { opacity: 1, duration: 0.15 }, '>');
+      tl.fromTo(fireFx.flameCore, { scaleY: 0.3, transformOrigin: 'bottom center' }, { scaleY: 1.25, duration: 0.35, ease: 'power2.out' }, '<');
+      tl.to(fireFx.flameCore, { scaleY: 1.05, duration: 0.4, repeat: 1, yoyo: true, ease: 'sine.inOut' }, '>');
+      tl.to(fireFx.flameSparks, { y: -30, opacity: 0.8, duration: 0.6, repeat: 1, ease: 'power1.out' }, '<');
+    }
+
+    if (auraOverlay) {
+      tl.to(auraOverlay, { opacity: 0.65, scale: 1.1, duration: 0.2 }, '<');
+      tl.to(auraOverlay, { opacity: 0.35, duration: 0.5 }, '>');
+    }
+
+    // 闘気あふれる微細な振動
+    tl.to(container, { y: 3, duration: 0.08, repeat: 5, yoyo: true, ease: 'sine.inOut' });
+
+    // 4. 基本姿勢へ復帰
+    const all = [container, head, body, arms, armLeft, armRight, legLeft, legRight].filter(Boolean);
+    tl.to(all, { x: 0, y: 0, rotation: 0, scale: 1, scaleY: 1, duration: 0.35, ease: 'power2.out' });
+    if (fireFx) tl.to(fireFx.wrapper, { opacity: 0, duration: 0.2 }, '<');
+    if (auraOverlay) tl.to(auraOverlay, { opacity: 0, duration: 0.2 }, '<');
+    if (sparkles) tl.to(sparkles, { opacity: 0, duration: 0.2 }, '<');
+  }
+}
+
+/**
+ * 忍び足・こっそり内緒 (Sneaky Tiptoe)
+ * 指を口元に当てて「シーッ🤫」。左右をキョロキョロ見渡しながら抜き足差し足で忍び寄るお茶目な隠密モーション。
+ */
+export class SneakyTiptoeAnimation extends BaseRobotAnimation {
+  id = 'sneaky_tiptoe';
+  seMarkers: AnimationSEMarker[] = [
+    { time: 0.15, label: 'しーっ…🤫', type: 'spark' },
+    { time: 0.5, label: '抜き足…右ステップ', type: 'charge' },
+    { time: 0.9, label: '差し足…左ステップ', type: 'charge' },
+    { time: 1.4, label: 'キョロキョロ警戒', type: 'spark' }
+  ];
+  name = '忍び足・こっそり内緒 (Sneaky Tiptoe)';
+  category = RobotAnimationCategory.EMOTION;
+  duration = 2.2;
+  loop = true;
+  description = '人差し指を口元に当てて「しーっ🤫」。左右をキョロキョロ見回しながら、抜き足差し足で忍び寄るお茶目な隠密モーション。';
+  technicalHighlights = [
+    '右腕 (ArmRight) の人差し指口元あて「しーっ」ポーズ (Rotation: -85deg)',
+    '頭部 (Head) の警戒キョロキョロ索敵 (Rotation: -20deg <-> +20deg)',
+    '左右脚部 (LegLeft/LegRight) の抜き足差し足交互ティップトゥ',
+    'こっそり忍び寄る前傾クラウチ姿勢'
+  ];
+
+  build(refs: RobotDOMRefs, tl: gsap.core.Timeline): void {
+    this.resetElements(refs, tl);
+    const { container, head, body, arms, armLeft, armRight, legLeft, legRight } = refs;
+
+    // 1. しーっ🤫 人差し指を口元へ、前傾クラウチ
+    tl.to(container, { y: 6, scaleY: 0.95, duration: 0.3, ease: 'power1.out' });
+    if (armRight) tl.to(armRight, { rotation: -85, x: -6, y: -12, duration: 0.3, ease: 'power2.out' }, '<');
+    if (armLeft) tl.to(armLeft, { rotation: -20, x: -8, duration: 0.3 }, '<');
+    if (!armRight && !armLeft && arms) tl.to(arms, { y: -4, rotation: -10, duration: 0.3 }, '<');
+
+    // 左右をキョロキョロ見る
+    if (head) {
+      tl.to(head, { rotation: -22, x: -4, duration: 0.3, ease: 'power1.inOut' }, '<')
+        .to(head, { rotation: 22, x: 4, duration: 0.35, ease: 'power1.inOut' })
+        .to(head, { rotation: 0, x: 0, duration: 0.25 });
+    }
+
+    // 2. 抜き足ステップ（右足をそーっと上げて下ろす）
+    if (legRight) {
+      tl.to(legRight, { y: -10, scaleY: 0.88, rotation: 12, duration: 0.25, ease: 'sine.inOut' }, '+=0.05')
+        .to(legRight, { y: 0, scaleY: 1, rotation: 0, duration: 0.2, ease: 'power1.in' });
+    }
+    tl.to(container, { x: 4, duration: 0.45, ease: 'sine.inOut' }, '<');
+
+    // 3. 差し足ステップ（左足をそーっと上げて下ろす）
+    if (legLeft) {
+      tl.to(legLeft, { y: -10, scaleY: 0.88, rotation: -12, duration: 0.25, ease: 'sine.inOut' })
+        .to(legLeft, { y: 0, scaleY: 1, rotation: 0, duration: 0.2, ease: 'power1.in' });
+    }
+    tl.to(container, { x: 0, duration: 0.45, ease: 'sine.inOut' }, '<');
+
+    // 4. 基本姿勢へ復帰
+    const all = [container, head, body, arms, armLeft, armRight, legLeft, legRight].filter(Boolean);
+    tl.to(all, { x: 0, y: 0, rotation: 0, scale: 1, scaleY: 1, duration: 0.35, ease: 'power2.out' });
   }
 }
 
@@ -3254,7 +4673,6 @@ export class GSAPRobotAnimationRegistry {
       new SpinTornadoAnimation(),
       new JetpackAscentFlightAnimation(),
       new JetpackForwardFlightAnimation(),
-      new JoyfulSkippingAnimation(),
 
       // 3. 点検・動作 (Mechanical & Diagnostics)
       new BioBreathingAnimation(),
@@ -3272,6 +4690,25 @@ export class GSAPRobotAnimationRegistry {
       new BanzaiCheerAnimation(),
       new YayRejoiceAnimation(),
       new DisappointedSlumpAnimation(),
+      new AngryTantrumAnimation(),
+      new WeepingTearsAnimation(),
+      new ShyBlushingAnimation(),
+      new SmugPrideAnimation(),
+      new ShockStartledAnimation(),
+      new ClappingApplauseAnimation(),
+      new HeadShakeNoAnimation(),
+      new SleepyNodOffAnimation(),
+      new AffectionateNuzzleAnimation(),
+      new VictoryFistPumpAnimation(),
+      new BellyLaughAnimation(),
+      new FriendlyWaveAnimation(),
+      new JoyfulSkippingAnimation(),
+      new PuzzledScratchHeadAnimation(),
+      new SparklingEyesInspirationAnimation(),
+      new SweatDropFlusteredAnimation(),
+      new HeartFlutterInLoveAnimation(),
+      new DeterminedFocusAnimation(),
+      new SneakyTiptoeAnimation(),
     ];
     list.forEach(p => this.patterns.set(p.id, p));
   }

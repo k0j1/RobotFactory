@@ -158,23 +158,63 @@ export const OthelloGame: React.FC<MinigameProps> = ({
       return { move: candidateMoves[0], triggeredMemoryName: triggeredName };
     }
 
-    // 候補が複数残っている場合、知性(int)に応じた評価値で選択
-    if (int < 10) {
+    // 候補が複数残っている場合、知性(int)に応じた評価値と微小な思考ゆらぎ・ソフトマックス選択により、
+    // 同じ能力・同じ相手でも毎回異なる手順・展開を生み出す
+    if (int < 8) {
       return { 
         move: candidateMoves[Math.floor(Math.random() * candidateMoves.length)],
         triggeredMemoryName: triggeredName
       };
     }
 
-    let best = candidateMoves[0], maxEval = -Infinity;
-    for (const m of candidateMoves) {
+    // 各候補手についての評価値スコアを計算
+    const scoredMoves = candidateMoves.map(m => {
       const nb = applyMove(b, m.r, m.c, p);
       let ev = 0;
-      if (int < 30) ev = getFlippable(b, m.r, m.c, p).length;
-      else ev = evaluate(nb, p);
-      if (ev > maxEval) { maxEval = ev; best = m; }
+      if (int < 30) {
+        ev = getFlippable(b, m.r, m.c, p).length;
+      } else {
+        ev = evaluate(nb, p);
+      }
+      // 思考の個性・状況に応じたわずかなゆらぎ（同一盤面での完全固定化を防止し、自然な手の変化を生む）
+      // 知性による確固たる判断を保ちつつ、同点や僅差の手（0〜2点差）で異なる着手を選ぶ契機とする
+      const jitter = (Math.random() - 0.5) * 2.0;
+      return { move: m, score: ev + jitter };
+    });
+
+    // 最大評価値
+    const maxScore = Math.max(...scoredMoves.map(sm => sm.score));
+
+    // 温度パラメータ (Temperature):
+    // 知性が高いほど最善手を強く優先するが、互角の良手（同点など）がある場合は柔軟に分散させる
+    const temperature = Math.max(1.2, 7.0 - (int * 0.055));
+
+    // 最善手から大きく劣る悪手を排除するため、知性に応じた閾値内の上位候補を抽出
+    const dropMargin = Math.max(8, 25 - (int * 0.15));
+    const viableMoves = scoredMoves.filter(sm => sm.score >= maxScore - dropMargin);
+    const candidatePool = viableMoves.length > 0 ? viableMoves : scoredMoves;
+
+    // ソフトマックス（Boltzmann分布）による重み付け確率計算
+    const weightedMoves = candidatePool.map(sm => {
+      const diff = (sm.score - maxScore) / temperature;
+      return {
+        move: sm.move,
+        weight: Math.exp(Math.max(-15, diff))
+      };
+    });
+
+    const totalWeight = weightedMoves.reduce((sum, wm) => sum + wm.weight, 0);
+    let rand = Math.random() * totalWeight;
+    let chosen = weightedMoves[0].move;
+    for (const wm of weightedMoves) {
+      rand -= wm.weight;
+      if (rand <= 0) {
+        chosen = wm.move;
+        break;
+      }
     }
-    return { move: best, triggeredMemoryName: triggeredName };
+
+    return { move: chosen, triggeredMemoryName: triggeredName };
   };
 
   useEffect(() => {

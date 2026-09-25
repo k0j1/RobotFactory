@@ -229,7 +229,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                     <li><strong>Google AdSense リワード広告時短:</strong> パーツ製造およびロボット組立の進行中に動画広告を視聴することで、完了までの所要時間を<strong>1回につき30分短縮</strong>できます。残り時間が30分以内の場合は即座に完成します。</li>
                     <li><strong>Googleアカウント連携 &amp; クラウドデータ同期 (DB v0.19):</strong> Googleアカウントでログインした場合、オンライン上にゲームデータ（工房ステータス、所持機体、パーツ、遠征、ミニゲーム成績・宝箱数等）が自動的に保存・同期されます。<code>users</code>テーブルの<code>google_id</code>を親キーとして、全23テーブル（<code>user_item</code>, <code>user_material</code>, <code>user_minigame_status</code>, <code>user_parts</code>, <code>user_robots</code>, <code>user_workshop_status</code>, <code>user_save_data</code>, <code>stats_minigame_rankings</code>, <code>completed_daily_minigame</code>, <code>complete_part_crafts</code>等の各種active/completeテーブル）の<code>user_id</code>に厳格な外部キー制約（CASCADE）が設定され、データの参照整合性と安全性が保証されています（旧<code>complete_parts</code>テーブルは廃止され、パーツ製造履歴は<code>complete_part_crafts</code>へ統合・正規化）。所持パーツテーブル（<code>user_parts</code>）は個別カラム（vitality・power・defense・agility・dexterity・intelligence・attribute・rarity・メイン/サブ素材マスターID等）で構造化管理され、保存時に未装備パーツ（<code>is_equipped = 0</code>）や既存レコードの<code>created_at</code>作成日時が安全に保護され、余計な一括削除や意図しない日時の上書きが発生しないよう最適化されています。パーツ製造完了・受取時には、<code>active_part_crafts</code>の削除、<code>complete_part_crafts</code>への製造パーツ情報（<code>result_part_data</code>）付き履歴追加、および<code>user_parts</code>テーブルへの新パーツ追加が単一トランザクション内で不可分に実行されます。この際、同一の<code>part_id</code>や同一の<code>start_time</code>かつ<code>end_time</code>を持つレコードが既に<code>complete_part_crafts</code>テーブルに存在する場合は、多重登録を防止しつつ、パーツの所持確定および進行中クラフト（<code>active_part_crafts</code>）の削除クリーンアップを自動実行して安全に受取完了へと同期されます。また、ミニゲーム/演習クリア制限テーブル（<code>completed_daily_minigame</code>）により機体・ゲーム・難易度ごとのクリア状況が記録され、毎朝9:00（JST）のデイリーリセットを迎えるまで同機体の再クリアが制限されます。</li>
                     <li><strong>他プレイヤーのリアルタイム組立状況表示:</strong> active_robot_assembliesテーブルを参照し、現在他のプレイヤーがロボットを組み立てている場合、組立タブや作業ドックに「他の工房で〇〇人組立中」バッジがリアルタイムに表示されます。</li>
-                    <li><strong>GSAPモーションスタジオ:</strong> 漆黒のグランドピアノによる華麗なピアノ協奏曲演奏をはじめ、各種戦闘・アクロバット・仕草など、多彩なモーションをロボットで鑑賞・動作検証できます。</li>
+                    <li><strong>GSAPモーションスタジオ:</strong> 漆黒のグランドピアノによる華麗なピアノ協奏曲演奏や大迫力の必殺奥義・アクロバットをはじめ、喜怒哀楽・がっかりため息・地団駄プンプン・号泣スプラッシュ・照れ笑い・ドヤ顔・驚愕硬直・拍手喝采・首振り拒否・居眠り舟漕ぎ・甘えん坊ハグ・ガッツポーズ・大爆笑・バイバイ・るんるんスキップ・困惑頭ポリポリ・電球閃き・冷や汗タラリ・胸キュン鼓動・闘志全開・忍び足など、多彩な感情表現・仕草モーション（全26種）と専用SVGパーティクルエフェクトを組み込んだロボットの生き生きとした表現を鑑賞・動作検証できます。</li>
                   </ul>
                 </div>
               </div>
@@ -490,6 +490,9 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                   <strong className="text-stone-900 block font-bold mb-1">♟️ クラシック頭脳対戦 (リバーシ / チェス / 五目並べ / 三目並べ)</strong>
                   <p className="text-stone-600">
                     ロボットの知力(INT)や思考ロジックを試すボードゲーム集。<strong>リバーシおよびチェスでは勝利時に専用の宝箱がドロップ</strong>し、回収可能！対局相手のレベルに応じた素材・ゴールド・工房名声および同数のバトルエレメント（Lv.4以上で名声と同数）を獲得できます。未勝利時は1日何回でも繰り返し挑戦できます。
+                    <br />
+                    <strong>🎲 動的思考ルーチン＆手数バリエーション機構（オセロ・チェス・五目並べ）:</strong>
+                    同じ機体・同じ知力(INT)の対戦相手であっても、毎回まったく同じ手順・同じ勝敗結果（完全固定化・千日手）にならないよう、各盤面評価値をもとに上位の有力候補手群から知性に応じた温度パラメータ（Temperature）による重み付け確率選択（ソフトマックス分布）と微小な思考ゆらぎを適用。チェスではピース・スクエア・テーブル（PST）による駒の位置価値や中央支配も加味され、初手オープニング（e4, d4, c4, Nf3等）から終盤まで、対戦するたびに毎回異なる多彩な棋譜とドラマチックな攻防が展開されます。
                     <br />
                     <strong>🧠 リバーシ専用 戦術メモリ（思考ルーチン制御）システム:</strong>
                     リバーシでは、バトル勝利などで集めた<strong>エレメント（各150 E）を消費して「戦術メモリ」を購入・アンロック</strong>し、機体選択画面で<strong>最大3つまで装備</strong>することが可能です。装備したスロット順（優先度1 → 優先度2 → 優先度3）に候補手が段階的にフィルタリングされ、ロボットの着手AIの思考ルーチンを自由にカスタマイズ・最適化できます。

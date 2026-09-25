@@ -88,22 +88,38 @@ export const GomokuGame: React.FC<MinigameProps> = ({ activeRobot, activeOpponen
 
     if (candidates.length === 0) return {r: Math.floor(SIZE/2), c: Math.floor(SIZE/2)};
 
-    let bestMove = candidates[0];
-    let maxEval = -Infinity;
-
-    for (const m of candidates) {
+    // 各候補手について評価値と微小ゆらぎを計算し、同点・僅差の手での固定化を防止
+    const scoredMoves = candidates.map(m => {
       const nb = b.map(row => [...row]);
       nb[m.r][m.c] = p;
       let ev = evaluate(nb, p);
       const centerDist = Math.abs(m.r - Math.floor(SIZE/2)) + Math.abs(m.c - Math.floor(SIZE/2));
       ev -= centerDist * 0.1;
-      
-      if (ev > maxEval) {
-        maxEval = ev;
-        bestMove = m;
+      const jitter = (Math.random() - 0.5) * 1.5;
+      return { move: m, score: ev + jitter };
+    });
+
+    const maxScore = Math.max(...scoredMoves.map(sm => sm.score));
+    const temperature = Math.max(1.0, 5.0 - (int * 0.04));
+    const viableMoves = scoredMoves.filter(sm => sm.score >= maxScore - 10);
+    const candidatePool = viableMoves.length > 0 ? viableMoves : scoredMoves;
+
+    const weightedMoves = candidatePool.map(sm => ({
+      move: sm.move,
+      weight: Math.exp(Math.max(-12, (sm.score - maxScore) / temperature))
+    }));
+
+    const totalWeight = weightedMoves.reduce((sum, wm) => sum + wm.weight, 0);
+    let rand = Math.random() * totalWeight;
+    let chosen = weightedMoves[0].move;
+    for (const wm of weightedMoves) {
+      rand -= wm.weight;
+      if (rand <= 0) {
+        chosen = wm.move;
+        break;
       }
     }
-    return bestMove;
+    return chosen;
   };
 
   useEffect(() => {
