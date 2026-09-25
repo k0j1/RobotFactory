@@ -1421,6 +1421,10 @@ export class GameEngine {
         if (!res || res.success === false) {
           throw new Error(res?.error || "データベース保存に失敗しました");
         }
+        // DB保存成功後、受取完了した一時ステートをクリアして次回以降の通常セーブで再送・重複エラーになるのを防止
+        this.state.completePartCraft = null;
+        this.state.completedPartCraft = null;
+        this.saveState();
       } catch (err: any) {
         console.error("[GameEngine] complete_part_craftsへの即時保存エラー:", err);
         // DB更新失敗時はクライアントステートを元の製造中状態へロールバック

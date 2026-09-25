@@ -1068,18 +1068,19 @@ try {
     }
 
     if (!empty($compCraftsList)) {
-        // complete_part_crafts テーブルに完了レコードを確実に重複排除して追加
+        // 同一の part_id または 同一の start_time かつ end_time を持つレコードが既にテーブルに存在するかチェックするステートメント
+        $stmtCheckDup = $pdo->prepare("
+            SELECT id, user_id, start_time, end_time, result_part_data
+            FROM complete_part_crafts
+            WHERE (:chk_part_id != '' AND result_part_data LIKE :chk_part_id_like)
+               OR (:chk_start_time > 0 AND :chk_end_time > 0 AND start_time = :chk_start_time_eq AND end_time = :chk_end_time_eq)
+            LIMIT 1
+        ");
+
+        // complete_part_crafts テーブルに完了レコードを追加するステートメント
         $stmtCompCraft = $pdo->prepare("
             INSERT INTO complete_part_crafts (user_id, part_type, main_material_id, sub_material_id, start_time, end_time, result_part_data, completed_at)
-            SELECT :ins_user_id, :ins_part_type, :ins_main_id, :ins_sub_id, :ins_start_time, :ins_end_time, :ins_result_part_data, FROM_UNIXTIME(:ins_completed_at)
-            WHERE NOT EXISTS (
-                SELECT 1 FROM complete_part_crafts
-                WHERE user_id = :chk_user_id
-                  AND (
-                    (:chk_part_id != '' AND result_part_data LIKE :chk_part_id_like)
-                    OR (:chk_start_time_gt > 0 AND :chk_end_time_gt > 0 AND start_time = :chk_start_time_eq AND end_time = :chk_end_time_eq)
-                  )
-            )
+            VALUES (:ins_user_id, :ins_part_type, :ins_main_id, :ins_sub_id, :ins_start_time, :ins_end_time, :ins_result_part_data, FROM_UNIXTIME(:ins_completed_at))
         ");
 
         $processedCraftKeys = [];
@@ -1135,6 +1136,30 @@ try {
             if (isset($processedCraftKeys[$dedupKey])) continue;
             $processedCraftKeys[$dedupKey] = true;
 
+            // 同一の part_id または同一の start_time かつ end_time を持つレコードが既にテーブルに存在する場合はエラーとする
+            $stmtCheckDup->execute([
+                ':chk_part_id' => $partId,
+                ':chk_part_id_like' => '%' . $partId . '%',
+                ':chk_start_time' => $sTime,
+                ':chk_end_time' => $eTime,
+                ':chk_start_time_eq' => $sTime,
+                ':chk_end_time_eq' => $eTime
+            ]);
+            $existingCraft = $stmtCheckDup->fetch(PDO::FETCH_ASSOC);
+            if ($existingCraft) {
+                $dupReasons = [];
+                if (!empty($partId) && !empty($existingCraft['result_part_data']) && strpos($existingCraft['result_part_data'], $partId) !== false) {
+                    $dupReasons[] = "同一のpart_id('{$partId}')";
+                }
+                if ($sTime > 0 && $eTime > 0 && (int)$existingCraft['start_time'] === $sTime && (int)$existingCraft['end_time'] === $eTime) {
+                    $dupReasons[] = "同一のstart_time({$sTime})かつend_time({$eTime})";
+                }
+                $reasonDesc = !empty($dupReasons) ? implode('および', $dupReasons) : "レコードID: {$existingCraft['id']}";
+                $errMsg = "complete_part_craftsテーブルに{$reasonDesc}を持つレコードが既に存在するため、受取処理をエラーとしました。";
+                error_log("[save.php] duplicate complete_part_crafts: " . $errMsg);
+                throw new Exception($errMsg);
+            }
+
             // 2. complete_part_crafts 追加と同時に user_parts テーブルにも確実にパーツを同期・追加（同一トランザクション内）
             if (!empty($resultPart) && is_array($resultPart)) {
                 try {
@@ -1155,15 +1180,12 @@ try {
                 ':ins_start_time' => $sTime,
                 ':ins_end_time' => $eTime,
                 ':ins_result_part_data' => !empty($resultPart) ? json_encode($resultPart, JSON_UNESCAPED_UNICODE) : null,
-                ':ins_completed_at' => $compAtSec > 0 ? $compAtSec : time(),
-                ':chk_user_id' => $actualUserId,
-                ':chk_part_id' => $partId,
-                ':chk_part_id_like' => '%' . $partId . '%',
-                ':chk_start_time_gt' => $sTime,
-                ':chk_end_time_gt' => $eTime,
-                ':chk_start_time_eq' => $sTime,
-                ':chk_end_time_eq' => $eTime
+                ':ins_completed_at' => $compAtSec > 0 ? $compAtSec : time()
             ]);
+
+            if ($stmtCompCraft->rowCount() <= 0) {
+                throw new Exception("complete_part_craftsテーブルへのレコード追加に失敗しました。");
+            }
         }
     }
 
