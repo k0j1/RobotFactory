@@ -212,6 +212,7 @@ export const CombatGame: React.FC<MinigameProps> = ({
           setModalInspectSkill(skill || null);
           setIsSkillModalOpen(true);
         }}
+        combatEquipmentRanks={combatEquipmentRanks}
       />
 
       {/* ステータスカード展開切り替え & 繰り出した技の説明ボタン */}

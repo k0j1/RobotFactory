@@ -113,7 +113,7 @@ try {
         user_id VARCHAR(255) NOT NULL,
         robot_id VARCHAR(64) NOT NULL,
         level VARCHAR(32) NOT NULL DEFAULT '1',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         UNIQUE KEY uq_daily_clear (user_id, robot_id, minigame_id, level),
         INDEX idx_user_robot (user_id, robot_id),
         INDEX idx_created_at (created_at)
@@ -931,6 +931,7 @@ try {
         $pdo->exec("ALTER TABLE completed_daily_minigame MODIFY COLUMN robot_id VARCHAR(64) NOT NULL");
         $pdo->exec("ALTER TABLE completed_daily_minigame MODIFY COLUMN minigame_id VARCHAR(32) NOT NULL");
         $pdo->exec("ALTER TABLE completed_daily_minigame MODIFY COLUMN level VARCHAR(32) NOT NULL DEFAULT '1'");
+        $pdo->exec("ALTER TABLE completed_daily_minigame MODIFY COLUMN created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP");
     } catch (PDOException $e) {}
 
     try {
@@ -1116,7 +1117,7 @@ try {
                     $insertDailyStmt = $pdo->prepare("
                         INSERT INTO completed_daily_minigame (user_id, robot_id, minigame_id, level, created_at)
                         VALUES (:user_id, :robot_id, :minigame_id, :level, CURRENT_TIMESTAMP)
-                        ON DUPLICATE KEY UPDATE created_at = CURRENT_TIMESTAMP
+                        ON DUPLICATE KEY UPDATE id = id
                     ");
                     $nowJst = new DateTime('now', new DateTimeZone('Asia/Tokyo'));
                     $todayDateKey = $nowJst->format('Y-m-d');

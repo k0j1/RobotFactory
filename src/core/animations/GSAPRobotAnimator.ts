@@ -16,6 +16,9 @@ export interface RobotDOMRefs {
   sparkles?: HTMLElement | null;
   fxContainer?: HTMLElement | null;
   armPartKey?: string;
+  saberRank?: string;
+  shieldRank?: string;
+  combatEquipmentRanks?: { beamSaber?: string; beamShield?: string };
   [key: string]: any;
 }
 
@@ -55,12 +58,105 @@ export const ROBOT_ANIMATION_CATEGORIES = [
 
 
 // ----------------------------------------------------------------------
-// AT-Field 幾何学力場バリアエフェクト
+// AT-Field 幾何学力場バリアエフェクト（ランク別力場カラー対応）
 // ----------------------------------------------------------------------
-export function mountATFieldBarrierEffect(container: HTMLElement, options: { sizePercent?: number } = {}): any {
+export const SHIELD_RANK_THEMES: Record<string, {
+  strokeGradStart: string;
+  strokeGradMid: string;
+  strokeGradEnd: string;
+  innerGradStart: string;
+  innerGradMid: string;
+  innerGradEnd: string;
+  ringStroke: string;
+  gridStroke: string;
+  coreStroke: string;
+  nodeBorder: string;
+  dropShadow1: string;
+  dropShadow2: string;
+}> = {
+  common: {
+    // 琥珀・黄金 (Common: Amber AT-Field)
+    strokeGradStart: '#ffffff',
+    strokeGradMid: '#f59e0b',
+    strokeGradEnd: '#c2410c',
+    innerGradStart: '#fbbf24',
+    innerGradMid: '#f59e0b',
+    innerGradEnd: '#f97316',
+    ringStroke: '#fde047',
+    gridStroke: '#fef08a',
+    coreStroke: '#f59e0b',
+    nodeBorder: '#ea580c',
+    dropShadow1: '#f59e0b',
+    dropShadow2: '#ea580c',
+  },
+  uncommon: {
+    // 翡翠・エメラルド力場 (Uncommon: Emerald Barrier)
+    strokeGradStart: '#ffffff',
+    strokeGradMid: '#10b981',
+    strokeGradEnd: '#047857',
+    innerGradStart: '#34d399',
+    innerGradMid: '#10b981',
+    innerGradEnd: '#059669',
+    ringStroke: '#6ee7b7',
+    gridStroke: '#a7f3d0',
+    coreStroke: '#10b981',
+    nodeBorder: '#059669',
+    dropShadow1: '#10b981',
+    dropShadow2: '#047857',
+  },
+  rare: {
+    // 天藍・ダイヤモンドアズール力場 (Rare: Azure Crystal Barrier)
+    strokeGradStart: '#ffffff',
+    strokeGradMid: '#0284c7',
+    strokeGradEnd: '#0369a1',
+    innerGradStart: '#38bdf8',
+    innerGradMid: '#0284c7',
+    innerGradEnd: '#0369a1',
+    ringStroke: '#7dd3fc',
+    gridStroke: '#bae6fd',
+    coreStroke: '#0284c7',
+    nodeBorder: '#0284c7',
+    dropShadow1: '#0284c7',
+    dropShadow2: '#0369a1',
+  },
+  epic: {
+    // 紫電・アメジスト虚空力場 (Epic: Void Amethyst Barrier)
+    strokeGradStart: '#ffffff',
+    strokeGradMid: '#8b5cf6',
+    strokeGradEnd: '#6d28d9',
+    innerGradStart: '#a78bfa',
+    innerGradMid: '#8b5cf6',
+    innerGradEnd: '#7c3aed',
+    ringStroke: '#c4b5fd',
+    gridStroke: '#ddd6fe',
+    coreStroke: '#8b5cf6',
+    nodeBorder: '#6d28d9',
+    dropShadow1: '#8b5cf6',
+    dropShadow2: '#6d28d9',
+  },
+  legendary: {
+    // 神話・ソーラーゴールデン力場 (Legendary: Radiant Solar Gold Barrier)
+    strokeGradStart: '#ffffff',
+    strokeGradMid: '#fbbf24',
+    strokeGradEnd: '#e11d48',
+    innerGradStart: '#fde047',
+    innerGradMid: '#f59e0b',
+    innerGradEnd: '#ef4444',
+    ringStroke: '#fef08a',
+    gridStroke: '#fff176',
+    coreStroke: '#fbbf24',
+    nodeBorder: '#b91c1c',
+    dropShadow1: '#fbbf24',
+    dropShadow2: '#e11d48',
+  },
+};
+
+export function mountATFieldBarrierEffect(container: HTMLElement, options: { sizePercent?: number; rank?: string } = {}): any {
   const wrapper = document.createElement('div');
   const id = 'at_' + Math.random().toString(36).substring(2, 7);
   const size = options.sizePercent || 120;
+  const rankKey = options.rank && SHIELD_RANK_THEMES[options.rank] ? options.rank : 'common';
+  const t = SHIELD_RANK_THEMES[rankKey];
 
   wrapper.className = 'absolute pointer-events-none will-change-transform flex items-center justify-center';
   wrapper.style.width = `${size}%`;
@@ -72,26 +168,26 @@ export function mountATFieldBarrierEffect(container: HTMLElement, options: { siz
   wrapper.style.transform = 'scale(0.3)';
 
   wrapper.innerHTML = `
-    <svg viewBox="0 0 400 400" class="w-full h-full filter drop-shadow-[0_0_24px_#f59e0b] drop-shadow-[0_0_45px_#ea580c]">
+    <svg viewBox="0 0 400 400" class="w-full h-full filter" style="filter: drop-shadow(0 0 24px ${t.dropShadow1}) drop-shadow(0 0 45px ${t.dropShadow2})">
       <defs>
-        <!-- ATフィールド 黄金・琥珀グラデーション -->
+        <!-- ATフィールド ランク別グラデーション -->
         <linearGradient id="${id}-at-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.98" />
-          <stop offset="25%" stop-color="#fef08a" stop-opacity="0.9" />
-          <stop offset="60%" stop-color="#f59e0b" stop-opacity="0.75" />
-          <stop offset="90%" stop-color="#ea580c" stop-opacity="0.85" />
-          <stop offset="100%" stop-color="#c2410c" stop-opacity="0.95" />
+          <stop offset="0%" stop-color="${t.strokeGradStart}" stop-opacity="0.98" />
+          <stop offset="25%" stop-color="${t.ringStroke}" stop-opacity="0.9" />
+          <stop offset="60%" stop-color="${t.strokeGradMid}" stop-opacity="0.75" />
+          <stop offset="90%" stop-color="${t.strokeGradEnd}" stop-opacity="0.85" />
+          <stop offset="100%" stop-color="${t.strokeGradEnd}" stop-opacity="0.95" />
         </linearGradient>
 
         <linearGradient id="${id}-at-inner" x1="0%" y1="100%" x2="100%" y2="0%">
-          <stop offset="0%" stop-color="#fbbf24" stop-opacity="0.35" />
-          <stop offset="50%" stop-color="#f59e0b" stop-opacity="0.5" />
-          <stop offset="100%" stop-color="#f97316" stop-opacity="0.3" />
+          <stop offset="0%" stop-color="${t.innerGradStart}" stop-opacity="0.35" />
+          <stop offset="50%" stop-color="${t.innerGradMid}" stop-opacity="0.5" />
+          <stop offset="100%" stop-color="${t.innerGradEnd}" stop-opacity="0.3" />
         </linearGradient>
 
         <!-- 位相干渉縞パターン -->
         <pattern id="${id}-phase-grid" width="20" height="20" patternUnits="userSpaceOnUse">
-          <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#fef08a" stroke-width="0.8" stroke-opacity="0.45" />
+          <path d="M 20 0 L 0 0 0 20" fill="none" stroke="${t.gridStroke}" stroke-width="0.8" stroke-opacity="0.45" />
         </pattern>
       </defs>
 
@@ -105,36 +201,36 @@ export function mountATFieldBarrierEffect(container: HTMLElement, options: { siz
 
       <!-- 2. 中間 同心八角形リング -->
       <polygon points="135,55 265,55 345,135 345,265 265,345 135,345 55,265 55,135"
-        fill="none" stroke="#fde047" stroke-width="3.5" stroke-dasharray="16,8" opacity="0.95" />
+        fill="none" stroke="${t.ringStroke}" stroke-width="3.5" stroke-dasharray="16,8" opacity="0.95" />
 
       <!-- 3. 内側 同心八角形コア防壁 -->
       <polygon points="150,90 250,90 310,150 310,250 250,310 150,310 90,250 90,150"
         fill="none" stroke="#ffffff" stroke-width="3.2" opacity="0.9" />
 
       <!-- 4. 放射状エネルギーリブ・幾何学力場ライン -->
-      <line x1="20" y1="120" x2="90" y2="150" stroke="#fef08a" stroke-width="3" stroke-linecap="round" />
-      <line x1="20" y1="280" x2="90" y2="250" stroke="#fef08a" stroke-width="3" stroke-linecap="round" />
-      <line x1="380" y1="120" x2="310" y2="150" stroke="#fef08a" stroke-width="3" stroke-linecap="round" />
-      <line x1="380" y1="280" x2="310" y2="250" stroke="#fef08a" stroke-width="3" stroke-linecap="round" />
-      <line x1="120" y1="20" x2="150" y2="90" stroke="#fef08a" stroke-width="3" stroke-linecap="round" />
-      <line x1="280" y1="20" x2="250" y2="90" stroke="#fef08a" stroke-width="3" stroke-linecap="round" />
-      <line x1="120" y1="380" x2="150" y2="310" stroke="#fef08a" stroke-width="3" stroke-linecap="round" />
-      <line x1="280" y1="380" x2="250" y2="310" stroke="#fef08a" stroke-width="3" stroke-linecap="round" />
+      <line x1="20" y1="120" x2="90" y2="150" stroke="${t.gridStroke}" stroke-width="3" stroke-linecap="round" />
+      <line x1="20" y1="280" x2="90" y2="250" stroke="${t.gridStroke}" stroke-width="3" stroke-linecap="round" />
+      <line x1="380" y1="120" x2="310" y2="150" stroke="${t.gridStroke}" stroke-width="3" stroke-linecap="round" />
+      <line x1="380" y1="280" x2="310" y2="250" stroke="${t.gridStroke}" stroke-width="3" stroke-linecap="round" />
+      <line x1="120" y1="20" x2="150" y2="90" stroke="${t.gridStroke}" stroke-width="3" stroke-linecap="round" />
+      <line x1="280" y1="20" x2="250" y2="90" stroke="${t.gridStroke}" stroke-width="3" stroke-linecap="round" />
+      <line x1="120" y1="380" x2="150" y2="310" stroke="${t.gridStroke}" stroke-width="3" stroke-linecap="round" />
+      <line x1="280" y1="380" x2="250" y2="310" stroke="${t.gridStroke}" stroke-width="3" stroke-linecap="round" />
 
       <!-- 5. 8隅の位相アンカーノード -->
-      <circle cx="120" cy="20" r="5.5" fill="#ffffff" stroke="#ea580c" stroke-width="2" />
-      <circle cx="280" cy="20" r="5.5" fill="#ffffff" stroke="#ea580c" stroke-width="2" />
-      <circle cx="380" cy="120" r="5.5" fill="#ffffff" stroke="#ea580c" stroke-width="2" />
-      <circle cx="380" cy="280" r="5.5" fill="#ffffff" stroke="#ea580c" stroke-width="2" />
-      <circle cx="280" cy="380" r="5.5" fill="#ffffff" stroke="#ea580c" stroke-width="2" />
-      <circle cx="120" cy="380" r="5.5" fill="#ffffff" stroke="#ea580c" stroke-width="2" />
-      <circle cx="20" cy="280" r="5.5" fill="#ffffff" stroke="#ea580c" stroke-width="2" />
-      <circle cx="20" cy="120" r="5.5" fill="#ffffff" stroke="#ea580c" stroke-width="2" />
+      <circle cx="120" cy="20" r="5.5" fill="#ffffff" stroke="${t.nodeBorder}" stroke-width="2" />
+      <circle cx="280" cy="20" r="5.5" fill="#ffffff" stroke="${t.nodeBorder}" stroke-width="2" />
+      <circle cx="380" cy="120" r="5.5" fill="#ffffff" stroke="${t.nodeBorder}" stroke-width="2" />
+      <circle cx="380" cy="280" r="5.5" fill="#ffffff" stroke="${t.nodeBorder}" stroke-width="2" />
+      <circle cx="280" cy="380" r="5.5" fill="#ffffff" stroke="${t.nodeBorder}" stroke-width="2" />
+      <circle cx="120" cy="380" r="5.5" fill="#ffffff" stroke="${t.nodeBorder}" stroke-width="2" />
+      <circle cx="20" cy="280" r="5.5" fill="#ffffff" stroke="${t.nodeBorder}" stroke-width="2" />
+      <circle cx="20" cy="120" r="5.5" fill="#ffffff" stroke="${t.nodeBorder}" stroke-width="2" />
 
       <!-- 6. 中央エネルギーコア -->
       <circle cx="200" cy="200" r="20" fill="#ffffff" opacity="0.9" />
       <polygon points="190,172 210,172 228,190 228,210 210,228 190,228 172,210 172,190"
-        fill="none" stroke="#f59e0b" stroke-width="2.5" />
+        fill="none" stroke="${t.coreStroke}" stroke-width="2.5" />
     </svg>
   `;
 
@@ -374,24 +470,76 @@ export abstract class BaseRobotAnimation implements RobotAnimationPattern {
 }
 
 
-export function getPlasmaBladeSVG(s: any = "sw"): any {return`
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="100%" height="100%" class="drop-shadow-[0_0_12px_rgba(0,229,255,0.85)] filter">
+export const BLADE_RANK_THEMES: Record<string, {
+  auraStart: string;
+  auraMid: string;
+  coreMid: string;
+  glowDrop: string;
+  highlight: string;
+}> = {
+  common: {
+    // シアン (Common: Cyan Blue)
+    auraStart: '#00e5ff',
+    auraMid: '#18ffff',
+    coreMid: '#e0f7fa',
+    glowDrop: 'rgba(0,229,255,0.85)',
+    highlight: '#00e5ff',
+  },
+  uncommon: {
+    // エメラルド・ライムグリーン (Uncommon: Emerald Green)
+    auraStart: '#10b981',
+    auraMid: '#34d399',
+    coreMid: '#d1fae5',
+    glowDrop: 'rgba(16,185,129,0.85)',
+    highlight: '#34d399',
+  },
+  rare: {
+    // アズール・ロイヤルブルー (Rare: Deep Azure Sky)
+    auraStart: '#2563eb',
+    auraMid: '#60a5fa',
+    coreMid: '#dbeafe',
+    glowDrop: 'rgba(37,99,235,0.85)',
+    highlight: '#60a5fa',
+  },
+  epic: {
+    // ヴァイオレット・パープル (Epic: Royal Purple)
+    auraStart: '#9333ea',
+    auraMid: '#c084fc',
+    coreMid: '#f3e8ff',
+    glowDrop: 'rgba(147,51,234,0.85)',
+    highlight: '#c084fc',
+  },
+  legendary: {
+    // ソーラーゴールド・真紅黄金 (Legendary: Radiant Solar Gold)
+    auraStart: '#f59e0b',
+    auraMid: '#fbbf24',
+    coreMid: '#fef3c7',
+    glowDrop: 'rgba(245,158,11,0.95)',
+    highlight: '#fbbf24',
+  },
+};
+
+export function getPlasmaBladeSVG(s: any = "sw", rank: string = "common"): any {
+  const rankKey = rank && BLADE_RANK_THEMES[rank] ? rank : 'common';
+  const theme = BLADE_RANK_THEMES[rankKey];
+  return `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="100%" height="100%" class="filter" style="filter: drop-shadow(0 0 12px ${theme.glowDrop})">
   <defs>
     <!-- ビーム核心部（白光） -->
     <linearGradient id="${s}-beam-core" x1="0%" y1="0%" x2="100%" y2="0%">
       <stop offset="0%" stop-color="#ffffff"/>
       <stop offset="15%" stop-color="#ffffff"/>
-      <stop offset="50%" stop-color="#e0f7fa"/>
+      <stop offset="50%" stop-color="${theme.coreMid}"/>
       <stop offset="85%" stop-color="#ffffff"/>
       <stop offset="100%" stop-color="#ffffff"/>
     </linearGradient>
 
-    <!-- ビーム外周プラズマ（グラデーションシアン） -->
+    <!-- ビーム外周プラズマ（ランク別カラー） -->
     <linearGradient id="${s}-beam-aura" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#00e5ff" stop-opacity="0.8"/>
-      <stop offset="30%" stop-color="#18ffff" stop-opacity="0.95"/>
-      <stop offset="70%" stop-color="#18ffff" stop-opacity="0.95"/>
-      <stop offset="100%" stop-color="#00e5ff" stop-opacity="0.8"/>
+      <stop offset="0%" stop-color="${theme.auraStart}" stop-opacity="0.8"/>
+      <stop offset="30%" stop-color="${theme.auraMid}" stop-opacity="0.95"/>
+      <stop offset="70%" stop-color="${theme.auraMid}" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="${theme.auraStart}" stop-opacity="0.8"/>
     </linearGradient>
 
     <!-- サーベル柄（メタリックシルバー） -->
@@ -450,9 +598,45 @@ export function getPlasmaBladeSVG(s: any = "sw"): any {return`
 
   </g>
 </svg>
-  `}
+  `;
+}
 
-export function mountPlasmaBlade(s: any = {}, t: any = {}): any {const i=document.createElement("div"),a=document.createElement("div"),o="sw_"+Math.random().toString(36).substring(2,7),d=t.sizePercent||54,c=t.withHandGrip!==!1,h=HandAnchorManager.getInstance().getHandConfig(t.armPartKey||"arm_r1_v0"),f=t.customShoulderCoord||(t.hand==="right"?h.rightShoulder:h.leftShoulder),x=t.customHandCoord||(t.hand==="right"?h.rightHand:h.leftHand);if(i.className="absolute inset-0 w-full h-full pointer-events-none will-change-transform",i.style.transformOrigin=`${f.x}% ${f.y}%`,a.className="absolute pointer-events-none will-change-transform",a.style.width=`${d}%`,a.style.height=`${d}%`,t.hand==="right"){const b=x.x-.5*d,v=x.y-89.33/100*d;a.style.left=`${b}%`,a.style.top=`${v}%`,a.style.transformOrigin="50% 89.33%",t.initialRotation!==void 0&&(a.style.transform=`rotate(${t.initialRotation}deg)`)}else{const b=x.x-.5*d,v=x.y-89.33/100*d;a.style.left=`${b}%`,a.style.top=`${v}%`,a.style.transformOrigin="50% 89.33%";const w=t.initialRotation||0;a.style.transform=`scaleX(-1) rotate(${w}deg)`}let p=getPlasmaBladeSVG(o);return c&&(p=p.replace("</svg>",`
+export function mountPlasmaBlade(s: any = {}, t: any = {}): any {
+  const i = document.createElement("div");
+  const a = document.createElement("div");
+  const o = "sw_" + Math.random().toString(36).substring(2, 7);
+  const d = t.sizePercent || 54;
+  const c = t.withHandGrip !== !1;
+  const h = HandAnchorManager.getInstance().getHandConfig(t.armPartKey || "arm_r1_v0");
+  const f = t.customShoulderCoord || (t.hand === "right" ? h.rightShoulder : h.leftShoulder);
+  const x = t.customHandCoord || (t.hand === "right" ? h.rightHand : h.leftHand);
+  const rank = t.rank || 'common';
+  const theme = BLADE_RANK_THEMES[rank] || BLADE_RANK_THEMES.common;
+
+  if (i.className = "absolute inset-0 w-full h-full pointer-events-none will-change-transform",
+      i.style.transformOrigin = `${f.x}% ${f.y}%`,
+      a.className = "absolute pointer-events-none will-change-transform",
+      a.style.width = `${d}%`,
+      a.style.height = `${d}%`,
+      t.hand === "right") {
+    const b = x.x - .5 * d,
+          v = x.y - 89.33 / 100 * d;
+    a.style.left = `${b}%`;
+    a.style.top = `${v}%`;
+    a.style.transformOrigin = "50% 89.33%";
+    t.initialRotation !== void 0 && (a.style.transform = `rotate(${t.initialRotation}deg)`);
+  } else {
+    const b = x.x - .5 * d,
+          v = x.y - 89.33 / 100 * d;
+    a.style.left = `${b}%`;
+    a.style.top = `${v}%`;
+    a.style.transformOrigin = "50% 89.33%";
+    const w = t.initialRotation || 0;
+    a.style.transform = `scaleX(-1) rotate(${w}deg)`;
+  }
+
+  let p = getPlasmaBladeSVG(o, rank);
+  return c && (p = p.replace("</svg>", `
     <!-- 手甲・拳カバー（柄を握り込むマニピュレーター） -->
     <g stroke="#000a12" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
       <!-- 手甲ベースプレート -->
@@ -461,11 +645,22 @@ export function mountPlasmaBlade(s: any = {}, t: any = {}): any {const i=documen
       <!-- 指のナックル関節 -->
       <line x1="140" y1="267" x2="160" y2="267" stroke="#90a4ae" stroke-width="2"/>
       <line x1="140" y1="271" x2="160" y2="271" stroke="#90a4ae" stroke-width="2"/>
-      <!-- リベット光沢 -->
-      <circle cx="141" cy="269" r="1.5" fill="#00e5ff" />
-      <circle cx="159" cy="269" r="1.5" fill="#00e5ff" />
+      <!-- リベット光沢（ランク別発光） -->
+      <circle cx="141" cy="269" r="1.5" fill="${theme.highlight}" />
+      <circle cx="159" cy="269" r="1.5" fill="${theme.highlight}" />
     </g>
-    `+"</svg>")),a.innerHTML=p,i.appendChild(a),s.appendChild(i),{wrapper:i,el:a,cleanup:()=>{i.parentNode&&i.parentNode.removeChild(i)}}}
+    ` + "</svg>")),
+    a.innerHTML = p,
+    i.appendChild(a),
+    s.appendChild(i),
+    {
+      wrapper: i,
+      el: a,
+      cleanup: () => {
+        i.parentNode && i.parentNode.removeChild(i);
+      }
+    };
+}
 
 export function mountBeamSlashEffect(s: any = {}): any {const t=document.createElement("div"),i="fs_"+Math.random().toString(36).substring(2,7);return t.className="absolute inset-0 pointer-events-none opacity-0 will-change-transform flex items-center justify-center",t.innerHTML=`
     <svg viewBox="0 0 360 360" class="w-full h-full filter drop-shadow-[0_0_25px_#ea580c]">
@@ -714,7 +909,7 @@ export function mountSniperShotEffect(s: any = {}): any {const t=document.create
     </svg>
   `,s.appendChild(t),{el:t,cleanup:()=>{t.parentNode&&t.parentNode.removeChild(t)}}}
 
-export function mountDualSabers(s: any = {}, t: any = {}): any {const i=t.themeColor||"cyan",a={cyan:{bg:"linear-gradient(90deg, transparent 0%, rgba(6,182,212,0.92) 15%, rgba(15,23,42,0.98) 40%, rgba(15,23,42,0.98) 75%, rgba(6,182,212,0.92) 90%, transparent 100%)",border:"#06b6d4",glow:"0 0 35px rgba(6,182,212,0.85)",textColor:"#a5f3fc",titleColor:"#ffffff",slashColor:"#38bdf8"},amber:{bg:"linear-gradient(90deg, transparent 0%, rgba(245,158,11,0.92) 15%, rgba(28,25,23,0.98) 40%, rgba(28,25,23,0.98) 75%, rgba(245,158,11,0.92) 90%, transparent 100%)",border:"#f59e0b",glow:"0 0 35px rgba(245,158,11,0.85)",textColor:"#fef08a",titleColor:"#ffffff",slashColor:"#fbbf24"},crimson:{bg:"linear-gradient(90deg, transparent 0%, rgba(239,68,68,0.92) 15%, rgba(24,24,27,0.98) 40%, rgba(24,24,27,0.98) 75%, rgba(239,68,68,0.92) 90%, transparent 100%)",border:"#ef4444",glow:"0 0 35px rgba(239,68,68,0.85)",textColor:"#fecaca",titleColor:"#ffffff",slashColor:"#f87171"},emerald:{bg:"linear-gradient(90deg, transparent 0%, rgba(16,185,129,0.92) 15%, rgba(6,78,59,0.98) 40%, rgba(6,78,59,0.98) 75%, rgba(16,185,129,0.92) 90%, transparent 100%)",border:"#10b981",glow:"0 0 35px rgba(16,185,129,0.85)",textColor:"#a7f3d0",titleColor:"#ffffff",slashColor:"#34d399"}}[i],o=document.createElement("div");o.className="absolute inset-0 pointer-events-none z-30 flex items-center justify-center overflow-hidden";const d=document.createElement("div");d.className="absolute inset-0 bg-white pointer-events-none opacity-0 z-40";const c=document.createElement("div");c.className="relative w-full h-[68px] flex items-center justify-between px-6 opacity-0 will-change-transform",c.style.background=a.bg,c.style.borderTop=`2px solid ${a.border}`,c.style.borderBottom=`2px solid ${a.border}`,c.style.boxShadow=a.glow;const u=document.createElement("div");u.className="absolute inset-0 pointer-events-none opacity-40 overflow-hidden",u.innerHTML=`
+export function mountDualSabers(s: any = {}, t: any = {}): any {const i=t.themeColor||"cyan",a={cyan:{bg:"linear-gradient(90deg, transparent 0%, rgba(6,182,212,0.92) 15%, rgba(15,23,42,0.98) 40%, rgba(15,23,42,0.98) 75%, rgba(6,182,212,0.92) 90%, transparent 100%)",border:"#06b6d4",glow:"0 0 35px rgba(6,182,212,0.85)",textColor:"#a5f3fc",titleColor:"#ffffff",slashColor:"#38bdf8"},amber:{bg:"linear-gradient(90deg, transparent 0%, rgba(245,158,11,0.92) 15%, rgba(28,25,23,0.98) 40%, rgba(28,25,23,0.98) 75%, rgba(245,158,11,0.92) 90%, transparent 100%)",border:"#f59e0b",glow:"0 0 35px rgba(245,158,11,0.85)",textColor:"#fef08a",titleColor:"#ffffff",slashColor:"#fbbf24"},crimson:{bg:"linear-gradient(90deg, transparent 0%, rgba(239,68,68,0.92) 15%, rgba(24,24,27,0.98) 40%, rgba(24,24,27,0.98) 75%, rgba(239,68,68,0.92) 90%, transparent 100%)",border:"#ef4444",glow:"0 0 35px rgba(239,68,68,0.85)",textColor:"#fecaca",titleColor:"#ffffff",slashColor:"#f87171"},emerald:{bg:"linear-gradient(90deg, transparent 0%, rgba(16,185,129,0.92) 15%, rgba(6,78,59,0.98) 40%, rgba(6,78,59,0.98) 75%, rgba(16,185,129,0.92) 90%, transparent 100%)",border:"#10b981",glow:"0 0 35px rgba(16,185,129,0.85)",textColor:"#a7f3d0",titleColor:"#ffffff",slashColor:"#34d399"},purple:{bg:"linear-gradient(90deg, transparent 0%, rgba(168,85,247,0.92) 15%, rgba(46,16,101,0.98) 40%, rgba(46,16,101,0.98) 75%, rgba(168,85,247,0.92) 90%, transparent 100%)",border:"#a855f7",glow:"0 0 35px rgba(168,85,247,0.85)",textColor:"#f3e8ff",titleColor:"#ffffff",slashColor:"#c084fc"}}[i]||{bg:"linear-gradient(90deg, transparent 0%, rgba(6,182,212,0.92) 15%, rgba(15,23,42,0.98) 40%, rgba(15,23,42,0.98) 75%, rgba(6,182,212,0.92) 90%, transparent 100%)",border:"#06b6d4",glow:"0 0 35px rgba(6,182,212,0.85)",textColor:"#a5f3fc",titleColor:"#ffffff",slashColor:"#38bdf8"},o=document.createElement("div");o.className="absolute inset-0 pointer-events-none z-30 flex items-center justify-center overflow-hidden";const d=document.createElement("div");d.className="absolute inset-0 bg-white pointer-events-none opacity-0 z-40";const c=document.createElement("div");c.className="relative w-full h-[68px] flex items-center justify-between px-6 opacity-0 will-change-transform",c.style.background=a.bg,c.style.borderTop=`2px solid ${a.border}`,c.style.borderBottom=`2px solid ${a.border}`,c.style.boxShadow=a.glow;const u=document.createElement("div");u.className="absolute inset-0 pointer-events-none opacity-40 overflow-hidden",u.innerHTML=`
     <svg viewBox="0 0 500 70" class="w-full h-full preserve-3d" preserveAspectRatio="none">
       <line x1="60" y1="0" x2="30" y2="70" stroke="${a.slashColor}" stroke-width="4" />
       <line x1="90" y1="0" x2="60" y2="70" stroke="${a.slashColor}" stroke-width="2" />
@@ -946,7 +1141,8 @@ export class ShieldBarrierAnimation extends BaseRobotAnimation {
 
     let barrier: any = null;
     if (fxContainer && typeof document !== 'undefined') {
-      barrier = mountATFieldBarrierEffect(fxContainer, { sizePercent: 125 });
+      const shieldRank = refs.shieldRank || refs.combatEquipmentRanks?.beamShield || 'common';
+      barrier = mountATFieldBarrierEffect(fxContainer, { sizePercent: 125, rank: shieldRank });
     }
 
     tl.eventCallback('onComplete', () => {
@@ -1564,7 +1760,8 @@ export class ShieldBlockItemAnimation extends BaseRobotAnimation {
     const { container, head, body, arms, armLeft, armRight, legs, legLeft, legRight, fxContainer, auraOverlay } = refs;
     let barrier: any = null;
     if (fxContainer && typeof document !== 'undefined') {
-      barrier = mountATFieldBarrierEffect(fxContainer, { sizePercent: 120 });
+      const shieldRank = refs.shieldRank || refs.combatEquipmentRanks?.beamShield || 'common';
+      barrier = mountATFieldBarrierEffect(fxContainer, { sizePercent: 120, rank: shieldRank });
     }
     tl.eventCallback('onComplete', () => {
       barrier?.cleanup?.();
@@ -1621,7 +1818,7 @@ export class FlameBladeCycloneAnimation extends BaseRobotAnimation {
   technicalHighlights=["炎の曲刀SVGの水平固定マウント","3D風の高速スピン回転 (Container rotation: 720deg & Y軸浮遊)","全方位への炎の円舞エフェクト"];
 
   build(t: RobotDOMRefs, i: gsap.core.Timeline): void {
-    this.resetElements(t,i);const{container:a,head:o,body:d,armLeft:c,armRight:u,legLeft:h,legRight:f,fxContainer:x}=t;let p=null,b=null;x&&typeof document<"u"&&(p=mountPlasmaBlade(x,{hand:"right",sizePercent:54,initialRotation:45,armPartKey:t.armPartKey}),b=mountGroundShatterEffect(x),i.set(p.wrapper,{opacity:1}),i.set(p.el,{opacity:0})),i.eventCallback("onComplete",()=>{p==null||p.cleanmountBeamSlashEffect(),b==null||b.cleanmountBeamSlashEffect()}),i.to(a,{y:4,scaleY:.92,duration:.2,ease:"power2.in"}),u&&i.to(u,{rotation:45,x:10,duration:.2},"<"),p&&(i.to(p.wrapper,{rotation:45,x:10,duration:.2},"<"),i.to(p.el,{opacity:1,rotation:20,duration:.2},"<")),c&&i.to(c,{rotation:-45,x:-10,duration:.2},"<"),i.to(a,{y:-25,scaleY:1.08,duration:.18,ease:"power2.out"}),h&&i.to(h,{scaleY:.8,duration:.18},"<"),f&&i.to(f,{scaleY:.8,duration:.18},"<"),i.to(a,{rotation:720,duration:.65,ease:"power2.inOut"}),b&&(i.to(b.el,{opacity:.85,scale:1.3,rotation:360,duration:.3},"<"),i.to(b.el,{opacity:0,scale:1.5,duration:.35},">")),i.to(a,{y:2,scaleY:.9,duration:.15,ease:"power3.out"}),i.to(a,{x:"+=2",y:"+=2",duration:.04,yoyo:!0,repeat:2}),i.to({},{duration:.2}),p&&(i.to(p.el,{opacity:0,duration:.2},">"),i.to(p.wrapper,{x:0,y:0,rotation:0,duration:.35,ease:"power2.out"},"<"));const v=[a,o,d,c,u,h,f].filter(Boolean);i.to(v,{x:0,y:0,rotation:0,scale:1,scaleX:1,scaleY:1,skewX:0,duration:.35,ease:"power2.out"},"<")
+    this.resetElements(t,i);const{container:a,head:o,body:d,armLeft:c,armRight:u,legLeft:h,legRight:f,fxContainer:x}=t;let p=null,b=null;const sRank=t.saberRank||t.combatEquipmentRanks?.beamSaber||'common';x&&typeof document<"u"&&(p=mountPlasmaBlade(x,{hand:"right",sizePercent:54,initialRotation:45,armPartKey:t.armPartKey,rank:sRank}),b=mountGroundShatterEffect(x),i.set(p.wrapper,{opacity:1}),i.set(p.el,{opacity:0})),i.eventCallback("onComplete",()=>{p==null||p.cleanmountBeamSlashEffect(),b==null||b.cleanmountBeamSlashEffect()}),i.to(a,{y:4,scaleY:.92,duration:.2,ease:"power2.in"}),u&&i.to(u,{rotation:45,x:10,duration:.2},"<"),p&&(i.to(p.wrapper,{rotation:45,x:10,duration:.2},"<"),i.to(p.el,{opacity:1,rotation:20,duration:.2},"<")),c&&i.to(c,{rotation:-45,x:-10,duration:.2},"<"),i.to(a,{y:-25,scaleY:1.08,duration:.18,ease:"power2.out"}),h&&i.to(h,{scaleY:.8,duration:.18},"<"),f&&i.to(f,{scaleY:.8,duration:.18},"<"),i.to(a,{rotation:720,duration:.65,ease:"power2.inOut"}),b&&(i.to(b.el,{opacity:.85,scale:1.3,rotation:360,duration:.3},"<"),i.to(b.el,{opacity:0,scale:1.5,duration:.35},">")),i.to(a,{y:2,scaleY:.9,duration:.15,ease:"power3.out"}),i.to(a,{x:"+=2",y:"+=2",duration:.04,yoyo:!0,repeat:2}),i.to({},{duration:.2}),p&&(i.to(p.el,{opacity:0,duration:.2},">"),i.to(p.wrapper,{x:0,y:0,rotation:0,duration:.35,ease:"power2.out"},"<"));const v=[a,o,d,c,u,h,f].filter(Boolean);i.to(v,{x:0,y:0,rotation:0,scale:1,scaleX:1,scaleY:1,skewX:0,duration:.35,ease:"power2.out"},"<")
   }
 }
 
@@ -1655,12 +1852,14 @@ export class FlameBladeThrustAnimation extends BaseRobotAnimation {
     let shatterFx: any = null;
 
     if (fxContainer && typeof document !== 'undefined') {
+      const saberRank = refs.saberRank || refs.combatEquipmentRanks?.beamSaber || 'common';
       blade = mountPlasmaBlade(fxContainer, {
         hand: 'right',
         sizePercent: 62,
         initialRotation: 85,
         withHandGrip: true,
-        armPartKey: refs.armPartKey
+        armPartKey: refs.armPartKey,
+        rank: saberRank
       });
       pierceFx = mountFlamePierceShockwaveEffect(fxContainer);
       shatterFx = mountGroundShatterEffect(fxContainer);
@@ -1777,12 +1976,14 @@ export class BeamSaberJudgementAnimation extends BaseRobotAnimation {
     let shatterFx: any = null;
 
     if (fxContainer && typeof document !== 'undefined') {
+      const saberRank = refs.saberRank || refs.combatEquipmentRanks?.beamSaber || 'common';
       blade = mountPlasmaBlade(fxContainer, {
         hand: 'right',
         sizePercent: 64,
         initialRotation: -50,
         withHandGrip: true,
-        armPartKey: refs.armPartKey
+        armPartKey: refs.armPartKey,
+        rank: saberRank
       });
       cutFx = mountFrontalSlashCutEffect(fxContainer);
       shatterFx = mountGroundShatterEffect(fxContainer);
@@ -1880,7 +2081,7 @@ export class DualSaberMirageDanceAnimation extends BaseRobotAnimation {
   seMarkers: AnimationSEMarker[] = [{time:.2,label:"双剣起動",type:"draw"},{time:.4,label:"1段目・左袈裟斬り",type:"slash"},{time:.6,label:"2段目・右逆袈裟",type:"slash"},{time:.82,label:"3段目・左薙ぎ払い",type:"slash"},{time:1.05,label:"X字クロスフィニッシュ！",type:"slash"},{time:1.25,label:"交差爆砕インパクト",type:"hit"}];
 
   build(t: RobotDOMRefs, i: gsap.core.Timeline): void {
-    this.resetElements(t,i);const{container:a,head:o,body:d,armLeft:c,armRight:u,legLeft:h,legRight:f,fxContainer:x}=t;let p=null,b=null,v=null;x&&typeof document<"u"&&(p=mountPlasmaBlade(x,{hand:"right",sizePercent:54,initialRotation:-30,armPartKey:t.armPartKey}),b=mountPlasmaBlade(x,{hand:"left",sizePercent:54,initialRotation:-30,armPartKey:t.armPartKey}),v=mountGroundShatterEffect(x),i.set([p.wrapper,b.wrapper],{opacity:1}),i.set([p.el,b.el],{opacity:0})),i.eventCallback("onComplete",()=>{p==null||p.cleanmountBeamSlashEffect(),b==null||b.cleanmountBeamSlashEffect(),v==null||v.cleanmountBeamSlashEffect()}),i.to(a,{y:2,scaleY:.95,duration:.2}),c&&i.to(c,{rotation:-40,x:-8,y:-4,duration:.2},"<"),u&&i.to(u,{rotation:-40,x:8,y:-4,duration:.2},"<"),b&&(i.to(b.wrapper,{rotation:-40,x:-8,y:-4,duration:.2},"<"),i.to(b.el,{opacity:1,duration:.2},"<")),p&&(i.to(p.wrapper,{rotation:-40,x:8,y:-4,duration:.2},"<"),i.to(p.el,{opacity:1,duration:.2},"<")),i.to(a,{x:12,duration:.12,ease:"power3.out"}),c&&i.to(c,{rotation:65,x:14,duration:.12,ease:"power4.out"},"<"),b&&(i.to(b.wrapper,{rotation:65,x:14,duration:.12,ease:"power4.out"},"<"),i.to(b.el,{rotation:25,duration:.12},"<")),o&&i.to(o,{rotation:10,duration:.12},"<"),i.to(a,{x:18,duration:.14,ease:"power3.out"}),u&&i.to(u,{rotation:70,x:16,duration:.14,ease:"power4.out"},"<"),p&&(i.to(p.wrapper,{rotation:70,x:16,duration:.14,ease:"power4.out"},"<"),i.to(p.el,{rotation:20,duration:.14},"<")),c&&i.to(c,{rotation:-20,x:-4,duration:.14},"<"),b&&i.to(b.wrapper,{rotation:-20,x:-4,duration:.14},"<"),i.to(a,{x:22,duration:.14,ease:"power3.out"}),c&&i.to(c,{rotation:80,x:18,duration:.14,ease:"power4.out"},"<"),b&&(i.to(b.wrapper,{rotation:80,x:18,duration:.14,ease:"power4.out"},"<"),i.to(b.el,{rotation:35,duration:.14},"<")),u&&i.to(u,{rotation:-30,x:-6,duration:.14},"<"),p&&i.to(p.wrapper,{rotation:-30,x:-6,duration:.14},"<"),i.to(a,{x:28,y:-3,scaleX:1.1,duration:.15,ease:"back.out(2)"}),c&&i.to(c,{rotation:55,x:12,y:-6,duration:.15,ease:"power4.out"},"<"),u&&i.to(u,{rotation:55,x:14,y:-6,duration:.15,ease:"power4.out"},"<"),b&&(i.to(b.wrapper,{rotation:55,x:12,y:-6,duration:.15,ease:"power4.out"},"<"),i.to(b.el,{rotation:30,duration:.15},"<")),p&&(i.to(p.wrapper,{rotation:55,x:14,y:-6,duration:.15,ease:"power4.out"},"<"),i.to(p.el,{rotation:-30,duration:.15},"<")),v&&(i.to(v.el,{opacity:1,scale:1.4,rotation:45,duration:.08},"<"),i.to(v.el,{opacity:0,scale:1.6,duration:.2},">")),i.to(a,{x:"+=2",y:"+=2",duration:.035,yoyo:!0,repeat:4}),i.to({},{duration:.2}),b&&(i.to(b.el,{opacity:0,duration:.25},">"),i.to(b.wrapper,{x:0,y:0,rotation:0,duration:.35,ease:"power2.out"},"<")),p&&(i.to(p.el,{opacity:0,duration:.25},"<"),i.to(p.wrapper,{x:0,y:0,rotation:0,duration:.35,ease:"power2.out"},"<"));const w=[a,o,d,c,u,h,f].filter(Boolean);i.to(w,{x:0,y:0,rotation:0,scale:1,scaleX:1,scaleY:1,skewX:0,duration:.35,ease:"power2.out"},"<")
+    this.resetElements(t,i);const{container:a,head:o,body:d,armLeft:c,armRight:u,legLeft:h,legRight:f,fxContainer:x}=t;let p=null,b=null,v=null;const sRank=t.saberRank||t.combatEquipmentRanks?.beamSaber||'common';x&&typeof document<"u"&&(p=mountPlasmaBlade(x,{hand:"right",sizePercent:54,initialRotation:-30,armPartKey:t.armPartKey,rank:sRank}),b=mountPlasmaBlade(x,{hand:"left",sizePercent:54,initialRotation:-30,armPartKey:t.armPartKey,rank:sRank}),v=mountGroundShatterEffect(x),i.set([p.wrapper,b.wrapper],{opacity:1}),i.set([p.el,b.el],{opacity:0})),i.eventCallback("onComplete",()=>{p==null||p.cleanmountBeamSlashEffect(),b==null||b.cleanmountBeamSlashEffect(),v==null||v.cleanmountBeamSlashEffect()}),i.to(a,{y:2,scaleY:.95,duration:.2}),c&&i.to(c,{rotation:-40,x:-8,y:-4,duration:.2},"<"),u&&i.to(u,{rotation:-40,x:8,y:-4,duration:.2},"<"),b&&(i.to(b.wrapper,{rotation:-40,x:-8,y:-4,duration:.2},"<"),i.to(b.el,{opacity:1,duration:.2},"<")),p&&(i.to(p.wrapper,{rotation:-40,x:8,y:-4,duration:.2},"<"),i.to(p.el,{opacity:1,duration:.2},"<")),i.to(a,{x:12,duration:.12,ease:"power3.out"}),c&&i.to(c,{rotation:65,x:14,duration:.12,ease:"power4.out"},"<"),b&&(i.to(b.wrapper,{rotation:65,x:14,duration:.12,ease:"power4.out"},"<"),i.to(b.el,{rotation:25,duration:.12},"<")),o&&i.to(o,{rotation:10,duration:.12},"<"),i.to(a,{x:18,duration:.14,ease:"power3.out"}),u&&i.to(u,{rotation:70,x:16,duration:.14,ease:"power4.out"},"<"),p&&(i.to(p.wrapper,{rotation:70,x:16,duration:.14,ease:"power4.out"},"<"),i.to(p.el,{rotation:20,duration:.14},"<")),c&&i.to(c,{rotation:-20,x:-4,duration:.14},"<"),b&&i.to(b.wrapper,{rotation:-20,x:-4,duration:.14},"<"),i.to(a,{x:22,duration:.14,ease:"power3.out"}),c&&i.to(c,{rotation:80,x:18,duration:.14,ease:"power4.out"},"<"),b&&(i.to(b.wrapper,{rotation:80,x:18,duration:.14,ease:"power4.out"},"<"),i.to(b.el,{rotation:35,duration:.14},"<")),u&&i.to(u,{rotation:-30,x:-6,duration:.14},"<"),p&&i.to(p.wrapper,{rotation:-30,x:-6,duration:.14},"<"),i.to(a,{x:28,y:-3,scaleX:1.1,duration:.15,ease:"back.out(2)"}),c&&i.to(c,{rotation:55,x:12,y:-6,duration:.15,ease:"power4.out"},"<"),u&&i.to(u,{rotation:55,x:14,y:-6,duration:.15,ease:"power4.out"},"<"),b&&(i.to(b.wrapper,{rotation:55,x:12,y:-6,duration:.15,ease:"power4.out"},"<"),i.to(b.el,{rotation:30,duration:.15},"<")),p&&(i.to(p.wrapper,{rotation:55,x:14,y:-6,duration:.15,ease:"power4.out"},"<"),i.to(p.el,{rotation:-30,duration:.15},"<")),v&&(i.to(v.el,{opacity:1,scale:1.4,rotation:45,duration:.08},"<"),i.to(v.el,{opacity:0,scale:1.6,duration:.2},">")),i.to(a,{x:"+=2",y:"+=2",duration:.035,yoyo:!0,repeat:4}),i.to({},{duration:.2}),b&&(i.to(b.el,{opacity:0,duration:.25},">"),i.to(b.wrapper,{x:0,y:0,rotation:0,duration:.35,ease:"power2.out"},"<")),p&&(i.to(p.el,{opacity:0,duration:.25},"<"),i.to(p.wrapper,{x:0,y:0,rotation:0,duration:.35,ease:"power2.out"},"<"));const w=[a,o,d,c,u,h,f].filter(Boolean);i.to(w,{x:0,y:0,rotation:0,scale:1,scaleX:1,scaleY:1,skewX:0,duration:.35,ease:"power2.out"},"<")
   }
 }
 
@@ -1903,7 +2104,7 @@ export class UltimateOmegaCrossSlashAnimation extends BaseRobotAnimation {
   seMarkers: AnimationSEMarker[] = [{time:.2,label:"抜刀＆構え",type:"draw"},{time:.5,label:"必殺カットイン！",type:"cutin"},{time:1.1,label:"エネルギー極大充填",type:"charge"},{time:1.65,label:"神速踏み込み",type:"flame"},{time:1.95,label:"星断オメガクロス一閃！",type:"slash"},{time:2.15,label:"終極爆砕フィニッシュ！",type:"hyper"}];
 
   build(t: RobotDOMRefs, i: gsap.core.Timeline): void {
-    this.resetElements(t,i);const{container:a,head:o,body:d,armLeft:c,armRight:u,legLeft:h,legRight:f,fxContainer:x}=t;let p=null,b=null,v=null,w=null,j=null;x&&typeof document<"u"&&(p=mountPlasmaBlade(x,{hand:"right",sizePercent:66,initialRotation:-15,armPartKey:t.armPartKey}),b=mountPlasmaBlade(x,{hand:"left",sizePercent:66,initialRotation:15,armPartKey:t.armPartKey}),v=mountDualSabers(x,{title:"星断・オメガクロス斬",subtitle:"ULTIMATE SWORD FINISHER",themeColor:"cyan"}),w=mountDualSlashEffect(x),j=mountIaidoSlashEffect(x),i.set([p.wrapper,b.wrapper],{opacity:1}),i.set([p.el,b.el],{opacity:0})),i.eventCallback("onComplete",()=>{p==null||p.cleanmountBeamSlashEffect(),b==null||b.cleanmountBeamSlashEffect(),v==null||v.cleanmountBeamSlashEffect(),w==null||w.cleanmountBeamSlashEffect(),j==null||j.cleanmountBeamSlashEffect()}),i.to(a,{y:6,scaleY:.96,duration:.35,ease:"power2.out"}),u&&i.to(u,{rotation:-35,x:6,duration:.35,ease:"power2.out"},"<"),c&&i.to(c,{rotation:35,x:-6,duration:.35,ease:"power2.out"},"<"),p&&(i.to(p.wrapper,{rotation:-35,x:6,duration:.35,ease:"power2.out"},"<"),i.to(p.el,{opacity:1,duration:.3},"<")),b&&(i.to(b.wrapper,{rotation:35,x:-6,duration:.35,ease:"power2.out"},"<"),i.to(b.el,{opacity:1,duration:.3},"<")),v&&(i.to(v.flashEl,{opacity:.85,duration:.08,ease:"power2.out"}),i.to(v.flashEl,{opacity:0,duration:.15},">"),i.fromTo(v.banner,{opacity:0,x:-60,scaleY:.3},{opacity:1,x:0,scaleY:1,duration:.22,ease:"back.out(1.8)"},"<"),i.to(v.banner,{x:10,duration:.5,ease:"none"}),i.to(v.banner,{opacity:0,x:60,scaleY:.2,duration:.18,ease:"power3.in"},">")),w&&(i.fromTo(w.el,{opacity:0,scale:.5,rotation:-90},{opacity:1,scale:1.25,rotation:180,duration:.55,ease:"power2.out"},"<-0.2"),i.to(w.el,{rotation:360,scale:1.35,duration:.3,ease:"none"})),i.to(a,{y:12,scaleX:1.08,scaleY:.92,duration:.45,ease:"power3.inOut"},"<"),o&&i.to(o,{y:3,rotation:-5,duration:.45},"<"),u&&i.to(u,{rotation:-60,x:-10,duration:.45},"<"),c&&i.to(c,{rotation:60,x:10,duration:.45},"<"),p&&i.to(p.wrapper,{rotation:-60,x:-10,duration:.45},"<"),b&&i.to(b.wrapper,{rotation:60,x:10,duration:.45},"<"),i.to(a,{x:38,y:-8,scaleX:1.15,scaleY:.95,duration:.14,ease:"power4.in"}),w&&i.to(w.el,{opacity:0,scale:1.6,duration:.1},"<"),u&&i.to(u,{rotation:85,x:30,y:10,duration:.1,ease:"power4.out"},"<"),c&&i.to(c,{rotation:-85,x:30,y:-10,duration:.1,ease:"power4.out"},"<"),p&&i.to(p.wrapper,{rotation:85,x:30,y:10,duration:.1,ease:"power4.out"},"<"),b&&i.to(b.wrapper,{rotation:-85,x:30,y:-10,duration:.1,ease:"power4.out"},"<"),j&&(i.fromTo(j.el,{opacity:0,scale:.4,rotation:-25},{opacity:1,scale:1.3,rotation:0,duration:.12,ease:"power4.out"},"<"),i.to(j.el,{scale:1.5,opacity:0,duration:.35,ease:"power2.out"},">")),v&&(i.to(v.flashEl,{opacity:.95,duration:.05},"<-0.3"),i.to(v.flashEl,{opacity:0,duration:.25},">")),i.to(a,{x:"+=6",y:"+=6",duration:.03,yoyo:!0,repeat:7},"<-0.3"),i.to(a,{x:20,y:4,duration:.2,ease:"power2.out"}),i.to({},{duration:.5}),p&&(i.to(p.el,{opacity:0,duration:.3},">"),i.to(p.wrapper,{x:0,y:0,rotation:0,duration:.4,ease:"power2.out"},"<")),b&&(i.to(b.el,{opacity:0,duration:.3},"<"),i.to(b.wrapper,{x:0,y:0,rotation:0,duration:.4,ease:"power2.out"},"<"));const S=[a,o,d,c,u,h,f].filter(Boolean);i.to(S,{x:0,y:0,rotation:0,scale:1,scaleX:1,scaleY:1,skewX:0,duration:.4,ease:"power2.out"},"<")
+    this.resetElements(t,i);const{container:a,head:o,body:d,armLeft:c,armRight:u,legLeft:h,legRight:f,fxContainer:x}=t;let p=null,b=null,v=null,w=null,j=null;const sRank=t.saberRank||t.combatEquipmentRanks?.beamSaber||'common';const themeColor=sRank==='legendary'?'amber':sRank==='epic'?'purple':sRank==='uncommon'?'emerald':'cyan';x&&typeof document<"u"&&(p=mountPlasmaBlade(x,{hand:"right",sizePercent:66,initialRotation:-15,armPartKey:t.armPartKey,rank:sRank}),b=mountPlasmaBlade(x,{hand:"left",sizePercent:66,initialRotation:15,armPartKey:t.armPartKey,rank:sRank}),v=mountDualSabers(x,{title:"星断・オメガクロス斬",subtitle:"ULTIMATE SWORD FINISHER",themeColor}),w=mountDualSlashEffect(x),j=mountIaidoSlashEffect(x),i.set([p.wrapper,b.wrapper],{opacity:1}),i.set([p.el,b.el],{opacity:0})),i.eventCallback("onComplete",()=>{p==null||p.cleanmountBeamSlashEffect(),b==null||b.cleanmountBeamSlashEffect(),v==null||v.cleanmountBeamSlashEffect(),w==null||w.cleanmountBeamSlashEffect(),j==null||j.cleanmountBeamSlashEffect()}),i.to(a,{y:6,scaleY:.96,duration:.35,ease:"power2.out"}),u&&i.to(u,{rotation:-35,x:6,duration:.35,ease:"power2.out"},"<"),c&&i.to(c,{rotation:35,x:-6,duration:.35,ease:"power2.out"},"<"),p&&(i.to(p.wrapper,{rotation:-35,x:6,duration:.35,ease:"power2.out"},"<"),i.to(p.el,{opacity:1,duration:.3},"<")),b&&(i.to(b.wrapper,{rotation:35,x:-6,duration:.35,ease:"power2.out"},"<"),i.to(b.el,{opacity:1,duration:.3},"<")),v&&(i.to(v.flashEl,{opacity:.85,duration:.08,ease:"power2.out"}),i.to(v.flashEl,{opacity:0,duration:.15},">"),i.fromTo(v.banner,{opacity:0,x:-60,scaleY:.3},{opacity:1,x:0,scaleY:1,duration:.22,ease:"back.out(1.8)"},"<"),i.to(v.banner,{x:10,duration:.5,ease:"none"}),i.to(v.banner,{opacity:0,x:60,scaleY:.2,duration:.18,ease:"power3.in"},">")),w&&(i.fromTo(w.el,{opacity:0,scale:.5,rotation:-90},{opacity:1,scale:1.25,rotation:180,duration:.55,ease:"power2.out"},"<-0.2"),i.to(w.el,{rotation:360,scale:1.35,duration:.3,ease:"none"})),i.to(a,{y:12,scaleX:1.08,scaleY:.92,duration:.45,ease:"power3.inOut"},"<"),o&&i.to(o,{y:3,rotation:-5,duration:.45},"<"),u&&i.to(u,{rotation:-60,x:-10,duration:.45},"<"),c&&i.to(c,{rotation:60,x:10,duration:.45},"<"),p&&i.to(p.wrapper,{rotation:-60,x:-10,duration:.45},"<"),b&&i.to(b.wrapper,{rotation:60,x:10,duration:.45},"<"),i.to(a,{x:38,y:-8,scaleX:1.15,scaleY:.95,duration:.14,ease:"power4.in"}),w&&i.to(w.el,{opacity:0,scale:1.6,duration:.1},"<"),u&&i.to(u,{rotation:85,x:30,y:10,duration:.1,ease:"power4.out"},"<"),c&&i.to(c,{rotation:-85,x:30,y:-10,duration:.1,ease:"power4.out"},"<"),p&&i.to(p.wrapper,{rotation:85,x:30,y:10,duration:.1,ease:"power4.out"},"<"),b&&i.to(b.wrapper,{rotation:-85,x:30,y:10,duration:.1,ease:"power4.out"},"<"),j&&(i.fromTo(j.el,{opacity:0,scale:.4,rotation:-25},{opacity:1,scale:1.3,rotation:0,duration:.12,ease:"power4.out"},"<"),i.to(j.el,{scale:1.5,opacity:0,duration:.35,ease:"power2.out"},">")),v&&(i.to(v.flashEl,{opacity:.95,duration:.05},"<-0.3"),i.to(v.flashEl,{opacity:0,duration:.25},">")),i.to(a,{x:"+=6",y:"+=6",duration:.03,yoyo:!0,repeat:7},"<-0.3"),i.to(a,{x:20,y:4,duration:.2,ease:"power2.out"}),i.to({},{duration:.5}),p&&(i.to(p.el,{opacity:0,duration:.3},">"),i.to(p.wrapper,{x:0,y:0,rotation:0,duration:.4,ease:"power2.out"},"<")),b&&(i.to(b.el,{opacity:0,duration:.3},"<"),i.to(b.wrapper,{x:0,y:0,rotation:0,duration:.4,ease:"power2.out"},"<"));const S=[a,o,d,c,u,h,f].filter(Boolean);i.to(S,{x:0,y:0,rotation:0,scale:1,scaleX:1,scaleY:1,skewX:0,duration:.4,ease:"power2.out"},"<")
   }
 }
 

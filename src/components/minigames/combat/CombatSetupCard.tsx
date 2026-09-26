@@ -15,9 +15,12 @@ import {
   CombatEquipmentType,
   CombatEquipmentRank,
   COMBAT_EQUIPMENT_RANKS,
+  RANK_ORDER,
   getNextEquipmentRank,
   getEquipmentBonus,
+  getEquipmentVisualTheme,
 } from '../../../core/combatEquipmentData';
+import { ConfettiEffect } from '../../effects/ConfettiEffect';
 
 interface CombatSetupCardProps {
   state: GameState;
@@ -58,6 +61,17 @@ export const CombatSetupCard: React.FC<CombatSetupCardProps> = ({
   const [skillsModalTarget, setSkillsModalTarget] = useState<'player' | 'opponent'>('player');
   const [modalInitialSkillId, setModalInitialSkillId] = useState<string | undefined>(undefined);
 
+  // 武装購入・ランクアップ時の祝祭紙吹雪演出状態
+  const [confettiInfo, setConfettiInfo] = useState<{
+    isActive: boolean;
+    title: string;
+    subtitle: string;
+  }>({
+    isActive: false,
+    title: '',
+    subtitle: '',
+  });
+
   // 現在の各装備のランク・ボーナス値
   const saberRank: CombatEquipmentRank | null = eq.beamSaber ? (eqRanks.beamSaber || 'common') : null;
   const shieldRank: CombatEquipmentRank | null = eq.beamShield ? (eqRanks.beamShield || 'common') : null;
@@ -70,6 +84,33 @@ export const CombatSetupCard: React.FC<CombatSetupCardProps> = ({
 
   const nextSaberDef = nextSaberRank ? COMBAT_EQUIPMENT_RANKS[nextSaberRank] : null;
   const nextShieldDef = nextShieldRank ? COMBAT_EQUIPMENT_RANKS[nextShieldRank] : null;
+
+  const saberVisual = getEquipmentVisualTheme(saberRank);
+  const shieldVisual = getEquipmentVisualTheme(shieldRank);
+
+  // 武装解放・ランクアップ時の紙吹雪トリガー付きハンドラー
+  const handleUpgradeWithConfetti = (equipment: CombatEquipmentType) => {
+    if (!handleUpgrade) return;
+    const isNew = equipment === 'beamSaber' ? !saberRank : !shieldRank;
+    const targetNextRank = equipment === 'beamSaber' ? nextSaberRank : nextShieldRank;
+    const targetDef = targetNextRank ? COMBAT_EQUIPMENT_RANKS[targetNextRank] : null;
+    const eqName = equipment === 'beamSaber' ? 'ビームサーベル' : 'ビームシールド';
+
+    // 実際の強化/解放実行
+    handleUpgrade(equipment);
+
+    // 祝賀紙吹雪とバナー表示
+    const title = isNew ? `🎉 武装解放！【${eqName}】` : `✨ ランクアップ成功！【${eqName}】`;
+    const subtitle = targetDef
+      ? `★${RANK_ORDER.indexOf(targetDef.rank) + 1} ${targetDef.label} (${targetDef.visual.colorName}) へ強化されました！`
+      : '性能が大幅に強化されました！';
+
+    setConfettiInfo({
+      isActive: true,
+      title,
+      subtitle,
+    });
+  };
 
   // 選択中ロボットの技解放判定
   const playerSkillEval = useMemo(() => {
@@ -132,18 +173,27 @@ export const CombatSetupCard: React.FC<CombatSetupCardProps> = ({
             {/* 1行目: アイコン + 武装名 + ランクバッジ(解放時のみ) ＆ 解放/強化ボタン */}
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 min-w-0">
-                <div className={`p-1.5 rounded-lg border shrink-0 ${
-                  saberRank ? 'bg-amber-100 text-amber-600 border-amber-300' : 'bg-stone-100 text-stone-400 border-stone-200'
-                }`}>
-                  <Gi.GiBroadsword className="text-lg" />
+                <div 
+                  className="p-1.5 rounded-lg border shrink-0 transition-colors"
+                  style={{
+                    backgroundColor: saberRank ? saberVisual.shieldFieldBg : undefined,
+                    borderColor: saberRank ? saberVisual.shieldBorderColor : undefined,
+                    color: saberRank ? saberVisual.primaryColor : undefined,
+                  }}
+                >
+                  <Gi.GiBroadsword className={`text-lg ${saberRank ? '' : 'text-stone-400'}`} />
                 </div>
                 <span className="font-bold text-xs sm:text-sm text-stone-900 truncate">
                   ビームサーベル
                 </span>
                 {/* ランクバッジ（解放済みの場合のみ表示し、未解放バッジは削除） */}
                 {saberRank && (
-                  <span className={`text-[9px] px-1.5 py-0.2 rounded border font-bold shadow-2xs shrink-0 ${COMBAT_EQUIPMENT_RANKS[saberRank].badgeClass}`}>
-                    {COMBAT_EQUIPMENT_RANKS[saberRank].label}
+                  <span 
+                    className={`text-[9px] px-1.5 py-0.2 rounded border font-bold shadow-2xs shrink-0 flex items-center gap-1 ${COMBAT_EQUIPMENT_RANKS[saberRank].badgeClass}`}
+                    title={`光刃色: ${saberVisual.colorName}`}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ backgroundColor: saberVisual.primaryColor }} />
+                    <span>{COMBAT_EQUIPMENT_RANKS[saberRank].label}</span>
                   </span>
                 )}
               </div>
@@ -152,11 +202,11 @@ export const CombatSetupCard: React.FC<CombatSetupCardProps> = ({
               <div className="shrink-0">
                 {nextSaberRank && nextSaberDef ? (
                   <button
-                    onClick={() => handleUpgrade && handleUpgrade('beamSaber')}
+                    onClick={() => handleUpgradeWithConfetti('beamSaber')}
                     disabled={elements < nextSaberDef.cost}
                     className={`text-[10px] font-bold px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer border ${
                       elements >= nextSaberDef.cost
-                        ? 'bg-linear-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white border-amber-800 shadow-xs'
+                        ? 'bg-linear-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white border-amber-800 shadow-xs active:scale-95'
                         : 'bg-stone-200 text-stone-400 border-stone-300 cursor-not-allowed'
                     }`}
                   >
@@ -182,16 +232,20 @@ export const CombatSetupCard: React.FC<CombatSetupCardProps> = ({
                       <Gi.GiBroadsword className="text-[10px]" />
                       <span>POW +{saberBonus}</span>
                     </span>
+                    <span className="text-[9px] text-stone-500 font-sans flex items-center gap-1">
+                      <span>刃色:</span>
+                      <strong style={{ color: saberVisual.accentColor }}>{saberVisual.colorName}</strong>
+                    </span>
                     {nextSaberRank && nextSaberDef && (
                       <span className="text-[9px] text-stone-400 font-sans">
-                        (次: POW +{nextSaberDef.saberPowerBonus})
+                        (次: POW +{nextSaberDef.saberPowerBonus} / {nextSaberDef.visual.colorName})
                       </span>
                     )}
                   </>
                 ) : (
                   <span className="text-stone-500 inline-flex items-center gap-1">
                     <Gi.GiBroadsword className="text-stone-400 text-[10px]" />
-                    <span>未解放 (効果: POW +{nextSaberDef?.saberPowerBonus || 35})</span>
+                    <span>未解放 (効果: POW +{nextSaberDef?.saberPowerBonus || 35} / {nextSaberDef?.visual.colorName})</span>
                   </span>
                 )}
               </div>
@@ -227,18 +281,27 @@ export const CombatSetupCard: React.FC<CombatSetupCardProps> = ({
             {/* 1行目: アイコン + 武装名 + ランクバッジ(解放時のみ) ＆ 解放/強化ボタン */}
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 min-w-0">
-                <div className={`p-1.5 rounded-lg border shrink-0 ${
-                  shieldRank ? 'bg-blue-100 text-blue-600 border-blue-300' : 'bg-stone-100 text-stone-400 border-stone-200'
-                }`}>
-                  <Gi.GiShield className="text-lg" />
+                <div 
+                  className="p-1.5 rounded-lg border shrink-0 transition-colors"
+                  style={{
+                    backgroundColor: shieldRank ? shieldVisual.shieldFieldBg : undefined,
+                    borderColor: shieldRank ? shieldVisual.shieldBorderColor : undefined,
+                    color: shieldRank ? shieldVisual.primaryColor : undefined,
+                  }}
+                >
+                  <Gi.GiShield className={`text-lg ${shieldRank ? '' : 'text-stone-400'}`} />
                 </div>
                 <span className="font-bold text-xs sm:text-sm text-stone-900 truncate">
                   ビームシールド
                 </span>
                 {/* ランクバッジ（解放済みの場合のみ表示し、未解放バッジは削除） */}
                 {shieldRank && (
-                  <span className={`text-[9px] px-1.5 py-0.2 rounded border font-bold shadow-2xs shrink-0 ${COMBAT_EQUIPMENT_RANKS[shieldRank].badgeClass}`}>
-                    {COMBAT_EQUIPMENT_RANKS[shieldRank].label}
+                  <span 
+                    className={`text-[9px] px-1.5 py-0.2 rounded border font-bold shadow-2xs shrink-0 flex items-center gap-1 ${COMBAT_EQUIPMENT_RANKS[shieldRank].badgeClass}`}
+                    title={`力場色: ${shieldVisual.colorName}`}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ backgroundColor: shieldVisual.primaryColor }} />
+                    <span>{COMBAT_EQUIPMENT_RANKS[shieldRank].label}</span>
                   </span>
                 )}
               </div>
@@ -247,11 +310,11 @@ export const CombatSetupCard: React.FC<CombatSetupCardProps> = ({
               <div className="shrink-0">
                 {nextShieldRank && nextShieldDef ? (
                   <button
-                    onClick={() => handleUpgrade && handleUpgrade('beamShield')}
+                    onClick={() => handleUpgradeWithConfetti('beamShield')}
                     disabled={elements < nextShieldDef.cost}
                     className={`text-[10px] font-bold px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer border ${
                       elements >= nextShieldDef.cost
-                        ? 'bg-linear-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white border-blue-700 shadow-xs'
+                        ? 'bg-linear-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white border-blue-700 shadow-xs active:scale-95'
                         : 'bg-stone-200 text-stone-400 border-stone-300 cursor-not-allowed'
                     }`}
                   >
@@ -277,16 +340,20 @@ export const CombatSetupCard: React.FC<CombatSetupCardProps> = ({
                       <Gi.GiShield className="text-[10px]" />
                       <span>DEF +{shieldBonus}</span>
                     </span>
+                    <span className="text-[9px] text-stone-500 font-sans flex items-center gap-1">
+                      <span>力場色:</span>
+                      <strong style={{ color: shieldVisual.accentColor }}>{shieldVisual.colorName}</strong>
+                    </span>
                     {nextShieldRank && nextShieldDef && (
                       <span className="text-[9px] text-stone-400 font-sans">
-                        (次: DEF +{nextShieldDef.shieldDefenseBonus})
+                        (次: DEF +{nextShieldDef.shieldDefenseBonus} / {nextShieldDef.visual.colorName})
                       </span>
                     )}
                   </>
                 ) : (
                   <span className="text-stone-500 inline-flex items-center gap-1">
                     <Gi.GiShield className="text-stone-400 text-[10px]" />
-                    <span>未解放 (効果: DEF +{nextShieldDef?.shieldDefenseBonus || 30})</span>
+                    <span>未解放 (効果: DEF +{nextShieldDef?.shieldDefenseBonus || 30} / {nextShieldDef?.visual.colorName})</span>
                   </span>
                 )}
               </div>
@@ -555,6 +622,15 @@ export const CombatSetupCard: React.FC<CombatSetupCardProps> = ({
           initialTarget={skillsModalTarget}
         />
       )}
+
+      {/* 武装解放・ランクアップ時の祝祭紙吹雪演出 */}
+      <ConfettiEffect
+        isActive={confettiInfo.isActive}
+        title={confettiInfo.title}
+        subtitle={confettiInfo.subtitle}
+        onComplete={() => setConfettiInfo(prev => ({ ...prev, isActive: false }))}
+      />
     </Card>
   );
 };
+

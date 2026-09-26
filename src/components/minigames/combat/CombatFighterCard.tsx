@@ -4,6 +4,7 @@ import { RobotVisual } from '../../robot/RobotVisual';
 import { theme } from '../../../styles/theme';
 import * as Gi from 'react-icons/gi';
 import { motion, AnimatePresence } from 'motion/react';
+import { COMBAT_EQUIPMENT_RANKS, getEquipmentVisualTheme } from '../../../core/combatEquipmentData';
 
 interface CombatFighterCardProps {
   fighter: CombatFighter;
@@ -72,8 +73,50 @@ export const CombatFighterCard: React.FC<CombatFighterCardProps> = ({
             </h3>
           </div>
 
-          <div className="text-[10px] text-stone-500 font-mono shrink-0">
-            {fighter.isPlayer ? 'プレイヤー機' : (fighter.opponentRef?.org || 'ライバルAI')}
+          <div className="flex items-center gap-1.5 shrink-0">
+            {fighter.isPlayer && fighter.equipments?.beamSaber && fighter.equipmentRanks?.beamSaber && (
+              (() => {
+                const rank = fighter.equipmentRanks.beamSaber;
+                const visual = getEquipmentVisualTheme(rank);
+                return (
+                  <span 
+                    className="text-[9px] font-bold px-1.5 py-0.2 rounded border flex items-center gap-0.5 shadow-2xs"
+                    style={{
+                      backgroundColor: visual.shieldFieldBg,
+                      borderColor: visual.shieldBorderColor,
+                      color: visual.accentColor,
+                    }}
+                    title={`サーベル: ${COMBAT_EQUIPMENT_RANKS[rank]?.label} (${visual.colorName})`}
+                  >
+                    <Gi.GiBroadsword className="text-[10px]" />
+                    <span>{COMBAT_EQUIPMENT_RANKS[rank]?.label}</span>
+                  </span>
+                );
+              })()
+            )}
+            {fighter.isPlayer && fighter.equipments?.beamShield && fighter.equipmentRanks?.beamShield && (
+              (() => {
+                const rank = fighter.equipmentRanks.beamShield;
+                const visual = getEquipmentVisualTheme(rank);
+                return (
+                  <span 
+                    className="text-[9px] font-bold px-1.5 py-0.2 rounded border flex items-center gap-0.5 shadow-2xs"
+                    style={{
+                      backgroundColor: visual.shieldFieldBg,
+                      borderColor: visual.shieldBorderColor,
+                      color: visual.accentColor,
+                    }}
+                    title={`シールド: ${COMBAT_EQUIPMENT_RANKS[rank]?.label} (${visual.colorName})`}
+                  >
+                    <Gi.GiShield className="text-[10px]" />
+                    <span>{COMBAT_EQUIPMENT_RANKS[rank]?.label}</span>
+                  </span>
+                );
+              })()
+            )}
+            <div className="text-[10px] text-stone-500 font-mono">
+              {fighter.isPlayer ? 'プレイヤー機' : (fighter.opponentRef?.org || 'ライバルAI')}
+            </div>
           </div>
         </div>
 

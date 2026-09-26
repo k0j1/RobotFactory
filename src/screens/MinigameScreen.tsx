@@ -22,6 +22,8 @@ import { motion } from 'motion/react';
 import * as Gi from 'react-icons/gi';
 import { BattleChestRewardService, BattleChestDropResult } from '../components/minigames/BattleChestRewardService';
 import { BattleChestRewardModal } from '../components/minigames/BattleChestRewardModal';
+import { CombatEquipmentDemoModal } from '../components/minigames/combat/CombatEquipmentDemoModal';
+import { CombatEquipmentType, CombatEquipmentRank } from '../core/combatEquipmentData';
 
 interface CategoryDef {
   id: string;
@@ -145,6 +147,49 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
   }, [state.lastDefenseVictoryTime, currentTimestamp]);
 
   const isDefenseLocked = selectedGame === 'defense' && defenseResetInfo.isCompletedToday;
+
+  // 戦闘専用装備（ビームサーベル・ビームシールド）解放・ランクアップ起動演習モーダル
+  const [equipmentDemoModalConfig, setEquipmentDemoModalConfig] = useState<{
+    isOpen: boolean;
+    equipment: CombatEquipmentType;
+    prevRank: CombatEquipmentRank | null;
+    currentRank: CombatEquipmentRank;
+    isInitialPurchase: boolean;
+  } | null>(null);
+
+  const handleUpgradeCombatEquipment = (eq: CombatEquipmentType) => {
+    const prevRank = (state.combatEquipmentRanks && !Array.isArray(state.combatEquipmentRanks))
+      ? state.combatEquipmentRanks[eq] || null
+      : null;
+    const isInitial = !state.combatEquipments || Array.isArray(state.combatEquipments) || !state.combatEquipments[eq];
+
+    const success = engine.upgradeCombatEquipment(eq);
+    if (success) {
+      const newRank = (engine.state.combatEquipmentRanks && !Array.isArray(engine.state.combatEquipmentRanks))
+        ? engine.state.combatEquipmentRanks[eq] || 'common'
+        : 'common';
+      setEquipmentDemoModalConfig({
+        isOpen: true,
+        equipment: eq,
+        prevRank,
+        currentRank: newRank,
+        isInitialPurchase: isInitial,
+      });
+    }
+  };
+
+  const handleViewCombatEquipmentDemo = (eq: CombatEquipmentType) => {
+    const currentRank = (state.combatEquipmentRanks && !Array.isArray(state.combatEquipmentRanks))
+      ? state.combatEquipmentRanks[eq] || 'common'
+      : 'common';
+    setEquipmentDemoModalConfig({
+      isOpen: true,
+      equipment: eq,
+      prevRank: currentRank,
+      currentRank: currentRank,
+      isInitialPurchase: false,
+    });
+  };
 
   const activeRobot = state.robots.find(r => r.id === selectedRobotId);
   const activeOpponent = OPPONENTS.find(o => o.id === selectedOpponentId);
@@ -694,9 +739,10 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
               activeOpponent={activeOpponent}
               selectedOpponentId={selectedOpponentId}
               setSelectedOpponentId={setSelectedOpponentId}
-              onExchangeEquipment={(eq) => engine.exchangeCombatEquipment(eq)}
-              onUpgradeEquipment={(eq) => engine.upgradeCombatEquipment(eq)}
+              onExchangeEquipment={handleUpgradeCombatEquipment}
+              onUpgradeEquipment={handleUpgradeCombatEquipment}
               onToggleEquipment={(eq, enabled) => engine.toggleCombatEquipment(eq, enabled)}
+              onViewDemo={handleViewCombatEquipmentDemo}
               isOpponentCleared={(lvl) => activeRobot ? (engine as any).checkDailyBattleLimit(activeRobot.id, 'combat', lvl, currentTimestamp) : false}
             />
           )}
@@ -1773,6 +1819,19 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
             setIsChestModalOpen(false);
           }}
           defenseRegenHours={selectedGame === 'defense' ? (activeDefenseStage.rewardRegenHours || 12) : undefined}
+        />
+      )}
+
+      {/* 戦闘専用武装（ビームサーベル・ビームシールド）解放・ランクアップ起動演習モーダル */}
+      {equipmentDemoModalConfig && equipmentDemoModalConfig.isOpen && (
+        <CombatEquipmentDemoModal
+          isOpen={equipmentDemoModalConfig.isOpen}
+          onClose={() => setEquipmentDemoModalConfig(null)}
+          equipment={equipmentDemoModalConfig.equipment}
+          prevRank={equipmentDemoModalConfig.prevRank}
+          currentRank={equipmentDemoModalConfig.currentRank}
+          robot={activeRobot}
+          isInitialPurchase={equipmentDemoModalConfig.isInitialPurchase}
         />
       )}
     </div>

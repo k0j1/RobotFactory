@@ -36,6 +36,9 @@ export interface GSAPRobotCanvasProps {
   className?: string;
   hideStageDecorations?: boolean;
   activeEditJoint?: ArmJointType | 'all' | null;
+  combatEquipmentRanks?: { beamSaber?: string; beamShield?: string };
+  saberRank?: string;
+  shieldRank?: string;
 }
 
 /**
@@ -66,6 +69,9 @@ export const GSAPRobotCanvas: React.FC<GSAPRobotCanvasProps> = ({
   onComplete,
   className = '',
   hideStageDecorations = false,
+  combatEquipmentRanks: propCombatEquipmentRanks,
+  saberRank: propSaberRank,
+  shieldRank: propShieldRank,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const robotRootRef = useRef<HTMLDivElement>(null);
@@ -191,6 +197,9 @@ export const GSAPRobotCanvas: React.FC<GSAPRobotCanvasProps> = ({
           sparkles: sparklesRef.current,
           fxContainer: fxContainerRef.current,
           armPartKey,
+          combatEquipmentRanks: propCombatEquipmentRanks,
+          saberRank: propSaberRank || propCombatEquipmentRanks?.beamSaber,
+          shieldRank: propShieldRank || propCombatEquipmentRanks?.beamShield,
         };
 
         controller.playPattern(pattern, domRefs, {
@@ -213,7 +222,7 @@ export const GSAPRobotCanvas: React.FC<GSAPRobotCanvasProps> = ({
         controller.kill();
       }
     };
-  }, [patternId, robot?.id]);
+  }, [patternId, robot?.id, propCombatEquipmentRanks?.beamSaber, propCombatEquipmentRanks?.beamShield, propSaberRank, propShieldRank]);
 
   // 速度変更
   useEffect(() => {

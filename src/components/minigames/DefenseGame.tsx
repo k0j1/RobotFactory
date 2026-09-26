@@ -338,20 +338,36 @@ export const DefenseGame: React.FC<DefenseGameProps> = ({
       let range = 120 + int * 1.5;
 
       if (useSaber) {
+        const sRank = combatEquipmentRanks?.beamSaber || 'common';
+        const saberRankColors: Record<string, string> = {
+          common: '#00e5ff',
+          uncommon: '#10b981',
+          rare: '#3b82f6',
+          epic: '#a855f7',
+          legendary: '#f59e0b',
+        };
         skillName = '【必殺奥義】星断オメガクロス';
         skillType = 'laser';
         skillMultiplier = 5.0;
         splashRadius = 45;
         bulletSpeed = 900;
-        bulletColor = '#f43f5e';
+        bulletColor = saberRankColors[sRank] || '#00e5ff';
         range = 160 + int * 1.5;
       } else if (useShield) {
+        const shRank = combatEquipmentRanks?.beamShield || 'common';
+        const shieldRankColors: Record<string, string> = {
+          common: '#f59e0b',
+          uncommon: '#10b981',
+          rare: '#0284c7',
+          epic: '#8b5cf6',
+          legendary: '#fbbf24',
+        };
         skillName = 'エネルギーシールド防御';
         skillType = 'nova';
         skillMultiplier = 2.5;
         splashRadius = 85;
         bulletSpeed = 400;
-        bulletColor = '#22d3ee';
+        bulletColor = shieldRankColors[shRank] || '#f59e0b';
         range = 140 + int * 1.2;
       } else if (int >= 35 && dex >= 30) {
         // 超絶技: ディメンションノヴァ

@@ -9,6 +9,7 @@ import { getOpponentRobotModel, OPPONENT_DEFAULT_STAGES } from './opponentRobotD
 import { ALL_COMBAT_SKILLS, getGsapPatternIdForSkill } from './combatSkills';
 import { GSAPRobotCanvas } from '../../robot/GSAPRobotCanvas';
 import { CombatVictoryRewardEffect } from './CombatVictoryRewardEffect';
+import { getEquipmentVisualTheme, CombatEquipmentRank, RANK_ORDER } from '../../../core/combatEquipmentData';
 
 interface CombatArenaProps {
   player: CombatFighter;
@@ -56,6 +57,22 @@ export const CombatArena: React.FC<CombatArenaProps> = ({
   const opponentRobotModel = React.useMemo(() => {
     return getOpponentRobotModel(activeOpponent);
   }, [activeOpponent]);
+
+  // プレイヤー装備状態 & ランク別ビジュアルテーマ（ランクによって光刃・防壁カラーがダイナミックに変化）
+  const playerHasSaber = !!player.equipments?.beamSaber;
+  const playerHasShield = !!player.equipments?.beamShield;
+  const playerSaberRank: CombatEquipmentRank = player.equipmentRanks?.beamSaber || 'common';
+  const playerShieldRank: CombatEquipmentRank = player.equipmentRanks?.beamShield || 'common';
+  const playerSaberTheme = React.useMemo(() => getEquipmentVisualTheme(playerSaberRank), [playerSaberRank]);
+  const playerShieldTheme = React.useMemo(() => getEquipmentVisualTheme(playerShieldRank), [playerShieldRank]);
+
+  // 相手機体の装備状態（高難度AI機体の演出用）
+  const opponentHasSaber = activeOpponent.level >= 6;
+  const opponentHasShield = activeOpponent.level >= 5;
+  const opponentSaberRank: CombatEquipmentRank = activeOpponent.level >= 9 ? 'legendary' : activeOpponent.level >= 7 ? 'epic' : 'rare';
+  const opponentShieldRank: CombatEquipmentRank = activeOpponent.level >= 9 ? 'legendary' : activeOpponent.level >= 7 ? 'epic' : 'rare';
+  const opponentSaberTheme = React.useMemo(() => getEquipmentVisualTheme(opponentSaberRank), [opponentSaberRank]);
+  const opponentShieldTheme = React.useMemo(() => getEquipmentVisualTheme(opponentShieldRank), [opponentShieldRank]);
 
   // アニメーション状態
   const [playerAnimState, setPlayerAnimState] = useState<'idle' | 'attack' | 'skill' | 'hit' | 'dodge' | 'victory' | 'defeat'>('idle');
@@ -572,40 +589,55 @@ export const CombatArena: React.FC<CombatArenaProps> = ({
                     initial={{ opacity: 0 }}
                     animate={{ opacity: [0, 0.75, 0.4, 0] }}
                     transition={{ duration: 0.85 }}
-                    className="absolute inset-0 bg-purple-950/70 backdrop-blur-xs"
+                    className="absolute inset-0 bg-stone-950/75 backdrop-blur-xs"
                   />
-                  {/* 十字光刃クロス (第1斬撃) */}
+                  {/* 十字光刃クロス (第1斬撃) - サーベルランク色に同期 */}
                   <motion.div
                     initial={{ scaleX: 0, opacity: 0, rotate: 45 }}
                     animate={{ scaleX: [0, 2.8, 2.5, 0], opacity: [0, 1, 1, 0] }}
                     transition={{ duration: 0.7, ease: 'easeOut' }}
-                    className="absolute w-72 h-3 bg-gradient-to-r from-transparent via-amber-300 to-transparent shadow-[0_0_25px_rgba(251,191,36,1)] rounded-full"
+                    className="absolute w-72 h-3.5 rounded-full"
+                    style={{
+                      background: `linear-gradient(90deg, transparent 0%, ${skillVisual.isPlayer ? playerSaberTheme.primaryColor : opponentSaberTheme.primaryColor} 50%, transparent 100%)`,
+                      boxShadow: `0 0 30px ${skillVisual.isPlayer ? playerSaberTheme.glowColor : opponentSaberTheme.glowColor}`,
+                    }}
                   />
                   {/* 十字光刃クロス (第2斬撃：逆角度交差) */}
                   <motion.div
                     initial={{ scaleX: 0, opacity: 0, rotate: -45 }}
                     animate={{ scaleX: [0, 2.8, 2.5, 0], opacity: [0, 1, 1, 0] }}
                     transition={{ duration: 0.7, delay: 0.1, ease: 'easeOut' }}
-                    className="absolute w-72 h-3 bg-gradient-to-r from-transparent via-purple-300 to-transparent shadow-[0_0_25px_rgba(192,132,252,1)] rounded-full"
+                    className="absolute w-72 h-3.5 rounded-full"
+                    style={{
+                      background: `linear-gradient(90deg, transparent 0%, #ffffff 20%, ${skillVisual.isPlayer ? playerSaberTheme.accentColor : opponentSaberTheme.accentColor} 50%, transparent 100%)`,
+                      boxShadow: `0 0 35px ${skillVisual.isPlayer ? playerSaberTheme.glowColor : opponentSaberTheme.glowColor}`,
+                    }}
                   />
                   {/* 交差点の超高エネルギー爆轟コア */}
                   <motion.div
                     initial={{ scale: 0, opacity: 0 }}
                     animate={{ scale: [0, 2.2, 0], opacity: [0, 1, 0], rotate: 180 }}
                     transition={{ duration: 0.8, delay: 0.15 }}
-                    className="relative text-amber-300 drop-shadow-[0_0_35px_rgba(234,179,8,1)]"
+                    className="relative"
+                    style={{
+                      color: skillVisual.isPlayer ? playerSaberTheme.primaryColor : opponentSaberTheme.primaryColor,
+                      filter: `drop-shadow(0 0 25px ${skillVisual.isPlayer ? playerSaberTheme.glowColor : opponentSaberTheme.glowColor})`,
+                    }}
                   >
                     <Gi.GiCrossedSwords className="text-7xl" />
-                    <Gi.GiSparkles className="absolute -inset-4 text-8xl text-purple-300 animate-spin" />
+                    <Gi.GiSparkles className="absolute -inset-4 text-8xl animate-spin text-white" />
                   </motion.div>
                   {/* 必殺技コールテロップ */}
                   <motion.div
                     initial={{ y: 20, opacity: 0, scale: 0.8 }}
                     animate={{ y: -40, opacity: [0, 1, 1, 0], scale: 1.2 }}
                     transition={{ duration: 0.85 }}
-                    className="absolute text-center font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-200 to-purple-300 text-lg sm:text-xl drop-shadow-[0_2px_10px_rgba(0,0,0,0.9)]"
+                    className="absolute text-center font-black tracking-widest text-transparent bg-clip-text text-lg sm:text-xl drop-shadow-[0_2px_10px_rgba(0,0,0,0.9)]"
+                    style={{
+                      backgroundImage: `linear-gradient(90deg, #ffffff 0%, ${skillVisual.isPlayer ? playerSaberTheme.primaryColor : opponentSaberTheme.primaryColor} 50%, #ffffff 100%)`
+                    }}
                   >
-                    ★ 星断オメガクロス ★
+                    ★ 星断オメガクロス ({skillVisual.isPlayer ? playerSaberTheme.colorName : opponentSaberTheme.colorName}) ★
                   </motion.div>
                 </div>
               )}
@@ -643,7 +675,7 @@ export const CombatArena: React.FC<CombatArenaProps> = ({
                 </motion.div>
               )}
 
-              {/* 3. エネルギーシールド防御 */}
+              {/* 3. エネルギーシールド防御 - シールドランク色に同期 */}
               {(skillVisual.skillId === 'energy_shield_defense' || skillVisual.skillId === 'energy_shield') && (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.5 }}
@@ -652,15 +684,37 @@ export const CombatArena: React.FC<CombatArenaProps> = ({
                   className={`absolute ${skillVisual.isPlayer ? 'left-16 sm:left-24' : 'right-16 sm:right-24'} bottom-16 flex flex-col items-center pointer-events-none`}
                 >
                   <div className="relative">
-                    {/* 電磁ハニカムシールドリング */}
-                    <div className="w-28 h-36 rounded-2xl border-3 border-cyan-400 bg-cyan-500/25 backdrop-blur-xs shadow-[0_0_30px_rgba(6,182,212,0.8)] flex items-center justify-center">
-                      <Gi.GiShieldReflect className="text-5xl text-cyan-200 drop-shadow-[0_0_10px_rgba(255,255,255,1)]" />
+                    {/* 電磁ハニカムシールドリング (ランク別カラー) */}
+                    <div 
+                      className="w-28 h-36 rounded-2xl border-3 backdrop-blur-xs flex items-center justify-center"
+                      style={{
+                        borderColor: skillVisual.isPlayer ? playerShieldTheme.shieldBorderColor : opponentShieldTheme.shieldBorderColor,
+                        backgroundColor: skillVisual.isPlayer ? playerShieldTheme.shieldFieldBg : opponentShieldTheme.shieldFieldBg,
+                        boxShadow: `0 0 35px ${skillVisual.isPlayer ? playerShieldTheme.glowColor : opponentShieldTheme.glowColor}`,
+                      }}
+                    >
+                      <span 
+                        className="text-5xl drop-shadow-[0_0_10px_rgba(255,255,255,1)] inline-flex items-center justify-center" 
+                        style={{ color: skillVisual.isPlayer ? playerShieldTheme.primaryColor : opponentShieldTheme.primaryColor }}
+                      >
+                        <Gi.GiShieldReflect />
+                      </span>
+
                     </div>
                     {/* シールドパルス */}
-                    <div className="absolute inset-0 rounded-2xl border-2 border-white/60 animate-ping" />
+                    <div 
+                      className="absolute inset-0 rounded-2xl border-2 animate-ping"
+                      style={{ borderColor: skillVisual.isPlayer ? playerShieldTheme.primaryColor : opponentShieldTheme.primaryColor }}
+                    />
                   </div>
-                  <span className="mt-1.5 text-[11px] font-black text-cyan-300 bg-black/80 px-2 py-0.5 rounded border border-cyan-400">
-                    SHIELD DEFENSE
+                  <span 
+                    className="mt-1.5 text-[11px] font-black bg-black/85 px-2 py-0.5 rounded border"
+                    style={{
+                      color: skillVisual.isPlayer ? playerShieldTheme.primaryColor : opponentShieldTheme.primaryColor,
+                      borderColor: skillVisual.isPlayer ? playerShieldTheme.shieldBorderColor : opponentShieldTheme.shieldBorderColor,
+                    }}
+                  >
+                    SHIELD DEFENSE ({skillVisual.isPlayer ? playerShieldTheme.colorName : opponentShieldTheme.colorName})
                   </span>
                 </motion.div>
               )}
@@ -783,13 +837,137 @@ export const CombatArena: React.FC<CombatArenaProps> = ({
                 className="bg-transparent"
               />
 
-              {/* 攻撃時のスラッシュ光刃 / 突進エフェクト */}
+              {/* ビームシールド (左手・前腕マウント) - ランク連動カラー */}
+              {playerHasShield && (
+                <motion.div
+                  className="absolute pointer-events-none z-15 will-change-transform"
+                  style={{
+                    left: '0%',
+                    top: '36%',
+                    width: '38px',
+                    height: '52px',
+                    transformOrigin: '50% 50%',
+                  }}
+                  animate={
+                    playerAnimState === 'hit' || (lastActionEvent?.defenderId === 'player' && lastActionEvent?.type === 'shield')
+                      ? { scale: [1, 1.35, 1.25, 1], rotate: [-10, -2, -8, -10], opacity: [0.85, 1, 0.95, 0.85] }
+                      : { scale: [0.96, 1.04, 0.96], opacity: [0.8, 0.95, 0.8], rotate: [-8, -4, -8] }
+                  }
+                  transition={{
+                    duration: playerAnimState === 'hit' ? 0.35 : 2.5,
+                    repeat: playerAnimState === 'hit' ? 0 : Infinity,
+                    ease: "easeInOut"
+                  }}
+                >
+                  <svg viewBox="0 0 60 80" className="w-full h-full overflow-visible">
+                    <defs>
+                      <filter id={`player-shield-glow`} x="-30%" y="-30%" width="160%" height="160%">
+                        <feGaussianBlur stdDeviation="2.5" result="blur" />
+                        <feMerge>
+                          <feMergeNode in="blur" />
+                          <feMergeNode in="SourceGraphic" />
+                        </feMerge>
+                      </filter>
+                    </defs>
+                    {/* ハニカム力場外枠 */}
+                    <polygon
+                      points="30,4 54,18 54,58 30,76 6,58 6,18"
+                      fill={playerShieldTheme.shieldFieldBg}
+                      stroke={playerShieldTheme.shieldBorderColor}
+                      strokeWidth="2.5"
+                      filter="url(#player-shield-glow)"
+                    />
+                    {/* 内部ハニカムグリッド */}
+                    <polygon
+                      points="30,16 46,26 46,52 30,64 14,52 14,26"
+                      fill="none"
+                      stroke={playerShieldTheme.primaryColor}
+                      strokeWidth="1.2"
+                      strokeDasharray="3 2"
+                      opacity="0.85"
+                    />
+                    {/* 中央電磁コア */}
+                    <circle cx="30" cy="40" r="5" fill={playerShieldTheme.primaryColor} opacity="0.9" />
+                    <circle cx="30" cy="40" r="2.5" fill="#ffffff" />
+                  </svg>
+                </motion.div>
+              )}
+
+              {/* ビームサーベル (右手マウント) - ランク連動カラー */}
+              {playerHasSaber && (
+                <motion.div
+                  className="absolute pointer-events-none z-20 will-change-transform"
+                  style={{
+                    right: '12%',
+                    top: '20%',
+                    width: '36px',
+                    height: '75px',
+                    transformOrigin: '30% 88%',
+                  }}
+                  animate={
+                    playerAnimState === 'attack' || playerAnimState === 'skill'
+                      ? { rotate: [18, 75, 68, 18], scale: [1, 1.25, 1.2, 1], x: [0, 20, 15, 0] }
+                      : { rotate: [20, 26, 20], y: [0, -2, 0] }
+                  }
+                  transition={{
+                    duration: playerAnimState === 'attack' || playerAnimState === 'skill' ? 0.3 : 2.2,
+                    repeat: playerAnimState === 'attack' || playerAnimState === 'skill' ? 0 : Infinity,
+                    ease: "easeInOut"
+                  }}
+                >
+                  <svg viewBox="0 0 50 110" className="w-full h-full overflow-visible">
+                    <defs>
+                      <filter id="player-saber-glow" x="-50%" y="-50%" width="200%" height="200%">
+                        <feGaussianBlur stdDeviation="3.5" result="blur" />
+                        <feMerge>
+                          <feMergeNode in="blur" />
+                          <feMergeNode in="SourceGraphic" />
+                        </feMerge>
+                      </filter>
+                      <linearGradient id="player-saber-blade" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stopColor="#ffffff" stopOpacity="1" />
+                        <stop offset="25%" stopColor={playerSaberTheme.primaryColor} stopOpacity="0.95" />
+                        <stop offset="70%" stopColor={playerSaberTheme.accentColor} stopOpacity="0.85" />
+                        <stop offset="100%" stopColor={playerSaberTheme.saberHiltColor} stopOpacity="1" />
+                      </linearGradient>
+                    </defs>
+                    {/* 刀身グローオーラ */}
+                    <path
+                      d="M 23 5 Q 25 0 27 5 L 29 82 L 21 82 Z"
+                      fill={playerSaberTheme.primaryColor}
+                      opacity="0.5"
+                      filter="url(#player-saber-glow)"
+                    />
+                    {/* プラズマ光刃本体 */}
+                    <path
+                      d="M 24 6 Q 25 2 26 6 L 27.5 82 L 22.5 82 Z"
+                      fill="url(#player-saber-blade)"
+                    />
+                    {/* 白熱超高温コアライン */}
+                    <path
+                      d="M 24.5 10 L 25.5 10 L 25.5 80 L 24.5 80 Z"
+                      fill="#ffffff"
+                      opacity="0.95"
+                    />
+                    {/* サーベル柄・エミッター */}
+                    <rect x="21" y="82" width="8" height="18" rx="2" fill="#1e293b" stroke="#64748b" strokeWidth="1" />
+                    <rect x="20" y="82" width="10" height="3" rx="1" fill={playerSaberTheme.accentColor} />
+                    <circle cx="25" cy="95" r="1.5" fill={playerSaberTheme.primaryColor} />
+                  </svg>
+                </motion.div>
+              )}
+
+              {/* 攻撃時のスラッシュ光刃 / 突進エフェクト (サーベルランク色に同期) */}
               {(playerAnimState === 'attack' || playerAnimState === 'skill') && (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.5, x: 0 }}
                   animate={{ opacity: 1, scale: 1.4, x: 50 }}
                   exit={{ opacity: 0 }}
-                  className="absolute top-1/2 -right-6 -translate-y-1/2 pointer-events-none text-amber-300 drop-shadow-[0_0_12px_rgba(245,158,11,0.9)]"
+                  className="absolute top-1/2 -right-6 -translate-y-1/2 pointer-events-none"
+                  style={{
+                    color: playerHasSaber ? playerSaberTheme.primaryColor : '#fbbf24',
+                    filter: `drop-shadow(0 0 14px ${playerHasSaber ? playerSaberTheme.glowColor : 'rgba(245,158,11,0.9)'})`
+                  }}
                 >
                   <Gi.GiSwordClash className="text-4xl animate-pulse" />
                 </motion.div>
@@ -815,9 +993,21 @@ export const CombatArena: React.FC<CombatArenaProps> = ({
           {/* 足元の楕円シャドウ */}
           <div className="w-24 h-4 bg-black/60 rounded-full blur-xs mt-1 pointer-events-none" />
 
-          {/* ロボット名バッジ */}
-          <div className="mt-1.5 px-2.5 py-0.5 rounded-full bg-stone-900/90 border border-amber-500/40 text-[10px] font-bold text-amber-300 shadow-sm flex items-center gap-1">
+          {/* ロボット名＆装備ランクバッジ */}
+          <div className="mt-1.5 px-2.5 py-0.5 rounded-full bg-stone-900/90 border border-amber-500/40 text-[10px] font-bold text-amber-300 shadow-sm flex items-center gap-1.5">
             <span>自機</span>
+            {playerHasSaber && (
+              <span className="flex items-center gap-0.5 text-[9px]" style={{ color: playerSaberTheme.primaryColor }} title={`サーベル (${playerSaberTheme.colorName})`}>
+                <Gi.GiBroadsword className="text-[10px]" />
+                <span>★{RANK_ORDER.indexOf(playerSaberRank) + 1}</span>
+              </span>
+            )}
+            {playerHasShield && (
+              <span className="flex items-center gap-0.5 text-[9px]" style={{ color: playerShieldTheme.primaryColor }} title={`シールド (${playerShieldTheme.colorName})`}>
+                <Gi.GiShield className="text-[10px]" />
+                <span>★{RANK_ORDER.indexOf(playerShieldRank) + 1}</span>
+              </span>
+            )}
             <span className="font-normal text-stone-400">Pow:{player.power}</span>
           </div>
         </div>
@@ -916,13 +1106,79 @@ export const CombatArena: React.FC<CombatArenaProps> = ({
                 className="bg-transparent"
               />
 
+              {/* 相手AIのビームシールド (所持時) */}
+              {opponentHasShield && (
+                <motion.div
+                  className="absolute pointer-events-none z-15 will-change-transform"
+                  style={{
+                    left: '0%',
+                    top: '36%',
+                    width: '38px',
+                    height: '52px',
+                    transformOrigin: '50% 50%',
+                  }}
+                  animate={{ scale: [0.96, 1.04, 0.96], opacity: [0.75, 0.9, 0.75], rotate: [-8, -4, -8] }}
+                  transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+                >
+                  <svg viewBox="0 0 60 80" className="w-full h-full overflow-visible">
+                    <polygon
+                      points="30,4 54,18 54,58 30,76 6,58 6,18"
+                      fill={opponentShieldTheme.shieldFieldBg}
+                      stroke={opponentShieldTheme.shieldBorderColor}
+                      strokeWidth="2.5"
+                    />
+                    <polygon
+                      points="30,16 46,26 46,52 30,64 14,52 14,26"
+                      fill="none"
+                      stroke={opponentShieldTheme.primaryColor}
+                      strokeWidth="1.2"
+                      strokeDasharray="3 2"
+                      opacity="0.8"
+                    />
+                  </svg>
+                </motion.div>
+              )}
+
+              {/* 相手AIのビームサーベル (所持時) */}
+              {opponentHasSaber && (
+                <motion.div
+                  className="absolute pointer-events-none z-20 will-change-transform"
+                  style={{
+                    right: '12%',
+                    top: '20%',
+                    width: '36px',
+                    height: '75px',
+                    transformOrigin: '30% 88%',
+                  }}
+                  animate={{ rotate: [20, 26, 20], y: [0, -2, 0] }}
+                  transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+                >
+                  <svg viewBox="0 0 50 110" className="w-full h-full overflow-visible">
+                    <defs>
+                      <linearGradient id="opp-saber-blade" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stopColor="#ffffff" stopOpacity="1" />
+                        <stop offset="25%" stopColor={opponentSaberTheme.primaryColor} stopOpacity="0.95" />
+                        <stop offset="70%" stopColor={opponentSaberTheme.accentColor} stopOpacity="0.85" />
+                        <stop offset="100%" stopColor={opponentSaberTheme.saberHiltColor} stopOpacity="1" />
+                      </linearGradient>
+                    </defs>
+                    <path d="M 24 6 Q 25 2 26 6 L 27.5 82 L 22.5 82 Z" fill="url(#opp-saber-blade)" />
+                    <rect x="21" y="82" width="8" height="18" rx="2" fill="#1e293b" stroke="#64748b" strokeWidth="1" />
+                  </svg>
+                </motion.div>
+              )}
+
               {/* 相手攻撃時のスラッシュ光刃 / 突進エフェクト */}
               {(opponentAnimState === 'attack' || opponentAnimState === 'skill') && (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.5, x: 0 }}
                   animate={{ opacity: 1, scale: 1.4, x: 50 }}
                   exit={{ opacity: 0 }}
-                  className="absolute top-1/2 -right-6 -translate-y-1/2 pointer-events-none text-red-400 drop-shadow-[0_0_12px_rgba(239,68,68,0.9)]"
+                  className="absolute top-1/2 -right-6 -translate-y-1/2 pointer-events-none"
+                  style={{
+                    color: opponentHasSaber ? opponentSaberTheme.primaryColor : '#f87171',
+                    filter: `drop-shadow(0 0 12px ${opponentHasSaber ? opponentSaberTheme.glowColor : 'rgba(239,68,68,0.9)'})`
+                  }}
                 >
                   <Gi.GiLaserSparks className="text-4xl animate-pulse" />
                 </motion.div>

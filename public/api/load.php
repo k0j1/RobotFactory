@@ -291,7 +291,7 @@ try {
             user_id VARCHAR(255) NOT NULL,
             robot_id VARCHAR(64) NOT NULL,
             level VARCHAR(32) NOT NULL DEFAULT '1',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             UNIQUE KEY uq_daily_clear (user_id, robot_id, minigame_id, level),
             INDEX idx_user_robot (user_id, robot_id),
             INDEX idx_created_at (created_at)
@@ -307,6 +307,7 @@ try {
         $pdo->exec("ALTER TABLE completed_daily_minigame MODIFY COLUMN robot_id VARCHAR(64) NOT NULL");
         $pdo->exec("ALTER TABLE completed_daily_minigame MODIFY COLUMN minigame_id VARCHAR(32) NOT NULL");
         $pdo->exec("ALTER TABLE completed_daily_minigame MODIFY COLUMN level VARCHAR(32) NOT NULL DEFAULT '1'");
+        $pdo->exec("ALTER TABLE completed_daily_minigame MODIFY COLUMN created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP");
     } catch (PDOException $e) {}
 
     // 毎朝9:00基準の期限切れデイリークリアレコードの削除
@@ -858,12 +859,14 @@ try {
 
     // 8.5 completed_daily_minigame テーブルから本日のクリア済み記録を取得
     $dailyClearStmt = $pdo->prepare("
-        SELECT minigame_id, robot_id, level, created_at 
+        SELECT id, user_id, minigame_id, robot_id, level, created_at 
         FROM completed_daily_minigame 
         WHERE user_id IN ($inPlaceholders)
+        ORDER BY created_at ASC
     ");
     $dailyClearStmt->execute(array_values($candidateUserIds));
     $dbDailyCleared = [];
+    $dbCompletedDailyRecords = [];
     $nowJst = new DateTime('now', new DateTimeZone('Asia/Tokyo'));
     $todayDateKey = $nowJst->format('Y-m-d');
     if ((int)$nowJst->format('H') < 9) {
@@ -874,6 +877,7 @@ try {
     $dbDailyCleared[$todayDateKey] = [];
 
     while ($dcRow = $dailyClearStmt->fetch(PDO::FETCH_ASSOC)) {
+        $dbCompletedDailyRecords[] = $dcRow;
         $rId = (string)$dcRow['robot_id'];
         $mId = (string)$dcRow['minigame_id'];
         $lvl = (string)$dcRow['level'];
@@ -1137,7 +1141,7 @@ try {
                 $insDailyMigrate = $pdo->prepare("
                     INSERT INTO completed_daily_minigame (user_id, robot_id, minigame_id, level, created_at)
                     VALUES (:user_id, :robot_id, :minigame_id, :level, CURRENT_TIMESTAMP)
-                    ON DUPLICATE KEY UPDATE created_at = CURRENT_TIMESTAMP
+                    ON DUPLICATE KEY UPDATE id = id
                 ");
                 $nowJst = new DateTime('now', new DateTimeZone('Asia/Tokyo'));
                 $todayDateKey = $nowJst->format('Y-m-d');
@@ -1418,6 +1422,7 @@ try {
             "data" => $gameData,
             "received_initial_bonus" => $receivedBonusVal,
             "materials" => $dbMaterials,
+            "completed_daily_minigame" => $dbCompletedDailyRecords,
             "user" => $userRecord,
             "userId" => $actualUserId
         ]);
@@ -1465,6 +1470,7 @@ try {
             "data" => $gameData,
             "received_initial_bonus" => $receivedBonusVal,
             "materials" => $dbMaterials,
+            "completed_daily_minigame" => $dbCompletedDailyRecords,
             "user" => $userRecord,
             "userId" => $actualUserId
         ]);
