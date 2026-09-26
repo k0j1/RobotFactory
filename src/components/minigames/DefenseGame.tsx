@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Robot } from '../../core/models';
 import { DefenseStage } from './Shared';
+import { CombatEquipmentRank, getEquipmentBonus } from '../../core/combatEquipmentData';
 import { Button, Card } from '../ui/core';
 import * as Gi from 'react-icons/gi';
 import { ZoomIn, ZoomOut, RotateCcw, Move } from 'lucide-react';
@@ -22,6 +23,7 @@ interface DefenseGameProps {
   battleResult: 'win' | 'lose' | 'draw' | null;
   onExit: () => void;
   activeCombatEquipments?: { beamSaber?: boolean; beamShield?: boolean };
+  combatEquipmentRanks?: { beamSaber?: CombatEquipmentRank; beamShield?: CombatEquipmentRank };
 }
 
 export const DefenseGame: React.FC<DefenseGameProps> = ({
@@ -34,6 +36,7 @@ export const DefenseGame: React.FC<DefenseGameProps> = ({
   battleResult,
   onExit,
   activeCombatEquipments,
+  combatEquipmentRanks,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -321,7 +324,8 @@ export const DefenseGame: React.FC<DefenseGameProps> = ({
       }
 
       if (activeCombatEquipments?.beamSaber) {
-        pow += 35; // ビームサーベルの攻撃力アップ反映
+        const sRank = combatEquipmentRanks?.beamSaber || 'common';
+        pow += getEquipmentBonus('beamSaber', sRank); // ビームサーベルのランク別攻撃力アップ反映
       }
 
       // Intelligence & Dexterity及び他能力値による攻撃パターン・技の決定

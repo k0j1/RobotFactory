@@ -1351,12 +1351,24 @@ try {
         if ($userItemRow && !empty($userItemRow['battle_item'])) {
             $bItemData = is_array($userItemRow['battle_item']) ? $userItemRow['battle_item'] : json_decode($userItemRow['battle_item'], true);
             if (is_array($bItemData)) {
-                $gameData['combatEquipments'] = $bItemData['combatEquipments'] ?? [
+                $cEquip = $bItemData['combatEquipments'] ?? [
                     'beamSaber' => !empty($bItemData['beamSaber']),
                     'beamShield' => !empty($bItemData['beamShield'])
                 ];
-                $gameData['combatEquipmentRanks'] = $bItemData['combatEquipmentRanks'] ?? $bItemData['ranks'] ?? [];
-                $gameData['activeCombatEquipments'] = $bItemData['activeCombatEquipments'] ?? $bItemData['active'] ?? [];
+                if (is_array($cEquip) && empty($cEquip)) {
+                    $cEquip = (object)[];
+                }
+                $cRanks = $bItemData['combatEquipmentRanks'] ?? $bItemData['ranks'] ?? [];
+                if (is_array($cRanks) && empty($cRanks)) {
+                    $cRanks = (object)[];
+                }
+                $cActive = $bItemData['activeCombatEquipments'] ?? $bItemData['active'] ?? [];
+                if (is_array($cActive) && empty($cActive)) {
+                    $cActive = (object)[];
+                }
+                $gameData['combatEquipments'] = $cEquip;
+                $gameData['combatEquipmentRanks'] = $cRanks;
+                $gameData['activeCombatEquipments'] = $cActive;
             }
         }
         if ($userItemRow && !empty($userItemRow['reversi_item'])) {
@@ -1440,8 +1452,8 @@ try {
                 'mythic' => $userItemRow ? (int)$userItemRow['mythic_chest'] : 0,
             ],
             "combatEquipments" => ($userItemRow && !empty($userItemRow['battle_item'])) ? (json_decode($userItemRow['battle_item'], true)['combatEquipments'] ?? ['beamSaber' => false, 'beamShield' => false]) : ['beamSaber' => false, 'beamShield' => false],
-            "combatEquipmentRanks" => ($userItemRow && !empty($userItemRow['battle_item'])) ? (json_decode($userItemRow['battle_item'], true)['combatEquipmentRanks'] ?? []) : [],
-            "activeCombatEquipments" => ($userItemRow && !empty($userItemRow['battle_item'])) ? (json_decode($userItemRow['battle_item'], true)['activeCombatEquipments'] ?? []) : [],
+            "combatEquipmentRanks" => ($userItemRow && !empty($userItemRow['battle_item']) && !empty(json_decode($userItemRow['battle_item'], true)['combatEquipmentRanks'])) ? json_decode($userItemRow['battle_item'], true)['combatEquipmentRanks'] : (object)[],
+            "activeCombatEquipments" => ($userItemRow && !empty($userItemRow['battle_item']) && !empty(json_decode($userItemRow['battle_item'], true)['activeCombatEquipments'])) ? json_decode($userItemRow['battle_item'], true)['activeCombatEquipments'] : (object)[],
             "othelloPurchasedMemories" => ($userItemRow && !empty($userItemRow['reversi_item'])) ? (json_decode($userItemRow['reversi_item'], true)['purchasedMemories'] ?? []) : [],
             "othelloEquippedMemories" => ($userItemRow && !empty($userItemRow['reversi_item'])) ? (json_decode($userItemRow['reversi_item'], true)['equippedMemories'] ?? []) : [],
             "reversiPurchasedMemories" => ($userItemRow && !empty($userItemRow['reversi_item'])) ? (json_decode($userItemRow['reversi_item'], true)['purchasedMemories'] ?? []) : [],

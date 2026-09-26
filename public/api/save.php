@@ -884,12 +884,24 @@ try {
 
     $battleItemJson = null;
     if ($hasBattleInput) {
+        $cEquip = $gameData['combatEquipments'] ?? [];
+        if (is_array($cEquip) && empty($cEquip)) {
+            $cEquip = (object)[];
+        }
+        $cRanks = $gameData['combatEquipmentRanks'] ?? [];
+        if (is_array($cRanks) && empty($cRanks)) {
+            $cRanks = (object)[];
+        }
+        $cActive = $gameData['activeCombatEquipments'] ?? [];
+        if (is_array($cActive) && empty($cActive)) {
+            $cActive = (object)[];
+        }
         $battleItem = [
             'beamSaber' => !empty($gameData['combatEquipments']['beamSaber']),
             'beamShield' => !empty($gameData['combatEquipments']['beamShield']),
-            'combatEquipments' => $gameData['combatEquipments'] ?? [],
-            'combatEquipmentRanks' => $gameData['combatEquipmentRanks'] ?? [],
-            'activeCombatEquipments' => $gameData['activeCombatEquipments'] ?? []
+            'combatEquipments' => $cEquip,
+            'combatEquipmentRanks' => $cRanks,
+            'activeCombatEquipments' => $cActive
         ];
         $battleItemJson = json_encode($battleItem, JSON_UNESCAPED_UNICODE);
     } elseif ($existingItemRow && !empty($existingItemRow['battle_item'])) {

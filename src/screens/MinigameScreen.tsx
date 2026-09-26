@@ -458,6 +458,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
             setBattleResult(null);
           }}
           activeCombatEquipments={state.activeCombatEquipments}
+          combatEquipmentRanks={state.combatEquipmentRanks}
         />
       );
     }

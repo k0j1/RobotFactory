@@ -47,9 +47,9 @@ export const CombatSetupCard: React.FC<CombatSetupCardProps> = ({
   isOpponentCleared,
 }) => {
   const elements = state.battleElements || 0;
-  const eq = state.combatEquipments || {};
-  const eqRanks = state.combatEquipmentRanks || {};
-  const activeEq = state.activeCombatEquipments || {};
+  const eq = (state.combatEquipments && !Array.isArray(state.combatEquipments)) ? state.combatEquipments : {};
+  const eqRanks = (state.combatEquipmentRanks && !Array.isArray(state.combatEquipmentRanks)) ? state.combatEquipmentRanks : {};
+  const activeEq = (state.activeCombatEquipments && !Array.isArray(state.activeCombatEquipments)) ? state.activeCombatEquipments : {};
 
   const handleUpgrade = onUpgradeEquipment || onExchangeEquipment;
 

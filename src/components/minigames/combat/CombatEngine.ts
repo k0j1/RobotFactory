@@ -1,6 +1,6 @@
 import { Robot } from '../../../core/models';
 import { Opponent } from '../Shared';
-import { CombatEquipmentRank, getEquipmentBonus } from '../../../core/combatEquipmentData';
+import { CombatEquipmentRank, getEquipmentBonus, COMBAT_EQUIPMENT_RANKS } from '../../../core/combatEquipmentData';
 import { 
   CombatFighter, 
   CombatLogItem, 
@@ -129,22 +129,24 @@ export class CombatEngine {
     });
 
     if (options?.beamSaber) {
+      const sRankDef = COMBAT_EQUIPMENT_RANKS[saberRank];
       this.addLog({
         type: 'buff',
         actorId: 'player',
         actorName: this.player.name,
         isPlayer: true,
-        message: `⚔️【ビームサーベル】高エネルギー刃が起動！(攻撃力+35・強撃ブースト)`
+        message: `⚔️【ビームサーベル (${sRankDef.label})】高エネルギー刃が起動！(攻撃力+${saberBoost}・強撃ブースト)`
       });
     }
 
     if (options?.beamShield) {
+      const shRankDef = COMBAT_EQUIPMENT_RANKS[shieldRank];
       this.addLog({
         type: 'buff',
         actorId: 'player',
         actorName: this.player.name,
         isPlayer: true,
-        message: `🛡️【ビームシールド】光波防御障壁を展開！(防御力+30)`
+        message: `🛡️【ビームシールド (${shRankDef.label})】光波防御障壁を展開！(防御力+${shieldBoost})`
       });
     }
   }

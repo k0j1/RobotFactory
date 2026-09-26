@@ -44,6 +44,10 @@ const INITIAL_STATE: GameState = {
   minigameDashboardMode: 'compact',
   othelloPurchasedMemories: [],
   othelloEquippedMemories: [],
+  battleElements: 0,
+  combatEquipments: {},
+  combatEquipmentRanks: {},
+  activeCombatEquipments: {},
 };
 
 const STORAGE_KEY = 'ponkotsu_robot_save';
@@ -423,14 +427,22 @@ export class GameEngine {
         parsed.fame = Math.max(parsed.fame || 0, calculatedFame);
       }
 
-      // Migrate combat equipment ranks (Default to 'common' for existing equipments)
-      if (!parsed.combatEquipmentRanks) {
+      // 戦闘専用装備・ランク・有効化設定の正規化（PHP json_encodeで [] 配列化する問題を完全に防止し、プレーンオブジェクト {} に統一）
+      if (!parsed.combatEquipments || Array.isArray(parsed.combatEquipments) || typeof parsed.combatEquipments !== 'object') {
+        parsed.combatEquipments = {};
+      }
+      if (!parsed.combatEquipmentRanks || Array.isArray(parsed.combatEquipmentRanks) || typeof parsed.combatEquipmentRanks !== 'object') {
         parsed.combatEquipmentRanks = {};
       }
-      if (parsed.combatEquipments?.beamSaber && !parsed.combatEquipmentRanks.beamSaber) {
+      if (!parsed.activeCombatEquipments || Array.isArray(parsed.activeCombatEquipments) || typeof parsed.activeCombatEquipments !== 'object') {
+        parsed.activeCombatEquipments = {};
+      }
+
+      // 解放済み装備の初期ランクフォールバック（未設定時はcommonランクを保証）
+      if (parsed.combatEquipments.beamSaber && !parsed.combatEquipmentRanks.beamSaber) {
         parsed.combatEquipmentRanks.beamSaber = 'common';
       }
-      if (parsed.combatEquipments?.beamShield && !parsed.combatEquipmentRanks.beamShield) {
+      if (parsed.combatEquipments.beamShield && !parsed.combatEquipmentRanks.beamShield) {
         parsed.combatEquipmentRanks.beamShield = 'common';
       }
 
@@ -751,13 +763,13 @@ export class GameEngine {
    */
   public upgradeCombatEquipment(equipment: CombatEquipmentType): boolean {
     const currentElements = this.state.battleElements || 0;
-    if (!this.state.combatEquipments) {
+    if (!this.state.combatEquipments || Array.isArray(this.state.combatEquipments) || typeof this.state.combatEquipments !== 'object') {
       this.state.combatEquipments = {};
     }
-    if (!this.state.combatEquipmentRanks) {
+    if (!this.state.combatEquipmentRanks || Array.isArray(this.state.combatEquipmentRanks) || typeof this.state.combatEquipmentRanks !== 'object') {
       this.state.combatEquipmentRanks = {};
     }
-    if (!this.state.activeCombatEquipments) {
+    if (!this.state.activeCombatEquipments || Array.isArray(this.state.activeCombatEquipments) || typeof this.state.activeCombatEquipments !== 'object') {
       this.state.activeCombatEquipments = {};
     }
 
@@ -774,12 +786,12 @@ export class GameEngine {
 
     // エレメント消費
     this.state.battleElements = currentElements - nextRankDef.cost;
-    this.state.combatEquipments[equipment] = true;
-    this.state.combatEquipmentRanks[equipment] = nextRank;
+    this.state.combatEquipments = { ...this.state.combatEquipments, [equipment]: true };
+    this.state.combatEquipmentRanks = { ...this.state.combatEquipmentRanks, [equipment]: nextRank };
 
     // 初回解放時は自動的に有効化
     if (!currentRank) {
-      this.state.activeCombatEquipments[equipment] = true;
+      this.state.activeCombatEquipments = { ...this.state.activeCombatEquipments, [equipment]: true };
     }
 
     this.saveState();
@@ -798,11 +810,14 @@ export class GameEngine {
    */
   public toggleCombatEquipment(equipment: 'beamSaber' | 'beamShield', enabled?: boolean) {
     if (!this.state.combatEquipments?.[equipment]) return;
-    if (!this.state.activeCombatEquipments) {
+    if (!this.state.activeCombatEquipments || Array.isArray(this.state.activeCombatEquipments) || typeof this.state.activeCombatEquipments !== 'object') {
       this.state.activeCombatEquipments = {};
     }
     const current = !!this.state.activeCombatEquipments[equipment];
-    this.state.activeCombatEquipments[equipment] = enabled !== undefined ? enabled : !current;
+    this.state.activeCombatEquipments = {
+      ...this.state.activeCombatEquipments,
+      [equipment]: enabled !== undefined ? enabled : !current
+    };
     this.saveState();
   }
 
