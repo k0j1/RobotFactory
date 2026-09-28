@@ -33,8 +33,8 @@ if (!$pdo) {
 try {
     $existingTables = $pdo->query("SHOW TABLES")->fetchAll(PDO::FETCH_COLUMN);
     $existingLower = array_map('strtolower', $existingTables);
-    if (in_array('daily_cleared_minigame', $existingLower, true) && !in_array('completed_daily_minigame', $existingLower, true)) {
-        $pdo->exec("RENAME TABLE daily_cleared_minigame TO completed_daily_minigame");
+    if (in_array('daily_cleared_minigame', $existingLower, true) || in_array('completed_daily_minigame', $existingLower, true)) {
+        $pdo->exec("DROP TABLE IF EXISTS completed_daily_minigame, daily_cleared_minigame");
     }
     if (in_array('minigame_rankings', $existingLower, true) && !in_array('stats_minigame_rankings', $existingLower, true)) {
         $pdo->exec("RENAME TABLE minigame_rankings TO stats_minigame_rankings");
@@ -274,16 +274,17 @@ try {
             PRIMARY KEY (user_id, minigame_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-        CREATE TABLE IF NOT EXISTS completed_daily_minigame (
+        CREATE TABLE IF NOT EXISTS complete_daily_minigame (
             id INT AUTO_INCREMENT PRIMARY KEY,
             minigame_id VARCHAR(32) NOT NULL,
             user_id VARCHAR(255) NOT NULL,
-            robot_id VARCHAR(64) NOT NULL,
+            robot_id VARCHAR(255) NOT NULL,
             level VARCHAR(32) NOT NULL DEFAULT '1',
             created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             UNIQUE KEY uq_daily_clear (user_id, robot_id, minigame_id, level),
             INDEX idx_user_robot (user_id, robot_id),
-            INDEX idx_created_at (created_at)
+            INDEX idx_created_at (created_at),
+            CONSTRAINT fk_complete_daily_minigame_robot FOREIGN KEY (robot_id) REFERENCES user_robots(id) ON DELETE CASCADE ON UPDATE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ");
 
@@ -292,11 +293,11 @@ try {
     } catch (PDOException $e) {}
 
     try {
-        $pdo->exec("ALTER TABLE completed_daily_minigame MODIFY COLUMN user_id VARCHAR(255) NOT NULL");
-        $pdo->exec("ALTER TABLE completed_daily_minigame MODIFY COLUMN robot_id VARCHAR(64) NOT NULL");
-        $pdo->exec("ALTER TABLE completed_daily_minigame MODIFY COLUMN minigame_id VARCHAR(32) NOT NULL");
-        $pdo->exec("ALTER TABLE completed_daily_minigame MODIFY COLUMN level VARCHAR(32) NOT NULL DEFAULT '1'");
-        $pdo->exec("ALTER TABLE completed_daily_minigame MODIFY COLUMN created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP");
+        $pdo->exec("ALTER TABLE complete_daily_minigame MODIFY COLUMN user_id VARCHAR(255) NOT NULL");
+        $pdo->exec("ALTER TABLE complete_daily_minigame MODIFY COLUMN robot_id VARCHAR(255) NOT NULL");
+        $pdo->exec("ALTER TABLE complete_daily_minigame MODIFY COLUMN minigame_id VARCHAR(32) NOT NULL");
+        $pdo->exec("ALTER TABLE complete_daily_minigame MODIFY COLUMN level VARCHAR(32) NOT NULL DEFAULT '1'");
+        $pdo->exec("ALTER TABLE complete_daily_minigame MODIFY COLUMN created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP");
     } catch (PDOException $e) {}
 
     try {
@@ -1632,7 +1633,7 @@ try {
         ':chests_count_up' => $totalUnopenedChests
     ]);
 
-    // 13. completed_daily_minigame テーブルの同期（本日クリア済みミニゲーム/演習の記録）
+    // 13. complete_daily_minigame テーブルの同期（本日クリア済みミニゲーム/演習の記録）
     // 毎朝9:00(JST)基準：前日以前の期限切れレコードのみを対象ユーザー限定で削除し、本日の全クリア記録および各created_at初回到達日時は恒久保護
     try {
         $nowJst = new DateTime('now', new DateTimeZone('Asia/Tokyo'));
@@ -1644,7 +1645,7 @@ try {
         }
         $cutoffStr = $cutoffJst->format('Y-m-d H:i:s');
         $delDailyUserStmt = $pdo->prepare("
-            DELETE FROM completed_daily_minigame 
+            DELETE FROM complete_daily_minigame 
             WHERE user_id = :actual_uid AND created_at < :cutoff
         ");
         $delDailyUserStmt->execute([
@@ -1655,8 +1656,16 @@ try {
 
     // 既存レコードが存在する場合は created_at を維持（上書き・破棄せず初回到達日時を恒久保護）
     if (!empty($gameData['dailyBattleLimits']) && is_array($gameData['dailyBattleLimits'])) {
+        // 対象ユーザーの所持機体IDリストを取得（外部キー制約 user_robots(id) の整合性保護）
+        $existingRobotIds = [];
+        try {
+            $rListStmt = $pdo->prepare("SELECT id FROM user_robots WHERE user_id = :uid");
+            $rListStmt->execute([':uid' => $actualUserId]);
+            $existingRobotIds = $rListStmt->fetchAll(PDO::FETCH_COLUMN);
+        } catch (Throwable $e) {}
+
         $stmtDcm = $pdo->prepare("
-            INSERT INTO completed_daily_minigame (user_id, robot_id, minigame_id, level, created_at)
+            INSERT INTO complete_daily_minigame (user_id, robot_id, minigame_id, level, created_at)
             VALUES (:user_id, :robot_id, :minigame_id, :level, CURRENT_TIMESTAMP)
             ON DUPLICATE KEY UPDATE id = id
         ");
@@ -1679,37 +1688,41 @@ try {
                             $lvlVal = array_pop($parts);
                             $mId = array_pop($parts);
                             $rId = implode('_', $parts);
-                            $stmtDcm->execute([
-                                ':user_id' => $actualUserId,
-                                ':robot_id' => (string)$rId,
-                                ':minigame_id' => (string)$mId,
-                                ':level' => (string)$lvlVal
-                            ]);
+                            if (in_array($rId, $existingRobotIds, true)) {
+                                $stmtDcm->execute([
+                                    ':user_id' => $actualUserId,
+                                    ':robot_id' => (string)$rId,
+                                    ':minigame_id' => (string)$mId,
+                                    ':level' => (string)$lvlVal
+                                ]);
+                            }
                         }
                     }
                 }
             } elseif (is_array($v1)) {
                 // パターン2: 機体IDキー { [robotId]: { [minigameId]: { [level]: true } } }
                 $rId = (string)$k1;
-                foreach ($v1 as $mId => $lvlMap) {
-                    if (is_array($lvlMap)) {
-                        foreach ($lvlMap as $lvlKey => $isCleared) {
-                            if ($isCleared) {
-                                $stmtDcm->execute([
-                                    ':user_id' => $actualUserId,
-                                    ':robot_id' => $rId,
-                                    ':minigame_id' => (string)$mId,
-                                    ':level' => (string)$lvlKey
-                                ]);
+                if (in_array($rId, $existingRobotIds, true)) {
+                    foreach ($v1 as $mId => $lvlMap) {
+                        if (is_array($lvlMap)) {
+                            foreach ($lvlMap as $lvlKey => $isCleared) {
+                                if ($isCleared) {
+                                    $stmtDcm->execute([
+                                        ':user_id' => $actualUserId,
+                                        ':robot_id' => $rId,
+                                        ':minigame_id' => (string)$mId,
+                                        ':level' => (string)$lvlKey
+                                    ]);
+                                }
                             }
+                        } elseif ($lvlMap) {
+                            $stmtDcm->execute([
+                                ':user_id' => $actualUserId,
+                                ':robot_id' => $rId,
+                                ':minigame_id' => (string)$mId,
+                                ':level' => '1'
+                            ]);
                         }
-                    } elseif ($lvlMap) {
-                        $stmtDcm->execute([
-                            ':user_id' => $actualUserId,
-                            ':robot_id' => $rId,
-                            ':minigame_id' => (string)$mId,
-                            ':level' => '1'
-                        ]);
                     }
                 }
             }

@@ -105,7 +105,7 @@ function ensureUserForeignKeys($pdo) {
         'user_workshop_status' => 'fk_user_workshop_status_user_id',
         'user_save_data' => 'fk_user_save_data_user_id',
         'stats_minigame_rankings' => 'fk_stats_minigame_rankings_user_id',
-        'completed_daily_minigame' => 'fk_completed_daily_minigame_user_id',
+        'complete_daily_minigame' => 'fk_complete_daily_minigame_user_id',
         'complete_robot_disassemblies' => 'fk_complete_robot_disassemblies_user_id',
         'complete_robot_assemblies' => 'fk_complete_robot_assemblies_user_id',
         'complete_requests' => 'fk_complete_requests_user_id',
@@ -124,6 +124,11 @@ function ensureUserForeignKeys($pdo) {
     try {
         // 旧 completed_robots テーブルの廃止・削除（complete_robot_assemblies へ一元化）
         $pdo->exec("DROP TABLE IF EXISTS completed_robots");
+    } catch (Throwable $e) {}
+
+    try {
+        // 旧 completed_daily_minigame / daily_cleared_minigame テーブルの完全削除
+        $pdo->exec("DROP TABLE IF EXISTS completed_daily_minigame, daily_cleared_minigame");
     } catch (Throwable $e) {}
 
     try {
@@ -214,6 +219,40 @@ function ensureUserForeignKeys($pdo) {
             } catch (Throwable $e) {
                 error_log("ensureUserForeignKeys failed for {$tableName} ({$fkName}): " . $e->getMessage());
             }
+        }
+
+        // 4. complete_daily_minigame テーブルの robot_id -> user_robots(id) 外部キー制約の保証
+        try {
+            $checkCdm = $pdo->query("SHOW TABLES LIKE 'complete_daily_minigame'");
+            $checkUr = $pdo->query("SHOW TABLES LIKE 'user_robots'");
+            if ($checkCdm && $checkCdm->rowCount() > 0 && $checkUr && $checkUr->rowCount() > 0) {
+                // robot_id のカラム型を user_robots.id と完全一致 (VARCHAR(255) NOT NULL)
+                try {
+                    $pdo->exec("ALTER TABLE complete_daily_minigame MODIFY COLUMN robot_id VARCHAR(255) NOT NULL");
+                } catch (Throwable $e) {}
+
+                // user_robots に存在しない孤立 robot_id レコードを事前クリーンアップ
+                try {
+                    $pdo->exec("
+                        DELETE FROM complete_daily_minigame
+                        WHERE robot_id IS NULL 
+                           OR robot_id = '' 
+                           OR robot_id NOT IN (SELECT id FROM user_robots)
+                    ");
+                } catch (Throwable $e) {}
+
+                // 外部キー制約が存在しない場合に追加
+                if (empty($existingFks['complete_daily_minigame']['fk_complete_daily_minigame_robot_id'])) {
+                    $pdo->exec("
+                        ALTER TABLE complete_daily_minigame
+                        ADD CONSTRAINT fk_complete_daily_minigame_robot_id
+                        FOREIGN KEY (robot_id) REFERENCES user_robots(id)
+                        ON DELETE CASCADE ON UPDATE CASCADE
+                    ");
+                }
+            }
+        } catch (Throwable $e) {
+            error_log("ensureUserForeignKeys robot_id fk error: " . $e->getMessage());
         }
     } catch (Throwable $e) {
         error_log("ensureUserForeignKeys fatal error: " . $e->getMessage());

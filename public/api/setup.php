@@ -16,8 +16,8 @@ try {
     try {
         $existingTables = $pdo->query("SHOW TABLES")->fetchAll(PDO::FETCH_COLUMN);
         $existingLower = array_map('strtolower', $existingTables);
-        if (in_array('daily_cleared_minigame', $existingLower, true) && !in_array('completed_daily_minigame', $existingLower, true)) {
-            $pdo->exec("RENAME TABLE daily_cleared_minigame TO completed_daily_minigame");
+        if (in_array('daily_cleared_minigame', $existingLower, true) || in_array('completed_daily_minigame', $existingLower, true)) {
+            $pdo->exec("DROP TABLE IF EXISTS completed_daily_minigame, daily_cleared_minigame");
         }
         if (in_array('minigame_rankings', $existingLower, true) && !in_array('stats_minigame_rankings', $existingLower, true)) {
             $pdo->exec("RENAME TABLE minigame_rankings TO stats_minigame_rankings");
@@ -107,16 +107,17 @@ try {
         achieved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-    CREATE TABLE IF NOT EXISTS completed_daily_minigame (
+    CREATE TABLE IF NOT EXISTS complete_daily_minigame (
         id INT AUTO_INCREMENT PRIMARY KEY,
         minigame_id VARCHAR(32) NOT NULL,
         user_id VARCHAR(255) NOT NULL,
-        robot_id VARCHAR(64) NOT NULL,
+        robot_id VARCHAR(255) NOT NULL,
         level VARCHAR(32) NOT NULL DEFAULT '1',
         created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         UNIQUE KEY uq_daily_clear (user_id, robot_id, minigame_id, level),
         INDEX idx_user_robot (user_id, robot_id),
-        INDEX idx_created_at (created_at)
+        INDEX idx_created_at (created_at),
+        CONSTRAINT fk_complete_daily_minigame_robot FOREIGN KEY (robot_id) REFERENCES user_robots(id) ON DELETE CASCADE ON UPDATE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
     CREATE TABLE IF NOT EXISTS master_expeditions (
@@ -912,12 +913,21 @@ try {
     } catch (PDOException $e) {}
 
     try {
-        $pdo->exec("ALTER TABLE completed_daily_minigame MODIFY COLUMN user_id VARCHAR(255) NOT NULL");
-        $pdo->exec("ALTER TABLE completed_daily_minigame MODIFY COLUMN robot_id VARCHAR(64) NOT NULL");
-        $pdo->exec("ALTER TABLE completed_daily_minigame MODIFY COLUMN minigame_id VARCHAR(32) NOT NULL");
-        $pdo->exec("ALTER TABLE completed_daily_minigame MODIFY COLUMN level VARCHAR(32) NOT NULL DEFAULT '1'");
-        $pdo->exec("ALTER TABLE completed_daily_minigame MODIFY COLUMN created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP");
+        $pdo->exec("ALTER TABLE complete_daily_minigame MODIFY COLUMN user_id VARCHAR(255) NOT NULL");
+        $pdo->exec("ALTER TABLE complete_daily_minigame MODIFY COLUMN robot_id VARCHAR(255) NOT NULL");
+        $pdo->exec("ALTER TABLE complete_daily_minigame MODIFY COLUMN minigame_id VARCHAR(32) NOT NULL");
+        $pdo->exec("ALTER TABLE complete_daily_minigame MODIFY COLUMN level VARCHAR(32) NOT NULL DEFAULT '1'");
+        $pdo->exec("ALTER TABLE complete_daily_minigame MODIFY COLUMN created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP");
     } catch (PDOException $e) {}
+
+    // complete_daily_minigame テーブルのレコード全削除
+    try {
+        $pdo->exec("TRUNCATE TABLE complete_daily_minigame");
+    } catch (PDOException $e) {
+        try {
+            $pdo->exec("DELETE FROM complete_daily_minigame");
+        } catch (PDOException $e2) {}
+    }
 
     try {
         $pdo->exec("ALTER TABLE master_parts ADD COLUMN visual_index INT DEFAULT 0");
@@ -1011,7 +1021,7 @@ try {
             $cutoffJst->modify('-1 day')->setTime(9, 0, 0);
         }
         $cutoffStr = $cutoffJst->format('Y-m-d H:i:s');
-        $delDailyStmt = $pdo->prepare("DELETE FROM completed_daily_minigame WHERE created_at < :cutoff");
+        $delDailyStmt = $pdo->prepare("DELETE FROM complete_daily_minigame WHERE created_at < :cutoff");
         $delDailyStmt->execute([':cutoff' => $cutoffStr]);
     } catch (Throwable $e) {}
     try {
@@ -1097,10 +1107,10 @@ try {
                     ]);
                 }
 
-                // dailyBattleLimits が user_save_data 内に存在する場合、completed_daily_minigame テーブルへ移行
+                // dailyBattleLimits が user_save_data 内に存在する場合、complete_daily_minigame テーブルへ移行
                 if (!empty($data['dailyBattleLimits']) && is_array($data['dailyBattleLimits'])) {
                     $insertDailyStmt = $pdo->prepare("
-                        INSERT INTO completed_daily_minigame (user_id, robot_id, minigame_id, level, created_at)
+                        INSERT INTO complete_daily_minigame (user_id, robot_id, minigame_id, level, created_at)
                         VALUES (:user_id, :robot_id, :minigame_id, :level, CURRENT_TIMESTAMP)
                         ON DUPLICATE KEY UPDATE id = id
                     ");

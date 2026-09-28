@@ -60,7 +60,7 @@ function getAllDatabaseTables(PDO $pdo): array {
         'master_parts',
         'user_minigame_status',
         'stats_minigame_rankings',
-        'completed_daily_minigame'
+        'complete_daily_minigame'
     ];
 
     $merged = array_unique(array_merge(array_map('strtolower', $knownTables), $tables));
@@ -988,14 +988,16 @@ try {
             $uiStmt->execute($candidateIds);
             $result['user_item'] = $uiStmt->fetch() ?: null;
 
-            // 13. completed_daily_minigame
+            // 13. complete_daily_minigame
             try {
-                $dcmStmt = $pdo->prepare("SELECT * FROM completed_daily_minigame WHERE user_id IN ($inPlaceholders) ORDER BY created_at DESC");
+                $dcmStmt = $pdo->prepare("SELECT * FROM complete_daily_minigame WHERE user_id IN ($inPlaceholders) ORDER BY created_at DESC");
                 $dcmStmt->execute($candidateIds);
                 $dcmList = $dcmStmt->fetchAll();
-                $result['completed_daily_minigame'] = $dcmList;
+                $result['complete_daily_minigame'] = $dcmList;
+                $result['completed_daily_minigame'] = $dcmList; // 後方互換用キー補完
                 $result['daily_cleared_minigame'] = $dcmList; // 後方互換用キー補完
             } catch (Throwable $e) {
+                $result['complete_daily_minigame'] = [];
                 $result['completed_daily_minigame'] = [];
                 $result['daily_cleared_minigame'] = [];
             }
