@@ -141,6 +141,7 @@ export interface DanmakuDifficultyConfig {
 import { FUR_ELISE_RAW_NOTES } from './furEliseData';
 import { LA_CAMPANELLA_RAW_NOTES } from './laCampanellaData';
 import { TURKISH_MARCH_RAW_NOTES } from './turkishMarchData';
+import { CHOPIN_NOCTURNE_RAW_NOTES } from './chopinNocturneData';
 
 export interface PianoNoteData {
   time: number;
@@ -148,6 +149,8 @@ export interface PianoNoteData {
   midi: number[];
   pitches: string[];
   duration?: number;
+  dynamics?: 'pp' | 'p' | 'mp' | 'mf' | 'f' | 'ff';
+  velocity?: number; // 0.4 (pp) to 1.5 (ff)
 }
 
 export interface PianoSong {
@@ -196,7 +199,22 @@ export const FUR_ELISE_NOTES: PianoNoteData[] = FUR_ELISE_RAW_NOTES.map(n => {
     midi: n.midi,
     lanes: keyInfos.map(k => k.lanePos),
     pitches: keyInfos.map(k => k.name),
-    duration: n.duration
+    duration: n.duration,
+    dynamics: 'p',
+    velocity: 0.75
+  };
+});
+
+export const CHOPIN_NOCTURNE_NOTES: PianoNoteData[] = CHOPIN_NOCTURNE_RAW_NOTES.map(n => {
+  const keyInfos = n.midi.map(m => midiToKeyInfo(m));
+  return {
+    time: n.time,
+    midi: n.midi,
+    lanes: keyInfos.map(k => k.lanePos),
+    pitches: keyInfos.map(k => k.name),
+    duration: n.duration,
+    dynamics: n.dynamics || 'p',
+    velocity: n.velocity || 0.75
   };
 });
 
@@ -207,10 +225,11 @@ export const TURKISH_MARCH_NOTES: PianoNoteData[] = TURKISH_MARCH_RAW_NOTES.map(
     midi: n.midi,
     lanes: keyInfos.map(k => k.lanePos),
     pitches: keyInfos.map(k => k.name),
-    duration: n.duration
+    duration: n.duration,
+    dynamics: 'mf',
+    velocity: 1.05
   };
 });
-
 
 export const LA_CAMPANELLA_NOTES: PianoNoteData[] = LA_CAMPANELLA_RAW_NOTES.map(n => {
   const keyInfos = n.midi.map(m => midiToKeyInfo(m));
@@ -219,7 +238,9 @@ export const LA_CAMPANELLA_NOTES: PianoNoteData[] = LA_CAMPANELLA_RAW_NOTES.map(
     midi: n.midi,
     lanes: keyInfos.map(k => k.lanePos),
     pitches: keyInfos.map(k => k.name),
-    duration: n.duration
+    duration: n.duration,
+    dynamics: 'f',
+    velocity: 1.25
   };
 });
 
@@ -234,6 +255,17 @@ export const PIANO_SONGS: PianoSong[] = [
     rewardFame: 10,
     rewardElements: 0,
     notes: FUR_ELISE_NOTES
+  },
+  { 
+    id: 'chopin_nocturne', 
+    title: 'ノクターン 作品9-2', 
+    composer: 'ショパン', 
+    level: 6, 
+    songSpeed: 1.0,
+    desc: '夜想曲 第2番 変ホ長調 Op. 9, No. 2 (Andante 12/8拍子)。pianoclassics.net (ID 88) 準拠。楽譜通りの全小節音程・リズムとpp〜ffの豊かな音の強弱表現を完全再現。', 
+    rewardFame: 15,
+    rewardElements: 0,
+    notes: CHOPIN_NOCTURNE_NOTES
   },
   { 
     id: 'turkish_march', 

@@ -42,11 +42,12 @@ const playSynthesizedPiano = (
     // 自然な弦の減衰 (サステインの持続)
     noteGain.gain.exponentialRampToValueAtTime(0.0001, now + durSec + 0.55);
 
-    // アコースティックピアノのボディ感を再現するローパスフィルター
+    // アコースティックピアノのダイナミクスに応じた音色変化 (弱音ppはまろやかで甘美、強音ffは鋭く輝かしい倍音)
     const filter = ctx.createBiquadFilter();
     filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(Math.min(12000, freq * 4.8), now);
-    filter.frequency.exponentialRampToValueAtTime(Math.min(5000, freq * 2.2), now + durSec);
+    const cutoffBase = freq * (2.0 + 3.0 * Math.min(1.5, Math.pow(effectiveVol, 0.75)));
+    filter.frequency.setValueAtTime(Math.min(13000, cutoffBase), now);
+    filter.frequency.exponentialRampToValueAtTime(Math.min(4500, freq * 1.8), now + durSec);
 
     // 基本波（暖かみのある三角波）
     const osc1 = ctx.createOscillator();
@@ -58,25 +59,25 @@ const playSynthesizedPiano = (
     oscFund.type = 'sine';
     oscFund.frequency.setValueAtTime(freq, now);
     const oscFundGain = ctx.createGain();
-    oscFundGain.gain.setValueAtTime(0.45, now);
+    oscFundGain.gain.setValueAtTime(0.48 * Math.min(1.2, 0.6 + 0.4 * effectiveVol), now);
     oscFund.connect(oscFundGain);
     oscFundGain.connect(filter);
 
-    // 第2倍音（オクターブ上の倍音）
+    // 第2倍音（オクターブ上の倍音：強打時に明瞭化）
     const osc2 = ctx.createOscillator();
     osc2.type = 'sine';
     osc2.frequency.setValueAtTime(freq * 2, now);
     const osc2Gain = ctx.createGain();
-    osc2Gain.gain.setValueAtTime(0.32, now);
+    osc2Gain.gain.setValueAtTime(0.32 * Math.min(1.5, Math.pow(effectiveVol, 0.9)), now);
     osc2.connect(osc2Gain);
     osc2Gain.connect(filter);
 
-    // 第3倍音（輝きを付加するオーバートーン）
+    // 第3倍音（輝きを付加するオーバートーン：ff時に華麗に共鳴）
     const osc3 = ctx.createOscillator();
     osc3.type = 'sine';
     osc3.frequency.setValueAtTime(freq * 3, now);
     const osc3Gain = ctx.createGain();
-    osc3Gain.gain.setValueAtTime(0.18, now);
+    osc3Gain.gain.setValueAtTime(0.20 * Math.min(1.8, Math.pow(effectiveVol, 1.3)), now);
     osc3.connect(osc3Gain);
     osc3Gain.connect(filter);
 
@@ -141,7 +142,17 @@ export const PianoGame: React.FC<PianoGameProps> = ({
     isBlack: boolean;
     endTime: number;
   }[]>([]);
-  const [judgement, setJudgement] = useState<{ id: number; text: string; combo: number } | null>(null);
+  const [judgement, setJudgement] = useState<{ id: number; text: string; combo: number; dynamics?: string } | null>(null);
+  
+  // 音の強弱ステート & 表現力評価ステート
+  const [activeDynamics, setActiveDynamics] = useState<string>('p');
+  const [dynamicsJudgements, setDynamicsJudgements] = useState<{
+    perfectTouch: number;
+    greatTouch: number;
+    goodTouch: number;
+    roughTouch: number;
+  }>({ perfectTouch: 0, greatTouch: 0, goodTouch: 0, roughTouch: 0 });
+  const dynamicsScoreTotalRef = useRef(0);
   
   const [instrument, setInstrument] = useState<any>(null);
   const [isInstrumentLoaded, setIsInstrumentLoaded] = useState(false);
@@ -195,6 +206,7 @@ export const PianoGame: React.FC<PianoGameProps> = ({
     comboRef.current = 0;
     maxComboRef.current = 0;
     scoreRef.current = 0;
+    dynamicsScoreTotalRef.current = 0;
     isFinishedHandledRef.current = false;
 
     setScore(0);
@@ -202,7 +214,9 @@ export const PianoGame: React.FC<PianoGameProps> = ({
     setProgress(0);
     setCombo(0);
     setMaxCombo(0);
+    setActiveDynamics(currentNotes[0]?.dynamics || 'p');
     setJudgementsCount({ excellent: 0, good: 0, soso: 0, notGood: 0, bad: 0 });
+    setDynamicsJudgements({ perfectTouch: 0, greatTouch: 0, goodTouch: 0, roughTouch: 0 });
     setKeysPressed([]);
     setJudgement(null);
     setSaveResult({
@@ -279,10 +293,10 @@ export const PianoGame: React.FC<PianoGameProps> = ({
     if (instrument) {
       try {
         // Soundfont-player のサンプル音量は標準で小さめ(-12dB前後)のため、
-        // ゲインを 2.4倍 して実音量相当の豊かな音圧にする
+        // ゲインを 2.4倍 して実音量相当の豊かな音圧にする (ppの繊細な静けさからffの圧倒的音圧まで表現)
         instrument.play(pitchName || midi, ctx.currentTime, {
           duration: durationMs / 1000,
-          gain: Math.max(0.4, Math.min(3.2, velocity * 2.4 * pianoVolume))
+          gain: Math.max(0.2, Math.min(3.6, velocity * 2.4 * pianoVolume))
         });
         return;
       } catch (e) {
@@ -320,15 +334,25 @@ export const PianoGame: React.FC<PianoGameProps> = ({
         
         // ロボットの賢さ(Int)と器用さ(Dex)による判定ロール
         // Int: 楽譜理解・旋律・リズム把握 (主軸)
-        // Dex: 運指の滑らかさ・正確な鍵盤打鍵 (補助)
-        // 難易度目標: エリーゼのために(Lv.5)が「INT 50」でクリア（精度90%以上）できるバランス
-        const targetInt = song.id === 'fur_elise' ? 50 : song.id === 'turkish_march' ? 75 : 100;
+        // Dex: 運指の滑らかさ・繊細な打鍵タッチ・強弱コントロール (補助＆表現力主軸)
+        // 難易度目標: 
+        // エリーゼのために(Lv.5): INT 50
+        // ノクターン 作品9-2(Lv.6): INT 60
+        // トルコ行進曲(Lv.8): INT 75
+        // ラ・カンパネラ(Lv.10): INT 100
+        const targetInt = song.id === 'fur_elise' 
+          ? 50 
+          : song.id === 'chopin_nocturne' 
+            ? 60 
+            : song.id === 'turkish_march' 
+              ? 75 
+              : 100;
         const intVal = activeRobot.stats.intelligence || 10;
         const dexVal = activeRobot.stats.dexterity || 10;
         const effectiveScore = (intVal * 0.95) + (dexVal * 0.1);
         const statDelta = effectiveScore - targetInt;
 
-        // roll値算出: INT 50で精度90%超えを狙える調整
+        // roll値算出: 打鍵タイミング判定
         const accuracyRoll = 86 + (Math.random() * 32) + (statDelta * 1.6);
 
         let noteScore = 0;
@@ -357,6 +381,43 @@ export const PianoGame: React.FC<PianoGameProps> = ({
           vol = 0.0;
         }
 
+        // 強弱表現力ロール (Dex 70% + Int 30%): 指先の繊細なベロシティコントロール
+        const expressionEffective = (dexVal * 0.7) + (intVal * 0.3);
+        const expressionDelta = expressionEffective - (targetInt * 0.85);
+        const expressionRoll = 86 + (Math.random() * 30) + (expressionDelta * 1.5);
+
+        let touchScore = 0; // 0 to 100
+        let touchJudgeKey: 'perfectTouch' | 'greatTouch' | 'goodTouch' | 'roughTouch' = 'goodTouch';
+        let touchFactor = 1.0;
+
+        if (expressionRoll >= 95) {
+          touchScore = 100;
+          touchJudgeKey = 'perfectTouch';
+          touchFactor = 1.0;
+        } else if (expressionRoll >= 82) {
+          touchScore = 80;
+          touchJudgeKey = 'greatTouch';
+          touchFactor = 0.92;
+        } else if (expressionRoll >= 65) {
+          touchScore = 55;
+          touchJudgeKey = 'goodTouch';
+          touchFactor = 0.82;
+        } else {
+          touchScore = 25;
+          touchJudgeKey = 'roughTouch';
+          touchFactor = 0.70;
+        }
+
+        dynamicsScoreTotalRef.current += touchScore;
+        setDynamicsJudgements(prev => ({
+          ...prev,
+          [touchJudgeKey]: prev[touchJudgeKey] + 1
+        }));
+
+        if (note.dynamics) {
+          setActiveDynamics(note.dynamics);
+        }
+
         // 判定カウントの更新
         setJudgementsCount(prev => ({
           excellent: prev.excellent + (judgeStr === 'EXCELLENT' ? 1 : 0),
@@ -378,19 +439,24 @@ export const PianoGame: React.FC<PianoGameProps> = ({
         }
         setCombo(comboRef.current);
 
-        // コンボボーナス乗算
+        // コンボボーナス ＆ 表現力ボーナス乗算
         const comboBonus = Math.min(2.0, 1.0 + Math.floor(comboRef.current / 20) * 0.1);
+        const touchBonus = touchScore >= 80 ? 1.15 : 1.0; // 表現力優秀によるスコアボーナス
         const durMult = noteDuration > 200 ? Math.floor(noteDuration / 100) : 1;
-        scoreGained += Math.floor(noteScore * note.lanes.length * durMult * comboBonus);
+        scoreGained += Math.floor(noteScore * note.lanes.length * durMult * comboBonus * touchBonus);
         
         latestJudgeText = judgeStr;
         
+        // 実際の演奏ベロシティ（楽譜の指定ベロシティ × ロボットのタッチ精度 × 音量）
+        const baseVelocity = note.velocity || 0.8;
+        const actualVelocity = Math.max(0.25, Math.min(1.6, baseVelocity * touchFactor * vol));
+
         note.lanes.forEach((lane, i) => {
           const isBlack = (lane % 1) !== 0;
           activeLanes.push({ lane, isBlack, endTime: currentElapsed + noteDuration });
-          // すべてEXCELLENTで弾けた場合には楽譜・音源通りの最高品質で鳴り響く
+          // すべてEXCELLENT/GOODで弾けた場合には楽譜の強弱指定通りの豊かなダイナミクスで響き渡る
           if (noteScore > 0) {
-            playTone(note.midi[i], note.pitches[i], noteDuration, vol);
+            playTone(note.midi[i], note.pitches[i], noteDuration, actualVelocity);
           }
         });
         
@@ -402,7 +468,12 @@ export const PianoGame: React.FC<PianoGameProps> = ({
         setScore(scoreRef.current);
       }
       if (latestJudgeText) {
-        setJudgement({ id: currentElapsed, text: latestJudgeText, combo: comboRef.current });
+        setJudgement({ 
+          id: currentElapsed, 
+          text: latestJudgeText, 
+          combo: comboRef.current,
+          dynamics: currentNotes[nextNoteIdx.current - 1]?.dynamics 
+        });
       }
       if (activeLanes.length > 0) {
         setKeysPressed(prev => [
@@ -435,21 +506,29 @@ export const PianoGame: React.FC<PianoGameProps> = ({
       ) / 10
     : 0;
 
-  // 総合評価ランクの算出
+  // 強弱表現力スコアの計算 (%)
+  const expressionPercent = totalNotes > 0
+    ? Math.round((dynamicsScoreTotalRef.current / (totalNotes * 100)) * 1000) / 10
+    : 0;
+
+  // 総合演奏評価スコア (演奏精度 70% + 強弱表現力 30%)
+  const totalPerformancePercent = Math.round(((accuracyPercent * 0.7) + (expressionPercent * 0.3)) * 10) / 10;
+
+  // 総合評価ランクの算出（強弱表現も含めて判定）
   const getPerformanceRank = () => {
-    if (judgementsCount.excellent === totalNotes || accuracyPercent >= 98) {
+    if (totalPerformancePercent >= 97 && judgementsCount.bad === 0) {
       return { rank: 'SS', label: '神業マエストロ', color: 'text-amber-400', badge: 'bg-amber-500/20 text-amber-300 border-amber-400' };
     }
-    if (accuracyPercent >= 90) {
+    if (totalPerformancePercent >= 90) {
       return { rank: 'S', label: '名演奏', color: 'text-emerald-400', badge: 'bg-emerald-500/20 text-emerald-300 border-emerald-400' };
     }
-    if (accuracyPercent >= 80) {
+    if (totalPerformancePercent >= 80) {
       return { rank: 'A', label: '優秀', color: 'text-blue-400', badge: 'bg-blue-500/20 text-blue-300 border-blue-400' };
     }
-    if (accuracyPercent >= 68) {
+    if (totalPerformancePercent >= 68) {
       return { rank: 'B', label: '合格ライン', color: 'text-teal-400', badge: 'bg-teal-500/20 text-teal-300 border-teal-400' };
     }
-    if (accuracyPercent >= 55) {
+    if (totalPerformancePercent >= 55) {
       return { rank: 'C', label: '練習中', color: 'text-orange-400', badge: 'bg-orange-500/20 text-orange-300 border-orange-400' };
     }
     return { rank: 'D', label: '未達', color: 'text-rose-400', badge: 'bg-rose-500/20 text-rose-300 border-rose-400' };
@@ -457,17 +536,17 @@ export const PianoGame: React.FC<PianoGameProps> = ({
 
   const performanceRank = getPerformanceRank();
 
-  // 全曲演奏終了時の処理：演奏精度が90%以上をクリアとする
+  // 全曲演奏終了時の処理：総合演奏評価（打鍵精度 70% + 強弱表現力 30%）が90%以上をクリアとする
   useEffect(() => {
     if (progress >= 100 && !isFinished && !isPaused && !isFinishedHandledRef.current) {
       isFinishedHandledRef.current = true;
-      const isWin = accuracyPercent >= 90;
+      const isWin = totalPerformancePercent >= 90;
       
       // スコアとベストスコアの保存
       const saveRes = savePianoScore({
         songId: song.id,
         score: scoreRef.current,
-        accuracy: accuracyPercent,
+        accuracy: totalPerformancePercent,
         rank: performanceRank.rank,
         maxCombo: maxComboRef.current,
         cleared: isWin,
@@ -483,7 +562,7 @@ export const PianoGame: React.FC<PianoGameProps> = ({
 
       onFinish(isWin ? 'win' : 'lose');
     }
-  }, [progress, isFinished, isPaused, accuracyPercent, song, performanceRank, activeRobot, onFinish]);
+  }, [progress, isFinished, isPaused, totalPerformancePercent, song, performanceRank, activeRobot, onFinish]);
 
   // 判定文字の色
   const getJudgementColor = (text: string) => {
@@ -493,6 +572,64 @@ export const PianoGame: React.FC<PianoGameProps> = ({
       case 'SOSO': return '#60a5fa';
       case 'NOT GOOD': return '#f87171';
       default: return '#9ca3af';
+    }
+  };
+
+  // 強弱記号に応じたノーツカラーとシャドウ
+  const getDynamicsColor = (dynamics?: string, isBlack?: boolean) => {
+    switch (dynamics) {
+      case 'pp':
+        return isBlack 
+          ? 'bg-violet-300 shadow-[0_0_10px_rgba(196,181,253,0.9)]' 
+          : 'bg-violet-400 shadow-[0_0_8px_rgba(167,139,250,0.8)]';
+      case 'p':
+        return isBlack 
+          ? 'bg-sky-300 shadow-[0_0_10px_rgba(125,211,252,0.9)]' 
+          : 'bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.8)]';
+      case 'mp':
+        return isBlack 
+          ? 'bg-emerald-300 shadow-[0_0_10px_rgba(110,231,183,0.9)]' 
+          : 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]';
+      case 'mf':
+        return isBlack 
+          ? 'bg-amber-300 shadow-[0_0_10px_rgba(252,211,77,0.9)]' 
+          : 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]';
+      case 'f':
+        return isBlack 
+          ? 'bg-orange-300 shadow-[0_0_10px_rgba(253,186,116,0.9)]' 
+          : 'bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.8)]';
+      case 'ff':
+        return isBlack 
+          ? 'bg-rose-300 shadow-[0_0_12px_rgba(253,164,175,1.0)]' 
+          : 'bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.9)]';
+      default:
+        return isBlack 
+          ? 'bg-amber-300 shadow-[0_0_10px_rgba(252,211,77,0.9)]' 
+          : 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]';
+    }
+  };
+
+  const getDynamicsBadge = (dynamics?: string) => {
+    switch (dynamics) {
+      case 'pp': return 'bg-violet-950/90 text-violet-300 border-violet-500/60';
+      case 'p': return 'bg-sky-950/90 text-sky-300 border-sky-500/60';
+      case 'mp': return 'bg-emerald-950/90 text-emerald-300 border-emerald-500/60';
+      case 'mf': return 'bg-amber-950/90 text-amber-300 border-amber-500/60';
+      case 'f': return 'bg-orange-950/90 text-orange-300 border-orange-500/60';
+      case 'ff': return 'bg-rose-950/90 text-rose-300 border-rose-500/60';
+      default: return 'bg-stone-800 text-stone-300 border-stone-600';
+    }
+  };
+
+  const getDynamicsDesc = (dynamics?: string) => {
+    switch (dynamics) {
+      case 'pp': return 'ピアニッシモ（最弱音・静寂と繊細な余韻）';
+      case 'p': return 'ピアノ（弱音・穏やかに歌うように）';
+      case 'mp': return 'メゾピアノ（やや弱く・優美なタッチ）';
+      case 'mf': return 'メゾフォルテ（やや強く・豊かな響き）';
+      case 'f': return 'フォルテ（強く・情熱的な主張）';
+      case 'ff': return 'フォルティッシモ（最強音・激情のクライマックス）';
+      default: return '標準打鍵';
     }
   };
 
@@ -520,7 +657,7 @@ export const PianoGame: React.FC<PianoGameProps> = ({
 
   // 演奏結果画面（リザルト画面）: 全ての情報を綺麗に配置した専用カルテビュー
   if (isFinished) {
-    const isWin = accuracyPercent >= 90;
+    const isWin = totalPerformancePercent >= 90;
     const prevBest = saveResult.previousRecord;
 
     return (
@@ -538,7 +675,9 @@ export const PianoGame: React.FC<PianoGameProps> = ({
                 <span className="text-xs font-mono font-bold tracking-widest text-amber-400 bg-amber-950/80 px-2 py-0.5 rounded border border-amber-600/40">
                   PERFORMANCE RESULT
                 </span>
-                <span className="text-xs text-stone-400 font-mono">{song.id === 'fur_elise' ? 'WoO 59 全曲演奏演習' : 'K. 331 全曲演奏演習'}</span>
+                <span className="text-xs text-stone-400 font-mono">
+                  {song.id === 'fur_elise' ? 'WoO 59 全曲演奏演習' : song.id === 'chopin_nocturne' ? 'Op. 9 No. 2 全曲強弱演奏演習' : 'K. 331 全曲演奏演習'}
+                </span>
               </div>
               <h2 className="text-xl sm:text-2xl font-black text-stone-100 flex items-center gap-2">
                 <Gi.GiGrandPiano className="text-amber-400 text-2xl" />
@@ -585,8 +724,8 @@ export const PianoGame: React.FC<PianoGameProps> = ({
                 </div>
                 <p className="text-xs text-stone-300 mt-0.5">
                   {isWin 
-                    ? `クリア基準（演奏精度90.0%以上）を達成！ 工房演習の修了が認定されました。` 
-                    : `クリア条件は「演奏精度90.0%以上」です（今回の精度: ${accuracyPercent}%）。IntとDexを高めて再挑戦しよう！`}
+                    ? `総合評価（打鍵精度70% + 強弱表現力30% = ${totalPerformancePercent}%）が合格基準90.0%を達成！` 
+                    : `合格基準は「総合評価90.0%以上」です（今回の総合評価: ${totalPerformancePercent}% / 精度: ${accuracyPercent}% / 表現力: ${expressionPercent}%）。`}
                 </p>
               </div>
             </div>
@@ -614,37 +753,38 @@ export const PianoGame: React.FC<PianoGameProps> = ({
             )}
           </div>
 
-          {/* 主要スタッツグリッド（スコア、精度、ランク、最大コンボ） */}
+          {/* 主要スタッツグリッド（総合評価、打鍵精度、強弱表現力、総合ランク） */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {/* 総合得点 */}
-            <div className="bg-stone-950/80 p-3.5 rounded-xl border border-stone-800 text-center relative overflow-hidden">
-              {saveResult.isNewHighScore && (
-                <span className="absolute top-1.5 right-1.5 bg-amber-500 text-stone-950 text-[9px] font-black px-1.5 py-0.2 rounded font-mono animate-pulse">
-                  NEW RECORD!
-                </span>
-              )}
-              <div className="text-[11px] text-stone-400 font-bold mb-1 font-mono">総合得点 (TOTAL SCORE)</div>
-              <div className="text-2xl sm:text-3xl font-black text-amber-400 font-mono tracking-tight">
-                {score.toLocaleString()}
+            {/* 総合評価スコア */}
+            <div className="bg-stone-950/80 p-3.5 rounded-xl border border-amber-500/30 text-center relative overflow-hidden">
+              <div className="text-[11px] text-amber-300 font-bold mb-1 font-mono">総合演奏評価 (TOTAL)</div>
+              <div className={`text-2xl sm:text-3xl font-black font-mono tracking-tight ${totalPerformancePercent >= 90 ? 'text-amber-400' : 'text-rose-400'}`}>
+                {totalPerformancePercent}%
               </div>
               <div className="text-[10px] text-stone-400 font-mono mt-1">
-                自己ベスト: <span className="text-stone-300 font-bold">{(prevBest ? Math.max(prevBest.bestScore, score) : score).toLocaleString()}</span>
+                基準: <span className="text-amber-400 font-bold">90.0%</span> 以上
               </div>
             </div>
 
-            {/* 演奏精度 */}
+            {/* 打鍵タイミング精度 */}
             <div className="bg-stone-950/80 p-3.5 rounded-xl border border-stone-800 text-center relative">
-              {saveResult.isNewBestAccuracy && (
-                <span className="absolute top-1.5 right-1.5 bg-emerald-500 text-stone-950 text-[9px] font-black px-1.5 py-0.2 rounded font-mono animate-pulse">
-                  BEST!
-                </span>
-              )}
-              <div className="text-[11px] text-stone-400 font-bold mb-1 font-mono">演奏精度 (ACCURACY)</div>
-              <div className={`text-2xl sm:text-3xl font-black font-mono tracking-tight ${accuracyPercent >= 90 ? 'text-emerald-400' : 'text-rose-400'}`}>
+              <div className="text-[11px] text-stone-400 font-bold mb-1 font-mono">打鍵精度 (TIMING 70%)</div>
+              <div className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-emerald-400">
                 {accuracyPercent}%
               </div>
               <div className="text-[10px] text-stone-400 font-mono mt-1">
-                クリア基準: <span className="text-amber-400 font-bold">90.0%</span> 以上
+                スコア: <span className="text-stone-300 font-bold">{score.toLocaleString()}</span>
+              </div>
+            </div>
+
+            {/* 強弱表現力 */}
+            <div className="bg-stone-950/80 p-3.5 rounded-xl border border-stone-800 text-center relative">
+              <div className="text-[11px] text-stone-400 font-bold mb-1 font-mono">強弱表現力 (DYNAMICS 30%)</div>
+              <div className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-sky-400">
+                {expressionPercent}%
+              </div>
+              <div className="text-[10px] text-stone-400 font-mono mt-1">
+                pp〜ff タッチ制御
               </div>
             </div>
 
@@ -660,18 +800,7 @@ export const PianoGame: React.FC<PianoGameProps> = ({
                 </span>
               </div>
               <div className="text-[10px] text-stone-400 font-mono mt-1">
-                最高ランク: <span className="text-stone-300 font-bold">{prevBest?.bestRank || performanceRank.rank}</span>
-              </div>
-            </div>
-
-            {/* 最大コンボ */}
-            <div className="bg-stone-950/80 p-3.5 rounded-xl border border-stone-800 text-center flex flex-col justify-center items-center">
-              <div className="text-[11px] text-stone-400 font-bold mb-1 font-mono">最大連続打鍵 (MAX COMBO)</div>
-              <div className="text-2xl sm:text-3xl font-black text-amber-300 font-mono tracking-tight">
-                {maxCombo}
-              </div>
-              <div className="text-[10px] text-stone-400 font-mono mt-1">
-                総音数: <span className="text-stone-300 font-bold">{totalNotes} ノーツ</span>
+                最高連続: <span className="text-stone-300 font-bold">{maxCombo} コンボ</span>
               </div>
             </div>
           </div>
@@ -679,49 +808,74 @@ export const PianoGame: React.FC<PianoGameProps> = ({
           {/* 演奏精度のクリアゲージバー */}
           <div className="bg-stone-950/60 p-3 rounded-xl border border-stone-800 space-y-1.5">
             <div className="flex justify-between text-xs font-mono text-stone-400">
-              <span>演奏精度ゲージ（クリアライン: 90%）</span>
-              <span className="font-bold text-stone-200">{accuracyPercent}% / 100%</span>
+              <span>総合演奏ゲージ（打鍵精度70% + 強弱表現力30% / クリアライン: 90%）</span>
+              <span className="font-bold text-stone-200">{totalPerformancePercent}% / 100%</span>
             </div>
             <div className="relative w-full h-3 bg-stone-800 rounded-full overflow-hidden">
               {/* クリアライン位置マーカー (90%) */}
               <div className="absolute top-0 bottom-0 left-[90%] w-0.5 bg-amber-400 z-10 shadow-[0_0_4px_#fbbf24]" />
               <div 
                 className={`h-full transition-all duration-500 rounded-full ${
-                  accuracyPercent >= 90 
+                  totalPerformancePercent >= 90 
                     ? 'bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-400' 
                     : 'bg-gradient-to-r from-rose-700 to-rose-500'
                 }`}
-                style={{ width: `${Math.min(100, accuracyPercent)}%` }}
+                style={{ width: `${Math.min(100, totalPerformancePercent)}%` }}
               />
             </div>
           </div>
 
-          {/* 打鍵判定別内訳 (5カラム) */}
-          <div className="bg-stone-950/80 p-4 rounded-xl border border-stone-800 space-y-2">
-            <div className="text-xs text-stone-400 font-bold flex items-center justify-between font-mono">
-              <span>JUDGEMENT BREAKDOWN（打鍵判定内訳）</span>
-              <span className="text-[11px] text-stone-400">Int・Dexの総合力による判定</span>
+          {/* 強弱タッチ表現力内訳 & 打鍵判定内訳 (2グリッド) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {/* 打鍵タイミング判定内訳 */}
+            <div className="bg-stone-950/80 p-3.5 rounded-xl border border-stone-800 space-y-2">
+              <div className="text-xs text-stone-400 font-bold flex items-center justify-between font-mono">
+                <span>TIMING ACCURACY（打鍵タイミング）</span>
+                <span className="text-[10px] text-stone-500">Int主軸</span>
+              </div>
+              <div className="grid grid-cols-4 gap-1 text-center font-mono">
+                <div className="bg-amber-500/10 p-1.5 rounded-lg border border-amber-500/25">
+                  <div className="text-[9px] text-amber-400 font-bold">EXCELLENT</div>
+                  <div className="text-sm sm:text-base font-black text-amber-300">{judgementsCount.excellent}</div>
+                </div>
+                <div className="bg-emerald-500/10 p-1.5 rounded-lg border border-emerald-500/25">
+                  <div className="text-[9px] text-emerald-400 font-bold">GOOD</div>
+                  <div className="text-sm sm:text-base font-black text-emerald-300">{judgementsCount.good}</div>
+                </div>
+                <div className="bg-blue-500/10 p-1.5 rounded-lg border border-blue-500/25">
+                  <div className="text-[9px] text-blue-400 font-bold">SOSO</div>
+                  <div className="text-sm sm:text-base font-black text-blue-300">{judgementsCount.soso}</div>
+                </div>
+                <div className="bg-rose-500/10 p-1.5 rounded-lg border border-rose-500/25">
+                  <div className="text-[9px] text-rose-400 font-bold">MISS</div>
+                  <div className="text-sm sm:text-base font-black text-rose-300">{judgementsCount.notGood + judgementsCount.bad}</div>
+                </div>
+              </div>
             </div>
-            <div className="grid grid-cols-5 gap-1.5 sm:gap-2 text-center font-mono">
-              <div className="bg-amber-500/10 p-2 sm:p-2.5 rounded-xl border border-amber-500/25">
-                <div className="text-[10px] sm:text-xs text-amber-400 font-bold">EXCELLENT</div>
-                <div className="text-base sm:text-xl font-black text-amber-300 mt-0.5">{judgementsCount.excellent}</div>
+
+            {/* 音の強弱タッチ表現力内訳 */}
+            <div className="bg-stone-950/80 p-3.5 rounded-xl border border-stone-800 space-y-2">
+              <div className="text-xs text-sky-400 font-bold flex items-center justify-between font-mono">
+                <span>DYNAMICS TOUCH（強弱表現タッチ）</span>
+                <span className="text-[10px] text-sky-500">Dex主軸 (pp〜ff)</span>
               </div>
-              <div className="bg-emerald-500/10 p-2 sm:p-2.5 rounded-xl border border-emerald-500/25">
-                <div className="text-[10px] sm:text-xs text-emerald-400 font-bold">GOOD</div>
-                <div className="text-base sm:text-xl font-black text-emerald-300 mt-0.5">{judgementsCount.good}</div>
-              </div>
-              <div className="bg-blue-500/10 p-2 sm:p-2.5 rounded-xl border border-blue-500/25">
-                <div className="text-[10px] sm:text-xs text-blue-400 font-bold">SOSO</div>
-                <div className="text-base sm:text-xl font-black text-blue-300 mt-0.5">{judgementsCount.soso}</div>
-              </div>
-              <div className="bg-rose-500/10 p-2 sm:p-2.5 rounded-xl border border-rose-500/25">
-                <div className="text-[10px] sm:text-xs text-rose-400 font-bold">NOT GOOD</div>
-                <div className="text-base sm:text-xl font-black text-rose-300 mt-0.5">{judgementsCount.notGood}</div>
-              </div>
-              <div className="bg-stone-800/80 p-2 sm:p-2.5 rounded-xl border border-stone-700/80">
-                <div className="text-[10px] sm:text-xs text-stone-400 font-bold">BAD</div>
-                <div className="text-base sm:text-xl font-black text-stone-300 mt-0.5">{judgementsCount.bad}</div>
+              <div className="grid grid-cols-4 gap-1 text-center font-mono">
+                <div className="bg-sky-500/10 p-1.5 rounded-lg border border-sky-500/25">
+                  <div className="text-[9px] text-sky-300 font-bold">PERFECT</div>
+                  <div className="text-sm sm:text-base font-black text-sky-200">{dynamicsJudgements.perfectTouch}</div>
+                </div>
+                <div className="bg-teal-500/10 p-1.5 rounded-lg border border-teal-500/25">
+                  <div className="text-[9px] text-teal-300 font-bold">GREAT</div>
+                  <div className="text-sm sm:text-base font-black text-teal-200">{dynamicsJudgements.greatTouch}</div>
+                </div>
+                <div className="bg-indigo-500/10 p-1.5 rounded-lg border border-indigo-500/25">
+                  <div className="text-[9px] text-indigo-300 font-bold">GOOD</div>
+                  <div className="text-sm sm:text-base font-black text-indigo-200">{dynamicsJudgements.goodTouch}</div>
+                </div>
+                <div className="bg-stone-800/80 p-1.5 rounded-lg border border-stone-700/80">
+                  <div className="text-[9px] text-stone-400 font-bold">ROUGH</div>
+                  <div className="text-sm sm:text-base font-black text-stone-300">{dynamicsJudgements.roughTouch}</div>
+                </div>
               </div>
             </div>
           </div>
@@ -785,6 +939,17 @@ export const PianoGame: React.FC<PianoGameProps> = ({
         </div>
 
         <div className="flex items-center justify-between w-full sm:w-auto sm:justify-end gap-3 flex-wrap">
+          {/* 現在の楽譜強弱インジケーター (DYNAMICS HUD) */}
+          <div className="flex items-center gap-2 bg-stone-950/90 px-2.5 py-1 rounded-lg border border-stone-800 shadow-inner">
+            <span className="text-[10px] text-stone-400 font-mono">強弱記号:</span>
+            <span className={`text-xs font-black font-serif italic px-2 py-0.2 rounded border shadow-2xs ${getDynamicsBadge(activeDynamics)}`}>
+              {activeDynamics || 'p'}
+            </span>
+            <span className="text-[10px] text-stone-300 font-sans hidden sm:inline">
+              {getDynamicsDesc(activeDynamics)}
+            </span>
+          </div>
+
           {/* 音量調整コントロール (ボリュームスライダー & ミュート切替) */}
           <div className="flex items-center gap-2 bg-stone-950/80 px-2.5 py-1 rounded-lg border border-stone-800">
             <button
@@ -816,11 +981,13 @@ export const PianoGame: React.FC<PianoGameProps> = ({
 
           <div className="text-right">
             <div className="text-xs font-bold px-2.5 py-0.5 rounded-full border inline-block mb-1 bg-amber-500/20 text-amber-300 border-amber-500/40 font-mono">
-              基準: 精度 90%
+              基準: 総合 90%
             </div>
             <div className="text-white font-mono text-sm">
               SCORE <span className="text-amber-400 text-lg font-black">{score.toLocaleString()}</span>
-              <span className="text-stone-400 text-xs ml-2">精度 <strong className={accuracyPercent >= 90 ? 'text-emerald-400' : 'text-stone-300'}>{accuracyPercent}%</strong></span>
+              <span className="text-stone-400 text-xs ml-2">
+                総合 <strong className={totalPerformancePercent >= 90 ? 'text-emerald-400' : 'text-stone-300'}>{totalPerformancePercent}%</strong>
+              </span>
             </div>
           </div>
         </div>
@@ -863,7 +1030,7 @@ export const PianoGame: React.FC<PianoGameProps> = ({
           </div>
         )}
 
-        {/* 落下するノーツ (時間ベースで位置を計算) */}
+        {/* 落下するノーツ (時間ベースで位置を計算・ダイナミクスによる美しい光彩色彩) */}
         <div className="absolute inset-0 pt-2 pointer-events-none z-10">
           {currentNotes.map((note, idx) => {
             const timeUntilHit = note.time - elapsed;
@@ -877,14 +1044,13 @@ export const PianoGame: React.FC<PianoGameProps> = ({
             return note.lanes.map((lane, lIdx) => {
               const isBlack = (lane % 1) !== 0;
               const leftPercent = (lane / (TOTAL_WHITE_KEYS - 1)) * 100;
+              const colorClass = getDynamicsColor(note.dynamics, isBlack);
 
               return (
                 <div 
                   key={`${idx}-${lIdx}`} 
-                  className={`absolute rounded-xs shadow-md transition-opacity ${
-                    isBlack 
-                      ? 'bg-amber-300 shadow-[0_0_10px_rgba(252,211,77,0.9)] z-10' 
-                      : 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)] z-0'
+                  className={`absolute rounded-xs shadow-md transition-opacity ${colorClass} ${
+                    isBlack ? 'z-10' : 'z-0'
                   }`}
                   style={{
                     bottom: `${bottomPos}%`,
@@ -910,10 +1076,15 @@ export const PianoGame: React.FC<PianoGameProps> = ({
               className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none z-30"
             >
               <div 
-                className="text-3xl sm:text-4xl font-black drop-shadow-[0_4px_8px_rgba(0,0,0,0.9)] tracking-widest font-mono"
+                className="text-3xl sm:text-4xl font-black drop-shadow-[0_4px_8px_rgba(0,0,0,0.9)] tracking-widest font-mono flex items-center justify-center gap-2"
                 style={{ color: getJudgementColor(judgement.text) }}
               >
-                {judgement.text}
+                <span>{judgement.text}</span>
+                {judgement.dynamics && (
+                  <span className={`text-xs px-2 py-0.5 rounded font-serif italic border ${getDynamicsBadge(judgement.dynamics)}`}>
+                    {judgement.dynamics}
+                  </span>
+                )}
               </div>
               {judgement.combo > 1 && (
                 <div className="text-amber-300 text-sm font-bold tracking-wider drop-shadow-md">

@@ -239,13 +239,20 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
     
     // 各曲の推奨クリア基準INT
     // エリーゼのために(Lv.5): INT 50
+    // ノクターン 作品9-2(Lv.6): INT 60
     // トルコ行進曲(Lv.8): INT 75
     // ラ・カンパネラ(Lv.10): INT 100
     const song = PIANO_SONGS.find(s => s.id === songId) || PIANO_SONGS[0];
-    const targetInt = song.id === 'fur_elise' ? 50 : song.id === 'turkish_march' ? 75 : 100;
+    const targetInt = song.id === 'fur_elise' 
+      ? 50 
+      : song.id === 'chopin_nocturne' 
+        ? 60 
+        : song.id === 'turkish_march' 
+          ? 75 
+          : 100;
     
-    // ロボットの演奏適性値 (Int主軸 + Dex補助)
-    const effectiveStat = (int * 0.95) + (dex * 0.1);
+    // ロボットの総合演奏適性値 (打鍵タイミング精度70%［Int主軸］ + 強弱タッチ表現力30%［Dex主軸］)
+    const effectiveStat = (int * 0.75) + (dex * 0.25);
     const diff = effectiveStat - targetInt;
     
     // 滑らかな勝率算出カーブ
@@ -1090,7 +1097,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                       <h3 className={`${theme.typography.h3} text-stone-800`}>演奏曲を選ぶ</h3>
                     </div>
                     <span className="text-[11px] text-amber-800 font-bold bg-amber-100/90 px-2 py-0.5 rounded border border-amber-300">
-                      クリア条件: 演奏精度 90.0% 以上
+                      クリア条件: 総合評価 90.0% 以上（打鍵精度70% + 強弱表現力30%）
                     </span>
                   </div>
                   <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1">
