@@ -91,23 +91,7 @@ try {
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-        CREATE TABLE IF NOT EXISTS completed_robots (
-            id VARCHAR(255) PRIMARY KEY,
-            user_id VARCHAR(255) NOT NULL,
-            name VARCHAR(255) NOT NULL,
-            head_part_id VARCHAR(255),
-            body_part_id VARCHAR(255),
-            arms_part_id VARCHAR(255),
-            legs_part_id VARCHAR(255),
-            total_hp INT DEFAULT 0,
-            total_power INT DEFAULT 0,
-            total_defense INT DEFAULT 0,
-            total_agility INT DEFAULT 0,
-            total_dexterity INT DEFAULT 0,
-            total_int INT DEFAULT 0,
-            robot_data JSON,
-            completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        DROP TABLE IF EXISTS completed_robots;
 
         CREATE TABLE IF NOT EXISTS complete_deliveries (
             id VARCHAR(255) PRIMARY KEY,
@@ -314,20 +298,6 @@ try {
         $pdo->exec("ALTER TABLE completed_daily_minigame MODIFY COLUMN level VARCHAR(32) NOT NULL DEFAULT '1'");
         $pdo->exec("ALTER TABLE completed_daily_minigame MODIFY COLUMN created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP");
     } catch (PDOException $e) {}
-
-    // 毎朝9:00基準の期限切れデイリークリアレコードの削除
-    try {
-        $nowJst = new DateTime('now', new DateTimeZone('Asia/Tokyo'));
-        $cutoffJst = clone $nowJst;
-        if ((int)$nowJst->format('H') >= 9) {
-            $cutoffJst->setTime(9, 0, 0);
-        } else {
-            $cutoffJst->modify('-1 day')->setTime(9, 0, 0);
-        }
-        $cutoffStr = $cutoffJst->setTimezone(new DateTimeZone(date_default_timezone_get()))->format('Y-m-d H:i:s');
-        $delDailyStmt = $pdo->prepare("DELETE FROM completed_daily_minigame WHERE created_at < :cutoff");
-        $delDailyStmt->execute([':cutoff' => $cutoffStr]);
-    } catch (Throwable $e) {}
 
     try {
         $pdo->exec("ALTER TABLE user_item ADD COLUMN battle_item JSON NULL AFTER element");
@@ -954,16 +924,6 @@ try {
     ]);
 
     if (!empty($gameData['deliveredLogs']) && is_array($gameData['deliveredLogs'])) {
-        $stmtDeliveredRobot = $pdo->prepare("
-            INSERT IGNORE INTO completed_robots (
-                id, user_id, name, head_part_id, body_part_id, arms_part_id, legs_part_id,
-                total_hp, total_power, total_defense, total_agility, total_dexterity, total_int, robot_data, completed_at
-            ) VALUES (
-                :id, :user_id, :name, :head_id, :body_id, :arms_id, :legs_id,
-                :hp, :power, :defense, :agility, :dexterity, :intel, :robot_data, FROM_UNIXTIME(:completed_at)
-            )
-        ");
-        
         $stmtCompleteDeliveries = $pdo->prepare("
             INSERT IGNORE INTO complete_deliveries (
                 id, user_id, robot_id, robot_name, log_data, completed_at
@@ -974,30 +934,7 @@ try {
 
         foreach ($gameData['deliveredLogs'] as $log) {
             if (empty($log['id'])) continue;
-            $headId = !empty($log['parts']['head']['id']) ? $log['parts']['head']['id'] : null;
-            $bodyId = !empty($log['parts']['body']['id']) ? $log['parts']['body']['id'] : null;
-            $armsId = !empty($log['parts']['arms']['id']) ? $log['parts']['arms']['id'] : null;
-            $legsId = !empty($log['parts']['legs']['id']) ? $log['parts']['legs']['id'] : null;
-            $stats = $log['stats'] ?? [];
             $completedAt = isset($log['deliveredAt']) ? floor($log['deliveredAt'] / 1000) : time();
-
-            $stmtDeliveredRobot->execute([
-                ':id' => $log['id'],
-                ':user_id' => $actualUserId,
-                ':name' => $log['name'] ?? '名無しのロボット',
-                ':head_id' => $headId,
-                ':body_id' => $bodyId,
-                ':arms_id' => $armsId,
-                ':legs_id' => $legsId,
-                ':hp' => (int)($stats['hp'] ?? 0),
-                ':power' => (int)($stats['power'] ?? 0),
-                ':defense' => (int)($stats['defense'] ?? 0),
-                ':agility' => (int)($stats['agility'] ?? 0),
-                ':dexterity' => (int)($stats['dexterity'] ?? 0),
-                ':intel' => (int)($stats['intelligence'] ?? 0),
-                ':robot_data' => json_encode($log, JSON_UNESCAPED_UNICODE),
-                ':completed_at' => $completedAt
-            ]);
 
             $stmtCompleteDeliveries->execute([
                 ':id' => $log['id'] . '_' . $completedAt,
@@ -1617,26 +1554,6 @@ try {
         }
     }
 
-    // completed_robots テーブルの保存上限ローテーション (id が文字列なので completed_at を使用)
-    $cutoffRobotStmt = $pdo->prepare("
-        SELECT completed_at FROM completed_robots
-        WHERE user_id = :user_id
-        ORDER BY completed_at DESC
-        LIMIT 1 OFFSET 1000
-    ");
-    $cutoffRobotStmt->execute([':user_id' => $actualUserId]);
-    $cutoffTime = $cutoffRobotStmt->fetchColumn();
-    if ($cutoffTime !== false && $cutoffTime !== null) {
-        $pruneRobotStmt = $pdo->prepare("
-            DELETE FROM completed_robots
-            WHERE user_id = :user_id AND completed_at <= :cutoff_time
-        ");
-        $pruneRobotStmt->execute([
-            ':user_id' => $actualUserId,
-            ':cutoff_time' => $cutoffTime
-        ]);
-    }
-
     // complete_deliveries テーブルの保存上限ローテーション
     $cutoffDelivStmt = $pdo->prepare("
         SELECT completed_at FROM complete_deliveries
@@ -1716,6 +1633,26 @@ try {
     ]);
 
     // 13. completed_daily_minigame テーブルの同期（本日クリア済みミニゲーム/演習の記録）
+    // 毎朝9:00(JST)基準：前日以前の期限切れレコードのみを対象ユーザー限定で削除し、本日の全クリア記録および各created_at初回到達日時は恒久保護
+    try {
+        $nowJst = new DateTime('now', new DateTimeZone('Asia/Tokyo'));
+        $cutoffJst = clone $nowJst;
+        if ((int)$nowJst->format('H') >= 9) {
+            $cutoffJst->setTime(9, 0, 0);
+        } else {
+            $cutoffJst->modify('-1 day')->setTime(9, 0, 0);
+        }
+        $cutoffStr = $cutoffJst->format('Y-m-d H:i:s');
+        $delDailyUserStmt = $pdo->prepare("
+            DELETE FROM completed_daily_minigame 
+            WHERE user_id = :actual_uid AND created_at < :cutoff
+        ");
+        $delDailyUserStmt->execute([
+            ':actual_uid' => $actualUserId,
+            ':cutoff' => $cutoffStr
+        ]);
+    } catch (Throwable $e) {}
+
     // 既存レコードが存在する場合は created_at を維持（上書き・破棄せず初回到達日時を恒久保護）
     if (!empty($gameData['dailyBattleLimits']) && is_array($gameData['dailyBattleLimits'])) {
         $stmtDcm = $pdo->prepare("

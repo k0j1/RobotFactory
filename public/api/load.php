@@ -88,23 +88,7 @@ try {
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-        CREATE TABLE IF NOT EXISTS completed_robots (
-            id VARCHAR(255) PRIMARY KEY,
-            user_id VARCHAR(255) NOT NULL,
-            name VARCHAR(255) NOT NULL,
-            head_part_id VARCHAR(255),
-            body_part_id VARCHAR(255),
-            arms_part_id VARCHAR(255),
-            legs_part_id VARCHAR(255),
-            total_hp INT DEFAULT 0,
-            total_power INT DEFAULT 0,
-            total_defense INT DEFAULT 0,
-            total_agility INT DEFAULT 0,
-            total_dexterity INT DEFAULT 0,
-            total_int INT DEFAULT 0,
-            robot_data JSON,
-            completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        DROP TABLE IF EXISTS completed_robots;
 
         CREATE TABLE IF NOT EXISTS complete_deliveries (
             id VARCHAR(255) PRIMARY KEY,
@@ -309,20 +293,6 @@ try {
         $pdo->exec("ALTER TABLE completed_daily_minigame MODIFY COLUMN level VARCHAR(32) NOT NULL DEFAULT '1'");
         $pdo->exec("ALTER TABLE completed_daily_minigame MODIFY COLUMN created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP");
     } catch (PDOException $e) {}
-
-    // 毎朝9:00基準の期限切れデイリークリアレコードの削除
-    try {
-        $nowJst = new DateTime('now', new DateTimeZone('Asia/Tokyo'));
-        $cutoffJst = clone $nowJst;
-        if ((int)$nowJst->format('H') >= 9) {
-            $cutoffJst->setTime(9, 0, 0);
-        } else {
-            $cutoffJst->modify('-1 day')->setTime(9, 0, 0);
-        }
-        $cutoffStr = $cutoffJst->setTimezone(new DateTimeZone(date_default_timezone_get()))->format('Y-m-d H:i:s');
-        $delDailyStmt = $pdo->prepare("DELETE FROM completed_daily_minigame WHERE created_at < :cutoff");
-        $delDailyStmt->execute([':cutoff' => $cutoffStr]);
-    } catch (Throwable $e) {}
 
     try {
         $pdo->exec("ALTER TABLE user_item ADD COLUMN battle_item JSON NULL AFTER element");
@@ -857,17 +827,39 @@ try {
     $itemStmt->execute(array_values($candidateUserIds));
     $userItemRow = $itemStmt->fetch(PDO::FETCH_ASSOC);
 
-    // 8.5 completed_daily_minigame テーブルから本日のクリア済み記録を取得
+    // 8.5 completed_daily_minigame テーブルから本日のクリア済み記録を取得（朝9:00 JSTリセット）
+    $nowJst = new DateTime('now', new DateTimeZone('Asia/Tokyo'));
+    $cutoffJst = clone $nowJst;
+    if ((int)$nowJst->format('H') >= 9) {
+        $cutoffJst->setTime(9, 0, 0);
+    } else {
+        $cutoffJst->modify('-1 day')->setTime(9, 0, 0);
+    }
+    $cutoffStr = $cutoffJst->format('Y-m-d H:i:s');
+
+    // 期限切れの前日レコードを対象ユーザー限定で安全にクリーンアップ（本日のレコードは恒久保護）
+    try {
+        $cleanDaily = $pdo->prepare("
+            DELETE FROM completed_daily_minigame 
+            WHERE user_id IN ($inPlaceholders) AND created_at < ?
+        ");
+        $cleanParams = array_values($candidateUserIds);
+        $cleanParams[] = $cutoffStr;
+        $cleanDaily->execute($cleanParams);
+    } catch (Throwable $e) {}
+
+    // 本日（9:00 JST以降）のクリアレコードを取得
     $dailyClearStmt = $pdo->prepare("
         SELECT id, user_id, minigame_id, robot_id, level, created_at 
         FROM completed_daily_minigame 
-        WHERE user_id IN ($inPlaceholders)
+        WHERE user_id IN ($inPlaceholders) AND created_at >= ?
         ORDER BY created_at ASC
     ");
-    $dailyClearStmt->execute(array_values($candidateUserIds));
+    $queryParams = array_values($candidateUserIds);
+    $queryParams[] = $cutoffStr;
+    $dailyClearStmt->execute($queryParams);
     $dbDailyCleared = [];
     $dbCompletedDailyRecords = [];
-    $nowJst = new DateTime('now', new DateTimeZone('Asia/Tokyo'));
     $todayDateKey = $nowJst->format('Y-m-d');
     if ((int)$nowJst->format('H') < 9) {
         $yesterdayJst = clone $nowJst;

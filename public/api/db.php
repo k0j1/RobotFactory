@@ -1,4 +1,7 @@
 <?php
+// 日本標準時 (JST) をデフォルトタイムゾーンとして設定
+date_default_timezone_set('Asia/Tokyo');
+
 // CORS headers - 開発中のローカルホストアクセス等を許可
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
@@ -29,6 +32,9 @@ function getDB() {
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             PDO::ATTR_EMULATE_PREPARES => false,
         ]);
+        try {
+            $pdo->exec("SET time_zone = '+09:00'");
+        } catch (Throwable $tzErr) {}
         return $pdo;
     } catch (PDOException $e) {
         error_log("Database connection failed: " . $e->getMessage());
@@ -107,7 +113,6 @@ function ensureUserForeignKeys($pdo) {
         'complete_part_crafts' => 'fk_complete_part_crafts_user_id',
         'complete_expeditions' => 'fk_complete_expeditions_user_id',
         'complete_deliveries' => 'fk_complete_deliveries_user_id',
-        'completed_robots' => 'fk_completed_robots_user_id',
         'active_robot_disassemblies' => 'fk_active_robot_disassemblies_user_id',
         'active_robot_assemblies' => 'fk_active_robot_assemblies_user_id',
         'active_requests' => 'fk_active_requests_user_id',
@@ -115,6 +120,11 @@ function ensureUserForeignKeys($pdo) {
         'active_part_crafts' => 'fk_active_part_crafts_user_id',
         'active_expeditions' => 'fk_active_expeditions_user_id',
     ];
+
+    try {
+        // 旧 completed_robots テーブルの廃止・削除（complete_robot_assemblies へ一元化）
+        $pdo->exec("DROP TABLE IF EXISTS completed_robots");
+    } catch (Throwable $e) {}
 
     try {
         // 1. users テーブルの存在と google_id の UNIQUE / VARCHAR(255) 定義を保証

@@ -168,23 +168,7 @@ try {
         CONSTRAINT fk_legs_part FOREIGN KEY (legs_part_id) REFERENCES user_parts(id) ON DELETE SET NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-    CREATE TABLE IF NOT EXISTS completed_robots (
-        id VARCHAR(255) PRIMARY KEY,
-        user_id VARCHAR(255) NOT NULL,
-        name VARCHAR(255) NOT NULL,
-        head_part_id VARCHAR(255),
-        body_part_id VARCHAR(255),
-        arms_part_id VARCHAR(255),
-        legs_part_id VARCHAR(255),
-        total_hp INT DEFAULT 0,
-        total_power INT DEFAULT 0,
-        total_defense INT DEFAULT 0,
-        total_agility INT DEFAULT 0,
-        total_dexterity INT DEFAULT 0,
-        total_int INT DEFAULT 0,
-        robot_data JSON,
-        completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    DROP TABLE IF EXISTS completed_robots;
 
     CREATE TABLE IF NOT EXISTS complete_deliveries (
         id VARCHAR(255) PRIMARY KEY,
@@ -382,7 +366,7 @@ try {
         ]);
     }
 
-    // complete_parts テーブルの削除と completed_robots 外部キー制約の解除 (DB v0.18)
+    // complete_parts および completed_robots テーブルの廃止・削除 (complete_robot_assemblies へ一元化)
     try { $pdo->exec("ALTER TABLE completed_robots DROP FOREIGN KEY fk_comp_head"); } catch (PDOException $e) {}
     try { $pdo->exec("ALTER TABLE completed_robots DROP FOREIGN KEY fk_comp_body"); } catch (PDOException $e) {}
     try { $pdo->exec("ALTER TABLE completed_robots DROP FOREIGN KEY fk_comp_arms"); } catch (PDOException $e) {}
@@ -391,6 +375,7 @@ try {
     try { $pdo->exec("ALTER TABLE completed_robots DROP FOREIGN KEY fk_completed_robots_body"); } catch (PDOException $e) {}
     try { $pdo->exec("ALTER TABLE completed_robots DROP FOREIGN KEY fk_completed_robots_arms"); } catch (PDOException $e) {}
     try { $pdo->exec("ALTER TABLE completed_robots DROP FOREIGN KEY fk_completed_robots_legs"); } catch (PDOException $e) {}
+    try { $pdo->exec("DROP TABLE IF EXISTS completed_robots"); } catch (PDOException $e) {}
     try { $pdo->exec("ALTER TABLE complete_parts DROP FOREIGN KEY fk_complete_parts_user_id"); } catch (PDOException $e) {}
     try { $pdo->exec("DROP TABLE IF EXISTS complete_parts"); } catch (PDOException $e) {}
     
@@ -1025,7 +1010,7 @@ try {
         } else {
             $cutoffJst->modify('-1 day')->setTime(9, 0, 0);
         }
-        $cutoffStr = $cutoffJst->setTimezone(new DateTimeZone(date_default_timezone_get()))->format('Y-m-d H:i:s');
+        $cutoffStr = $cutoffJst->format('Y-m-d H:i:s');
         $delDailyStmt = $pdo->prepare("DELETE FROM completed_daily_minigame WHERE created_at < :cutoff");
         $delDailyStmt->execute([':cutoff' => $cutoffStr]);
     } catch (Throwable $e) {}

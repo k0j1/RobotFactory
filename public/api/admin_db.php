@@ -55,7 +55,7 @@ function getAllDatabaseTables(PDO $pdo): array {
         'active_part_crafts',
         'active_robot_disassemblies',
         'active_part_recycles',
-        'completed_robots',
+        'complete_robot_assemblies',
         'complete_deliveries',
         'master_parts',
         'user_minigame_status',
@@ -72,7 +72,6 @@ function getAllDatabaseTables(PDO $pdo): array {
         'complete_part_crafts',
         'complete_part_recycles',
         'complete_requests',
-        'complete_robot_assemblies',
         'complete_robot_disassemblies'
     ];
     foreach ($merged as $t) {
