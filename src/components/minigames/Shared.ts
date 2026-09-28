@@ -200,8 +200,8 @@ export const FUR_ELISE_NOTES: PianoNoteData[] = FUR_ELISE_RAW_NOTES.map(n => {
     lanes: keyInfos.map(k => k.lanePos),
     pitches: keyInfos.map(k => k.name),
     duration: n.duration,
-    dynamics: 'p',
-    velocity: 0.75
+    dynamics: n.dynamics || 'pp',
+    velocity: n.velocity || 0.60
   };
 });
 
@@ -251,7 +251,7 @@ export const PIANO_SONGS: PianoSong[] = [
     composer: 'ベートーヴェン', 
     level: 5, 
     songSpeed: 1.0,
-    desc: 'バガテル「エリーゼのために」WoO 59 (イ短調 3/8拍子)。pianoclassics.net (ID 47) 準拠。主部と全エピソードを網羅した全曲完全収録版。', 
+    desc: 'バガテル「エリーゼのために」WoO 59 (イ短調 3/8拍子)。pianoclassics.net (ID 47) 準拠。主部と全エピソードを網羅した全曲完全収録版。pp〜ff・クレッシェンド・ディミヌエンドの音の強弱表現を完全再現。', 
     rewardFame: 10,
     rewardElements: 0,
     notes: FUR_ELISE_NOTES

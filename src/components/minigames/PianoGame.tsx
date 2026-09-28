@@ -23,61 +23,69 @@ const playSynthesizedPiano = (
   destNode: AudioNode,
   midi: number,
   durationMs: number = 300,
-  volume: number = 1.0
+  velocity: number = 1.0
 ) => {
   try {
     const freq = 440 * Math.pow(2, (midi - 69) / 12);
     const now = ctx.currentTime;
-    const durSec = Math.max(0.2, durationMs / 1000);
+    const durSec = Math.max(0.25, durationMs / 1000);
 
-    // 全体ゲイン (アコースティックピアノのリアルなダイナミクスと迫力ある音圧)
+    // ダイナミクスカーブ (ppや弱音〜中音も十分な音量を確保しつつ、優しい音色とffの迫力を両立)
+    const effectiveVol = Math.max(0.15, velocity);
+    // 弱音・中音の音量を底上げしたふくよかなゲインマルチプライヤー
+    const dynamicGainMult = 0.25 + 0.75 * Math.pow(effectiveVol, 1.4);
+
+    // 全体ゲイン
     const noteGain = ctx.createGain();
     noteGain.gain.setValueAtTime(0, now);
-    // 鋭くしっかりとしたハンマー打弦アタック (4ms) - 従来の0.38から0.95へ大幅強化
-    const effectiveVol = Math.max(0.1, volume);
-    const peakGain = Math.min(1.0, 0.95 * effectiveVol);
-    noteGain.gain.linearRampToValueAtTime(peakGain, now + 0.004);
-    // 豊かな響板振動の初期ディケイ (80ms) - 従来の0.22から0.68へ大幅強化
-    noteGain.gain.exponentialRampToValueAtTime(Math.max(0.01, 0.68 * effectiveVol), now + 0.08);
+    
+    // 優しい打弦タッチのアタックカーブ (弱音〜中音は角のとれた柔らかいアタック 6~8ms、強音は明瞭な 4ms)
+    const attackTime = effectiveVol < 0.9 ? 0.007 : 0.004;
+    const peakGain = Math.min(1.0, 0.85 * dynamicGainMult);
+    noteGain.gain.linearRampToValueAtTime(peakGain, now + attackTime);
+    
+    // 豊かな響板振動の初期ディケイ (100ms) - まろやかで優しい余韻
+    noteGain.gain.exponentialRampToValueAtTime(Math.max(0.01, 0.62 * dynamicGainMult), now + 0.10);
     // 自然な弦の減衰 (サステインの持続)
-    noteGain.gain.exponentialRampToValueAtTime(0.0001, now + durSec + 0.55);
+    noteGain.gain.exponentialRampToValueAtTime(0.0001, now + durSec + 0.65);
 
-    // アコースティックピアノのダイナミクスに応じた音色変化 (弱音ppはまろやかで甘美、強音ffは鋭く輝かしい倍音)
+    // まろやかで優しいアコースティックピアノ音色フィルター
+    // 弱音・中音は高域のトゲを削ぎ落とした温かく甘美なトーン、強音は輝きのある開放的な倍音
     const filter = ctx.createBiquadFilter();
     filter.type = 'lowpass';
-    const cutoffBase = freq * (2.0 + 3.0 * Math.min(1.5, Math.pow(effectiveVol, 0.75)));
-    filter.frequency.setValueAtTime(Math.min(13000, cutoffBase), now);
-    filter.frequency.exponentialRampToValueAtTime(Math.min(4500, freq * 1.8), now + durSec);
+    const cutoffBase = freq * (1.8 + 2.8 * Math.min(2.0, Math.pow(effectiveVol, 1.2)));
+    filter.frequency.setValueAtTime(Math.min(11000, cutoffBase), now);
+    filter.frequency.exponentialRampToValueAtTime(Math.min(3800, freq * 1.5), now + durSec);
 
     // 基本波（暖かみのある三角波）
     const osc1 = ctx.createOscillator();
     osc1.type = 'triangle';
     osc1.frequency.setValueAtTime(freq, now);
 
-    // 基音の肉厚感を増強するサイン波
+    // 基音の澄んだ丸み・ふくよかさを増強するサイン波 (弱音〜中音で基音をふくよかにブレンドして優しい音色に)
     const oscFund = ctx.createOscillator();
     oscFund.type = 'sine';
     oscFund.frequency.setValueAtTime(freq, now);
     const oscFundGain = ctx.createGain();
-    oscFundGain.gain.setValueAtTime(0.48 * Math.min(1.2, 0.6 + 0.4 * effectiveVol), now);
+    oscFundGain.gain.setValueAtTime(0.55 * Math.min(1.2, 0.65 + 0.35 * effectiveVol), now);
     oscFund.connect(oscFundGain);
     oscFundGain.connect(filter);
 
-    // 第2倍音（オクターブ上の倍音：強打時に明瞭化）
+    // 第2倍音（オクターブ上の倍音：優しくまろやかに響かせる）
     const osc2 = ctx.createOscillator();
     osc2.type = 'sine';
     osc2.frequency.setValueAtTime(freq * 2, now);
     const osc2Gain = ctx.createGain();
-    osc2Gain.gain.setValueAtTime(0.32 * Math.min(1.5, Math.pow(effectiveVol, 0.9)), now);
+    osc2Gain.gain.setValueAtTime(0.24 * Math.min(1.5, Math.pow(effectiveVol, 1.2)), now);
     osc2.connect(osc2Gain);
     osc2Gain.connect(filter);
 
-    // 第3倍音（輝きを付加するオーバートーン：ff時に華麗に共鳴）
+    // 第3倍音（強音時のみ自然に共鳴し、弱音〜中音では出過ぎないように制御）
     const osc3 = ctx.createOscillator();
     osc3.type = 'sine';
     osc3.frequency.setValueAtTime(freq * 3, now);
     const osc3Gain = ctx.createGain();
-    osc3Gain.gain.setValueAtTime(0.20 * Math.min(1.8, Math.pow(effectiveVol, 1.3)), now);
+    osc3Gain.gain.setValueAtTime(0.14 * Math.min(1.8, Math.pow(effectiveVol, 1.8)), now);
     osc3.connect(osc3Gain);
     osc3Gain.connect(filter);
 
@@ -90,7 +98,7 @@ const playSynthesizedPiano = (
     osc2.start(now);
     osc3.start(now);
 
-    const stopTime = now + durSec + 0.6;
+    const stopTime = now + durSec + 0.7;
     osc1.stop(stopTime);
     oscFund.stop(stopTime);
     osc2.stop(stopTime);
@@ -235,15 +243,15 @@ export const PianoGame: React.FC<PianoGameProps> = ({
       }
       audioCtxRef.current = ctx;
 
-      // マスターコンプレッサーの構築 (クリッピング防止 & アコースティックピアノ特有の芳醇なサステイン増幅)
+      // マスターコンプレッサーの構築 (過度な音圧圧縮を抑え、pp〜ffの広大なダイナミックレンジとクリアな音抜けを確保)
       if (!compressorRef.current) {
         try {
           const comp = ctx.createDynamicsCompressor();
-          comp.threshold.setValueAtTime(-14, ctx.currentTime);
-          comp.knee.setValueAtTime(8, ctx.currentTime);
-          comp.ratio.setValueAtTime(3.5, ctx.currentTime);
+          comp.threshold.setValueAtTime(-4, ctx.currentTime);
+          comp.knee.setValueAtTime(10, ctx.currentTime);
+          comp.ratio.setValueAtTime(2.0, ctx.currentTime);
           comp.attack.setValueAtTime(0.003, ctx.currentTime);
-          comp.release.setValueAtTime(0.2, ctx.currentTime);
+          comp.release.setValueAtTime(0.15, ctx.currentTime);
           comp.connect(ctx.destination);
           compressorRef.current = comp;
         } catch (e) {
@@ -256,7 +264,7 @@ export const PianoGame: React.FC<PianoGameProps> = ({
         try {
           const mg = ctx.createGain();
           const targetNode = compressorRef.current || ctx.destination;
-          mg.gain.setValueAtTime(pianoVolume * 1.6, ctx.currentTime);
+          mg.gain.setValueAtTime(pianoVolume * 1.5, ctx.currentTime);
           mg.connect(targetNode);
           masterGainRef.current = mg;
         } catch (e) {
@@ -292,11 +300,17 @@ export const PianoGame: React.FC<PianoGameProps> = ({
 
     if (instrument) {
       try {
-        // Soundfont-player のサンプル音量は標準で小さめ(-12dB前後)のため、
-        // ゲインを 2.4倍 して実音量相当の豊かな音圧にする (ppの繊細な静けさからffの圧倒的音圧まで表現)
+        // 弱音・中音の音量を適度に底上げし、ピアニッシモ(pp)や弱音〜中音でも優しく心地よい音量で響くよう調整
+        // pp(0.40) -> gain ~1.21 (小さすぎず、優しく囁くような温かい音)
+        // p(0.68)  -> gain ~1.91 (伸びやかで穏やかなピアノ)
+        // mp(0.88) -> gain ~2.56 (自然でふくよかなメゾピアノ)
+        // mf(1.10) -> gain ~3.39 (芯のあるメゾフォルテ)
+        // f(1.35)  -> gain ~4.49 (華麗で力強いフォルテ)
+        // ff(1.60) -> gain ~5.70 (圧倒的迫力のフォルティッシモ)
+        const dynamicGain = Math.max(0.40, Math.min(6.8, (0.70 + 2.3 * Math.pow(velocity, 1.65)) * pianoVolume));
         instrument.play(pitchName || midi, ctx.currentTime, {
           duration: durationMs / 1000,
-          gain: Math.max(0.2, Math.min(3.6, velocity * 2.4 * pianoVolume))
+          gain: dynamicGain
         });
         return;
       } catch (e) {
@@ -393,19 +407,19 @@ export const PianoGame: React.FC<PianoGameProps> = ({
         if (expressionRoll >= 95) {
           touchScore = 100;
           touchJudgeKey = 'perfectTouch';
-          touchFactor = 1.0;
+          touchFactor = 1.05;
         } else if (expressionRoll >= 82) {
           touchScore = 80;
           touchJudgeKey = 'greatTouch';
-          touchFactor = 0.92;
+          touchFactor = 0.98;
         } else if (expressionRoll >= 65) {
           touchScore = 55;
           touchJudgeKey = 'goodTouch';
-          touchFactor = 0.82;
+          touchFactor = 0.88;
         } else {
           touchScore = 25;
           touchJudgeKey = 'roughTouch';
-          touchFactor = 0.70;
+          touchFactor = 0.72;
         }
 
         dynamicsScoreTotalRef.current += touchScore;
@@ -447,9 +461,9 @@ export const PianoGame: React.FC<PianoGameProps> = ({
         
         latestJudgeText = judgeStr;
         
-        // 実際の演奏ベロシティ（楽譜の指定ベロシティ × ロボットのタッチ精度 × 音量）
+        // 実際の演奏ベロシティ（楽譜の指定ベロシティ × ロボットのタッチ精度 × 打鍵判定音量）
         const baseVelocity = note.velocity || 0.8;
-        const actualVelocity = Math.max(0.25, Math.min(1.6, baseVelocity * touchFactor * vol));
+        const actualVelocity = Math.max(0.15, Math.min(1.85, baseVelocity * touchFactor * vol));
 
         note.lanes.forEach((lane, i) => {
           const isBlack = (lane % 1) !== 0;
