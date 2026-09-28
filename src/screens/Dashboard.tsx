@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import * as Gi from 'react-icons/gi';
-import { GameState, Robot, getFameRank } from '../core/models';
+import { GameState, Robot, getFameRank, FAME_RANKS } from '../core/models';
 import { GameEngine } from '../core/GameEngine';
 import { Card, Button, Badge } from '../components/ui/core';
 import { RobotVisual } from '../components/robot/RobotVisual';
@@ -35,6 +35,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
   });
 
   const [activePlayingCount, setActivePlayingCount] = useState<number>(0);
+  const [showFameModal, setShowFameModal] = useState<boolean>(false);
 
   // 他ユーザーのアクティブ（プレイ中）人数を取得
   useEffect(() => {
@@ -268,9 +269,15 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                   <Gi.GiLaurelsTrophy size={14} />
                 </span>
                 <span className="text-[10px] font-bold text-stone-600">工房称号:</span>
-                <span className={`text-[11px] px-2 py-0.5 rounded-full border font-bold ${fameRank.badgeBg} ${fameRank.badgeBorder} ${fameRank.textColor}`}>
-                  {fameRank.title}
-                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowFameModal(true)}
+                  className={`text-[11px] px-2 py-0.5 rounded-full border font-bold ${fameRank.badgeBg} ${fameRank.badgeBorder} ${fameRank.textColor} hover:opacity-80 transition-all cursor-pointer flex items-center gap-1 active:scale-95 shadow-2xs`}
+                  title="全14ランクの工房称号一覧を確認"
+                >
+                  <span>{fameRank.title}</span>
+                  <span className="text-[9px] opacity-75 font-normal">一覧</span>
+                </button>
                 <span className="text-[10px] font-mono text-stone-500 font-bold">
                   ({currentFame} pt)
                 </span>
@@ -1280,6 +1287,110 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
           onClose={() => setRepairingRobotState(null)}
         />
       )}
+
+      {/* 全14段階の工房名声ランク一覧モーダル */}
+      {showFameModal && (() => {
+        const curFame = state.fame || 0;
+        const curRank = getFameRank(curFame);
+
+        return (
+          <div 
+            className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/60 backdrop-blur-xs animate-fadeIn"
+            onClick={() => setShowFameModal(false)}
+          >
+            <div 
+              className="bg-[#fcf8f2] border-2 border-[#c29b77] rounded-xl max-w-md w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-scaleIn"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* ヘッダー */}
+              <div className="bg-[#f4ebe1] px-3.5 py-2.5 border-b border-[#cbb197] flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-2">
+                  <span className="w-7 h-7 rounded-lg bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-800">
+                    <Gi.GiLaurelsTrophy size={16} />
+                  </span>
+                  <div>
+                    <h3 className="text-sm font-bold text-stone-900 leading-tight">工房名声ランク一覧</h3>
+                    <p className="text-[10px] text-stone-600">全14段階の工房称号と必要名声</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowFameModal(false)}
+                  className="w-7 h-7 rounded-full bg-stone-200/80 hover:bg-stone-300 text-stone-700 flex items-center justify-center text-xs font-bold transition-colors cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* 現在の名声ステータスサマリー */}
+              <div className="bg-amber-50/70 px-3.5 py-2 border-b border-amber-200/60 flex items-center justify-between text-xs shrink-0 flex-wrap gap-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-stone-600 font-medium">現在の名声:</span>
+                  <span className="font-mono font-bold text-amber-900">{curFame} pt</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-stone-600 font-medium">現在の称号:</span>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${curRank.badgeBg} ${curRank.badgeBorder} ${curRank.textColor}`}>
+                    Rank {curRank.level} {curRank.title}
+                  </span>
+                </div>
+              </div>
+
+              {/* 14ランク一覧スクロール領域 */}
+              <div className="p-2.5 overflow-y-auto space-y-1.5 flex-1">
+                {FAME_RANKS.map((r) => {
+                  const isCurrent = r.level === curRank.level;
+                  const isReached = curFame >= r.minFame;
+
+                  return (
+                    <div
+                      key={r.level}
+                      className={`rounded-lg p-2 transition-all ${
+                        isCurrent 
+                          ? 'bg-amber-100/90 border-2 border-amber-500 shadow-xs' 
+                          : isReached 
+                            ? 'bg-stone-50/80 border border-stone-200' 
+                            : 'bg-white/40 border border-stone-200/50 opacity-70'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-1 flex-wrap mb-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className={`text-[10px] font-mono font-bold px-1.5 py-0.2 rounded ${
+                            isCurrent ? 'bg-amber-700 text-white' : 'bg-stone-200 text-stone-700'
+                          }`}>
+                            Rank {r.level}
+                          </span>
+                          <span className={`text-[11px] px-2 py-0.5 rounded-full border font-bold ${r.badgeBg} ${r.badgeBorder} ${r.textColor}`}>
+                            {r.title}
+                          </span>
+                          {isCurrent && (
+                            <span className="text-[9px] bg-rose-600 text-white font-bold px-1.5 py-0.2 rounded-full animate-pulse">
+                              現在
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[10px] font-mono font-bold text-stone-600">
+                          {r.nextFame ? `${r.minFame} 〜 ${r.nextFame - 1} pt` : `${r.minFame} pt+ (MAX)`}
+                        </div>
+                      </div>
+                      <p className="text-[11px] text-stone-600 pl-0.5">{r.desc}</p>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* フッター */}
+              <div className="bg-[#f4ebe1] px-3.5 py-2 border-t border-[#cbb197] flex justify-end shrink-0">
+                <button
+                  onClick={() => setShowFameModal(false)}
+                  className="px-4 py-1 bg-amber-700 hover:bg-amber-800 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer"
+                >
+                  閉じる
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 };

@@ -116,7 +116,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                 <h3 className="font-bold text-base text-amber-950">2. 工房名声（Fame）＆名声ランクシステム</h3>
               </div>
               <span className="text-xs bg-amber-100 text-amber-900 font-bold px-2 py-0.5 rounded-full border border-amber-300">
-                全6段階の工房称号
+                全14段階の工房称号
               </span>
             </div>
             <div className="space-y-3">
@@ -141,36 +141,84 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                       <td className="p-2 font-mono">0 〜 49</td>
                       <td className="p-2 text-stone-600">町外れでひっそりと営業する小さな修理小屋。</td>
                     </tr>
+                    <tr className="bg-lime-50/40">
+                      <td className="p-2 font-mono font-bold text-lime-700">Rank 2</td>
+                      <td className="p-2 font-bold text-lime-900">街の駆け出し工房</td>
+                      <td className="p-2 font-mono">50 〜 119</td>
+                      <td className="p-2 text-stone-600">近所の頼まれごとを引き受け始めた見習い工房。</td>
+                    </tr>
                     <tr className="bg-emerald-50/40">
-                      <td className="p-2 font-mono font-bold text-emerald-700">Rank 2</td>
+                      <td className="p-2 font-mono font-bold text-emerald-700">Rank 3</td>
                       <td className="p-2 font-bold text-emerald-900">街の評判工房</td>
-                      <td className="p-2 font-mono">50 〜 149</td>
+                      <td className="p-2 font-mono">120 〜 219</td>
                       <td className="p-2 text-stone-600">近隣住民から信頼され、日常的な依頼が集まる。</td>
                     </tr>
-                    <tr className="bg-sky-50/40">
-                      <td className="p-2 font-mono font-bold text-sky-700">Rank 3</td>
-                      <td className="p-2 font-bold text-sky-900">地方の有名工房</td>
-                      <td className="p-2 font-mono">150 〜 349</td>
+                    <tr className="bg-teal-50/40">
+                      <td className="p-2 font-mono font-bold text-teal-700">Rank 4</td>
+                      <td className="p-2 font-bold text-teal-900">街道の新進工房</td>
+                      <td className="p-2 font-mono">220 〜 349</td>
+                      <td className="p-2 text-stone-600">隊商や行商人たちの間でも噂が広まりつつある新鋭。</td>
+                    </tr>
+                    <tr className="bg-cyan-50/40">
+                      <td className="p-2 font-mono font-bold text-cyan-700">Rank 5</td>
+                      <td className="p-2 font-bold text-cyan-900">地方の有名工房</td>
+                      <td className="p-2 font-mono">350 〜 519</td>
                       <td className="p-2 text-stone-600">近隣の街や旅人たちにも名が知られた実力派工房。</td>
                     </tr>
-                    <tr className="bg-purple-50/40">
-                      <td className="p-2 font-mono font-bold text-purple-700">Rank 4</td>
-                      <td className="p-2 font-bold text-purple-900">名門メカニック工房</td>
-                      <td className="p-2 font-mono">350 〜 699</td>
+                    <tr className="bg-sky-50/40">
+                      <td className="p-2 font-mono font-bold text-sky-700">Rank 6</td>
+                      <td className="p-2 font-bold text-sky-900">都市の公認工房</td>
+                      <td className="p-2 font-mono">520 〜 749</td>
+                      <td className="p-2 text-stone-600">都市ギルドから確かな技術を公認された中堅工房。</td>
+                    </tr>
+                    <tr className="bg-blue-50/40">
+                      <td className="p-2 font-mono font-bold text-blue-700">Rank 7</td>
+                      <td className="p-2 font-bold text-blue-900">名門メカニック工房</td>
+                      <td className="p-2 font-mono">750 〜 1049</td>
                       <td className="p-2 text-stone-600">貴族や名士たちが特注機を求めて訪れる一流工房。</td>
                     </tr>
-                    <tr className="bg-amber-50/60">
-                      <td className="p-2 font-mono font-bold text-amber-800">Rank 5</td>
-                      <td className="p-2 font-bold text-amber-950">王国御用達工房</td>
-                      <td className="p-2 font-mono">700 〜 1199</td>
+                    <tr className="bg-indigo-50/40">
+                      <td className="p-2 font-mono font-bold text-indigo-700">Rank 8</td>
+                      <td className="p-2 font-bold text-indigo-900">王国屈指の特級工房</td>
+                      <td className="p-2 font-mono">1050 〜 1449</td>
+                      <td className="p-2 text-stone-600">国中の凄腕技師たちが一目置く、確固たる権威。</td>
+                    </tr>
+                    <tr className="bg-purple-50/40">
+                      <td className="p-2 font-mono font-bold text-purple-700">Rank 9</td>
+                      <td className="p-2 font-bold text-purple-900">王国御用達工房</td>
+                      <td className="p-2 font-mono">1450 〜 1949</td>
                       <td className="p-2 text-stone-600">王室直々の特命依頼を受ける最高峰の工房。</td>
                     </tr>
-                    <tr className="bg-amber-100/60">
-                      <td className="p-2 font-mono font-bold text-rose-700">Rank 6</td>
+                    <tr className="bg-fuchsia-50/50">
+                      <td className="p-2 font-mono font-bold text-fuchsia-800">Rank 10</td>
+                      <td className="p-2 font-bold text-fuchsia-950">宮廷筆頭マイスター工房</td>
+                      <td className="p-2 font-mono">1950 〜 2599</td>
+                      <td className="p-2 text-stone-600">国家防衛の要となるロボット開発を担う最高名誉。</td>
+                    </tr>
+                    <tr className="bg-rose-50/50">
+                      <td className="p-2 font-mono font-bold text-rose-800">Rank 11</td>
+                      <td className="p-2 font-bold text-rose-950">大陸随一の巨匠工房</td>
+                      <td className="p-2 font-mono">2600 〜 3399</td>
+                      <td className="p-2 text-stone-600">国境を越え、大陸全土にその名が轟く至高の工房。</td>
+                    </tr>
+                    <tr className="bg-teal-50/60">
+                      <td className="p-2 font-mono font-bold text-teal-800">Rank 12</td>
+                      <td className="p-2 font-bold text-teal-950">古代叡智を継ぐ神工匠</td>
+                      <td className="p-2 font-mono">3400 〜 4399</td>
+                      <td className="p-2 text-stone-600">失われた超古代文明の機巧テクノロジーを再現する境地。</td>
+                    </tr>
+                    <tr className="bg-purple-50/60">
+                      <td className="p-2 font-mono font-bold text-purple-800">Rank 13</td>
+                      <td className="p-2 font-bold text-purple-950">星辰を創る奇跡の工房</td>
+                      <td className="p-2 font-mono">4400 〜 5799</td>
+                      <td className="p-2 text-stone-600">鋼鉄に魂を吹き込み、奇跡を紡ぐ伝説の領域。</td>
+                    </tr>
+                    <tr className="bg-amber-100/70">
+                      <td className="p-2 font-mono font-bold text-amber-900">Rank 14</td>
                       <td className="p-2 font-bold text-amber-950 flex items-center gap-1">
                         <Gi.GiLaurelCrown className="text-amber-600" /> 伝説の神話工房
                       </td>
-                      <td className="p-2 font-mono font-bold">1200+ (MAX)</td>
+                      <td className="p-2 font-mono font-bold">5800+ (MAX)</td>
                       <td className="p-2 text-stone-700 font-medium">歴史に名を刻む至高のポンコツロボット工房！</td>
                     </tr>
                   </tbody>
@@ -282,43 +330,43 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                             <td className="p-1.5 font-sans font-medium">裏山のスクラップ場</td>
                             <td className="p-1.5 text-right text-emerald-700 font-bold">0 G</td>
                             <td className="p-1.5 text-right">30分 (1,800秒)</td>
-                            <td className="p-1.5 text-right">0</td>
+                            <td className="p-1.5 text-right font-bold text-stone-600">0</td>
                           </tr>
                           <tr>
                             <td className="p-1.5 font-sans font-medium">灼熱の廃工場</td>
                             <td className="p-1.5 text-right text-amber-800 font-bold">200 G</td>
                             <td className="p-1.5 text-right">1時間 (3,600秒)</td>
-                            <td className="p-1.5 text-right">10</td>
+                            <td className="p-1.5 text-right font-bold text-lime-700">50</td>
                           </tr>
                           <tr>
                             <td className="p-1.5 font-sans font-medium">水没した都市遺跡</td>
                             <td className="p-1.5 text-right text-amber-800 font-bold">500 G</td>
                             <td className="p-1.5 text-right">2時間 (7,200秒)</td>
-                            <td className="p-1.5 text-right">30</td>
+                            <td className="p-1.5 text-right font-bold text-emerald-700">150</td>
                           </tr>
                           <tr>
                             <td className="p-1.5 font-sans font-medium">風の谷の観測所</td>
                             <td className="p-1.5 text-right text-amber-800 font-bold">1,000 G</td>
                             <td className="p-1.5 text-right">3時間 (10,800秒)</td>
-                            <td className="p-1.5 text-right">50</td>
+                            <td className="p-1.5 text-right font-bold text-cyan-700">350</td>
                           </tr>
                           <tr>
                             <td className="p-1.5 font-sans font-medium">光の塔</td>
                             <td className="p-1.5 text-right text-amber-800 font-bold">2,000 G</td>
                             <td className="p-1.5 text-right">4時間 (14,400秒)</td>
-                            <td className="p-1.5 text-right">100</td>
+                            <td className="p-1.5 text-right font-bold text-blue-700">750</td>
                           </tr>
                           <tr>
                             <td className="p-1.5 font-sans font-medium">最果てのクレーター</td>
                             <td className="p-1.5 text-right text-amber-800 font-bold">4,000 G</td>
                             <td className="p-1.5 text-right">5時間 (18,000秒)</td>
-                            <td className="p-1.5 text-right">200</td>
+                            <td className="p-1.5 text-right font-bold text-indigo-700">1,300</td>
                           </tr>
                           <tr>
                             <td className="p-1.5 font-sans font-medium">古代文明の中枢</td>
                             <td className="p-1.5 text-right text-amber-800 font-bold">10,000 G</td>
                             <td className="p-1.5 text-right">10時間 (36,000秒)</td>
-                            <td className="p-1.5 text-right">500</td>
+                            <td className="p-1.5 text-right font-bold text-purple-700">2,000 (最大)</td>
                           </tr>
                         </tbody>
                       </table>

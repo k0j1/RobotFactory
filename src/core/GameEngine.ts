@@ -2168,6 +2168,9 @@ export class GameEngine {
     const loc = LOCATIONS.find(l => l.id === locationId);
     if (!loc) return;
     if (this.state.unlockedLocations.includes(locationId)) return;
+    if (loc.requiredFame && (this.state.fame || 0) < loc.requiredFame) {
+      throw new Error(`名声が足りません (必要: ${loc.requiredFame}, 現在: ${this.state.fame || 0})`);
+    }
     if (this.state.gold < loc.unlockCostG) throw new Error("Gが足りません");
 
     // クラウドアカウントの場合は専用APIでサーバー側の user_workshop_status の gold 減額と consumed_gold 増額を実行

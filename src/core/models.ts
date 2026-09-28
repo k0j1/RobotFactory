@@ -301,11 +301,19 @@ export interface FameRankInfo {
 
 export const FAME_RANKS: FameRankInfo[] = [
   { level: 1, title: '路地裏の無名工房', minFame: 0, nextFame: 50, desc: '町外れでひっそりと営業する小さな修理小屋。', badgeBg: 'bg-stone-100', badgeBorder: 'border-stone-300', textColor: 'text-stone-700' },
-  { level: 2, title: '街の評判工房', minFame: 50, nextFame: 150, desc: '近隣住民から信頼され、日常的な依頼が集まる。', badgeBg: 'bg-emerald-50', badgeBorder: 'border-emerald-300', textColor: 'text-emerald-800' },
-  { level: 3, title: '地方の有名工房', minFame: 150, nextFame: 350, desc: '近隣の街や旅人たちにも名が知られた実力派工房。', badgeBg: 'bg-sky-50', badgeBorder: 'border-sky-300', textColor: 'text-sky-800' },
-  { level: 4, title: '名門メカニック工房', minFame: 350, nextFame: 700, desc: '貴族や名士たちが特注機を求めて訪れる一流工房。', badgeBg: 'bg-purple-50', badgeBorder: 'border-purple-300', textColor: 'text-purple-800' },
-  { level: 5, title: '王国御用達工房', minFame: 700, nextFame: 1200, desc: '王室直々の特命依頼を受ける最高峰の工房。', badgeBg: 'bg-amber-100', badgeBorder: 'border-amber-400', textColor: 'text-amber-900' },
-  { level: 6, title: '伝説の神話工房', minFame: 1200, nextFame: null, desc: '歴史に名を刻む至高のポンコツロボット工房！', badgeBg: 'bg-gradient-to-r from-amber-100 via-rose-100 to-purple-100', badgeBorder: 'border-amber-500', textColor: 'text-amber-950' },
+  { level: 2, title: '街の駆け出し工房', minFame: 50, nextFame: 120, desc: '近所の頼まれごとを引き受け始めた見習い工房。', badgeBg: 'bg-lime-50', badgeBorder: 'border-lime-300', textColor: 'text-lime-800' },
+  { level: 3, title: '街の評判工房', minFame: 120, nextFame: 220, desc: '近隣住民から信頼され、日常的な依頼が集まる。', badgeBg: 'bg-emerald-50', badgeBorder: 'border-emerald-300', textColor: 'text-emerald-800' },
+  { level: 4, title: '街道の新進工房', minFame: 220, nextFame: 350, desc: '隊商や行商人たちの間でも噂が広まりつつある新鋭。', badgeBg: 'bg-teal-50', badgeBorder: 'border-teal-300', textColor: 'text-teal-800' },
+  { level: 5, title: '地方の有名工房', minFame: 350, nextFame: 520, desc: '近隣の街や旅人たちにも名が知られた実力派工房。', badgeBg: 'bg-cyan-50', badgeBorder: 'border-cyan-300', textColor: 'text-cyan-800' },
+  { level: 6, title: '都市の公認工房', minFame: 520, nextFame: 750, desc: '都市ギルドから確かな技術を公認された中堅工房。', badgeBg: 'bg-sky-50', badgeBorder: 'border-sky-300', textColor: 'text-sky-800' },
+  { level: 7, title: '名門メカニック工房', minFame: 750, nextFame: 1050, desc: '貴族や名士たちが特注機を求めて訪れる一流工房。', badgeBg: 'bg-blue-50', badgeBorder: 'border-blue-300', textColor: 'text-blue-800' },
+  { level: 8, title: '王国屈指の特級工房', minFame: 1050, nextFame: 1450, desc: '国中の凄腕技師たちが一目置く、確固たる権威。', badgeBg: 'bg-indigo-50', badgeBorder: 'border-indigo-300', textColor: 'text-indigo-800' },
+  { level: 9, title: '王国御用達工房', minFame: 1450, nextFame: 1950, desc: '王室直々の特命依頼を受ける最高峰の工房。', badgeBg: 'bg-purple-50', badgeBorder: 'border-purple-300', textColor: 'text-purple-800' },
+  { level: 10, title: '宮廷筆頭マイスター工房', minFame: 1950, nextFame: 2600, desc: '国家防衛の要となるロボット開発を担う最高名誉。', badgeBg: 'bg-fuchsia-50', badgeBorder: 'border-fuchsia-300', textColor: 'text-fuchsia-900' },
+  { level: 11, title: '大陸随一の巨匠工房', minFame: 2600, nextFame: 3400, desc: '国境を越え、大陸全土にその名が轟く至高の工房。', badgeBg: 'bg-rose-50', badgeBorder: 'border-rose-300', textColor: 'text-rose-900' },
+  { level: 12, title: '古代叡智を継ぐ神工匠', minFame: 3400, nextFame: 4400, desc: '失われた超古代文明の機巧テクノロジーを再現する境地。', badgeBg: 'bg-gradient-to-r from-amber-100 to-emerald-100', badgeBorder: 'border-teal-400', textColor: 'text-teal-950' },
+  { level: 13, title: '星辰を創る奇跡の工房', minFame: 4400, nextFame: 5800, desc: '鋼鉄に魂を吹き込み、奇跡を紡ぐ伝説の領域。', badgeBg: 'bg-gradient-to-r from-purple-100 via-pink-100 to-amber-100', badgeBorder: 'border-purple-400', textColor: 'text-purple-950' },
+  { level: 14, title: '伝説の神話工房', minFame: 5800, nextFame: null, desc: '歴史に名を刻む至高のポンコツロボット工房！', badgeBg: 'bg-gradient-to-r from-amber-200 via-rose-200 to-indigo-200', badgeBorder: 'border-amber-500', textColor: 'text-amber-950' },
 ];
 
 export function getFameRank(fame: number = 0): FameRankInfo {

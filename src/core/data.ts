@@ -1102,7 +1102,7 @@ export const LOCATIONS: QuestLocation[] = [
     "description": "火属性の素材が出やすい危険な工場。",
     "unlockCostG": 200,
     "baseTimeMs": 3600000,
-    "requiredFame": 10,
+    "requiredFame": 50,
     "drops": [
       "m_f1_1", "m_f1_2", "m_f1_3", "m_f1_4",
       "m_f2_1", "m_f2_2", "m_f2_3", "m_f2_4",
@@ -1115,7 +1115,7 @@ export const LOCATIONS: QuestLocation[] = [
     "description": "水属性の素材が眠る遺跡。",
     "unlockCostG": 500,
     "baseTimeMs": 7200000,
-    "requiredFame": 30,
+    "requiredFame": 150,
     "drops": [
       "m_w1_1", "m_w1_2", "m_w1_3", "m_w1_4",
       "m_w2_1", "m_w2_2", "m_w2_3", "m_w2_4",
@@ -1128,7 +1128,7 @@ export const LOCATIONS: QuestLocation[] = [
     "description": "風属性の素材が集まる高台。",
     "unlockCostG": 1000,
     "baseTimeMs": 10800000,
-    "requiredFame": 50,
+    "requiredFame": 350,
     "drops": [
       "m_a1_1", "m_a1_2", "m_a1_3", "m_a1_4",
       "m_a2_1", "m_a2_2", "m_a2_3", "m_a2_4",
@@ -1141,7 +1141,7 @@ export const LOCATIONS: QuestLocation[] = [
     "description": "光り輝く神秘の塔。",
     "unlockCostG": 2000,
     "baseTimeMs": 14400000,
-    "requiredFame": 100,
+    "requiredFame": 750,
     "drops": [
       "m_l1_1", "m_l1_2", "m_l1_3", "m_l1_4",
       "m_l2_1", "m_l2_2", "m_l2_3", "m_l2_4",
@@ -1154,7 +1154,7 @@ export const LOCATIONS: QuestLocation[] = [
     "description": "レアな闇や大地の素材が見つかるかも…",
     "unlockCostG": 4000,
     "baseTimeMs": 18000000,
-    "requiredFame": 200,
+    "requiredFame": 1300,
     "drops": [
       "m_d2_1", "m_d2_2", "m_d2_3", "m_d2_4",
       "m_d3_1", "m_d3_2",
@@ -1168,7 +1168,7 @@ export const LOCATIONS: QuestLocation[] = [
     "description": "全ての属性の最高級素材が眠る伝説の地。",
     "unlockCostG": 10000,
     "baseTimeMs": 36000000,
-    "requiredFame": 500,
+    "requiredFame": 2000,
     "drops": [
       "m_e3_1", "m_e3_2", "m_e3_3", "m_e3_4",
       "m_f3_1", "m_f3_2", "m_f3_3", "m_f3_4",
