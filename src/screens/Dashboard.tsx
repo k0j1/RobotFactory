@@ -268,15 +268,13 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
                 <span className="w-6 h-6 rounded-md bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-800 shrink-0">
                   <Gi.GiLaurelsTrophy size={14} />
                 </span>
-                <span className="text-[10px] font-bold text-stone-600">工房称号:</span>
                 <button
                   type="button"
                   onClick={() => setShowFameModal(true)}
-                  className={`text-[11px] px-2 py-0.5 rounded-full border font-bold ${fameRank.badgeBg} ${fameRank.badgeBorder} ${fameRank.textColor} hover:opacity-80 transition-all cursor-pointer flex items-center gap-1 active:scale-95 shadow-2xs`}
+                  className={`text-[11px] px-2 py-0.5 rounded-full border font-bold ${fameRank.badgeBg} ${fameRank.badgeBorder} ${fameRank.textColor} hover:opacity-80 transition-all cursor-pointer flex items-center active:scale-95 shadow-2xs`}
                   title="全14ランクの工房称号一覧を確認"
                 >
                   <span>{fameRank.title}</span>
-                  <span className="text-[9px] opacity-75 font-normal">一覧</span>
                 </button>
                 <span className="text-[10px] font-mono text-stone-500 font-bold">
                   ({currentFame} pt)
@@ -541,7 +539,7 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
             <div className="space-y-1.5">
               {(!state.autoDispatches || state.autoDispatches.length === 0) ? (
                 <div className="p-2.5 bg-[#fffdfa] rounded-lg border border-dashed border-[#d2b89f] text-center text-[11px] text-stone-500 font-bold">
-                  自動探索中の機体はいません
+                  自動探索中のロボットはいません
                 </div>
               ) : (
                 state.autoDispatches.map((d, idx) => {

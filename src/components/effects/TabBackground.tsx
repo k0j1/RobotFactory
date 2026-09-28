@@ -1,7 +1,6 @@
 import React from 'react';
 import * as Gi from 'react-icons/gi';
 import robotsWorkshopBg from '../../assets/images/robots_workshop_bg_1788411232885.jpg';
-import { WorkshopParticles } from './WorkshopParticles';
 
 interface TabBackgroundProps {
   activeView: string;
@@ -13,32 +12,28 @@ interface TabBackgroundProps {
  * ユーザー指定仕様：
  * 1. 背景画像は画面を切り替えても全ての画面で統一して常時表示。
  *    （ダッシュボード、遠征、製造、依頼、倉庫、バトル、図鑑、記録、ライトペーパー等の全画面で統一）
- * 2. 透過を抑えて濃く調整：
- *    ロボットたちが作業台や充電ドックに並ぶ温かみある工房イラストがしっかり視認できるよう、
- *    画像の不透明度を最適化（opacity-38）し、オーバーレイの透明度も調整。
- * 3. ダッシュボード（dashboard）およびクラフト（craft/製造）画面に、
- *    微かに漂う浮遊微粒子・光のスパーク（floating dust motes & light sparks）の
- *    控えめで上品なアニメーションパーティクルエフェクトを展開。
- * 4. 画面切り替え時のDOM再マウント・チラつき・遅延が完全にゼロの常駐構造。
+ * 2. 動作軽量化対応（常時パーティクルアニメーションの排除＆ブレンド計算最適化）：
+ *    全画面背後での毎フレームCanvasアニメーション（requestAnimationFrame描画ループ）を完全撤去し、
+ *    GPU/CPU負荷・バッテリー消費を0%へと徹底軽量化。
+ *    さらにCSS mix-blend-multiplyを排除して静的テクスチャ合成へと最適化し、
+ *    スマートフォンやモバイル環境でも一切カクつかず軽快にスクロール・操作できるようにチューニング。
+ * 3. 前面UIのテキスト・カード可読性を守りつつ、温かみある工房アートを上品に美しく表現。
  */
 export const TabBackground: React.FC<TabBackgroundProps> = ({ activeView }) => {
-  // パーティクルエフェクトを表示する画面（dashboard & craft）
-  const showParticles = activeView === 'dashboard' || activeView === 'craft';
-
   return (
     <div 
       className="fixed inset-0 pointer-events-none overflow-hidden select-none z-0"
       aria-hidden="true"
     >
       {/* ========================================================
-          1. 全画面共通・統一工房背景レイヤー:
-             遠征で使用している方の画像（待機ロボットが並ぶ工房アート）を全画面で常時統一表示
+          1. 全画面共通・静的軽量工房背景レイヤー:
+             待機ロボットが並ぶ工房アートを全画面で常時統一表示（アニメーションなし・負荷ゼロ）
          ======================================================== */}
       <div className="absolute inset-0">
         {/* ベースの温かみある下地カラー */}
         <div className="absolute inset-0 bg-[#fbf6ee]" />
 
-        {/* 待機ロボたちが並ぶ工房背景画像（透過を抑えてより濃くしっかり表示） */}
+        {/* 待機ロボたちが並ぶ工房背景画像（軽量静的レンダリング） */}
         <div className="absolute inset-0 flex items-center justify-center">
           <img
             src={robotsWorkshopBg}
@@ -46,12 +41,12 @@ export const TabBackground: React.FC<TabBackgroundProps> = ({ activeView }) => {
             referrerPolicy="no-referrer"
             loading="eager"
             decoding="async"
-            className="w-full h-full object-cover object-[center_35%] opacity-38 mix-blend-multiply"
+            className="w-full h-full object-cover object-[center_35%] opacity-30"
           />
         </div>
 
         {/* 前面UIのテキスト・カード可読性を守りつつ背景イラストを引き立たせる乳白色グラデーションオーバーレイ */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#fcf9f5]/65 via-[#fbf6ef]/45 to-[#f8f1e5]/70" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#fcf9f5]/60 via-[#fbf6ef]/40 to-[#f8f1e5]/65" />
 
         {/* 工房上部の穏やかな陰影ライン */}
         <div className="absolute top-0 left-0 right-0 h-3 bg-gradient-to-b from-[#8a5b28]/12 to-transparent border-b border-[#a8743a]/15" />
@@ -97,16 +92,6 @@ export const TabBackground: React.FC<TabBackgroundProps> = ({ activeView }) => {
           </span>
         </div>
       </div>
-
-      {/* ========================================================
-          2. 工房アニメーションパーティクルエフェクト:
-             ダッシュボード（dashboard）およびクラフト（craft）画面で
-             生き生きとした浮遊ダスト（dust motes）と光のスパーク（sparks）を演出
-         ======================================================== */}
-      <WorkshopParticles 
-        active={showParticles} 
-        particleCount={30}
-      />
     </div>
   );
 };
