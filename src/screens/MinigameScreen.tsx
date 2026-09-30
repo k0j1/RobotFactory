@@ -237,19 +237,37 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
     const int = robot.stats.intelligence || 10;
     const dex = robot.stats.dexterity || 10;
     
-    // 各曲の推奨クリア基準INT
-    // エリーゼのために(Lv.5): INT 50
-    // ノクターン 作品9-2(Lv.6): INT 60
-    // トルコ行進曲(Lv.8): INT 75
+    // 各曲の推奨クリア基準INT (Lv.1 アラベスク: 50 〜 Lv.10 ラ・カンパネラ: 100)
+    // アラベスク(Lv.1): INT 50
+    // 貴婦人の乗馬(Lv.2): INT 55
+    // メヌエット ト長調(Lv.3): INT 60
+    // エリーゼのために(Lv.4): INT 65
+    // 月光の曲(Lv.5): INT 70
+    // ノクターン 作品9-2(Lv.6): INT 75
+    // きらきら星変奏曲(Lv.7): INT 80
+    // トルコ行進曲(Lv.8): INT 85
+    // 幻想即興曲(Lv.9): INT 92
     // ラ・カンパネラ(Lv.10): INT 100
     const song = PIANO_SONGS.find(s => s.id === songId) || PIANO_SONGS[0];
-    const targetInt = song.id === 'fur_elise' 
-      ? 50 
-      : song.id === 'chopin_nocturne' 
-        ? 60 
-        : song.id === 'turkish_march' 
-          ? 75 
-          : 100;
+    const targetInt = song.id === 'arabesque'
+      ? 50
+      : song.id === 'chevaleresque'
+        ? 55
+        : song.id === 'minuet_in_g'
+          ? 60
+          : song.id === 'fur_elise' 
+            ? 65 
+            : song.id === 'moonlight_sonata'
+              ? 70
+              : song.id === 'chopin_nocturne' 
+                ? 75 
+                : song.id === 'twinkle_variations'
+                  ? 80
+                  : song.id === 'turkish_march' 
+                    ? 85 
+                    : song.id === 'fantaisie_impromptu'
+                      ? 92
+                      : 100;
     
     // ロボットの総合演奏適性値 (打鍵タイミング精度70%［Int主軸］ + 強弱タッチ表現力30%［Dex主軸］)
     const effectiveStat = (int * 0.75) + (dex * 0.25);
@@ -385,12 +403,8 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
         }
       } else if (selectedGame === 'piano') {
         stageName = `ピアノ演奏 (${activePianoSong.title})`;
-        // ピアノ演奏は工房名声を多く獲得できるため、宝箱は低ランク（古びた鉄の宝箱）固定ドロップ
-        chestTier = 'bronze';
-        chestTitle = '古びた鉄の宝箱';
-
+        // ピアノ演奏では宝箱の獲得はなし（名声のみ）
         earnedFame = activePianoSong.rewardFame || 0;
-        // ピアノ演奏ではエレメントの獲得はなし（名声のみ）
         obtainedElements = 0;
         if (earnedFame > 0) {
           (engine as any).addFame(earnedFame, `ピアノ演奏クリア: ${activePianoSong.title}`);
@@ -416,15 +430,19 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
         chestTitle = '古びた鉄の宝箱';
       }
 
-      // 未開封の宝箱として所持アイテムに追加
-      (engine as any).addChest(chestTier, 1);
-      setAcquiredChestInfo({ tier: chestTier, title: chestTitle, stageName });
+      // 未開封の宝箱として所持アイテムに追加 (ピアノ演奏時は宝箱獲得なし)
+      if (selectedGame !== 'piano') {
+        (engine as any).addChest(chestTier, 1);
+        setAcquiredChestInfo({ tier: chestTier, title: chestTitle, stageName });
+      } else {
+        setAcquiredChestInfo(null);
+      }
       setVictoryRewards({ fame: earnedFame, elements: obtainedElements });
     } else {
       setVictoryRewards(null);
     }
 
-    const obtainedChests = result === 'win' ? 1 : 0;
+    const obtainedChests = (result === 'win' && selectedGame !== 'piano') ? 1 : 0;
     (engine as any).recordMinigameResult(selectedGame, result, obtainedElements, obtainedChests);
     if (result === 'win' && typeof (engine as any).syncToDatabaseNow === 'function') {
       (engine as any).syncToDatabaseNow().catch((e: any) => console.warn('[MinigameScreen] Victory sync warn:', e));
@@ -1131,9 +1149,6 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                                   CLEAR歴あり
                                 </span>
                               )}
-                              <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300 font-bold px-1.5 py-0.5 rounded shrink-0 flex items-center gap-0.5">
-                                <Gi.GiLockedChest className="inline text-amber-600 text-xs" /> 鉄の宝箱
-                              </span>
                               {song.rewardFame > 0 && (
                                 <span className="text-[10px] bg-yellow-100 text-yellow-900 border border-yellow-300 font-bold font-mono px-1.5 py-0.5 rounded shrink-0 flex items-center gap-0.5">
                                   <Gi.GiTrophyCup className="inline text-amber-600 text-xs" /> 名声 +{song.rewardFame}

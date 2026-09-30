@@ -350,17 +350,35 @@ export const PianoGame: React.FC<PianoGameProps> = ({
         // Int: 楽譜理解・旋律・リズム把握 (主軸)
         // Dex: 運指の滑らかさ・繊細な打鍵タッチ・強弱コントロール (補助＆表現力主軸)
         // 難易度目標: 
-        // エリーゼのために(Lv.5): INT 50
-        // ノクターン 作品9-2(Lv.6): INT 60
-        // トルコ行進曲(Lv.8): INT 75
+        // アラベスク(Lv.1): INT 50
+        // 貴婦人の乗馬(Lv.2): INT 55
+        // メヌエット ト長調(Lv.3): INT 60
+        // エリーゼのために(Lv.4): INT 65
+        // 月光の曲(Lv.5): INT 70
+        // ノクターン 作品9-2(Lv.6): INT 75
+        // きらきら星変奏曲(Lv.7): INT 80
+        // トルコ行進曲(Lv.8): INT 85
+        // 幻想即興曲(Lv.9): INT 92
         // ラ・カンパネラ(Lv.10): INT 100
-        const targetInt = song.id === 'fur_elise' 
-          ? 50 
-          : song.id === 'chopin_nocturne' 
-            ? 60 
-            : song.id === 'turkish_march' 
-              ? 75 
-              : 100;
+        const targetInt = song.id === 'arabesque'
+          ? 50
+          : song.id === 'chevaleresque'
+            ? 55
+            : song.id === 'minuet_in_g'
+              ? 60
+              : song.id === 'fur_elise' 
+                ? 65 
+                : song.id === 'moonlight_sonata'
+                  ? 70
+                  : song.id === 'chopin_nocturne' 
+                    ? 75 
+                    : song.id === 'twinkle_variations'
+                      ? 80
+                      : song.id === 'turkish_march' 
+                        ? 85 
+                        : song.id === 'fantaisie_impromptu'
+                          ? 92
+                          : 100;
         const intVal = activeRobot.stats.intelligence || 10;
         const dexVal = activeRobot.stats.dexterity || 10;
         const effectiveScore = (intVal * 0.95) + (dexVal * 0.1);
@@ -690,7 +708,25 @@ export const PianoGame: React.FC<PianoGameProps> = ({
                   PERFORMANCE RESULT
                 </span>
                 <span className="text-xs text-stone-400 font-mono">
-                  {song.id === 'fur_elise' ? 'WoO 59 全曲演奏演習' : song.id === 'chopin_nocturne' ? 'Op. 9 No. 2 全曲強弱演奏演習' : 'K. 331 全曲演奏演習'}
+                  {song.id === 'arabesque'
+                    ? 'Op. 100 No. 2 全曲完全演奏演習'
+                    : song.id === 'chevaleresque'
+                      ? 'Op. 100 No. 25 全曲完全演奏演習'
+                      : song.id === 'minuet_in_g' 
+                        ? 'BWV Anh. 114 全64小節完全演奏演習' 
+                        : song.id === 'fur_elise' 
+                          ? 'WoO 59 全曲演奏演習' 
+                          : song.id === 'moonlight_sonata'
+                            ? 'Op. 27 No. 2 第1楽章 全69小節完全演奏演習'
+                            : song.id === 'chopin_nocturne' 
+                              ? 'Op. 9 No. 2 全曲強弱演奏演習' 
+                              : song.id === 'twinkle_variations'
+                                ? 'K. 265 全12変奏曲完全演奏演習'
+                                : song.id === 'turkish_march'
+                                  ? 'K. 331 全曲演奏演習'
+                                  : song.id === 'fantaisie_impromptu'
+                                    ? 'Op. 66 全138小節完全演奏演習'
+                                    : 'S. 141-3 全曲演奏演習'}
                 </span>
               </div>
               <h2 className="text-xl sm:text-2xl font-black text-stone-100 flex items-center gap-2">

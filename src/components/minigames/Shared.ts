@@ -138,10 +138,16 @@ export interface DanmakuDifficultyConfig {
 }
 
 
+import { MINUET_G_RAW_NOTES } from './minuetGData';
 import { FUR_ELISE_RAW_NOTES } from './furEliseData';
 import { LA_CAMPANELLA_RAW_NOTES } from './laCampanellaData';
 import { TURKISH_MARCH_RAW_NOTES } from './turkishMarchData';
 import { CHOPIN_NOCTURNE_RAW_NOTES } from './chopinNocturneData';
+import { TWINKLE_VARIATIONS_RAW_NOTES } from './twinkleVariationsData';
+import { FANTAISIE_IMPROMPTU_RAW_NOTES } from './fantaisieImpromptuData';
+import { MOONLIGHT_SONATA_RAW_NOTES } from './moonlightSonataData';
+import { ARABESQUE_RAW_NOTES } from './arabesqueData';
+import { CHEVALERESQUE_RAW_NOTES } from './chevaleresqueData';
 
 export interface PianoNoteData {
   time: number;
@@ -192,6 +198,19 @@ export const midiToKeyInfo = (midi: number): { name: string; isBlack: boolean; l
   };
 };
 
+export const MINUET_G_NOTES: PianoNoteData[] = MINUET_G_RAW_NOTES.map(n => {
+  const keyInfos = n.midi.map(m => midiToKeyInfo(m));
+  return {
+    time: n.time,
+    midi: n.midi,
+    lanes: keyInfos.map(k => k.lanePos),
+    pitches: keyInfos.map(k => k.name),
+    duration: n.duration,
+    dynamics: n.dynamics || 'mf',
+    velocity: n.velocity || 1.00
+  };
+});
+
 export const FUR_ELISE_NOTES: PianoNoteData[] = FUR_ELISE_RAW_NOTES.map(n => {
   const keyInfos = n.midi.map(m => midiToKeyInfo(m));
   return {
@@ -226,8 +245,8 @@ export const TURKISH_MARCH_NOTES: PianoNoteData[] = TURKISH_MARCH_RAW_NOTES.map(
     lanes: keyInfos.map(k => k.lanePos),
     pitches: keyInfos.map(k => k.name),
     duration: n.duration,
-    dynamics: 'mf',
-    velocity: 1.05
+    dynamics: n.dynamics || 'p',
+    velocity: n.velocity || 0.68
   };
 });
 
@@ -239,22 +258,131 @@ export const LA_CAMPANELLA_NOTES: PianoNoteData[] = LA_CAMPANELLA_RAW_NOTES.map(
     lanes: keyInfos.map(k => k.lanePos),
     pitches: keyInfos.map(k => k.name),
     duration: n.duration,
-    dynamics: 'f',
-    velocity: 1.25
+    dynamics: n.dynamics || 'p',
+    velocity: n.velocity || 0.66
+  };
+});
+
+export const TWINKLE_VARIATIONS_NOTES: PianoNoteData[] = TWINKLE_VARIATIONS_RAW_NOTES.map(n => {
+  const keyInfos = n.midi.map(m => midiToKeyInfo(m));
+  return {
+    time: n.time,
+    midi: n.midi,
+    lanes: keyInfos.map(k => k.lanePos),
+    pitches: keyInfos.map(k => k.name),
+    duration: n.duration,
+    dynamics: n.dynamics || 'p',
+    velocity: n.velocity || 0.68
+  };
+});
+
+export const FANTAISIE_IMPROMPTU_NOTES: PianoNoteData[] = FANTAISIE_IMPROMPTU_RAW_NOTES.map(n => {
+  const keyInfos = n.midi.map(m => midiToKeyInfo(m));
+  return {
+    time: n.time,
+    midi: n.midi,
+    lanes: keyInfos.map(k => k.lanePos),
+    pitches: keyInfos.map(k => k.name),
+    duration: n.duration,
+    dynamics: n.dynamics || 'p',
+    velocity: n.velocity || 0.72
+  };
+});
+
+export const MOONLIGHT_SONATA_NOTES: PianoNoteData[] = MOONLIGHT_SONATA_RAW_NOTES.map(n => {
+  const keyInfos = n.midi.map(m => midiToKeyInfo(m));
+  return {
+    time: n.time,
+    midi: n.midi,
+    lanes: keyInfos.map(k => k.lanePos),
+    pitches: keyInfos.map(k => k.name),
+    duration: n.duration,
+    dynamics: n.dynamics || 'pp',
+    velocity: n.velocity || 0.50
+  };
+});
+
+export const ARABESQUE_NOTES: PianoNoteData[] = ARABESQUE_RAW_NOTES.map(n => {
+  const keyInfos = n.midi.map(m => midiToKeyInfo(m));
+  return {
+    time: n.time,
+    midi: n.midi,
+    lanes: keyInfos.map(k => k.lanePos),
+    pitches: keyInfos.map(k => k.name),
+    duration: n.duration,
+    dynamics: n.dynamics || 'p',
+    velocity: n.velocity || 0.65
+  };
+});
+
+export const CHEVALERESQUE_NOTES: PianoNoteData[] = CHEVALERESQUE_RAW_NOTES.map(n => {
+  const keyInfos = n.midi.map(m => midiToKeyInfo(m));
+  return {
+    time: n.time,
+    midi: n.midi,
+    lanes: keyInfos.map(k => k.lanePos),
+    pitches: keyInfos.map(k => k.name),
+    duration: n.duration,
+    dynamics: n.dynamics || 'f',
+    velocity: n.velocity || 1.15
   };
 });
 
 export const PIANO_SONGS: PianoSong[] = [
   { 
+    id: 'arabesque', 
+    title: 'アラベスク', 
+    composer: 'ブルグミュラー', 
+    level: 1, 
+    songSpeed: 1.0,
+    desc: '「25の練習曲」より 第2番「アラベスク」イ短調 Op. 100, No. 2 (Allegro scherzando 2/4拍子)。pianoclassics.net (ID 112) / Mutopia 準拠・全曲完全収録版。軽やかな16分音符の駆け上がり(p〜mp)から中間部の力強い旋律(f)、そして鮮やかなコーダ(f〜ff)まで全曲のダイナミクスを完全再現。', 
+    rewardFame: 2,
+    rewardElements: 0,
+    notes: ARABESQUE_NOTES
+  },
+  { 
+    id: 'chevaleresque', 
+    title: '貴婦人の乗馬', 
+    composer: 'ブルグミュラー', 
+    level: 2, 
+    songSpeed: 1.0,
+    desc: '「25の練習曲」より 第25番「貴婦人の乗馬」ハ長調 Op. 100, No. 25 (Allegro brillante 2/4拍子)。pianoclassics.net (ID 135) / Mutopia 準拠・全曲完全収録版。華麗なファンファーレ(f)と軽快なギャロップ風3連符(p〜mp)、ヘ長調の優美な中間部、そして最高潮のフィナーレ(ff)まで全曲のダイナミクスを完全再現。', 
+    rewardFame: 4,
+    rewardElements: 0,
+    notes: CHEVALERESQUE_NOTES
+  },
+  { 
+    id: 'minuet_in_g', 
+    title: 'メヌエット ト長調', 
+    composer: 'バッハ / ペツォールト', 
+    level: 3, 
+    songSpeed: 1.0,
+    desc: '「アンナ・マグダレーナ・バッハの音楽帳」より メヌエット ト長調 BWV Anh. 114 (Moderato grazioso 3/4拍子)。pianoclassics.net (ID 6) / Mutopia 準拠。第1部・第2部それぞれの反復記号を含む全64小節・完全収録版。優美な舞曲提示(mf)とバロック伝統のエコー弱音(p)、そして堂々たる終止(f〜ff)の強弱表現を完全再現。', 
+    rewardFame: 6,
+    rewardElements: 0,
+    notes: MINUET_G_NOTES
+  },
+  { 
     id: 'fur_elise', 
     title: 'エリーゼのために', 
     composer: 'ベートーヴェン', 
-    level: 5, 
+    level: 4, 
     songSpeed: 1.0,
     desc: 'バガテル「エリーゼのために」WoO 59 (イ短調 3/8拍子)。pianoclassics.net (ID 47) 準拠。主部と全エピソードを網羅した全曲完全収録版。pp〜ff・クレッシェンド・ディミヌエンドの音の強弱表現を完全再現。', 
-    rewardFame: 10,
+    rewardFame: 8,
     rewardElements: 0,
     notes: FUR_ELISE_NOTES
+  },
+  { 
+    id: 'moonlight_sonata', 
+    title: '月光の曲', 
+    composer: 'ベートーヴェン', 
+    level: 5, 
+    songSpeed: 1.0,
+    desc: 'ピアノソナタ第14番 嬰ハ短調 Op. 27, No. 2「月光」第1楽章 (Adagio sostenuto 2/2拍子)。pianoclassics.net (ID 53) / Mutopia 準拠・全69小節完全収録版。深沈たる低音オクターブと静謐に波打つ3連符の波、哀愁に満ちた主旋律、ppから静かな高揚mf、そして神秘的に消えゆく終止(pp)まで全曲のダイナミクスを完全再現。', 
+    rewardFame: 10,
+    rewardElements: 0,
+    notes: MOONLIGHT_SONATA_NOTES
   },
   { 
     id: 'chopin_nocturne', 
@@ -263,9 +391,20 @@ export const PIANO_SONGS: PianoSong[] = [
     level: 6, 
     songSpeed: 1.0,
     desc: '夜想曲 第2番 変ホ長調 Op. 9, No. 2 (Andante 12/8拍子)。pianoclassics.net (ID 88) 準拠。楽譜通りの全小節音程・リズムとpp〜ffの豊かな音の強弱表現を完全再現。', 
-    rewardFame: 15,
+    rewardFame: 12,
     rewardElements: 0,
     notes: CHOPIN_NOCTURNE_NOTES
+  },
+  { 
+    id: 'twinkle_variations', 
+    title: 'きらきら星変奏曲', 
+    composer: 'モーツァルト', 
+    level: 7, 
+    songSpeed: 1.0,
+    desc: 'フランスの歌曲「ああ、お母さん、あなたに申しましょう」による12の変奏曲 ハ長調 K. 265。pianoclassics.net (ID 52) 準拠・全8ページ完全収録版。愛らしい主題から華麗な走句・短調変奏・アダージョ・フィナーレまで全12変奏の豊かな強弱表現(p〜ff)を完全再現。', 
+    rewardFame: 14,
+    rewardElements: 0,
+    notes: TWINKLE_VARIATIONS_NOTES
   },
   { 
     id: 'turkish_march', 
@@ -273,10 +412,21 @@ export const PIANO_SONGS: PianoSong[] = [
     composer: 'モーツァルト', 
     level: 8, 
     songSpeed: 1.0,
-    desc: 'ピアノソナタ第11番 イ長調 K. 331 第3楽章「トルコ行進曲」(Allegretto 2/4拍子)。pianoclassics.net (ID 55) / Mutopia 準拠。主部・中間部・コーダを網羅した全曲完全収録版。', 
-    rewardFame: 20,
+    desc: 'ピアノソナタ第11番 イ長調 K. 331 第3楽章「トルコ行進曲」(Allegretto 2/4拍子)。pianoclassics.net (ID 55) / Mutopia 準拠。主部・中間部・コーダを網羅した全曲完全収録版。優美な弱音(p)から軍楽主題・コーダの華麗な強音(f〜ff)までのダイナミクス・ベロシティ表現を完全再現。', 
+    rewardFame: 16,
     rewardElements: 0,
     notes: TURKISH_MARCH_NOTES
+  },
+  { 
+    id: 'fantaisie_impromptu', 
+    title: '幻想即興曲', 
+    composer: 'ショパン', 
+    level: 9, 
+    songSpeed: 1.0,
+    desc: '即興曲 第4番 嬰ハ短調 遺作 Op. 66 (Allegro agitato / Moderato cantabile)。pianoclassics.net (ID 89) / Mutopia 準拠・全13ページ全138小節完全収録版。右手の疾走する16分音符と左手6連符が織りなす4対3ポリリズムの激しい情熱(ff)、甘美な愛の旋律(p〜mf)、そして静かに消えゆくコーダ(pp)まで全曲のダイナミクスを完全再現。', 
+    rewardFame: 18,
+    rewardElements: 0,
+    notes: FANTAISIE_IMPROMPTU_NOTES
   },
   { 
     id: 'la_campanella', 
@@ -284,8 +434,8 @@ export const PIANO_SONGS: PianoSong[] = [
     composer: 'リスト', 
     level: 10, 
     songSpeed: 1.0,
-    desc: 'パガニーニ大練習曲 第3番 嬰ト短調。pianoclassics.net (ID 110) 準拠。特徴的な跳躍と高音の鐘の音を再現したテーマ部。', 
-    rewardFame: 35,
+    desc: 'パガニーニ大練習曲 第3番 嬰ト短調 S. 141-3。pianoclassics.net (ID 110) 準拠。澄んだ鐘の音の導入(p)から超絶技巧オクターブ変奏(f)、そして怒涛のコーダ最強音(ff)まで全曲のダイナミクス・ベロシティ表現を完全再現。', 
+    rewardFame: 20,
     rewardElements: 0,
     notes: LA_CAMPANELLA_NOTES
   }
