@@ -18,87 +18,105 @@ interface PianoGameProps extends Omit<MinigameProps, 'activeOpponent'> {
 const TOTAL_WHITE_KEYS = 52;
 
 // Web Audio API による高品位グランドピアノシンセサイザー（フォールバック＆即時再生用）
+// 右手(RH: 旋律)と左手(LH: 伴奏)で音量・倍音フィルター・ステレオ定位を精密に弾き分ける
 const playSynthesizedPiano = (
   ctx: AudioContext,
   destNode: AudioNode,
   midi: number,
   durationMs: number = 300,
-  velocity: number = 1.0
+  velocity: number = 1.0,
+  hand: 'RH' | 'LH' = 'RH'
 ) => {
   try {
     const freq = 440 * Math.pow(2, (midi - 69) / 12);
     const now = ctx.currentTime;
     const durSec = Math.max(0.25, durationMs / 1000);
 
-    // ダイナミクスカーブ (ppや弱音〜中音も十分な音量を確保しつつ、優しい音色とffの迫力を両立)
-    const effectiveVol = Math.max(0.15, velocity);
-    // 弱音・中音の音量を底上げしたふくよかなゲインマルチプライヤー
-    const dynamicGainMult = 0.25 + 0.75 * Math.pow(effectiveVol, 1.4);
+    // ダイナミクスカーブ (弱音・伴奏と強音・旋律のコントラストを劇的に際立たせる)
+    const effectiveVol = Math.max(0.10, velocity);
+    // 右手と左手のボイシング差別化: 右手(RH)は芯があり前へ抜ける歌う倍音、左手(LH)は丸くソフトな和音伴奏
+    const isRH = hand === 'RH';
+    const dynamicGainMult = isRH 
+      ? 0.25 + 1.05 * Math.pow(effectiveVol, 1.85)
+      : 0.08 + 0.42 * Math.pow(effectiveVol, 1.60);
 
     // 全体ゲイン
     const noteGain = ctx.createGain();
     noteGain.gain.setValueAtTime(0, now);
     
-    // 優しい打弦タッチのアタックカーブ (弱音〜中音は角のとれた柔らかいアタック 6~8ms、強音は明瞭な 4ms)
-    const attackTime = effectiveVol < 0.9 ? 0.007 : 0.004;
-    const peakGain = Math.min(1.0, 0.85 * dynamicGainMult);
+    // アタックカーブ (右手旋律は明瞭な 3.0ms、左手伴奏は角のとれた柔らかいアタック 10~12ms)
+    const attackTime = isRH ? 0.0030 : 0.0110;
+    const peakGain = Math.min(1.25, 0.95 * dynamicGainMult);
     noteGain.gain.linearRampToValueAtTime(peakGain, now + attackTime);
     
-    // 豊かな響板振動の初期ディケイ (100ms) - まろやかで優しい余韻
-    noteGain.gain.exponentialRampToValueAtTime(Math.max(0.01, 0.62 * dynamicGainMult), now + 0.10);
+    // 豊かな響板振動の初期ディケイ
+    const decayGain = isRH ? 0.72 * dynamicGainMult : 0.42 * dynamicGainMult;
+    noteGain.gain.exponentialRampToValueAtTime(Math.max(0.006, decayGain), now + 0.11);
     // 自然な弦の減衰 (サステインの持続)
-    noteGain.gain.exponentialRampToValueAtTime(0.0001, now + durSec + 0.65);
+    noteGain.gain.exponentialRampToValueAtTime(0.0001, now + durSec + (isRH ? 0.80 : 0.50));
 
-    // まろやかで優しいアコースティックピアノ音色フィルター
-    // 弱音・中音は高域のトゲを削ぎ落とした温かく甘美なトーン、強音は輝きのある開放的な倍音
+    // アコースティックピアノ音色フィルター (右手は澄んだ明るいトーン、左手は主旋律を濁さない丸く深みのあるトーン)
     const filter = ctx.createBiquadFilter();
     filter.type = 'lowpass';
-    const cutoffBase = freq * (1.8 + 2.8 * Math.min(2.0, Math.pow(effectiveVol, 1.2)));
-    filter.frequency.setValueAtTime(Math.min(11000, cutoffBase), now);
-    filter.frequency.exponentialRampToValueAtTime(Math.min(3800, freq * 1.5), now + durSec);
+    const cutoffMult = isRH ? 3.8 : 1.4;
+    const cutoffBase = freq * (1.5 + cutoffMult * Math.min(2.5, Math.pow(effectiveVol, 1.30)));
+    filter.frequency.setValueAtTime(Math.min(14000, cutoffBase), now);
+    filter.frequency.exponentialRampToValueAtTime(Math.min(4500, freq * (isRH ? 1.9 : 1.2)), now + durSec);
 
     // 基本波（暖かみのある三角波）
     const osc1 = ctx.createOscillator();
     osc1.type = 'triangle';
     osc1.frequency.setValueAtTime(freq, now);
 
-    // 基音の澄んだ丸み・ふくよかさを増強するサイン波 (弱音〜中音で基音をふくよかにブレンドして優しい音色に)
+    // 基音サイン波
     const oscFund = ctx.createOscillator();
     oscFund.type = 'sine';
     oscFund.frequency.setValueAtTime(freq, now);
     const oscFundGain = ctx.createGain();
-    oscFundGain.gain.setValueAtTime(0.55 * Math.min(1.2, 0.65 + 0.35 * effectiveVol), now);
+    oscFundGain.gain.setValueAtTime((isRH ? 0.50 : 0.65) * Math.min(1.2, 0.60 + 0.40 * effectiveVol), now);
     oscFund.connect(oscFundGain);
     oscFundGain.connect(filter);
 
-    // 第2倍音（オクターブ上の倍音：優しくまろやかに響かせる）
+    // 第2倍音（オクターブ上の倍音）
     const osc2 = ctx.createOscillator();
     osc2.type = 'sine';
     osc2.frequency.setValueAtTime(freq * 2, now);
     const osc2Gain = ctx.createGain();
-    osc2Gain.gain.setValueAtTime(0.24 * Math.min(1.5, Math.pow(effectiveVol, 1.2)), now);
+    osc2Gain.gain.setValueAtTime((isRH ? 0.36 : 0.12) * Math.min(1.6, Math.pow(effectiveVol, 1.25)), now);
     osc2.connect(osc2Gain);
     osc2Gain.connect(filter);
 
-    // 第3倍音（強音時のみ自然に共鳴し、弱音〜中音では出過ぎないように制御）
+    // 第3倍音（右手旋律で華やかに響き、左手伴奏では控えめ）
     const osc3 = ctx.createOscillator();
     osc3.type = 'sine';
     osc3.frequency.setValueAtTime(freq * 3, now);
     const osc3Gain = ctx.createGain();
-    osc3Gain.gain.setValueAtTime(0.14 * Math.min(1.8, Math.pow(effectiveVol, 1.8)), now);
+    osc3Gain.gain.setValueAtTime((isRH ? 0.24 : 0.05) * Math.min(1.9, Math.pow(effectiveVol, 1.85)), now);
     osc3.connect(osc3Gain);
     osc3Gain.connect(filter);
 
     osc1.connect(filter);
     filter.connect(noteGain);
-    noteGain.connect(destNode);
+
+    // ステレオパンニング（コンサートグランドの立体配置: LH伴奏は左寄り -0.24, RH旋律は右寄り +0.20）
+    let outputNode: AudioNode = noteGain;
+    try {
+      if (typeof ctx.createStereoPanner === 'function') {
+        const panner = ctx.createStereoPanner();
+        panner.pan.setValueAtTime(isRH ? 0.20 : -0.24, now);
+        noteGain.connect(panner);
+        outputNode = panner;
+      }
+    } catch {}
+
+    outputNode.connect(destNode);
 
     osc1.start(now);
     oscFund.start(now);
     osc2.start(now);
     osc3.start(now);
 
-    const stopTime = now + durSec + 0.7;
+    const stopTime = now + durSec + 0.8;
     osc1.stop(stopTime);
     oscFund.stop(stopTime);
     osc2.stop(stopTime);
@@ -154,6 +172,8 @@ export const PianoGame: React.FC<PianoGameProps> = ({
   
   // 音の強弱ステート & 表現力評価ステート
   const [activeDynamics, setActiveDynamics] = useState<string>('p');
+  const [activeRhDynamics, setActiveRhDynamics] = useState<string>('p');
+  const [activeLhDynamics, setActiveLhDynamics] = useState<string>('p');
   const [dynamicsJudgements, setDynamicsJudgements] = useState<{
     perfectTouch: number;
     greatTouch: number;
@@ -223,6 +243,8 @@ export const PianoGame: React.FC<PianoGameProps> = ({
     setCombo(0);
     setMaxCombo(0);
     setActiveDynamics(currentNotes[0]?.dynamics || 'p');
+    setActiveRhDynamics(currentNotes[0]?.rhDynamics || currentNotes[0]?.dynamics || 'p');
+    setActiveLhDynamics(currentNotes[0]?.lhDynamics || currentNotes[0]?.dynamics || 'p');
     setJudgementsCount({ excellent: 0, good: 0, soso: 0, notGood: 0, bad: 0 });
     setDynamicsJudgements({ perfectTouch: 0, greatTouch: 0, goodTouch: 0, roughTouch: 0 });
     setKeysPressed([]);
@@ -290,7 +312,14 @@ export const PianoGame: React.FC<PianoGameProps> = ({
   }, [songId, song]);
 
   // 音声再生（Soundfont または 高品位Web Audio APIシンセ）
-  const playTone = (midi: number, pitchName: string, durationMs: number = 300, velocity: number = 1.0) => {
+  // 右手(RH: 主旋律)と左手(LH: 伴奏)の強弱差とボイシングを鮮明に再生
+  const playTone = (
+    midi: number, 
+    pitchName: string, 
+    durationMs: number = 300, 
+    velocity: number = 1.0,
+    hand: 'RH' | 'LH' = 'RH'
+  ) => {
     if (!audioCtxRef.current) return;
     const ctx = audioCtxRef.current;
     if (ctx.state === 'suspended') ctx.resume().catch(() => {});
@@ -300,14 +329,14 @@ export const PianoGame: React.FC<PianoGameProps> = ({
 
     if (instrument) {
       try {
-        // 弱音・中音の音量を適度に底上げし、ピアニッシモ(pp)や弱音〜中音でも優しく心地よい音量で響くよう調整
-        // pp(0.40) -> gain ~1.21 (小さすぎず、優しく囁くような温かい音)
-        // p(0.68)  -> gain ~1.91 (伸びやかで穏やかなピアノ)
-        // mp(0.88) -> gain ~2.56 (自然でふくよかなメゾピアノ)
-        // mf(1.10) -> gain ~3.39 (芯のあるメゾフォルテ)
-        // f(1.35)  -> gain ~4.49 (華麗で力強いフォルテ)
-        // ff(1.60) -> gain ~5.70 (圧倒的迫力のフォルティッシモ)
-        const dynamicGain = Math.max(0.40, Math.min(6.8, (0.70 + 2.3 * Math.pow(velocity, 1.65)) * pianoVolume));
+        // 右手・左手のダイナミクス差を明瞭に際立たせるゲインカーブ
+        // 右手(RH: 旋律)は芯のあるアタックと豊かな倍音で前へ抜け、左手(LH: 伴奏)はソフトに支える
+        const isRH = hand === 'RH';
+        const baseGain = isRH
+          ? 0.25 + 3.4 * Math.pow(Math.max(0.10, velocity), 1.95)
+          : 0.08 + 1.25 * Math.pow(Math.max(0.10, velocity), 1.65);
+        const dynamicGain = Math.max(0.12, Math.min(8.0, baseGain * pianoVolume));
+
         instrument.play(pitchName || midi, ctx.currentTime, {
           duration: durationMs / 1000,
           gain: dynamicGain
@@ -318,7 +347,7 @@ export const PianoGame: React.FC<PianoGameProps> = ({
       }
     }
 
-    playSynthesizedPiano(ctx, destNode, midi, durationMs, velocity);
+    playSynthesizedPiano(ctx, destNode, midi, durationMs, velocity, hand);
   };
 
   // メインゲームループ (タイマー駆動)
@@ -449,6 +478,12 @@ export const PianoGame: React.FC<PianoGameProps> = ({
         if (note.dynamics) {
           setActiveDynamics(note.dynamics);
         }
+        if (note.rhDynamics) {
+          setActiveRhDynamics(note.rhDynamics);
+        }
+        if (note.lhDynamics) {
+          setActiveLhDynamics(note.lhDynamics);
+        }
 
         // 判定カウントの更新
         setJudgementsCount(prev => ({
@@ -478,17 +513,19 @@ export const PianoGame: React.FC<PianoGameProps> = ({
         scoreGained += Math.floor(noteScore * note.lanes.length * durMult * comboBonus * touchBonus);
         
         latestJudgeText = judgeStr;
-        
-        // 実際の演奏ベロシティ（楽譜の指定ベロシティ × ロボットのタッチ精度 × 打鍵判定音量）
-        const baseVelocity = note.velocity || 0.8;
-        const actualVelocity = Math.max(0.15, Math.min(1.85, baseVelocity * touchFactor * vol));
 
         note.lanes.forEach((lane, i) => {
           const isBlack = (lane % 1) !== 0;
           activeLanes.push({ lane, isBlack, endTime: currentElapsed + noteDuration });
-          // すべてEXCELLENT/GOODで弾けた場合には楽譜の強弱指定通りの豊かなダイナミクスで響き渡る
+
+          // すべてEXCELLENT/GOODで弾けた場合には右手・左手独立の精密ベロシティで響き渡る
           if (noteScore > 0) {
-            playTone(note.midi[i], note.pitches[i], noteDuration, actualVelocity);
+            const hand: 'RH' | 'LH' = note.hands ? note.hands[i] : (note.midi[i] >= 60 ? 'RH' : 'LH');
+            const noteVel = (note.velocities && note.velocities[i] !== undefined)
+              ? note.velocities[i]
+              : (note.velocity || 0.85);
+            const actualVelocity = Math.max(0.12, Math.min(2.0, noteVel * touchFactor * vol));
+            playTone(note.midi[i], note.pitches[i], noteDuration, actualVelocity, hand);
           }
         });
         
@@ -781,24 +818,15 @@ export const PianoGame: React.FC<PianoGameProps> = ({
             </div>
 
             {/* 報酬表示 */}
-            {isWin && (
+            {isWin && song.rewardFame > 0 && (
               <div className="bg-amber-500/20 px-3.5 py-1.5 rounded-xl border border-amber-400/50 flex items-center gap-3 shrink-0">
                 <div className="flex items-center gap-1.5 font-mono text-left">
-                  <Gi.GiLockedChest className="text-amber-400 text-xl" />
+                  <Gi.GiTrophyCup className="text-amber-400 text-xl" />
                   <div>
-                    <div className="text-[10px] text-amber-300 font-sans font-bold">クリアドロップ</div>
-                    <div className="text-xs sm:text-sm font-black text-amber-200">古びた鉄の宝箱 ×1</div>
+                    <div className="text-[10px] text-amber-300 font-sans font-bold">獲得工房名声</div>
+                    <div className="text-xs sm:text-sm font-black text-amber-200">+{song.rewardFame}</div>
                   </div>
                 </div>
-                {song.rewardFame > 0 && (
-                  <div className="flex items-center gap-1.5 font-mono text-left pl-2 border-l border-amber-400/30">
-                    <Gi.GiTrophyCup className="text-amber-400 text-xl" />
-                    <div>
-                      <div className="text-[10px] text-amber-300 font-sans font-bold">工房名声</div>
-                      <div className="text-xs sm:text-sm font-black text-amber-200">+{song.rewardFame}</div>
-                    </div>
-                  </div>
-                )}
               </div>
             )}
           </div>
@@ -989,14 +1017,23 @@ export const PianoGame: React.FC<PianoGameProps> = ({
         </div>
 
         <div className="flex items-center justify-between w-full sm:w-auto sm:justify-end gap-3 flex-wrap">
-          {/* 現在の楽譜強弱インジケーター (DYNAMICS HUD) */}
+          {/* 現在の楽譜強弱インジケーター (右手/左手独立 DYNAMICS HUD) */}
           <div className="flex items-center gap-2 bg-stone-950/90 px-2.5 py-1 rounded-lg border border-stone-800 shadow-inner">
-            <span className="text-[10px] text-stone-400 font-mono">強弱記号:</span>
-            <span className={`text-xs font-black font-serif italic px-2 py-0.2 rounded border shadow-2xs ${getDynamicsBadge(activeDynamics)}`}>
-              {activeDynamics || 'p'}
-            </span>
-            <span className="text-[10px] text-stone-300 font-sans hidden sm:inline">
-              {getDynamicsDesc(activeDynamics)}
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] text-amber-400 font-bold font-mono">✋RH:</span>
+              <span className={`text-xs font-black font-serif italic px-1.5 py-0.2 rounded border shadow-2xs ${getDynamicsBadge(activeRhDynamics || activeDynamics)}`}>
+                {activeRhDynamics || activeDynamics || 'p'}
+              </span>
+            </div>
+            <span className="text-stone-600 text-xs">/</span>
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] text-sky-400 font-bold font-mono">✋LH:</span>
+              <span className={`text-xs font-black font-serif italic px-1.5 py-0.2 rounded border shadow-2xs ${getDynamicsBadge(activeLhDynamics || activeDynamics)}`}>
+                {activeLhDynamics || activeDynamics || 'p'}
+              </span>
+            </div>
+            <span className="text-[10px] text-stone-300 font-sans hidden sm:inline border-l border-stone-800 pl-1.5">
+              {getDynamicsDesc(activeRhDynamics || activeDynamics)}
             </span>
           </div>
 
@@ -1094,14 +1131,19 @@ export const PianoGame: React.FC<PianoGameProps> = ({
             return note.lanes.map((lane, lIdx) => {
               const isBlack = (lane % 1) !== 0;
               const leftPercent = (lane / (TOTAL_WHITE_KEYS - 1)) * 100;
-              const colorClass = getDynamicsColor(note.dynamics, isBlack);
+              const hand: 'RH' | 'LH' = note.hands ? note.hands[lIdx] : (note.midi[lIdx] >= 60 ? 'RH' : 'LH');
+              const noteDyn = hand === 'RH' 
+                ? (note.rhDynamics || note.dynamics) 
+                : (note.lhDynamics || note.dynamics);
+              const colorClass = getDynamicsColor(noteDyn, isBlack);
+              const isRH = hand === 'RH';
 
               return (
                 <div 
                   key={`${idx}-${lIdx}`} 
                   className={`absolute rounded-xs shadow-md transition-opacity ${colorClass} ${
                     isBlack ? 'z-10' : 'z-0'
-                  }`}
+                  } ${isRH ? 'ring-1 ring-white/40 brightness-110' : 'opacity-85'}`}
                   style={{
                     bottom: `${bottomPos}%`,
                     height: `${hPercent}%`,
@@ -1109,6 +1151,7 @@ export const PianoGame: React.FC<PianoGameProps> = ({
                     width: isBlack ? '1.8%' : '2.2%',
                     transform: 'translateX(-50%)'
                   }}
+                  title={`${isRH ? '右手 (RH 旋律)' : '左手 (LH 伴奏)'}: ${noteDyn}`}
                 />
               );
             });

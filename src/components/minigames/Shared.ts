@@ -156,7 +156,11 @@ export interface PianoNoteData {
   pitches: string[];
   duration?: number;
   dynamics?: 'pp' | 'p' | 'mp' | 'mf' | 'f' | 'ff';
-  velocity?: number; // 0.4 (pp) to 1.5 (ff)
+  velocity?: number; // 0.4 (pp) to 1.8 (ff)
+  hands?: ('RH' | 'LH')[]; // 各ノートごとの右手・左手割り当て
+  velocities?: number[];   // 各ノートごとの個別ベロシティ
+  rhDynamics?: 'pp' | 'p' | 'mp' | 'mf' | 'f' | 'ff'; // 右手パートのダイナミクス
+  lhDynamics?: 'pp' | 'p' | 'mp' | 'mf' | 'f' | 'ff'; // 左手パートのダイナミクス
 }
 
 export interface PianoSong {
@@ -198,135 +202,79 @@ export const midiToKeyInfo = (midi: number): { name: string; isBlack: boolean; l
   };
 };
 
-export const MINUET_G_NOTES: PianoNoteData[] = MINUET_G_RAW_NOTES.map(n => {
-  const keyInfos = n.midi.map(m => midiToKeyInfo(m));
-  return {
-    time: n.time,
-    midi: n.midi,
-    lanes: keyInfos.map(k => k.lanePos),
-    pitches: keyInfos.map(k => k.name),
-    duration: n.duration,
-    dynamics: n.dynamics || 'mf',
-    velocity: n.velocity || 1.00
-  };
-});
+export const convertRawNoteToPianoData = (n: any, defaultDyn: 'pp' | 'p' | 'mp' | 'mf' | 'f' | 'ff' = 'p', defaultVel: number = 0.85): PianoNoteData => {
+  const keyInfos = n.midi.map((m: number) => midiToKeyInfo(m));
+  const baseDyn = n.dynamics || defaultDyn;
+  const baseVel = n.velocity || defaultVel;
 
-export const FUR_ELISE_NOTES: PianoNoteData[] = FUR_ELISE_RAW_NOTES.map(n => {
-  const keyInfos = n.midi.map(m => midiToKeyInfo(m));
-  return {
-    time: n.time,
-    midi: n.midi,
-    lanes: keyInfos.map(k => k.lanePos),
-    pitches: keyInfos.map(k => k.name),
-    duration: n.duration,
-    dynamics: n.dynamics || 'pp',
-    velocity: n.velocity || 0.60
-  };
-});
+  let hands: ('RH' | 'LH')[];
+  let velocities: number[];
+  let rhDynamics = n.rhDynamics;
+  let lhDynamics = n.lhDynamics;
 
-export const CHOPIN_NOCTURNE_NOTES: PianoNoteData[] = CHOPIN_NOCTURNE_RAW_NOTES.map(n => {
-  const keyInfos = n.midi.map(m => midiToKeyInfo(m));
-  return {
-    time: n.time,
-    midi: n.midi,
-    lanes: keyInfos.map(k => k.lanePos),
-    pitches: keyInfos.map(k => k.name),
-    duration: n.duration,
-    dynamics: n.dynamics || 'p',
-    velocity: n.velocity || 0.75
-  };
-});
+  if (Array.isArray(n.hands) && Array.isArray(n.velocities) && n.hands.length === n.midi.length) {
+    hands = n.hands;
+    velocities = n.velocities;
+    if (!rhDynamics) {
+      const rhVels = velocities.filter((_, idx) => hands[idx] === 'RH');
+      const maxRhVel = rhVels.length > 0 ? Math.max(...rhVels) : baseVel;
+      rhDynamics = maxRhVel >= 1.45 ? 'ff' : maxRhVel >= 1.20 ? 'f' : maxRhVel >= 0.95 ? 'mf' : maxRhVel >= 0.75 ? 'mp' : maxRhVel >= 0.55 ? 'p' : 'pp';
+    }
+    if (!lhDynamics) {
+      const lhVels = velocities.filter((_, idx) => hands[idx] === 'LH');
+      const maxLhVel = lhVels.length > 0 ? Math.max(...lhVels) : baseVel * 0.78;
+      lhDynamics = maxLhVel >= 1.45 ? 'ff' : maxLhVel >= 1.20 ? 'f' : maxLhVel >= 0.95 ? 'mf' : maxLhVel >= 0.75 ? 'mp' : maxLhVel >= 0.55 ? 'p' : 'pp';
+    }
+  } else {
+    // 既存曲および単一ベロシティ音符の右手/左手ボイシング自動分離
+    // クラシック音楽の伝統に則り、高音側・主旋律(RH)を豊かに響かせ、低音側・伴奏(LH)を優しく支える
+    const maxMidi = Math.max(...(n.midi as number[]));
+    hands = n.midi.map((m: number) => {
+      if (n.midi.length > 1) {
+        return m === maxMidi || m >= 60 ? 'RH' : 'LH';
+      }
+      return m >= 60 ? 'RH' : 'LH';
+    });
 
-export const TURKISH_MARCH_NOTES: PianoNoteData[] = TURKISH_MARCH_RAW_NOTES.map(n => {
-  const keyInfos = n.midi.map(m => midiToKeyInfo(m));
-  return {
-    time: n.time,
-    midi: n.midi,
-    lanes: keyInfos.map(k => k.lanePos),
-    pitches: keyInfos.map(k => k.name),
-    duration: n.duration,
-    dynamics: n.dynamics || 'p',
-    velocity: n.velocity || 0.68
-  };
-});
+    velocities = hands.map(h => {
+      if (h === 'RH') {
+        return Math.min(1.80, Math.round(baseVel * 1.12 * 100) / 100);
+      } else {
+        return Math.max(0.35, Math.round(baseVel * 0.78 * 100) / 100);
+      }
+    });
 
-export const LA_CAMPANELLA_NOTES: PianoNoteData[] = LA_CAMPANELLA_RAW_NOTES.map(n => {
-  const keyInfos = n.midi.map(m => midiToKeyInfo(m));
-  return {
-    time: n.time,
-    midi: n.midi,
-    lanes: keyInfos.map(k => k.lanePos),
-    pitches: keyInfos.map(k => k.name),
-    duration: n.duration,
-    dynamics: n.dynamics || 'p',
-    velocity: n.velocity || 0.66
-  };
-});
+    const rhVel = Math.min(1.80, baseVel * 1.12);
+    const lhVel = Math.max(0.35, baseVel * 0.78);
+    rhDynamics = rhVel >= 1.45 ? 'ff' : rhVel >= 1.20 ? 'f' : rhVel >= 0.95 ? 'mf' : rhVel >= 0.75 ? 'mp' : rhVel >= 0.55 ? 'p' : 'pp';
+    lhDynamics = lhVel >= 1.45 ? 'ff' : lhVel >= 1.20 ? 'f' : lhVel >= 0.95 ? 'mf' : lhVel >= 0.75 ? 'mp' : lhVel >= 0.55 ? 'p' : 'pp';
+  }
 
-export const TWINKLE_VARIATIONS_NOTES: PianoNoteData[] = TWINKLE_VARIATIONS_RAW_NOTES.map(n => {
-  const keyInfos = n.midi.map(m => midiToKeyInfo(m));
   return {
     time: n.time,
     midi: n.midi,
-    lanes: keyInfos.map(k => k.lanePos),
-    pitches: keyInfos.map(k => k.name),
+    lanes: keyInfos.map((k: any) => k.lanePos),
+    pitches: keyInfos.map((k: any) => k.name),
     duration: n.duration,
-    dynamics: n.dynamics || 'p',
-    velocity: n.velocity || 0.68
+    dynamics: baseDyn,
+    velocity: baseVel,
+    hands,
+    velocities,
+    rhDynamics,
+    lhDynamics
   };
-});
+};
 
-export const FANTAISIE_IMPROMPTU_NOTES: PianoNoteData[] = FANTAISIE_IMPROMPTU_RAW_NOTES.map(n => {
-  const keyInfos = n.midi.map(m => midiToKeyInfo(m));
-  return {
-    time: n.time,
-    midi: n.midi,
-    lanes: keyInfos.map(k => k.lanePos),
-    pitches: keyInfos.map(k => k.name),
-    duration: n.duration,
-    dynamics: n.dynamics || 'p',
-    velocity: n.velocity || 0.72
-  };
-});
-
-export const MOONLIGHT_SONATA_NOTES: PianoNoteData[] = MOONLIGHT_SONATA_RAW_NOTES.map(n => {
-  const keyInfos = n.midi.map(m => midiToKeyInfo(m));
-  return {
-    time: n.time,
-    midi: n.midi,
-    lanes: keyInfos.map(k => k.lanePos),
-    pitches: keyInfos.map(k => k.name),
-    duration: n.duration,
-    dynamics: n.dynamics || 'pp',
-    velocity: n.velocity || 0.50
-  };
-});
-
-export const ARABESQUE_NOTES: PianoNoteData[] = ARABESQUE_RAW_NOTES.map(n => {
-  const keyInfos = n.midi.map(m => midiToKeyInfo(m));
-  return {
-    time: n.time,
-    midi: n.midi,
-    lanes: keyInfos.map(k => k.lanePos),
-    pitches: keyInfos.map(k => k.name),
-    duration: n.duration,
-    dynamics: n.dynamics || 'p',
-    velocity: n.velocity || 0.65
-  };
-});
-
-export const CHEVALERESQUE_NOTES: PianoNoteData[] = CHEVALERESQUE_RAW_NOTES.map(n => {
-  const keyInfos = n.midi.map(m => midiToKeyInfo(m));
-  return {
-    time: n.time,
-    midi: n.midi,
-    lanes: keyInfos.map(k => k.lanePos),
-    pitches: keyInfos.map(k => k.name),
-    duration: n.duration,
-    dynamics: n.dynamics || 'f',
-    velocity: n.velocity || 1.15
-  };
-});
+export const MINUET_G_NOTES: PianoNoteData[] = MINUET_G_RAW_NOTES.map(n => convertRawNoteToPianoData(n, 'mf', 1.00));
+export const FUR_ELISE_NOTES: PianoNoteData[] = FUR_ELISE_RAW_NOTES.map(n => convertRawNoteToPianoData(n, 'pp', 0.60));
+export const CHOPIN_NOCTURNE_NOTES: PianoNoteData[] = CHOPIN_NOCTURNE_RAW_NOTES.map(n => convertRawNoteToPianoData(n, 'p', 0.75));
+export const TURKISH_MARCH_NOTES: PianoNoteData[] = TURKISH_MARCH_RAW_NOTES.map(n => convertRawNoteToPianoData(n, 'p', 0.68));
+export const LA_CAMPANELLA_NOTES: PianoNoteData[] = LA_CAMPANELLA_RAW_NOTES.map(n => convertRawNoteToPianoData(n, 'p', 0.66));
+export const TWINKLE_VARIATIONS_NOTES: PianoNoteData[] = TWINKLE_VARIATIONS_RAW_NOTES.map(n => convertRawNoteToPianoData(n, 'p', 0.68));
+export const FANTAISIE_IMPROMPTU_NOTES: PianoNoteData[] = FANTAISIE_IMPROMPTU_RAW_NOTES.map(n => convertRawNoteToPianoData(n, 'p', 0.72));
+export const MOONLIGHT_SONATA_NOTES: PianoNoteData[] = MOONLIGHT_SONATA_RAW_NOTES.map(n => convertRawNoteToPianoData(n, 'pp', 0.50));
+export const ARABESQUE_NOTES: PianoNoteData[] = ARABESQUE_RAW_NOTES.map(n => convertRawNoteToPianoData(n, 'p', 0.65));
+export const CHEVALERESQUE_NOTES: PianoNoteData[] = CHEVALERESQUE_RAW_NOTES.map(n => convertRawNoteToPianoData(n, 'f', 1.15));
 
 export const PIANO_SONGS: PianoSong[] = [
   { 
@@ -423,7 +371,7 @@ export const PIANO_SONGS: PianoSong[] = [
     composer: 'ショパン', 
     level: 9, 
     songSpeed: 1.0,
-    desc: '即興曲 第4番 嬰ハ短調 遺作 Op. 66 (Allegro agitato / Moderato cantabile)。pianoclassics.net (ID 89) / Mutopia 準拠・全13ページ全138小節完全収録版。右手の疾走する16分音符と左手6連符が織りなす4対3ポリリズムの激しい情熱(ff)、甘美な愛の旋律(p〜mf)、そして静かに消えゆくコーダ(pp)まで全曲のダイナミクスを完全再現。', 
+    desc: '即興曲 第4番 嬰ハ短調 遺作 Op. 66 (Allegro agitato / Moderato cantabile)。pianoclassics.net (ID 89) / Mutopia 準拠・全13ページ全138小節完全収録版。右手(RH)の情熱的な疾走旋律・カンタービレと左手(LH)の波打つ6連符伴奏による右手・左手独立ダイナミクス(f/p, mf/pp)を完全再現し、4対3ポリリズムと静謐に消えゆくコーダ(pp)まで全曲の音響表現を収録。', 
     rewardFame: 18,
     rewardElements: 0,
     notes: FANTAISIE_IMPROMPTU_NOTES
@@ -434,7 +382,7 @@ export const PIANO_SONGS: PianoSong[] = [
     composer: 'リスト', 
     level: 10, 
     songSpeed: 1.0,
-    desc: 'パガニーニ大練習曲 第3番 嬰ト短調 S. 141-3。pianoclassics.net (ID 110) 準拠。澄んだ鐘の音の導入(p)から超絶技巧オクターブ変奏(f)、そして怒涛のコーダ最強音(ff)まで全曲のダイナミクス・ベロシティ表現を完全再現。', 
+    desc: 'パガニーニ大練習曲 第3番 嬰ト短調 S. 141-3。pianoclassics.net (ID 110) 準拠・全10ページ全140小節完全収録版。右手(RH)の煌びやかな高音鐘の跳躍(leggiero & marcatissimo)と左手(LH)の重厚なオクターブ伴奏・第2変奏の反転旋律(espressivo)による右手・左手独立ダイナミクス(f/p, mf/pp, ff/ff, fff/fff)を完全再現し、鐘の序奏(p)から怒涛のコーダ最強音(fff tutta la forza)まで全曲の音響表現を収録。', 
     rewardFame: 20,
     rewardElements: 0,
     notes: LA_CAMPANELLA_NOTES
