@@ -237,20 +237,15 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
     const int = robot.stats.intelligence || 10;
     const dex = robot.stats.dexterity || 10;
     
-    // 各曲の推奨クリア基準INT (Lv.1 アラベスク: 50 〜 Lv.10 ラ・カンパネラ: 100)
-    // アラベスク(Lv.1): INT 50
-    // 貴婦人の乗馬(Lv.2): INT 55
-    // メヌエット ト長調(Lv.3): INT 60
-    // エリーゼのために(Lv.4): INT 65
+    // 各曲の推奨クリア基準INT (Lv.1 アラベスク: 50 〜 Lv.8 ラ・カンパネラ: 100)
     // アラベスク(Lv.1): INT 50
     // 貴婦人の乗馬(Lv.2): INT 55
     // メヌエット ト長調(Lv.3): INT 60
     // エリーゼのために(Lv.4): INT 65
     // ノクターン 作品9-2(Lv.5): INT 72
-    // きらきら星変奏曲(Lv.6): INT 78
-    // トルコ行進曲(Lv.7): INT 85
-    // 幻想即興曲(Lv.8): INT 92
-    // ラ・カンパネラ(Lv.9): INT 100
+    // トルコ行進曲(Lv.6): INT 85
+    // 幻想即興曲(Lv.7): INT 92
+    // ラ・カンパネラ(Lv.8): INT 100
     const song = PIANO_SONGS.find(s => s.id === songId) || PIANO_SONGS[0];
     const targetInt = song.id === 'arabesque'
       ? 50
@@ -262,13 +257,11 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
             ? 65 
             : song.id === 'chopin_nocturne' 
               ? 72 
-              : song.id === 'twinkle_variations'
-                ? 78
-                : song.id === 'turkish_march' 
-                  ? 85 
-                  : song.id === 'fantaisie_impromptu'
-                    ? 92
-                    : 100;
+              : song.id === 'turkish_march' 
+                ? 85 
+                : song.id === 'fantaisie_impromptu'
+                  ? 92
+                  : 100;
     
     // ロボットの総合演奏適性値 (打鍵タイミング精度70%［Int主軸］ + 強弱タッチ表現力30%［Dex主軸］)
     const effectiveStat = (int * 0.75) + (dex * 0.25);

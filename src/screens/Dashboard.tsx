@@ -14,6 +14,7 @@ import { RobotRadarChart } from '../components/robot/RobotRadarChart';
 import { RepairAnimationModal } from '../components/effects/RepairAnimationModal';
 import { StarterBonusCard } from '../components/ui/StarterBonusCard';
 import { ActiveUserCountBadge } from '../components/ui/ActiveUserCountBadge';
+import { PWAInstallButton } from '../components/ui/PWAInstallButton';
 
 const formatTime = (ms: number) => {
   if (ms <= 0) return '00:00';
@@ -249,6 +250,9 @@ export const Dashboard: React.FC<{ state: GameState, engine: GameEngine, onNavig
 
       {/* 新人技師応援！初回ロボット組み立てボーナス（未受取時のみ表示） */}
       <StarterBonusCard state={state} engine={engine} onNavigate={onNavigate} />
+
+      {/* ホーム画面に追加（PWAインストールバナー） */}
+      <PWAInstallButton variant="banner" className="mb-3" />
 
       {/* 工房称号 & ステータスカード (コンパクト・詳細 共通レイアウト / 右上に切り替えボタン) */}
       {(() => {
