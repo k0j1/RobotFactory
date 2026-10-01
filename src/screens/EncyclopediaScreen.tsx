@@ -9,13 +9,21 @@ import { GSAPMotionStudioModal } from '../components/robot/GSAPMotionStudioModal
 import { ArmJointCalibrationModal } from '../components/robot/ArmJointCalibrationModal';
 import { SVG_HEADS, SVG_BODIES, SVG_ARMS, SVG_LEGS } from '../components/robot/RobotSVGs';
 import { HandAnchorManager } from '../core/animations/HandAnchorManager';
-import { MATERIALS, getMaterialCraftableVisuals } from '../core/data';
+import { MATERIALS, getMaterialCraftableVisuals, LOCATIONS, STARTER_BONUS_MATERIALS } from '../core/data';
 import { calculatePartBaseline } from '../utils/partBaseline';
 import * as Gi from 'react-icons/gi';
 import { MaterialIcon } from '../components/ui/MaterialIcon';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
 
-const SinglePart: React.FC<{ Comp: React.FC<{color: string, viewBox?: string, className?: string}>, color: string, type: 'head'|'body'|'arms'|'legs', rarityLabel?: number, visualIndex?: number, hideContainer?: boolean }> = ({ Comp, color, type, rarityLabel, visualIndex = 0, hideContainer }) => {
+const SinglePart: React.FC<{ 
+  Comp: React.FC<{color: string, viewBox?: string, className?: string}>, 
+  color: string, 
+  type: 'head'|'body'|'arms'|'legs', 
+  rarityLabel?: number, 
+  visualIndex?: number, 
+  hideContainer?: boolean,
+  isSilhouette?: boolean 
+}> = ({ Comp, color, type, rarityLabel, visualIndex = 0, hideContainer, isSilhouette }) => {
   const r = rarityLabel || 1;
   const viewBox = r === 3
     ? (type === 'head' ? (visualIndex >= 3 ? '0 0 300 300' : '0 0 256 256') : type === 'body' ? '0 0 360 360' : '0 0 256 256')
@@ -26,23 +34,26 @@ const SinglePart: React.FC<{ Comp: React.FC<{color: string, viewBox?: string, cl
        type === 'arms' ? '5 38 90 42' :
        '20 68 60 32');
 
+  const appliedColor = isSilhouette ? '#78716c' : color;
+  const silhouetteClass = isSilhouette ? 'filter brightness-0 opacity-25' : '';
+
   if (hideContainer) {
     return (
       <div className="w-full h-full flex items-center justify-center p-1">
-        <Comp color={color} viewBox={viewBox} className="w-full h-full" />
+        <Comp color={appliedColor} viewBox={viewBox} className={`w-full h-full ${silhouetteClass}`} />
       </div>
     );
   }
 
   return (
-    <div className="bg-stone-100 rounded p-1 flex flex-col items-center border border-stone-200 overflow-hidden w-full aspect-square justify-center">
+    <div className={`rounded p-1 flex flex-col items-center border overflow-hidden w-full aspect-square justify-center ${isSilhouette ? 'bg-stone-200/60 border-stone-300' : 'bg-stone-100 border-stone-200'}`}>
       {rarityLabel !== undefined && (
-        <span className="text-[10px] flex items-center gap-0.5 mb-1 text-amber-600 font-bold">
+        <span className={`text-[10px] flex items-center gap-0.5 mb-1 font-bold ${isSilhouette ? 'text-stone-400' : 'text-amber-600'}`}>
           <Gi.GiStarFormation size={10} />{rarityLabel}
         </span>
       )}
       <div className="flex-1 w-full flex items-center justify-center p-1">
-        <Comp color={color} viewBox={viewBox} className="w-full h-full" />
+        <Comp color={appliedColor} viewBox={viewBox} className={`w-full h-full ${silhouetteClass}`} />
       </div>
     </div>
   );
@@ -140,8 +151,72 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
   const [filterRarity, setFilterRarity] = useState<number | 'All'>('All');
   const [sortOrder, setSortOrder] = useState<'newest'|'oldest'|'price_desc'|'price_asc'>('newest');
   const [filterPartType, setFilterPartType] = useState<string>('All');
+  const [filterAcquired, setFilterAcquired] = useState<'All' | 'acquired' | 'unacquired'>('All');
   const [catalogParts, setCatalogParts] = useState<CatalogPartItem[]>(ALL_PARTS_CATALOG);
   const [dbPartStats, setDbPartStats] = useState<Record<string, any>>({});
+
+  // ユーザーがこれまでに獲得・使用したことがある素材IDのセット
+  const acquiredMaterialIds = useMemo(() => {
+    const set = new Set<string>();
+    // 1. 現在の所持素材 (数量が1以上、またはキーが存在するもの)
+    if (state.materials) {
+      Object.entries(state.materials).forEach(([id, count]) => {
+        if (Number(count) > 0) set.add(id);
+      });
+    }
+    // 2. クラフト履歴 (completedPartCrafts / completePartCraft)
+    if (state.completedPartCrafts) {
+      state.completedPartCrafts.forEach(c => {
+        if (c.mainMaterialId) set.add(c.mainMaterialId);
+        if (c.subMaterialId) set.add(c.subMaterialId);
+      });
+    }
+    if (state.completePartCraft) {
+      if (state.completePartCraft.mainMaterialId) set.add(state.completePartCraft.mainMaterialId);
+      if (state.completePartCraft.subMaterialId) set.add(state.completePartCraft.subMaterialId);
+    }
+    if (state.activePartCraft) {
+      if (state.activePartCraft.mainMaterialId) set.add(state.activePartCraft.mainMaterialId);
+      if (state.activePartCraft.subMaterialId) set.add(state.activePartCraft.subMaterialId);
+    }
+    return set;
+  }, [state.materials, state.completedPartCrafts, state.completePartCraft, state.activePartCraft]);
+
+  // 素材の入手先（遠征地等）のヒント情報を生成
+  const getMaterialHint = (materialId: string) => {
+    const dropLocations = LOCATIONS.filter(loc => loc.drops && loc.drops.includes(materialId));
+    const isStarter = STARTER_BONUS_MATERIALS.some(s => s.materialId === materialId);
+
+    if (dropLocations.length === 0) {
+      if (isStarter) {
+        return {
+          locations: [],
+          hintText: '新人技師初期ボーナス / 宝箱報酬など',
+          detailList: ['🎁 新人技師応援ボーナス（初回登録時にプレゼント）']
+        };
+      }
+      return {
+        locations: [],
+        hintText: '遠征・ミニゲーム宝箱・パーツリサイクル等で入手可能',
+        detailList: ['📦 演習宝箱やパーツリサイクルなど']
+      };
+    }
+
+    const detailList = dropLocations.map(loc => {
+      const isUnlocked = state.unlockedLocations?.includes(loc.id) || loc.id === 'loc1';
+      const statusPrefix = isUnlocked ? '🌲' : '🔒';
+      const fameHint = loc.requiredFame && loc.requiredFame > 0 ? `（必要名声: ${loc.requiredFame}）` : '（初期解放）';
+      const unlockStatus = isUnlocked ? '【解放済み】' : `【未解放 ${fameHint}】`;
+      return `${statusPrefix} 遠征地「${loc.name}」${unlockStatus}`;
+    });
+
+    const primaryLocNames = dropLocations.map(l => `「${l.name}」`).join('、');
+    return {
+      locations: dropLocations,
+      hintText: `遠征地 ${primaryLocNames}`,
+      detailList
+    };
+  };
 
   const getBaselineStatsForCatalogItem = (item: CatalogPartItem, attribute: string) => {
     if (dbPartStats && dbPartStats[item.id]) {
@@ -271,13 +346,29 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
   const filteredMaterials = useMemo(() => {
     let list = MATERIALS.slice();
     if (searchQuery) {
-      list = list.filter(mat => mat.name.toLowerCase().includes(searchQuery.toLowerCase()));
+      const q = searchQuery.toLowerCase();
+      list = list.filter(mat => {
+        const isAcq = acquiredMaterialIds.has(mat.id);
+        const nameMatch = isAcq && mat.name.toLowerCase().includes(q);
+        const attrMatch = (AttributeNames[mat.attribute] || '').includes(q) || mat.attribute.toLowerCase().includes(q);
+        const hint = getMaterialHint(mat.id);
+        const hintMatch = hint.hintText.toLowerCase().includes(q);
+        return nameMatch || attrMatch || hintMatch;
+      });
     }
     if (filterAttribute !== 'All') {
       list = list.filter(mat => mat.attribute === filterAttribute);
     }
+    if (filterRarity !== 'All') {
+      list = list.filter(mat => mat.rarity === filterRarity);
+    }
+    if (filterAcquired === 'acquired') {
+      list = list.filter(mat => acquiredMaterialIds.has(mat.id));
+    } else if (filterAcquired === 'unacquired') {
+      list = list.filter(mat => !acquiredMaterialIds.has(mat.id));
+    }
     return list;
-  }, [searchQuery, filterAttribute]);
+  }, [searchQuery, filterAttribute, filterRarity, filterAcquired, acquiredMaterialIds]);
 
   const filteredCatalogParts = useMemo(() => {
     let list = catalogParts.slice();
@@ -334,7 +425,7 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
           onClick={() => setTab('parts')}
         >
           <Gi.GiAnvilImpact size={16} />
-          素材別出現一覧
+          素材・出現パーツ
         </Button>
         <Button 
           id="tab-btn-history"
@@ -393,6 +484,15 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
           ))}
         </div>
 
+        {(tab === 'parts') && (
+          <div className="flex flex-wrap gap-2 items-center">
+            <span className="text-sm font-bold text-stone-600">獲得状態:</span>
+            <Button size="sm" variant={filterAcquired === 'All' ? 'primary' : 'secondary'} onClick={() => setFilterAcquired('All')}>すべて ({MATERIALS.length})</Button>
+            <Button size="sm" variant={filterAcquired === 'acquired' ? 'primary' : 'secondary'} onClick={() => setFilterAcquired('acquired')}>獲得済み ({acquiredMaterialIds.size})</Button>
+            <Button size="sm" variant={filterAcquired === 'unacquired' ? 'primary' : 'secondary'} onClick={() => setFilterAcquired('unacquired')}>未獲得 ({MATERIALS.length - acquiredMaterialIds.size})</Button>
+          </div>
+        )}
+
         {(tab === 'parts' || tab === 'gallery') && (
           <div className="flex flex-wrap gap-2 items-center">
             <span className="text-sm font-bold text-stone-600">部位:</span>
@@ -404,7 +504,7 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
           </div>
         )}
 
-        {(tab === 'gallery' || tab === 'robots') && (
+        {(tab === 'gallery' || tab === 'robots' || tab === 'parts') && (
           <div className="flex flex-wrap gap-2 items-center">
             <span className="text-sm font-bold text-stone-600">レア度:</span>
             <Button size="sm" variant={filterRarity === 'All' ? 'primary' : 'secondary'} onClick={() => setFilterRarity('All')}>すべて</Button>
@@ -692,33 +792,131 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
 
       {tab === 'parts' && (
         <div className="space-y-4">
-          <p className="text-sm text-stone-600 mb-4 bg-stone-100 p-4 rounded-md">
-            クラフトに使用した素材の<strong>レア度（★）</strong>と<strong>属性</strong>によって、完成するパーツの見た目が変化します。高レアな素材を使うほど、珍しいパーツが選ばれる可能性が高くなります。
-          </p>
+          <div className="bg-amber-50/90 border border-amber-300 p-3 rounded-xl text-sm text-stone-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 shadow-2xs">
+            <div>
+              <p className="font-bold text-amber-900 flex items-center gap-1.5">
+                <Gi.GiMaterialsScience size={18} className="text-amber-700" />
+                素材・出現パーツ図鑑
+              </p>
+              <p className="text-xs text-stone-600 mt-0.5">
+                クラフトに使用した素材の<strong>レア度（★）</strong>と<strong>属性</strong>によって、完成するパーツの見た目が変化します。未獲得の素材はシルエットで表示され、入手場所のヒントを確認できます。
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0 bg-white/80 border border-amber-200 px-3 py-1.5 rounded-lg">
+              <span className="text-xs font-bold text-stone-600">素材収集率:</span>
+              <span className="font-mono font-bold text-amber-700">
+                {acquiredMaterialIds.size} / {MATERIALS.length}
+              </span>
+              <span className="text-[11px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded">
+                {Math.round((acquiredMaterialIds.size / MATERIALS.length) * 100)}%
+              </span>
+            </div>
+          </div>
 
           {filteredMaterials.map(mat => {
+            const isAcquired = acquiredMaterialIds.has(mat.id);
+            const currentCount = state.materials?.[mat.id] || 0;
             const color = AttributeColors[mat.attribute];
             const visibleTypesCount = filterPartType === 'All' ? 4 : 1;
             const gridColsClass = visibleTypesCount === 4 ? 'grid-cols-4' : 'grid-cols-1';
             const craftableVisuals = getMaterialCraftableVisuals(mat);
+            const hint = getMaterialHint(mat.id);
 
             return (
-              <Card key={mat.id} className="border-2" style={{ borderColor: color + '40' }}>
-                <div className="flex justify-between items-center mb-2">
-                  <h4 className="font-bold text-lg flex items-center gap-2">
-                    <MaterialIcon materialId={mat.id} size={20} color={color} />
-                    {mat.name}
-                  </h4>
-                  <div className="flex gap-2">
-                    <Badge style={{ backgroundColor: color, color: '#fff' }}>{mat.attribute}</Badge>
-                    <Badge className="bg-stone-800 text-stone-100 flex items-center gap-1">
-                      <Gi.GiStarFormation size={12} color="#fbbf24" /> {mat.rarity}
+              <Card 
+                key={mat.id} 
+                className={`border-2 transition-all ${
+                  isAcquired 
+                    ? 'bg-white' 
+                    : 'bg-stone-50/90 border-dashed border-stone-300'
+                }`} 
+                style={isAcquired ? { borderColor: color + '55' } : {}}
+              >
+                <div className="flex justify-between items-start sm:items-center gap-2 mb-2 flex-wrap">
+                  <div className="flex items-center gap-2.5">
+                    {/* 素材アイコン（未獲得時はシルエット表示） */}
+                    <div className={`relative flex items-center justify-center w-9 h-9 rounded-lg p-1.5 ${
+                      isAcquired 
+                        ? 'bg-stone-100 border border-stone-200 shadow-2xs' 
+                        : 'bg-stone-200/80 border border-stone-300 shadow-inner'
+                    }`}>
+                      <MaterialIcon 
+                        materialId={mat.id} 
+                        size={22} 
+                        className={isAcquired ? '' : 'filter brightness-0 opacity-35 contrast-200'} 
+                        color={isAcquired ? color : '#292524'} 
+                      />
+                      {!isAcquired && (
+                        <span className="absolute -top-1 -right-1 text-[9px] bg-stone-700 text-stone-200 px-1 py-0.2 rounded-full font-bold">
+                          ?
+                        </span>
+                      )}
+                    </div>
+
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className={`font-bold text-base sm:text-lg ${isAcquired ? 'text-stone-900' : 'text-stone-600 tracking-wider'}`}>
+                          {isAcquired ? mat.name : '？？？？？'}
+                        </h4>
+                        <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
+                          isAcquired 
+                            ? (currentCount > 0 
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-300' 
+                                : 'bg-stone-100 text-stone-600 border-stone-300')
+                            : 'bg-stone-200 text-stone-600 border-stone-400 font-mono'
+                        }`}>
+                          {isAcquired 
+                            ? (currentCount > 0 ? `所持: ${currentCount}個` : '獲得済み (現在0個)') 
+                            : '未獲得'}
+                        </span>
+                      </div>
+                      {!isAcquired && (
+                        <p className="text-[11px] text-stone-500 mt-0.5">
+                          未知の{AttributeNames[mat.attribute] || mat.attribute}属性素材
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-1.5 items-center">
+                    <Badge style={{ backgroundColor: color, color: '#fff' }}>
+                      {AttributeNames[mat.attribute] || mat.attribute}
+                    </Badge>
+                    <Badge className="bg-stone-800 text-stone-100 flex items-center gap-1 font-mono">
+                      <Gi.GiStarFormation size={12} color="#fbbf24" /> ★{mat.rarity}
                     </Badge>
                   </div>
                 </div>
+
+                {/* 入手場所のヒント表示エリア */}
+                {!isAcquired ? (
+                  <div className="bg-amber-50 border border-amber-300/80 rounded-lg p-2.5 my-2.5 text-xs text-amber-950 flex flex-col gap-1 shadow-2xs">
+                    <div className="flex items-center gap-1.5 font-bold text-amber-900">
+                      <Gi.GiCompass size={15} className="text-amber-700 shrink-0" />
+                      <span>入手場所のヒント:</span>
+                    </div>
+                    <div className="pl-5 space-y-0.5 text-stone-700">
+                      {hint.detailList.map((dt, idx) => (
+                        <p key={idx} className="flex items-center gap-1 leading-relaxed">
+                          {dt}
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-stone-100/80 border border-stone-200 rounded-lg px-2.5 py-1.5 my-2 text-xs text-stone-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1">
+                    <span className="flex items-center gap-1 font-medium text-stone-700">
+                      <Gi.GiCompass size={14} className="text-stone-500 shrink-0" />
+                      <span>主な入手場所: <strong className="text-stone-900">{hint.hintText}</strong></span>
+                    </span>
+                    <span className="text-[11px] text-stone-500 font-mono">
+                      基準価格: {mat.price}G
+                    </span>
+                  </div>
+                )}
                 
-                <p className="text-xs text-stone-500 mb-3 border-b border-stone-200 pb-2">
-                  この素材を使うと、以下の形状パーツが出現する可能性があります。
+                <p className="text-xs text-stone-500 mb-2.5 border-b border-stone-200 pb-1.5 flex items-center justify-between">
+                  <span>この素材を使うと、以下の形状パーツが出現する可能性があります。</span>
                 </p>
                 
                 <div className={`grid ${gridColsClass} gap-2 text-center text-xs font-bold text-stone-600`}>
@@ -727,7 +925,14 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
                       <p className="mb-2 flex items-center justify-center gap-1"><Gi.GiMechaHead size={14} />ヘッド</p>
                       <div className="grid grid-cols-2 gap-2 w-full">
                         {craftableVisuals.map((v, idx) => (
-                          <SinglePart key={`head-${idx}`} Comp={getPartSVG('head', v.rarity, v.visualIndex)} color={color} type="head" rarityLabel={v.rarity} />
+                          <SinglePart 
+                            key={`head-${idx}`} 
+                            Comp={getPartSVG('head', v.rarity, v.visualIndex)} 
+                            color={color} 
+                            type="head" 
+                            rarityLabel={v.rarity} 
+                            isSilhouette={!isAcquired}
+                          />
                         ))}
                       </div>
                     </div>
@@ -737,7 +942,14 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
                       <p className="mb-2 flex items-center justify-center gap-1"><Gi.GiChestArmor size={14} />ボディ</p>
                       <div className="grid grid-cols-2 gap-2 w-full">
                         {craftableVisuals.map((v, idx) => (
-                          <SinglePart key={`body-${idx}`} Comp={getPartSVG('body', v.rarity, v.visualIndex)} color={color} type="body" rarityLabel={v.rarity} />
+                          <SinglePart 
+                            key={`body-${idx}`} 
+                            Comp={getPartSVG('body', v.rarity, v.visualIndex)} 
+                            color={color} 
+                            type="body" 
+                            rarityLabel={v.rarity} 
+                            isSilhouette={!isAcquired}
+                          />
                         ))}
                       </div>
                     </div>
@@ -747,7 +959,14 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
                       <p className="mb-2 flex items-center justify-center gap-1"><Gi.GiMechanicalArm size={14} />アーム</p>
                       <div className="grid grid-cols-2 gap-2 w-full">
                         {craftableVisuals.map((v, idx) => (
-                          <SinglePart key={`arms-${idx}`} Comp={getPartSVG('arms', v.rarity, v.visualIndex)} color={color} type="arms" rarityLabel={v.rarity} />
+                          <SinglePart 
+                            key={`arms-${idx}`} 
+                            Comp={getPartSVG('arms', v.rarity, v.visualIndex)} 
+                            color={color} 
+                            type="arms" 
+                            rarityLabel={v.rarity} 
+                            isSilhouette={!isAcquired}
+                          />
                         ))}
                       </div>
                     </div>
@@ -757,7 +976,14 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
                       <p className="mb-2 flex items-center justify-center gap-1"><Gi.GiLegArmor size={14} />レッグ</p>
                       <div className="grid grid-cols-2 gap-2 w-full">
                         {craftableVisuals.map((v, idx) => (
-                          <SinglePart key={`legs-${idx}`} Comp={getPartSVG('legs', v.rarity, v.visualIndex)} color={color} type="legs" rarityLabel={v.rarity} />
+                          <SinglePart 
+                            key={`legs-${idx}`} 
+                            Comp={getPartSVG('legs', v.rarity, v.visualIndex)} 
+                            color={color} 
+                            type="legs" 
+                            rarityLabel={v.rarity} 
+                            isSilhouette={!isAcquired}
+                          />
                         ))}
                       </div>
                     </div>

@@ -382,13 +382,15 @@ export const PianoGame: React.FC<PianoGameProps> = ({
         // アラベスク(Lv.1): INT 50
         // 貴婦人の乗馬(Lv.2): INT 55
         // メヌエット ト長調(Lv.3): INT 60
+        // アラベスク(Lv.1): INT 50
+        // 貴婦人の乗馬(Lv.2): INT 55
+        // メヌエット ト長調(Lv.3): INT 60
         // エリーゼのために(Lv.4): INT 65
-        // 月光の曲(Lv.5): INT 70
-        // ノクターン 作品9-2(Lv.6): INT 75
-        // きらきら星変奏曲(Lv.7): INT 80
-        // トルコ行進曲(Lv.8): INT 85
-        // 幻想即興曲(Lv.9): INT 92
-        // ラ・カンパネラ(Lv.10): INT 100
+        // ノクターン 作品9-2(Lv.5): INT 72
+        // きらきら星変奏曲(Lv.6): INT 78
+        // トルコ行進曲(Lv.7): INT 85
+        // 幻想即興曲(Lv.8): INT 92
+        // ラ・カンパネラ(Lv.9): INT 100
         const targetInt = song.id === 'arabesque'
           ? 50
           : song.id === 'chevaleresque'
@@ -397,17 +399,15 @@ export const PianoGame: React.FC<PianoGameProps> = ({
               ? 60
               : song.id === 'fur_elise' 
                 ? 65 
-                : song.id === 'moonlight_sonata'
-                  ? 70
-                  : song.id === 'chopin_nocturne' 
-                    ? 75 
-                    : song.id === 'twinkle_variations'
-                      ? 80
-                      : song.id === 'turkish_march' 
-                        ? 85 
-                        : song.id === 'fantaisie_impromptu'
-                          ? 92
-                          : 100;
+                : song.id === 'chopin_nocturne' 
+                  ? 72 
+                  : song.id === 'twinkle_variations'
+                    ? 78
+                    : song.id === 'turkish_march' 
+                      ? 85 
+                      : song.id === 'fantaisie_impromptu'
+                        ? 92
+                        : 100;
         const intVal = activeRobot.stats.intelligence || 10;
         const dexVal = activeRobot.stats.dexterity || 10;
         const effectiveScore = (intVal * 0.95) + (dexVal * 0.1);
@@ -753,17 +753,15 @@ export const PianoGame: React.FC<PianoGameProps> = ({
                         ? 'BWV Anh. 114 全64小節完全演奏演習' 
                         : song.id === 'fur_elise' 
                           ? 'WoO 59 全曲演奏演習' 
-                          : song.id === 'moonlight_sonata'
-                            ? 'Op. 27 No. 2 第1楽章 全69小節完全演奏演習'
-                            : song.id === 'chopin_nocturne' 
-                              ? 'Op. 9 No. 2 全曲強弱演奏演習' 
-                              : song.id === 'twinkle_variations'
-                                ? 'K. 265 全12変奏曲完全演奏演習'
-                                : song.id === 'turkish_march'
-                                  ? 'K. 331 全曲演奏演習'
-                                  : song.id === 'fantaisie_impromptu'
-                                    ? 'Op. 66 全138小節完全演奏演習'
-                                    : 'S. 141-3 全曲演奏演習'}
+                          : song.id === 'chopin_nocturne' 
+                            ? 'Op. 9 No. 2 全曲強弱演奏演習' 
+                            : song.id === 'twinkle_variations'
+                              ? 'K. 265 全12変奏曲完全演奏演習'
+                              : song.id === 'turkish_march'
+                                ? 'K. 331 全曲演奏演習'
+                                : song.id === 'fantaisie_impromptu'
+                                  ? 'Op. 66 全138小節完全演奏演習'
+                                  : 'S. 141-3 全曲演奏演習'}
                 </span>
               </div>
               <h2 className="text-xl sm:text-2xl font-black text-stone-100 flex items-center gap-2">

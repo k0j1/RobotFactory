@@ -145,7 +145,6 @@ import { TURKISH_MARCH_RAW_NOTES } from './turkishMarchData';
 import { CHOPIN_NOCTURNE_RAW_NOTES } from './chopinNocturneData';
 import { TWINKLE_VARIATIONS_RAW_NOTES } from './twinkleVariationsData';
 import { FANTAISIE_IMPROMPTU_RAW_NOTES } from './fantaisieImpromptuData';
-import { MOONLIGHT_SONATA_RAW_NOTES } from './moonlightSonataData';
 import { ARABESQUE_RAW_NOTES } from './arabesqueData';
 import { CHEVALERESQUE_RAW_NOTES } from './chevaleresqueData';
 
@@ -272,7 +271,6 @@ export const TURKISH_MARCH_NOTES: PianoNoteData[] = TURKISH_MARCH_RAW_NOTES.map(
 export const LA_CAMPANELLA_NOTES: PianoNoteData[] = LA_CAMPANELLA_RAW_NOTES.map(n => convertRawNoteToPianoData(n, 'p', 0.66));
 export const TWINKLE_VARIATIONS_NOTES: PianoNoteData[] = TWINKLE_VARIATIONS_RAW_NOTES.map(n => convertRawNoteToPianoData(n, 'p', 0.68));
 export const FANTAISIE_IMPROMPTU_NOTES: PianoNoteData[] = FANTAISIE_IMPROMPTU_RAW_NOTES.map(n => convertRawNoteToPianoData(n, 'p', 0.72));
-export const MOONLIGHT_SONATA_NOTES: PianoNoteData[] = MOONLIGHT_SONATA_RAW_NOTES.map(n => convertRawNoteToPianoData(n, 'pp', 0.50));
 export const ARABESQUE_NOTES: PianoNoteData[] = ARABESQUE_RAW_NOTES.map(n => convertRawNoteToPianoData(n, 'p', 0.65));
 export const CHEVALERESQUE_NOTES: PianoNoteData[] = CHEVALERESQUE_RAW_NOTES.map(n => convertRawNoteToPianoData(n, 'f', 1.15));
 
@@ -322,24 +320,13 @@ export const PIANO_SONGS: PianoSong[] = [
     notes: FUR_ELISE_NOTES
   },
   { 
-    id: 'moonlight_sonata', 
-    title: '月光の曲', 
-    composer: 'ベートーヴェン', 
-    level: 5, 
-    songSpeed: 1.0,
-    desc: 'ピアノソナタ第14番 嬰ハ短調 Op. 27, No. 2「月光」第1楽章 (Adagio sostenuto 2/2拍子)。pianoclassics.net (ID 53) / Mutopia 準拠・全69小節完全収録版。深沈たる低音オクターブと静謐に波打つ3連符の波、哀愁に満ちた主旋律、ppから静かな高揚mf、そして神秘的に消えゆく終止(pp)まで全曲のダイナミクスを完全再現。', 
-    rewardFame: 10,
-    rewardElements: 0,
-    notes: MOONLIGHT_SONATA_NOTES
-  },
-  { 
     id: 'chopin_nocturne', 
     title: 'ノクターン 作品9-2', 
     composer: 'ショパン', 
-    level: 6, 
+    level: 5, 
     songSpeed: 1.0,
     desc: '夜想曲 第2番 変ホ長調 Op. 9, No. 2 (Andante 12/8拍子)。pianoclassics.net (ID 88) 準拠。楽譜通りの全小節音程・リズムとpp〜ffの豊かな音の強弱表現を完全再現。', 
-    rewardFame: 12,
+    rewardFame: 10,
     rewardElements: 0,
     notes: CHOPIN_NOCTURNE_NOTES
   },
@@ -347,10 +334,10 @@ export const PIANO_SONGS: PianoSong[] = [
     id: 'twinkle_variations', 
     title: 'きらきら星変奏曲', 
     composer: 'モーツァルト', 
-    level: 7, 
+    level: 6, 
     songSpeed: 1.0,
-    desc: 'フランスの歌曲「ああ、お母さん、あなたに申しましょう」による12の変奏曲 ハ長調 K. 265。pianoclassics.net (ID 52) 準拠・全8ページ完全収録版。愛らしい主題から華麗な走句・短調変奏・アダージョ・フィナーレまで全12変奏の豊かな強弱表現(p〜ff)を完全再現。', 
-    rewardFame: 14,
+    desc: 'フランスの歌曲「ああ、お母さん、あなたに申しましょう」による12の変奏曲 ハ長調 K. 265。pianoclassics.net (ID 52) 準拠・全8ページ全12変奏完全収録版。愛らしい主題から華麗な走句・短調変奏・アダージョ・フィナーレまで、右手パート（主旋律・変奏走句）と左手パート（伴奏・低音走句）の独立強弱表現(pp〜ff)を完全再現。', 
+    rewardFame: 12,
     rewardElements: 0,
     notes: TWINKLE_VARIATIONS_NOTES
   },
@@ -358,10 +345,10 @@ export const PIANO_SONGS: PianoSong[] = [
     id: 'turkish_march', 
     title: 'トルコ行進曲', 
     composer: 'モーツァルト', 
-    level: 8, 
+    level: 7, 
     songSpeed: 1.0,
     desc: 'ピアノソナタ第11番 イ長調 K. 331 第3楽章「トルコ行進曲」(Allegretto 2/4拍子)。pianoclassics.net (ID 55) / Mutopia 準拠。主部・中間部・コーダを網羅した全曲完全収録版。優美な弱音(p)から軍楽主題・コーダの華麗な強音(f〜ff)までのダイナミクス・ベロシティ表現を完全再現。', 
-    rewardFame: 16,
+    rewardFame: 14,
     rewardElements: 0,
     notes: TURKISH_MARCH_NOTES
   },
@@ -369,10 +356,10 @@ export const PIANO_SONGS: PianoSong[] = [
     id: 'fantaisie_impromptu', 
     title: '幻想即興曲', 
     composer: 'ショパン', 
-    level: 9, 
+    level: 8, 
     songSpeed: 1.0,
     desc: '即興曲 第4番 嬰ハ短調 遺作 Op. 66 (Allegro agitato / Moderato cantabile)。pianoclassics.net (ID 89) / Mutopia 準拠・全13ページ全138小節完全収録版。右手(RH)の情熱的な疾走旋律・カンタービレと左手(LH)の波打つ6連符伴奏による右手・左手独立ダイナミクス(f/p, mf/pp)を完全再現し、4対3ポリリズムと静謐に消えゆくコーダ(pp)まで全曲の音響表現を収録。', 
-    rewardFame: 18,
+    rewardFame: 16,
     rewardElements: 0,
     notes: FANTAISIE_IMPROMPTU_NOTES
   },
@@ -380,10 +367,10 @@ export const PIANO_SONGS: PianoSong[] = [
     id: 'la_campanella', 
     title: 'ラ・カンパネラ', 
     composer: 'リスト', 
-    level: 10, 
+    level: 9, 
     songSpeed: 1.0,
     desc: 'パガニーニ大練習曲 第3番 嬰ト短調 S. 141-3。pianoclassics.net (ID 110) 準拠・全10ページ全140小節完全収録版。右手(RH)の煌びやかな高音鐘の跳躍(leggiero & marcatissimo)と左手(LH)の重厚なオクターブ伴奏・第2変奏の反転旋律(espressivo)による右手・左手独立ダイナミクス(f/p, mf/pp, ff/ff, fff/fff)を完全再現し、鐘の序奏(p)から怒涛のコーダ最強音(fff tutta la forza)まで全曲の音響表現を収録。', 
-    rewardFame: 20,
+    rewardFame: 18,
     rewardElements: 0,
     notes: LA_CAMPANELLA_NOTES
   }
