@@ -746,93 +746,241 @@ try {
             }
         }
 
+        // DB内の既存パーツ情報を取得（差分比較用）
+        $existingParts = [];
+        try {
+            $curPartsStmt = $pdo->prepare("SELECT id, is_equipped, name, attribute, rarity, visual_index FROM user_parts WHERE user_id = :user_id");
+            $curPartsStmt->execute([':user_id' => $actualUserId]);
+            while ($pRow = $curPartsStmt->fetch(PDO::FETCH_ASSOC)) {
+                $existingParts[(string)$pRow['id']] = $pRow;
+            }
+        } catch (PDOException $e) {}
+
         foreach ($gameData['parts'] as $part) {
             if (empty($part['id'])) continue;
+            $partIdStr = (string)$part['id'];
+
             // state.parts内ですでにisEquippedが設定されていればそれを優先
             $isEquipped = (!empty($part['isEquipped']) || !empty($equippedPartIds[$part['id']])) ? 1 : 0;
-            $params = $extractPartParams($part, $actualUserId, $isEquipped);
-            $stmtPart->execute($params);
+            
+            // 既存パーツと比較し、新規パーツまたは装備状態(is_equipped)等に変動がある場合のみ実行
+            $needUpdate = false;
+            if (!isset($existingParts[$partIdStr])) {
+                $needUpdate = true;
+            } else {
+                $exP = $existingParts[$partIdStr];
+                if ((int)$exP['is_equipped'] !== $isEquipped) {
+                    $needUpdate = true;
+                }
+            }
+
+            if ($needUpdate) {
+                $params = $extractPartParams($part, $actualUserId, $isEquipped);
+                $stmtPart->execute($params);
+            }
         }
     }
 
-    // 5. user_robots テーブルの同期
-    // 既存ロボットデータを一旦クリアして最新の所持ロボットを挿入
-    $delRobotsStmt = $pdo->prepare("DELETE FROM user_robots WHERE user_id = :user_id");
-    $delRobotsStmt->execute([':user_id' => $actualUserId]);
+    // =========================================================================
+    // 5. user_robots テーブルの同期（所持ロボット機体）:
+    // 既存ロボットの一括削除（DELETE FROM user_robots WHERE user_id = :user_id）を完全撤廃！
+    // 獲得（新規組立）・装備変更・ステータス変動があったロボットのみを個別更新し、
+    // 変更のない機体レコードは触れず、created_at や外部キー制約（complete_daily_minigame 等）を恒久保護
+    // =========================================================================
+    if (isset($gameData['robots']) && is_array($gameData['robots'])) {
+        try {
+            // 1. 現在のDB内の所持ロボット一覧を取得
+            $curRobotsStmt = $pdo->prepare("
+                SELECT id, name, head_part_id, body_part_id, arms_part_id, legs_part_id, currentHp, maxHP, battleStats 
+                FROM user_robots 
+                WHERE user_id = :user_id
+            ");
+            $curRobotsStmt->execute([':user_id' => $actualUserId]);
+            $existingRobots = [];
+            while ($rRow = $curRobotsStmt->fetch(PDO::FETCH_ASSOC)) {
+                $existingRobots[(string)$rRow['id']] = $rRow;
+            }
 
-    if (!empty($gameData['robots']) && is_array($gameData['robots'])) {
-        // ロボットが装備しているパーツも確実に user_parts に個別カラムで存在させる
-        foreach ($gameData['robots'] as $robot) {
-            if (!empty($robot['parts'])) {
-                foreach (['head', 'body', 'arms', 'legs'] as $pKey) {
-                    if (!empty($robot['parts'][$pKey]['id'])) {
-                        $p = $robot['parts'][$pKey];
-                        $params = $extractPartParams($p, $actualUserId, 1);
-                        $stmtPart->execute($params);
+            // 2. 更新・挿入用および個別削除用ステートメントの準備
+            $upsertRobotStmt = $pdo->prepare("
+                INSERT INTO user_robots (
+                    id, user_id, name, head_part_id, body_part_id, arms_part_id, legs_part_id,
+                    currentHp, maxHP, battleStats
+                ) VALUES (
+                    :id, :user_id, :name, :head_id, :body_id, :arms_id, :legs_id,
+                    :current_hp, :max_hp, :battle_stats
+                )
+                ON DUPLICATE KEY UPDATE
+                    name = VALUES(name),
+                    head_part_id = VALUES(head_part_id),
+                    body_part_id = VALUES(body_part_id),
+                    arms_part_id = VALUES(arms_part_id),
+                    legs_part_id = VALUES(legs_part_id),
+                    currentHp = VALUES(currentHp),
+                    maxHP = VALUES(maxHP),
+                    battleStats = VALUES(battleStats)
+            ");
+
+            $deleteSingleRobotStmt = $pdo->prepare("
+                DELETE FROM user_robots 
+                WHERE user_id = :user_id AND id = :robot_id
+            ");
+
+            $processedRobotIds = [];
+
+            // 3. 送信されたロボットデータと既存DBレコードの差分を比較・更新
+            foreach ($gameData['robots'] as $robot) {
+                if (empty($robot['id'])) continue;
+                $robotIdStr = (string)$robot['id'];
+                $processedRobotIds[$robotIdStr] = true;
+
+                $headId = !empty($robot['parts']['head']['id']) ? (string)$robot['parts']['head']['id'] : null;
+                $bodyId = !empty($robot['parts']['body']['id']) ? (string)$robot['parts']['body']['id'] : null;
+                $armsId = !empty($robot['parts']['arms']['id']) ? (string)$robot['parts']['arms']['id'] : null;
+                $legsId = !empty($robot['parts']['legs']['id']) ? (string)$robot['parts']['legs']['id'] : null;
+                $name = $robot['name'] ?? '名無しのロボット';
+
+                $stats = $robot['stats'] ?? [];
+                $currentHp = isset($robot['currentHp']) ? (int)$robot['currentHp'] : 12;
+                $maxHp = isset($robot['maxHp']) ? (int)$robot['maxHp'] : (int)($stats['hp'] ?? 12);
+                $battleStats = !empty($robot['battleStats']) && is_array($robot['battleStats'])
+                    ? json_encode($robot['battleStats'], JSON_UNESCAPED_UNICODE)
+                    : null;
+
+                // ロボットが装備しているパーツも確実に user_parts に個別カラムで存在させる
+                if (!empty($robot['parts'])) {
+                    foreach (['head', 'body', 'arms', 'legs'] as $pKey) {
+                        if (!empty($robot['parts'][$pKey]['id'])) {
+                            $p = $robot['parts'][$pKey];
+                            $params = $extractPartParams($p, $actualUserId, 1);
+                            $stmtPart->execute($params);
+                        }
                     }
                 }
+
+                // 既存レコードとの差分チェック
+                $hasChanged = false;
+                if (!isset($existingRobots[$robotIdStr])) {
+                    // 新規機体
+                    $hasChanged = true;
+                } else {
+                    $ex = $existingRobots[$robotIdStr];
+                    if ($ex['name'] !== $name ||
+                        (string)$ex['head_part_id'] !== (string)$headId ||
+                        (string)$ex['body_part_id'] !== (string)$bodyId ||
+                        (string)$ex['arms_part_id'] !== (string)$armsId ||
+                        (string)$ex['legs_part_id'] !== (string)$legsId ||
+                        (int)$ex['currentHp'] !== $currentHp ||
+                        (int)$ex['maxHP'] !== $maxHp) {
+                        $hasChanged = true;
+                    } else {
+                        // battleStats の JSON 比較
+                        $exBs = $ex['battleStats'] ? json_decode($ex['battleStats'], true) : null;
+                        $newBs = !empty($robot['battleStats']) && is_array($robot['battleStats']) ? $robot['battleStats'] : null;
+                        if ($exBs != $newBs) {
+                            $hasChanged = true;
+                        }
+                    }
+                }
+
+                // 差分がある（新規または更新された）機体レコードのみ UPDATE/INSERT を実行
+                if ($hasChanged) {
+                    $upsertRobotStmt->execute([
+                        ':id' => $robotIdStr,
+                        ':user_id' => $actualUserId,
+                        ':name' => $name,
+                        ':head_id' => $headId,
+                        ':body_id' => $bodyId,
+                        ':arms_id' => $armsId,
+                        ':legs_id' => $legsId,
+                        ':current_hp' => $currentHp,
+                        ':max_hp' => $maxHp,
+                        ':battle_stats' => $battleStats
+                    ]);
+                }
             }
-        }
 
-        $stmtRobot = $pdo->prepare("
-            INSERT INTO user_robots (
-                id, user_id, name, head_part_id, body_part_id, arms_part_id, legs_part_id,
-                currentHp, maxHP, battleStats
-            ) VALUES (
-                :id, :user_id, :name, :head_id, :body_id, :arms_id, :legs_id,
-                :current_hp, :max_hp, :battle_stats
-            )
-        ");
-
-        foreach ($gameData['robots'] as $robot) {
-            if (empty($robot['id'])) continue;
-            $headId = !empty($robot['parts']['head']['id']) ? $robot['parts']['head']['id'] : null;
-            $bodyId = !empty($robot['parts']['body']['id']) ? $robot['parts']['body']['id'] : null;
-            $armsId = !empty($robot['parts']['arms']['id']) ? $robot['parts']['arms']['id'] : null;
-            $legsId = !empty($robot['parts']['legs']['id']) ? $robot['parts']['legs']['id'] : null;
-            $stats = $robot['stats'] ?? [];
-            $currentHp = isset($robot['currentHp']) ? (int)$robot['currentHp'] : 12;
-            $maxHp = isset($robot['maxHp']) ? (int)$robot['maxHp'] : (int)($stats['hp'] ?? 12);
-            $battleStats = !empty($robot['battleStats']) && is_array($robot['battleStats'])
-                ? json_encode($robot['battleStats'], JSON_UNESCAPED_UNICODE)
-                : null;
-            $stmtRobot->execute([
-                ':id' => $robot['id'],
-                ':user_id' => $actualUserId,
-                ':name' => $robot['name'] ?? '名無しのロボット',
-                ':head_id' => $headId,
-                ':body_id' => $bodyId,
-                ':arms_id' => $armsId,
-                ':legs_id' => $legsId,
-                ':current_hp' => $currentHp,
-                ':max_hp' => $maxHp,
-                ':battle_stats' => $battleStats
-            ]);
+            // 4. DB側に存在し、送信データに含まれない（解体・売却で消滅した）機体のみを特定個別削除
+            foreach ($existingRobots as $existingRobotId => $exRow) {
+                if (!isset($processedRobotIds[$existingRobotId])) {
+                    $deleteSingleRobotStmt->execute([
+                        ':user_id' => $actualUserId,
+                        ':robot_id' => $existingRobotId
+                    ]);
+                }
+            }
+        } catch (PDOException $e) {
+            error_log('[save.php] user_robots差分同期エラー: ' . $e->getMessage());
         }
     }
 
     // =========================================================================
     // 5.1 user_material テーブルの同期（所持素材数）: user_parts / user_robots と同一のトランザクション基本ブロック内で確実に処理
+    // 既存レコードの一括削除（DELETE）を廃止し、獲得または消費によって数量が変化した素材のみを個別更新
+    // 数量に変更のない素材レコードは触れず、updated_at 等のタイムスタンプや既存レコードを確実に保護
     // =========================================================================
-    $delMatStmt = $pdo->prepare("DELETE FROM user_material WHERE user_id = :user_id");
-    $delMatStmt->execute([':user_id' => $actualUserId]);
-
-    if (!empty($gameData['materials']) && is_array($gameData['materials'])) {
-        $stmtMat = $pdo->prepare("
-            INSERT INTO user_material (user_id, material_id, count)
-            VALUES (:user_id, :material_id, :count)
-            ON DUPLICATE KEY UPDATE count = :up_count
-        ");
-        foreach ($gameData['materials'] as $matId => $matCount) {
-            $countVal = (int)$matCount;
-            if ($countVal > 0) {
-                $stmtMat->execute([
-                    ':user_id' => $actualUserId,
-                    ':material_id' => (string)$matId,
-                    ':count' => $countVal,
-                    ':up_count' => $countVal
-                ]);
+    if (isset($gameData['materials']) && is_array($gameData['materials'])) {
+        try {
+            // 現在のDB内の所持素材一覧を取得
+            $curMatStmt = $pdo->prepare("SELECT material_id, count FROM user_material WHERE user_id = :user_id");
+            $curMatStmt->execute([':user_id' => $actualUserId]);
+            $existingMaterials = [];
+            while ($mRow = $curMatStmt->fetch(PDO::FETCH_ASSOC)) {
+                $existingMaterials[(string)$mRow['material_id']] = (int)$mRow['count'];
             }
+
+            // 更新用および削除用ステートメントの準備
+            $upsertMatStmt = $pdo->prepare("
+                INSERT INTO user_material (user_id, material_id, count)
+                VALUES (:user_id, :material_id, :count)
+                ON DUPLICATE KEY UPDATE count = :up_count
+            ");
+            $deleteMatStmt = $pdo->prepare("
+                DELETE FROM user_material 
+                WHERE user_id = :user_id AND material_id = :material_id
+            ");
+
+            $incomingMaterials = $gameData['materials'];
+            $processedMatIds = [];
+
+            // 1. 送信された素材データのうち、新規獲得または数量が変動した素材のみを更新
+            foreach ($incomingMaterials as $matId => $matCount) {
+                $matIdStr = (string)$matId;
+                $newCount = max(0, (int)$matCount);
+                $processedMatIds[$matIdStr] = true;
+
+                $oldCount = isset($existingMaterials[$matIdStr]) ? $existingMaterials[$matIdStr] : 0;
+
+                // 数量に変動があった（獲得または消費）場合のみ更新を実行
+                if ($newCount !== $oldCount) {
+                    if ($newCount > 0) {
+                        $upsertMatStmt->execute([
+                            ':user_id' => $actualUserId,
+                            ':material_id' => $matIdStr,
+                            ':count' => $newCount,
+                            ':up_count' => $newCount
+                        ]);
+                    } else if ($oldCount > 0) {
+                        // 消費し尽くして0個になった素材は該当レコードのみ削除
+                        $deleteMatStmt->execute([
+                            ':user_id' => $actualUserId,
+                            ':material_id' => $matIdStr
+                        ]);
+                    }
+                }
+            }
+
+            // 2. DB側に存在し、かつ送信データに含まれず消失（完全消費）した素材レコードのみクリーンアップ
+            foreach ($existingMaterials as $existingMatId => $existingCount) {
+                if (!isset($processedMatIds[$existingMatId]) && $existingCount > 0) {
+                    $deleteMatStmt->execute([
+                        ':user_id' => $actualUserId,
+                        ':material_id' => (string)$existingMatId
+                    ]);
+                }
+            }
+        } catch (PDOException $e) {
+            error_log('[save.php] user_material差分同期エラー: ' . $e->getMessage());
         }
     }
 
@@ -1584,6 +1732,16 @@ try {
         $minigameRecords['combat_training'] = ['plays' => 0, 'wins' => 0, 'elements' => $elements, 'chests' => 0];
     }
 
+    // 既存のミニゲーム進捗レコードを取得（差分比較用）
+    $existingMinigames = [];
+    try {
+        $curMiniStmt = $pdo->prepare("SELECT minigame_id, play_count, wins, elements_count, chests_count FROM user_minigame_status WHERE user_id = :user_id");
+        $curMiniStmt->execute([':user_id' => $actualUserId]);
+        while ($mRow = $curMiniStmt->fetch(PDO::FETCH_ASSOC)) {
+            $existingMinigames[(string)$mRow['minigame_id']] = $mRow;
+        }
+    } catch (PDOException $e) {}
+
     $stmtMini = $pdo->prepare("
         INSERT INTO user_minigame_status (user_id, minigame_id, play_count, wins, elements_count, chests_count)
         VALUES (:user_id, :minigame_id, :play_count, :wins, :elements_count, :chests_count)
@@ -1595,23 +1753,40 @@ try {
     ");
 
     foreach ($minigameRecords as $mId => $mRec) {
+        $mIdStr = (string)$mId;
         $plays = isset($mRec['plays']) ? (int)$mRec['plays'] : 0;
         $wins = isset($mRec['wins']) ? (int)$mRec['wins'] : 0;
-        $elem = isset($mRec['elements']) ? (int)$mRec['elements'] : (($mId === 'combat_training' || $mId === 'combat') ? $elements : 0);
+        $elem = isset($mRec['elements']) ? (int)$mRec['elements'] : (($mIdStr === 'combat_training' || $mIdStr === 'combat') ? $elements : 0);
         $chests = isset($mRec['chests']) ? (int)$mRec['chests'] : (isset($mRec['chests_count']) ? (int)$mRec['chests_count'] : 0);
 
-        $stmtMini->execute([
-            ':user_id' => $actualUserId,
-            ':minigame_id' => (string)$mId,
-            ':play_count' => $plays,
-            ':wins' => $wins,
-            ':elements_count' => $elem,
-            ':chests_count' => $chests,
-            ':play_count_up' => $plays,
-            ':wins_up' => $wins,
-            ':elements_count_up' => $elem,
-            ':chests_count_up' => $chests
-        ]);
+        // 差分チェック：新規または数値に変動がある場合のみ実行
+        $needMiniUpdate = false;
+        if (!isset($existingMinigames[$mIdStr])) {
+            $needMiniUpdate = true;
+        } else {
+            $exM = $existingMinigames[$mIdStr];
+            if ((int)$exM['play_count'] !== $plays ||
+                (int)$exM['wins'] !== $wins ||
+                (int)$exM['elements_count'] !== $elem ||
+                (int)$exM['chests_count'] !== $chests) {
+                $needMiniUpdate = true;
+            }
+        }
+
+        if ($needMiniUpdate) {
+            $stmtMini->execute([
+                ':user_id' => $actualUserId,
+                ':minigame_id' => $mIdStr,
+                ':play_count' => $plays,
+                ':wins' => $wins,
+                ':elements_count' => $elem,
+                ':chests_count' => $chests,
+                ':play_count_up' => $plays,
+                ':wins_up' => $wins,
+                ':elements_count_up' => $elem,
+                ':chests_count_up' => $chests
+            ]);
+        }
     }
 
     // 未開封宝箱の個数（unopenedChests）も user_minigame_status に保存（minigame_id = 'unopened_chests'）
@@ -1620,18 +1795,30 @@ try {
     foreach ($unopenedChests as $chestTierCount) {
         $totalUnopenedChests += (int)$chestTierCount;
     }
-    $stmtMini->execute([
-        ':user_id' => $actualUserId,
-        ':minigame_id' => 'unopened_chests',
-        ':play_count' => count($unopenedChests),
-        ':wins' => 0,
-        ':elements_count' => 0,
-        ':chests_count' => $totalUnopenedChests,
-        ':play_count_up' => count($unopenedChests),
-        ':wins_up' => 0,
-        ':elements_count_up' => 0,
-        ':chests_count_up' => $totalUnopenedChests
-    ]);
+    $unopenedPlays = count($unopenedChests);
+    $needUnopenedUpdate = false;
+    if (!isset($existingMinigames['unopened_chests'])) {
+        $needUnopenedUpdate = true;
+    } else {
+        $exUn = $existingMinigames['unopened_chests'];
+        if ((int)$exUn['play_count'] !== $unopenedPlays || (int)$exUn['chests_count'] !== $totalUnopenedChests) {
+            $needUnopenedUpdate = true;
+        }
+    }
+    if ($needUnopenedUpdate) {
+        $stmtMini->execute([
+            ':user_id' => $actualUserId,
+            ':minigame_id' => 'unopened_chests',
+            ':play_count' => $unopenedPlays,
+            ':wins' => 0,
+            ':elements_count' => 0,
+            ':chests_count' => $totalUnopenedChests,
+            ':play_count_up' => $unopenedPlays,
+            ':wins_up' => 0,
+            ':elements_count_up' => 0,
+            ':chests_count_up' => $totalUnopenedChests
+        ]);
+    }
 
     // 13. complete_daily_minigame テーブルの同期（本日クリア済みミニゲーム/演習の記録）
     // 毎朝9:00(JST)基準：前日以前の期限切れレコードのみを対象ユーザー限定で削除し、本日の全クリア記録および各created_at初回到達日時は恒久保護
