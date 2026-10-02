@@ -3,7 +3,6 @@ import { theme } from '../styles/theme';
 import { Button } from '../components/ui/core';
 import * as Gi from 'react-icons/gi';
 import { Database, ShieldCheck, UserCheck } from 'lucide-react';
-import { PWAInstallButton } from '../components/ui/PWAInstallButton';
 import robotsWorkshopBg from '../assets/images/robots_workshop_bg_1788411232885.jpg';
 import { GoogleLogin } from '@react-oauth/google';
 import { jwtDecode } from 'jwt-decode';
@@ -251,11 +250,6 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onStart, engine }) => 
             >
               ログインせずに始める（端末ローカル保存）
             </Button>
-
-            {/* ホーム画面に追加（PWAインストールボタン） */}
-            <div className="mt-3 flex justify-center">
-              <PWAInstallButton />
-            </div>
           </div>
         )}
 
@@ -287,7 +281,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onStart, engine }) => 
           </div>
         )}
 
-        <p className="mt-8 text-stone-400">v0.1.156</p>
+        <p className="mt-8 text-stone-400">v0.1.158</p>
       </div>
       
       {/* Decorative background elements */}

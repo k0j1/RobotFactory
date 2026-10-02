@@ -236,52 +236,36 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
     if (!robot) return '--';
     const int = robot.stats.intelligence || 10;
     const dex = robot.stats.dexterity || 10;
+    const agi = robot.stats.agility || 10;
     
-    // 各曲の推奨クリア基準INT (Lv.1 アラベスク: 50 〜 Lv.8 ラ・カンパネラ: 100)
-    // アラベスク(Lv.1): INT 50
-    // 貴婦人の乗馬(Lv.2): INT 55
-    // メヌエット ト長調(Lv.3): INT 60
-    // エリーゼのために(Lv.4): INT 65
-    // ノクターン 作品9-2(Lv.5): INT 72
-    // トルコ行進曲(Lv.6): INT 85
-    // 幻想即興曲(Lv.7): INT 92
-    // ラ・カンパネラ(Lv.8): INT 100
+    // 各曲の推奨クリア基準INT/DEX/AGI
     const song = PIANO_SONGS.find(s => s.id === songId) || PIANO_SONGS[0];
-    const targetInt = song.id === 'arabesque'
-      ? 50
-      : song.id === 'chevaleresque'
-        ? 55
-        : song.id === 'minuet_in_g'
-          ? 60
-          : song.id === 'fur_elise' 
-            ? 65 
-            : song.id === 'chopin_nocturne' 
-              ? 72 
-              : song.id === 'turkish_march' 
-                ? 85 
-                : song.id === 'fantaisie_impromptu'
-                  ? 92
-                  : 100;
+    const targetInt = song.targetInt || 50;
+    const targetDex = song.targetDex || 45;
+    const targetAgi = song.targetAgi || 40;
     
-    // ロボットの総合演奏適性値 (打鍵タイミング精度70%［Int主軸］ + 強弱タッチ表現力30%［Dex主軸］)
-    const effectiveStat = (int * 0.75) + (dex * 0.25);
-    const diff = effectiveStat - targetInt;
+    // 1. 推奨INTに満たない場合は楽譜を覚えられず出撃不可
+    if (int < targetInt) {
+      return '記憶不可';
+    }
+    
+    // 2. DEX（音符の正確性・強弱表現力）+ AGI（速い曲・テンポ追従）+ 連続音符の連打連携
+    const dexDiff = dex - targetDex;
+    const agiDiff = agi - targetAgi;
+    const effectiveDiff = (dexDiff * 0.6) + (agiDiff * 0.4);
     
     // 滑らかな勝率算出カーブ
-    // diff = 0 (INT 50) のとき 約85〜88%
-    // diff = -15 のとき 約50%
-    // diff = -35 (INT 15) のとき 約5%
     let rate = 0;
-    if (diff >= 10) {
-      rate = 95 + Math.min(4, (diff - 10) * 0.2);
-    } else if (diff >= 0) {
-      rate = 85 + diff * 1.0;
-    } else if (diff >= -20) {
-      rate = 35 + ((diff + 20) / 20) * 50;
-    } else if (diff >= -35) {
-      rate = 5 + ((diff + 35) / 15) * 30;
+    if (effectiveDiff >= 10) {
+      rate = 95 + Math.min(4, (effectiveDiff - 10) * 0.2);
+    } else if (effectiveDiff >= 0) {
+      rate = 85 + effectiveDiff * 1.0;
+    } else if (effectiveDiff >= -20) {
+      rate = 35 + ((effectiveDiff + 20) / 20) * 50;
+    } else if (effectiveDiff >= -35) {
+      rate = 5 + ((effectiveDiff + 35) / 15) * 30;
     } else {
-      rate = Math.max(1, 5 + (diff + 35) * 0.2);
+      rate = Math.max(1, 5 + (effectiveDiff + 35) * 0.2);
     }
     
     return Math.max(1, Math.min(99, Math.round(rate)));
@@ -850,7 +834,11 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                 <div className="flex items-center gap-2">
                   <Gi.GiBattleMech className="text-stone-700 text-lg" />
                   <h3 className={`${theme.typography.h3} text-stone-800`}>
-                    {selectedGame === 'defense' ? `STEP 2: 防衛ロボット配備 (${selectedDefenseRobotIds.length}/${activeDefenseStage.maxRobots})` : '出撃ロボット（自機）'}
+                    {selectedGame === 'defense' 
+                      ? `STEP 2: 防衛ロボット配備 (${selectedDefenseRobotIds.length}/${activeDefenseStage.maxRobots})` 
+                      : selectedGame === 'piano'
+                        ? '演奏ロボット（自機）'
+                        : '出撃ロボット（自機）'}
                   </h3>
                 </div>
                 <span className="text-xs text-stone-500 font-mono">
@@ -966,15 +954,27 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                                   <span className="font-bold text-stone-700 bg-stone-100 px-1 rounded border border-stone-200">耐久:{(r.stats.hp || 10) * 1000}</span>
                                 </div>
                               </div>
+                            ) : selectedGame === 'piano' ? (
+                              <div className="flex gap-2 text-[10px] text-stone-600 font-mono">
+                                <span className="font-bold text-blue-700 bg-blue-50 px-1 rounded border border-blue-200">
+                                  Int:{r.stats.intelligence}
+                                </span>
+                                <span className="font-bold text-emerald-700 bg-emerald-50 px-1 rounded border border-emerald-200">
+                                  Dex:{r.stats.dexterity}
+                                </span>
+                                <span className="font-bold text-amber-700 bg-amber-50 px-1 rounded border border-amber-200">
+                                  Agi:{r.stats.agility}
+                                </span>
+                              </div>
                             ) : (
                               <div className="flex gap-2 text-[10px] text-stone-600 font-mono">
-                                <span className={selectedCategory === 'puzzle' || selectedGame === 'piano' ? 'font-black text-blue-700 bg-blue-50 px-1 rounded' : ''}>
+                                <span className={selectedCategory === 'puzzle' ? 'font-black text-blue-700 bg-blue-50 px-1 rounded' : ''}>
                                   Int:{r.stats.intelligence}
                                 </span>
                                 <span className={selectedGame === 'danmaku' ? 'font-black text-amber-700 bg-amber-50 px-1 rounded' : ''}>
                                   Agi:{r.stats.agility}
                                 </span>
-                                <span className={selectedCategory === 'shooting' || selectedGame === 'piano' ? 'font-black text-emerald-700 bg-emerald-50 px-1 rounded' : ''}>
+                                <span className={selectedCategory === 'shooting' ? 'font-black text-emerald-700 bg-emerald-50 px-1 rounded' : ''}>
                                   Dex:{r.stats.dexterity}
                                 </span>
                               </div>
@@ -1117,6 +1117,8 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                       const isSelected = pianoSongId === song.id;
                       const best = pianoBestScores[song.id];
                       const isClearedToday = activeRobot ? (engine as any).checkDailyBattleLimit(activeRobot.id, 'piano', song.id, currentTimestamp) : false;
+                      const robotInt = activeRobot?.stats?.intelligence || 0;
+                      const isIntSufficient = robotInt >= (song.targetInt || 50);
 
                       return (
                         <button
@@ -1127,6 +1129,8 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                               ? 'border-amber-500 bg-amber-50/90 shadow-xs ring-2 ring-amber-300 z-10' 
                               : isClearedToday
                               ? 'border-emerald-500 bg-emerald-50/70 hover:border-emerald-600'
+                              : !isIntSufficient
+                              ? 'border-rose-300/80 bg-rose-50/40 hover:border-rose-400'
                               : 'border-stone-300 bg-white hover:border-stone-400 hover:bg-stone-50'
                           }`}
                         >
@@ -1141,6 +1145,25 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                               {!isClearedToday && best?.cleared && (
                                 <span className="text-[10px] bg-stone-100 text-stone-700 border border-stone-300 font-bold font-mono px-1.5 py-0.2 rounded shrink-0">
                                   CLEAR歴あり
+                                </span>
+                              )}
+                              {activeRobot && (
+                                <span className={`text-[10px] font-bold font-mono px-1.5 py-0.5 rounded border shrink-0 flex items-center gap-0.5 ${
+                                  isIntSufficient
+                                    ? 'bg-blue-50 text-blue-900 border-blue-200'
+                                    : 'bg-rose-100 text-rose-900 border-rose-300 font-bold'
+                                }`}>
+                                  {isIntSufficient ? (
+                                    <>
+                                      <Gi.GiBrain className="text-blue-600 text-[10px]" />
+                                      <span>楽譜記憶OK (INT {song.targetInt})</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Gi.GiPadlock className="text-rose-600 text-[10px]" />
+                                      <span>INT不足 (必要INT {song.targetInt})</span>
+                                    </>
+                                  )}
                                 </span>
                               )}
                               {song.rewardFame > 0 && (
@@ -1176,13 +1199,25 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                             <div className="bg-stone-100/90 p-1.5 rounded-lg border border-stone-200 flex items-center justify-between">
                               <span className="text-stone-500 font-bold">予想クリア率:</span>
                               {activeRobot ? (
-                                <span className={`font-bold font-mono px-1.5 py-0.5 rounded border ${
-                                  (getEstimatedPianoWinRate(song.id, activeRobot) as number) >= 50
-                                    ? 'text-emerald-800 bg-emerald-100 border-emerald-300'
-                                    : 'text-rose-700 bg-rose-50 border-rose-200'
-                                }`}>
-                                  約{getEstimatedPianoWinRate(song.id, activeRobot)}%
-                                </span>
+                                (() => {
+                                  const est = getEstimatedPianoWinRate(song.id, activeRobot);
+                                  if (est === '記憶不可') {
+                                    return (
+                                      <span className="font-bold font-mono px-1.5 py-0.5 rounded border text-rose-800 bg-rose-100 border-rose-300">
+                                        記憶不可 (INT不足)
+                                      </span>
+                                    );
+                                  }
+                                  return (
+                                    <span className={`font-bold font-mono px-1.5 py-0.5 rounded border ${
+                                      (est as number) >= 50
+                                        ? 'text-emerald-800 bg-emerald-100 border-emerald-300'
+                                        : 'text-rose-700 bg-rose-50 border-rose-200'
+                                    }`}>
+                                      約{est}%
+                                    </span>
+                                  );
+                                })()
                               ) : (
                                 <span className="font-mono text-stone-400">--%</span>
                               )}
@@ -1193,6 +1228,26 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                     })}
                   </div>
                 </Card>
+
+                {/* 推奨INT不足時の警告案内バナー */}
+                {activeRobot && (activeRobot.stats.intelligence || 0) < (activePianoSong.targetInt || 50) && (
+                  <div className="p-3.5 bg-rose-50 border-2 border-rose-300 rounded-xl flex items-start gap-3 text-xs text-rose-950 shadow-2xs animate-fade-in">
+                    <div className="w-8 h-8 rounded-lg bg-rose-100 border border-rose-300 flex items-center justify-center shrink-0 text-rose-600 text-lg shadow-inner">
+                      <Gi.GiBrain />
+                    </div>
+                    <div className="space-y-1">
+                      <div className="font-bold text-rose-950 flex items-center gap-2 flex-wrap">
+                        <span>⚠️ 楽譜を記憶できません（出撃不可）</span>
+                        <span className="text-[10px] bg-rose-200 text-rose-950 font-mono px-2 py-0.5 rounded border border-rose-400 font-bold">
+                          必要 INT {activePianoSong.targetInt} / 現在 INT {activeRobot.stats.intelligence || 0}
+                        </span>
+                      </div>
+                      <p className="text-stone-700 text-[11px] leading-relaxed">
+                        「<strong>{activePianoSong.title}</strong>」の複雑な楽譜記号や旋律展開を記憶するには、機体の知力(INT)が推奨値（INT {activePianoSong.targetInt}）以上である必要があります。知力が不足している状態では楽譜を覚えられないため演奏に挑戦できません。知力の高いパーツを換装・強化するか、現在の知力で記憶可能な楽曲（推奨INT以下）を選択してください。
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -1450,82 +1505,23 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
           )}
 
           {/* 出撃ボタン */}
-          <div className="text-center pt-2 space-y-2">
-            {isCurrentBattleClearedToday && (
-              <div className="bg-emerald-100 border border-emerald-400 text-emerald-950 px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 max-w-md mx-auto shadow-xs">
-                <Gi.GiCheckMark className="text-emerald-700 text-sm shrink-0" />
-                <span>本日この演習・バトルはクリア済みです（毎朝 09:00 にリセットされます）</span>
-              </div>
-            )}
-            <Button
-              onClick={handleStartBattle}
-              onPointerDown={handlePointerDownReset}
-              onPointerUp={handlePointerUpReset}
-              onPointerLeave={handlePointerUpReset}
-              onContextMenu={(e) => {
-                if (isDefenseLocked) e.preventDefault();
-              }}
-              disabled={
-                isCurrentBattleClearedToday ||
-                (selectedGame === 'defense'
-                  ? selectedDefenseRobotIds.length === 0
-                  : !selectedRobotId || (requiresOpponent && !selectedOpponentId))
-              }
-              className={`w-full sm:w-2/3 md:w-1/2 py-3.5 text-base font-bold shadow-md mx-auto transition-all ${
-                isCurrentBattleClearedToday
-                  ? 'bg-stone-300 hover:bg-stone-300 text-stone-600 border-2 border-stone-400 cursor-not-allowed shadow-none opacity-60' 
-                  : ''
-              }`}
-            >
-              {isCurrentBattleClearedToday ? (
-                selectedGame === 'defense' ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <Gi.GiPadlock className="text-stone-600 text-lg" /> 本日防衛完了 (朝9:00リセット / 残り約{defenseResetInfo.remainingHours}時間{defenseResetInfo.remainingMinutes}分)
-                  </span>
-                ) : (
-                  <span className="flex items-center justify-center gap-2">
-                    <Gi.GiPadlock className="text-stone-600 text-lg" /> 本日クリア済 (出撃不可・朝9:00リセット)
-                  </span>
-                )
-              ) : selectedGame === 'danmaku' ? (
-                `演習開始！ (${activeDanmakuDiff.label})`
-              ) : selectedGame === 'piano' ? (
-                `演奏開始！ (${activePianoSong.title})`
-              ) : selectedGame === 'defense' ? (
-                `拠点防衛開始！ (${activeDefenseStage.name})`
-              ) : (
-                'バトル演習開始！'
-              )}
-            </Button>
-          </div>
+          {(() => {
+            const isPianoIntInsufficient = selectedGame === 'piano' && !!activeRobot && (activeRobot.stats?.intelligence || 0) < (activePianoSong.targetInt || 50);
 
-          {/* 画面下部メニュー上の固定出撃ボタン（下までスクロール不要で即開始可能） */}
-          {(selectedGame === 'defense' ? selectedDefenseRobotIds.length === 0 : (!selectedRobotId || (requiresOpponent && !selectedOpponentId))) ? null : (
-            <div className="fixed bottom-[56px] sm:bottom-[60px] left-0 right-0 z-30 px-3 py-2 bg-stone-900/95 backdrop-blur-md border-t-2 border-amber-500 shadow-2xl animate-fade-in">
-              <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="font-bold text-xs text-amber-400 bg-stone-800 px-2 py-1 rounded border border-amber-500/50 shrink-0">
-                    {selectedGameDef?.name || 'バトル'}
-                  </span>
-                  <div className="text-xs text-stone-200 truncate">
-                    {isCurrentBattleClearedToday ? (
-                      <span className="text-emerald-400 font-bold flex items-center gap-1">
-                        <Gi.GiCheckMark className="text-xs" /> 本日クリア済（朝9:00リセット）
-                      </span>
-                    ) : (
-                      <>
-                        {selectedGame === 'defense' ? (
-                          <><span className="text-stone-400">配備:</span> <strong className="text-amber-300 font-bold">{selectedDefenseRobotIds.length}体</strong></>
-                        ) : (
-                          <><span className="text-stone-400">機体:</span> <strong className="text-amber-300 font-bold">{activeRobot?.name}</strong></>
-                        )}
-                        {requiresOpponent && activeOpponent && (
-                          <span className="ml-2 text-stone-300 hidden sm:inline">vs <strong className="text-red-400">{activeOpponent.name}</strong></span>
-                        )}
-                      </>
-                    )}
+            return (
+              <div className="text-center pt-2 space-y-2">
+                {isCurrentBattleClearedToday && (
+                  <div className="bg-emerald-100 border border-emerald-400 text-emerald-950 px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 max-w-md mx-auto shadow-xs">
+                    <Gi.GiCheckMark className="text-emerald-700 text-sm shrink-0" />
+                    <span>本日この演習・バトルはクリア済みです（毎朝 09:00 にリセットされます）</span>
                   </div>
-                </div>
+                )}
+                {isPianoIntInsufficient && !isCurrentBattleClearedToday && (
+                  <div className="bg-rose-100 border border-rose-300 text-rose-950 px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 max-w-md mx-auto shadow-xs">
+                    <Gi.GiPadlock className="text-rose-700 text-sm shrink-0" />
+                    <span>知力(INT)が推奨値に満たないため、楽譜を記憶できず演奏できません</span>
+                  </div>
+                )}
                 <Button
                   onClick={handleStartBattle}
                   onPointerDown={handlePointerDownReset}
@@ -1534,29 +1530,120 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                   onContextMenu={(e) => {
                     if (isDefenseLocked) e.preventDefault();
                   }}
-                  size="md"
-                  variant={isCurrentBattleClearedToday ? "secondary" : "primary"}
-                  disabled={isCurrentBattleClearedToday}
-                  className={`px-6 py-2 text-sm font-bold shadow-lg shrink-0 flex items-center gap-1.5 ${
-                    isCurrentBattleClearedToday 
-                      ? 'bg-stone-700 text-stone-400 cursor-not-allowed border border-stone-600 opacity-60' 
-                      : 'bg-amber-600 hover:bg-amber-500 text-white'
+                  disabled={
+                    isCurrentBattleClearedToday ||
+                    isPianoIntInsufficient ||
+                    (selectedGame === 'defense'
+                      ? selectedDefenseRobotIds.length === 0
+                      : !selectedRobotId || (requiresOpponent && !selectedOpponentId))
+                  }
+                  className={`w-full sm:w-2/3 md:w-1/2 py-3.5 text-base font-bold shadow-md mx-auto transition-all ${
+                    isCurrentBattleClearedToday || isPianoIntInsufficient
+                      ? 'bg-stone-300 hover:bg-stone-300 text-stone-600 border-2 border-stone-400 cursor-not-allowed shadow-none opacity-60' 
+                      : ''
                   }`}
                 >
                   {isCurrentBattleClearedToday ? (
-                    <>
-                      <Gi.GiPadlock className="text-base" />
-                      本日完了
-                    </>
+                    selectedGame === 'defense' ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <Gi.GiPadlock className="text-stone-600 text-lg" /> 本日防衛完了 (朝9:00リセット / 残り約{defenseResetInfo.remainingHours}時間{defenseResetInfo.remainingMinutes}分)
+                      </span>
+                    ) : (
+                      <span className="flex items-center justify-center gap-2">
+                        <Gi.GiPadlock className="text-stone-600 text-lg" /> 本日クリア済 (出撃不可・朝9:00リセット)
+                      </span>
+                    )
+                  ) : isPianoIntInsufficient ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <Gi.GiPadlock className="text-rose-600 text-lg" /> 楽譜記憶不可 (必要INT {activePianoSong.targetInt})
+                    </span>
+                  ) : selectedGame === 'danmaku' ? (
+                    `演習開始！ (${activeDanmakuDiff.label})`
+                  ) : selectedGame === 'piano' ? (
+                    `演奏開始！ (${activePianoSong.title})`
+                  ) : selectedGame === 'defense' ? (
+                    `拠点防衛開始！ (${activeDefenseStage.name})`
                   ) : (
-                    <>
-                      <Gi.GiCrossedSwords className="text-base" />
-                      {selectedGame === 'danmaku' ? `演習開始 (${activeDanmakuDiff.label})` : selectedGame === 'piano' ? `演奏開始` : selectedGame === 'defense' ? `防衛開始` : 'バトル開始！'}
-                    </>
+                    'バトル演習開始！'
                   )}
                 </Button>
               </div>
-            </div>
+            );
+          })()}
+
+          {/* 画面下部メニュー上の固定出撃ボタン（下までスクロール不要で即開始可能） */}
+          {(selectedGame === 'defense' ? selectedDefenseRobotIds.length === 0 : (!selectedRobotId || (requiresOpponent && !selectedOpponentId))) ? null : (
+            (() => {
+              const isPianoIntInsufficient = selectedGame === 'piano' && !!activeRobot && (activeRobot.stats?.intelligence || 0) < (activePianoSong.targetInt || 50);
+
+              return (
+                <div className="fixed bottom-[56px] sm:bottom-[60px] left-0 right-0 z-30 px-3 py-2 bg-stone-900/95 backdrop-blur-md border-t-2 border-amber-500 shadow-2xl animate-fade-in">
+                  <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="font-bold text-xs text-amber-400 bg-stone-800 px-2 py-1 rounded border border-amber-500/50 shrink-0">
+                        {selectedGameDef?.name || 'バトル'}
+                      </span>
+                      <div className="text-xs text-stone-200 truncate">
+                        {isCurrentBattleClearedToday ? (
+                          <span className="text-emerald-400 font-bold flex items-center gap-1">
+                            <Gi.GiCheckMark className="text-xs" /> 本日クリア済（朝9:00リセット）
+                          </span>
+                        ) : isPianoIntInsufficient ? (
+                          <span className="text-rose-400 font-bold flex items-center gap-1">
+                            <Gi.GiPadlock className="text-xs" /> 楽譜記憶不可 (INT不足)
+                          </span>
+                        ) : (
+                          <>
+                            {selectedGame === 'defense' ? (
+                              <><span className="text-stone-400">配備:</span> <strong className="text-amber-300 font-bold">{selectedDefenseRobotIds.length}体</strong></>
+                            ) : (
+                              <><span className="text-stone-400">機体:</span> <strong className="text-amber-300 font-bold">{activeRobot?.name}</strong></>
+                            )}
+                            {requiresOpponent && activeOpponent && (
+                              <span className="ml-2 text-stone-300 hidden sm:inline">vs <strong className="text-red-400">{activeOpponent.name}</strong></span>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <Button
+                      onClick={handleStartBattle}
+                      onPointerDown={handlePointerDownReset}
+                      onPointerUp={handlePointerUpReset}
+                      onPointerLeave={handlePointerUpReset}
+                      onContextMenu={(e) => {
+                        if (isDefenseLocked) e.preventDefault();
+                      }}
+                      size="md"
+                      variant={isCurrentBattleClearedToday || isPianoIntInsufficient ? "secondary" : "primary"}
+                      disabled={isCurrentBattleClearedToday || isPianoIntInsufficient}
+                      className={`px-6 py-2 text-sm font-bold shadow-lg shrink-0 flex items-center gap-1.5 ${
+                        isCurrentBattleClearedToday || isPianoIntInsufficient
+                          ? 'bg-stone-700 text-stone-400 cursor-not-allowed border border-stone-600 opacity-60' 
+                          : 'bg-amber-600 hover:bg-amber-500 text-white'
+                      }`}
+                    >
+                      {isCurrentBattleClearedToday ? (
+                        <>
+                          <Gi.GiPadlock className="text-base" />
+                          本日完了
+                        </>
+                      ) : isPianoIntInsufficient ? (
+                        <>
+                          <Gi.GiPadlock className="text-base" />
+                          記憶不可
+                        </>
+                      ) : (
+                        <>
+                          <Gi.GiCrossedSwords className="text-base" />
+                          {selectedGame === 'danmaku' ? `演習開始 (${activeDanmakuDiff.label})` : selectedGame === 'piano' ? `演奏開始` : selectedGame === 'defense' ? `防衛開始` : 'バトル開始！'}
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              );
+            })()
           )}
         </div>
       ) : (

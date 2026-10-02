@@ -171,8 +171,19 @@ export interface PianoSong {
   desc: string;
   rewardFame: number;
   rewardElements: number;
+  targetInt: number; // 楽譜記憶に必要な知力(INT)
+  targetDex: number; // 音符の正確性・強弱タッチに必要な器用さ(DEX)
+  targetAgi: number; // テンポ・速いパッセージ追従に必要な素早さ(AGI)
   notes: PianoNoteData[];
 }
+
+/**
+ * ロボットが楽曲の楽譜を記憶できるか（INTが推奨値以上か）を判定
+ */
+export const canRobotMemorizePianoScore = (robot: { stats?: { intelligence?: number } } | null | undefined, song: PianoSong): boolean => {
+  if (!robot || !robot.stats) return false;
+  return (robot.stats.intelligence || 0) >= song.targetInt;
+};
 
 const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
@@ -279,9 +290,12 @@ export const PIANO_SONGS: PianoSong[] = [
     composer: 'ブルグミュラー', 
     level: 1, 
     songSpeed: 1.0,
-    desc: '「25の練習曲」より 第2番「アラベスク」イ短調 Op. 100, No. 2 (Allegro scherzando 2/4拍子)。pianoclassics.net (ID 112) / Mutopia 準拠・全曲完全収録版。軽やかな16分音符の駆け上がり(p〜mp)から中間部の力強い旋律(f)、そして鮮やかなコーダ(f〜ff)まで全曲のダイナミクスを完全再現。', 
+    desc: '「25の練習曲」より 第2番「アラベスク」イ短調 Op. 100, No. 2 (Allegro scherzando 2/4拍子)。軽やかな16分音符の駆け上がりから中間部の力強い旋律、そして鮮やかなコーダへと展開するブルグミュラーの親しみやすい名練習曲。', 
     rewardFame: 2,
     rewardElements: 0,
+    targetInt: 50,
+    targetDex: 45,
+    targetAgi: 40,
     notes: ARABESQUE_NOTES
   },
   { 
@@ -290,9 +304,12 @@ export const PIANO_SONGS: PianoSong[] = [
     composer: 'ブルグミュラー', 
     level: 2, 
     songSpeed: 1.0,
-    desc: '「25の練習曲」より 第25番「貴婦人の乗馬」ハ長調 Op. 100, No. 25 (Allegro brillante 2/4拍子)。pianoclassics.net (ID 135) / Mutopia 準拠・全曲完全収録版。華麗なファンファーレ(f)と軽快なギャロップ風3連符(p〜mp)、ヘ長調の優美な中間部、そして最高潮のフィナーレ(ff)まで全曲のダイナミクスを完全再現。', 
+    desc: '「25の練習曲」より 第25番「貴婦人の乗馬」ハ長調 Op. 100, No. 25 (Allegro brillante 2/4拍子)。華麗なファンファーレと軽快なギャロップ風3連符、ヘ長調の優美な中間部、そして最高潮のフィナーレへと展開する華やかな楽曲。', 
     rewardFame: 4,
     rewardElements: 0,
+    targetInt: 55,
+    targetDex: 50,
+    targetAgi: 45,
     notes: CHEVALERESQUE_NOTES
   },
   { 
@@ -301,9 +318,12 @@ export const PIANO_SONGS: PianoSong[] = [
     composer: 'バッハ / ペツォールト', 
     level: 3, 
     songSpeed: 1.0,
-    desc: '「アンナ・マグダレーナ・バッハの音楽帳」より メヌエット ト長調 BWV Anh. 114 (Moderato grazioso 3/4拍子)。pianoclassics.net (ID 6) / Mutopia 準拠。第1部・第2部それぞれの反復記号を含む全64小節・完全収録版。優美な舞曲提示(mf)とバロック伝統のエコー弱音(p)、そして堂々たる終止(f〜ff)の強弱表現を完全再現。', 
+    desc: '「アンナ・マグダレーナ・バッハの音楽帳」より メヌエット ト長調 BWV Anh. 114 (Moderato grazioso 3/4拍子)。優美な舞曲主題の提示とバロック伝統のエコー表現、そして堂々たる終止が調和したクラシックの名旋律。', 
     rewardFame: 6,
     rewardElements: 0,
+    targetInt: 60,
+    targetDex: 55,
+    targetAgi: 50,
     notes: MINUET_G_NOTES
   },
   { 
@@ -312,9 +332,12 @@ export const PIANO_SONGS: PianoSong[] = [
     composer: 'ベートーヴェン', 
     level: 4, 
     songSpeed: 1.0,
-    desc: 'バガテル「エリーゼのために」WoO 59 (イ短調 3/8拍子)。pianoclassics.net (ID 47) 準拠。主部と全エピソードを網羅した全曲完全収録版。pp〜ff・クレッシェンド・ディミヌエンドの音の強弱表現を完全再現。', 
+    desc: 'バガテル「エリーゼのために」WoO 59 (イ短調 3/8拍子)。哀愁を帯びた有名なロンド主題と、華やかで情熱的なエピソードが美しい対比を描くベートーヴェンの不朽のピアノ小品。', 
     rewardFame: 8,
     rewardElements: 0,
+    targetInt: 65,
+    targetDex: 60,
+    targetAgi: 55,
     notes: FUR_ELISE_NOTES
   },
   { 
@@ -323,9 +346,12 @@ export const PIANO_SONGS: PianoSong[] = [
     composer: 'ショパン', 
     level: 5, 
     songSpeed: 1.0,
-    desc: '夜想曲 第2番 変ホ長調 Op. 9, No. 2 (Andante 12/8拍子)。pianoclassics.net (ID 88) 準拠。楽譜通りの全小節音程・リズムとpp〜ffの豊かな音の強弱表現を完全再現。', 
+    desc: '夜想曲 第2番 変ホ長調 Op. 9, No. 2 (Andante 12/8拍子)。甘美で優美な主旋律が繊細な装飾音とともに変奏され、静寂とロマン派の情熱が溶け合うショパンの代表的なノクターン。', 
     rewardFame: 10,
     rewardElements: 0,
+    targetInt: 72,
+    targetDex: 68,
+    targetAgi: 60,
     notes: CHOPIN_NOCTURNE_NOTES
   },
   { 
@@ -334,9 +360,12 @@ export const PIANO_SONGS: PianoSong[] = [
     composer: 'モーツァルト', 
     level: 6, 
     songSpeed: 1.0,
-    desc: 'ピアノソナタ第11番 イ長調 K. 331 第3楽章「トルコ行進曲」(Allegretto 2/4拍子)。pianoclassics.net (ID 55) / Mutopia 準拠。主部・中間部・コーダを網羅した全曲完全収録版。優美な弱音(p)から軍楽主題・コーダの華麗な強音(f〜ff)までのダイナミクス・ベロシティ表現を完全再現。', 
+    desc: 'ピアノソナタ第11番 イ長調 K. 331 第3楽章「トルコ行進曲」(Allegretto 2/4拍子)。軽快で歯切れのよい主題と、オスマン帝国の軍楽隊（メフテル）の響きを模した力強く華やかなロンド形式の名曲。', 
     rewardFame: 12,
     rewardElements: 0,
+    targetInt: 85,
+    targetDex: 78,
+    targetAgi: 75,
     notes: TURKISH_MARCH_NOTES
   },
   { 
@@ -345,9 +374,12 @@ export const PIANO_SONGS: PianoSong[] = [
     composer: 'ショパン', 
     level: 7, 
     songSpeed: 1.0,
-    desc: '即興曲 第4番 嬰ハ短調 遺作 Op. 66 (Allegro agitato / Moderato cantabile)。pianoclassics.net (ID 89) / Mutopia 準拠・全13ページ全138小節完全収録版。右手(RH)の情熱的な疾走旋律・カンタービレと左手(LH)の波打つ6連符伴奏による右手・左手独立ダイナミクス(f/p, mf/pp)を完全再現し、4対3ポリリズムと静謐に消えゆくコーダ(pp)まで全曲の音響表現を収録。', 
+    desc: '即興曲 第4番 嬰ハ短調 遺作 Op. 66 (Allegro agitato / Moderato cantabile)。情熱的で疾走感あふれる主部と、甘美で穏やかな中間部のカンタービレ、4対3のポリリズムが織りなすショパンの傑作即興曲。', 
     rewardFame: 14,
     rewardElements: 0,
+    targetInt: 92,
+    targetDex: 85,
+    targetAgi: 85,
     notes: FANTAISIE_IMPROMPTU_NOTES
   },
   { 
@@ -356,9 +388,12 @@ export const PIANO_SONGS: PianoSong[] = [
     composer: 'リスト', 
     level: 8, 
     songSpeed: 1.0,
-    desc: 'パガニーニ大練習曲 第3番 嬰ト短調 S. 141-3。pianoclassics.net (ID 110) 準拠・全10ページ全140小節完全収録版。右手(RH)の煌びやかな高音鐘の跳躍(leggiero & marcatissimo)と左手(LH)の重厚なオクターブ伴奏・第2変奏の反転旋律(espressivo)による右手・左手独立ダイナミクス(f/p, mf/pp, ff/ff, fff/fff)を完全再現し、鐘の序奏(p)から怒涛のコーダ最強音(fff tutta la forza)まで全曲の音響表現を収録。', 
+    desc: 'パガニーニ大練習曲 第3番 嬰ト短調 S. 141-3。パガニーニのヴァイオリン協奏曲第2番のロンド「鐘」を主題とし、高音域の煌びやかな鐘の跳躍と超絶技巧が華麗に展開するリストの記念碑的名曲。', 
     rewardFame: 16,
     rewardElements: 0,
+    targetInt: 100,
+    targetDex: 95,
+    targetAgi: 95,
     notes: LA_CAMPANELLA_NOTES
   }
 ];

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 // @ts-ignore
 import Soundfont from 'soundfont-player';
 import { Robot } from '../../core/models';
-import { MinigameProps, PIANO_SONGS, PianoNoteData } from './Shared';
+import { MinigameProps, PIANO_SONGS, PianoNoteData, canRobotMemorizePianoScore } from './Shared';
 import { RobotVisual } from '../robot/RobotVisual';
 import { GSAPRobotCanvas } from '../robot/GSAPRobotCanvas';
 import { savePianoScore, getPianoBestScore, PianoBestScore } from '../../core/pianoScoreManager';
@@ -168,7 +168,14 @@ export const PianoGame: React.FC<PianoGameProps> = ({
     isBlack: boolean;
     endTime: number;
   }[]>([]);
-  const [judgement, setJudgement] = useState<{ id: number; text: string; combo: number; dynamics?: string } | null>(null);
+  const [judgement, setJudgement] = useState<{ 
+    id: number; 
+    text: string; 
+    combo: number; 
+    dynamics?: string; 
+    isLagging?: boolean; 
+    isSmooth?: boolean;
+  } | null>(null);
   
   // 音の強弱ステート & 表現力評価ステート
   const [activeDynamics, setActiveDynamics] = useState<string>('p');
@@ -188,6 +195,9 @@ export const PianoGame: React.FC<PianoGameProps> = ({
   const [elapsed, setElapsed] = useState(0);
   const elapsedRef = useRef(0);
   const nextNoteIdx = useRef(0);
+  const lastNoteTimeRef = useRef(-1);
+  const delayCountRef = useRef(0);
+  const [delayOccurredCount, setDelayOccurredCount] = useState(0);
   const comboRef = useRef(0);
   const maxComboRef = useRef(0);
   const scoreRef = useRef(0);
@@ -231,6 +241,9 @@ export const PianoGame: React.FC<PianoGameProps> = ({
   useEffect(() => {
     elapsedRef.current = 0;
     nextNoteIdx.current = 0;
+    lastNoteTimeRef.current = -1;
+    delayCountRef.current = 0;
+    setDelayOccurredCount(0);
     comboRef.current = 0;
     maxComboRef.current = 0;
     scoreRef.current = 0;
@@ -368,6 +381,8 @@ export const PianoGame: React.FC<PianoGameProps> = ({
 
       let scoreGained = 0;
       let latestJudgeText = '';
+      let latestIsLagging = false;
+      let latestIsSmooth = false;
       const activeLanes: { lane: number; isBlack: boolean; endTime: number }[] = [];
 
       // 判定ラインに到達したノーツを順次処理
@@ -375,40 +390,56 @@ export const PianoGame: React.FC<PianoGameProps> = ({
         const note = currentNotes[nextNoteIdx.current];
         const noteDuration = note.duration || 208;
         
-        // ロボットの賢さ(Int)と器用さ(Dex)による判定ロール
-        // Int: 楽譜理解・旋律・リズム把握 (主軸)
-        // Dex: 運指の滑らかさ・繊細な打鍵タッチ・強弱コントロール (補助＆表現力主軸)
-        // 難易度目標: 
-        // アラベスク(Lv.1): INT 50
-        // 貴婦人の乗馬(Lv.2): INT 55
-        // メヌエット ト長調(Lv.3): INT 60
-        // エリーゼのために(Lv.4): INT 65
-        // ノクターン 作品9-2(Lv.5): INT 72
-        // トルコ行進曲(Lv.6): INT 85
-        // 幻想即興曲(Lv.7): INT 92
-        // ラ・カンパネラ(Lv.8): INT 100
-        const targetInt = song.id === 'arabesque'
-          ? 50
-          : song.id === 'chevaleresque'
-            ? 55
-            : song.id === 'minuet_in_g'
-              ? 60
-              : song.id === 'fur_elise' 
-                ? 65 
-                : song.id === 'chopin_nocturne' 
-                  ? 72 
-                  : song.id === 'turkish_march' 
-                    ? 85 
-                    : song.id === 'fantaisie_impromptu'
-                      ? 92
-                      : 100;
         const intVal = activeRobot.stats.intelligence || 10;
         const dexVal = activeRobot.stats.dexterity || 10;
-        const effectiveScore = (intVal * 0.95) + (dexVal * 0.1);
-        const statDelta = effectiveScore - targetInt;
+        const agiVal = activeRobot.stats.agility || 10;
 
-        // roll値算出: 打鍵タイミング判定
-        const accuracyRoll = 86 + (Math.random() * 32) + (statDelta * 1.6);
+        const targetInt = song.targetInt || 50;
+        const targetDex = song.targetDex || 45;
+        const targetAgi = song.targetAgi || 40;
+
+        // 1. 直前の音符からの時間差 (連続打鍵・レガートの判定)
+        const timeDelta = lastNoteTimeRef.current >= 0 
+          ? Math.max(0, note.time - lastNoteTimeRef.current) 
+          : 1000;
+        lastNoteTimeRef.current = note.time;
+
+        // 2. DEXとAGIの両方の値に応じた「次の音符へのつながり（レガート・連続打鍵）」
+        // 350ms以内の近接した連続音符（16分音符走句・アルペジオ・同音連打）では高い連打連携力(Dex & Agi)が要求される
+        let continuityBonus = 0;
+        let isDelayLagging = false;
+        let isSmoothLegato = false;
+
+        if (timeDelta <= 350) {
+          const continuityDemand = Math.min(1.0, (350 - timeDelta) / 350);
+          const targetContinuity = (targetDex * 0.5) + (targetAgi * 0.5);
+          const robotContinuity = (dexVal * 0.5) + (agiVal * 0.5);
+          const continuityDelta = robotContinuity - targetContinuity;
+
+          if (continuityDelta < 0) {
+            // 推奨値より低い場合: 反応遅延（ディレイ）が発生し指がもつれて失敗しやすくなる
+            isDelayLagging = true;
+            latestIsLagging = true;
+            delayCountRef.current += 1;
+            setDelayOccurredCount(delayCountRef.current);
+            continuityBonus = continuityDelta * 2.2 * continuityDemand; // 判定への大きな遅延ペナルティ
+          } else {
+            // 推奨値以上: 流麗なレガート走句ボーナス
+            isSmoothLegato = true;
+            latestIsSmooth = true;
+            continuityBonus = Math.min(18, continuityDelta * 0.75 * continuityDemand);
+          }
+        }
+
+        // 3. AGI（素早さ）による速い曲・テンポへの対応力
+        // 曲の要求Agiに対してAgiが高いほど素早いパッセージに余裕を持って追従可能
+        const agiDelta = agiVal - targetAgi;
+        const tempoAdaptBonus = agiDelta * 1.1;
+
+        // 4. DEX（器用さ）による音符の正確性ロール
+        // Dexが高いほど指先の運指コントロールが精密になりEXCELLENT/GOODが安定
+        const dexDelta = dexVal - targetDex;
+        const accuracyRoll = 86 + (Math.random() * 26) + (dexDelta * 1.5) + tempoAdaptBonus + continuityBonus;
 
         let noteScore = 0;
         let judgeStr = '';
@@ -418,28 +449,28 @@ export const PianoGame: React.FC<PianoGameProps> = ({
           noteScore = 300; 
           judgeStr = 'EXCELLENT'; 
           vol = 1.0;
-        } else if (accuracyRoll >= 85) { 
+        } else if (accuracyRoll >= 84) { 
           noteScore = 150; 
           judgeStr = 'GOOD'; 
           vol = 0.95;
-        } else if (accuracyRoll >= 70) { 
+        } else if (accuracyRoll >= 68) { 
           noteScore = 50; 
           judgeStr = 'SOSO'; 
           vol = 0.88;
-        } else if (accuracyRoll >= 45) { 
+        } else if (accuracyRoll >= 42) { 
           noteScore = 10; 
           judgeStr = 'NOT GOOD'; 
-          vol = 0.75;
+          vol = 0.72;
         } else { 
           noteScore = 0; 
           judgeStr = 'BAD'; 
           vol = 0.0;
         }
 
-        // 強弱表現力ロール (Dex 70% + Int 30%): 指先の繊細なベロシティコントロール
-        const expressionEffective = (dexVal * 0.7) + (intVal * 0.3);
-        const expressionDelta = expressionEffective - (targetInt * 0.85);
-        const expressionRoll = 86 + (Math.random() * 30) + (expressionDelta * 1.5);
+        // 5. DEX（器用さ）による音の強弱タッチ表現力ロール (Dex 85% + Int 15%)
+        // 指先の繊細なベロシティ・ダイナミクス制御力
+        const expressionDelta = (dexVal * 0.85 + intVal * 0.15) - targetDex;
+        const expressionRoll = 86 + (Math.random() * 28) + (expressionDelta * 1.6) + (isDelayLagging ? -16 : 0);
 
         let touchScore = 0; // 0 to 100
         let touchJudgeKey: 'perfectTouch' | 'greatTouch' | 'goodTouch' | 'roughTouch' = 'goodTouch';
@@ -453,14 +484,14 @@ export const PianoGame: React.FC<PianoGameProps> = ({
           touchScore = 80;
           touchJudgeKey = 'greatTouch';
           touchFactor = 0.98;
-        } else if (expressionRoll >= 65) {
+        } else if (expressionRoll >= 64) {
           touchScore = 55;
           touchJudgeKey = 'goodTouch';
           touchFactor = 0.88;
         } else {
           touchScore = 25;
           touchJudgeKey = 'roughTouch';
-          touchFactor = 0.72;
+          touchFactor = 0.70;
         }
 
         dynamicsScoreTotalRef.current += touchScore;
@@ -535,7 +566,9 @@ export const PianoGame: React.FC<PianoGameProps> = ({
           id: currentElapsed, 
           text: latestJudgeText, 
           combo: comboRef.current,
-          dynamics: currentNotes[nextNoteIdx.current - 1]?.dynamics 
+          dynamics: currentNotes[nextNoteIdx.current - 1]?.dynamics,
+          isLagging: latestIsLagging,
+          isSmooth: latestIsSmooth
         });
       }
       if (activeLanes.length > 0) {
@@ -718,10 +751,44 @@ export const PianoGame: React.FC<PianoGameProps> = ({
     return keys;
   }, []);
 
+  // 0. 推奨INTチェック：知力不足で楽譜を覚えられない場合のフォールバックガード
+  const isIntSufficient = (activeRobot?.stats?.intelligence || 0) >= (song.targetInt || 50);
+  if (!isIntSufficient) {
+    return (
+      <div className="bg-stone-900 border-2 border-rose-600/80 rounded-2xl p-6 text-center text-stone-100 shadow-xl space-y-4">
+        <div className="w-14 h-14 bg-rose-500/20 border-2 border-rose-500 rounded-2xl flex items-center justify-center text-rose-400 text-3xl mx-auto shadow-inner">
+          <Gi.GiBrain />
+        </div>
+        <div>
+          <h3 className="text-lg font-black text-rose-300">楽譜を覚えられません！</h3>
+          <p className="text-xs text-stone-300 mt-1 max-w-md mx-auto leading-relaxed">
+            「{song.title}」の複雑な楽譜記号や旋律を記憶するには知力(INT)が不足しています。
+            （必要知力: <strong className="text-amber-400 font-mono">INT {song.targetInt}</strong> / 現在の機体知力: <strong className="text-rose-400 font-mono">INT {activeRobot?.stats?.intelligence || 0}</strong>）
+          </p>
+        </div>
+        <div className="pt-2">
+          <button
+            onClick={() => onExit && onExit()}
+            className="px-6 py-2.5 bg-stone-800 hover:bg-stone-700 text-stone-200 font-bold text-xs rounded-xl border border-stone-600 transition cursor-pointer"
+          >
+            演習選択に戻る
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // 演奏結果画面（リザルト画面）: 全ての情報を綺麗に配置した専用カルテビュー
   if (isFinished) {
     const isWin = totalPerformancePercent >= 90;
     const prevBest = saveResult.previousRecord;
+
+    const robotInt = activeRobot.stats.intelligence || 10;
+    const robotDex = activeRobot.stats.dexterity || 10;
+    const robotAgi = activeRobot.stats.agility || 10;
+    const targetInt = song.targetInt || 50;
+    const targetDex = song.targetDex || 45;
+    const targetAgi = song.targetAgi || 40;
 
     return (
       <div className="w-full space-y-4">
@@ -763,16 +830,20 @@ export const PianoGame: React.FC<PianoGameProps> = ({
               </h2>
             </div>
 
-            {/* 出撃ロボット情報 */}
-            <div className="flex items-center gap-2.5 bg-stone-950/90 px-3 py-1.5 rounded-xl border border-stone-800 self-stretch sm:self-auto justify-between sm:justify-start">
+            {/* 演奏ロボット情報 */}
+            <div className="flex items-center gap-2.5 bg-stone-950/90 px-3 py-1.5 rounded-xl border border-stone-800 self-stretch sm:self-auto justify-between sm:justify-start" title="演奏ロボット">
               <div className="bg-stone-800 p-1 rounded-lg border border-stone-700">
                 <RobotVisual robot={activeRobot} size={36} animateVictory={isWin} hideBackground={true} hideBubble={true} />
               </div>
               <div className="text-left text-xs font-mono">
-                <div className="font-bold text-stone-200">{activeRobot.name}</div>
-                <div className="text-[10px] text-stone-400 flex gap-2">
-                  <span>Int: <strong className="text-amber-300">{activeRobot.stats.intelligence}</strong></span>
-                  <span>Dex: <strong className="text-amber-300">{activeRobot.stats.dexterity}</strong></span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-amber-400 font-sans font-bold bg-amber-950/80 px-1 rounded border border-amber-600/40">演奏ロボット</span>
+                  <span className="font-bold text-stone-200 truncate max-w-[120px]">{activeRobot.name}</span>
+                </div>
+                <div className="text-[10px] text-stone-400 flex gap-2 flex-wrap mt-0.5">
+                  <span>Int: <strong className="text-blue-400">{robotInt}</strong></span>
+                  <span>Dex: <strong className="text-emerald-400">{robotDex}</strong></span>
+                  <span>Agi: <strong className="text-amber-300">{robotAgi}</strong></span>
                 </div>
               </div>
             </div>
@@ -948,6 +1019,67 @@ export const PianoGame: React.FC<PianoGameProps> = ({
             </div>
           </div>
 
+          {/* 機体能力値と演奏連携カルテ */}
+          <div className="bg-stone-950/90 p-3.5 rounded-xl border border-stone-800 space-y-2.5">
+            <div className="text-xs font-bold text-amber-300 flex items-center justify-between font-mono border-b border-stone-800/80 pb-1.5">
+              <span className="flex items-center gap-1.5">
+                <Gi.GiGears className="text-amber-400" />
+                <span>機体能力値 ＆ 演奏システム適性カルテ</span>
+              </span>
+              <span className="text-[10px] text-stone-400">Int / Dex / Agi 連動</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-[11px] font-mono">
+              <div className="bg-stone-900/90 p-2 rounded-lg border border-stone-800">
+                <div className="text-stone-400 font-sans flex items-center justify-between">
+                  <span>🧠 楽譜記憶 (INT)</span>
+                  <span className={robotInt >= targetInt ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}>
+                    {robotInt >= targetInt ? '合格' : '不足'}
+                  </span>
+                </div>
+                <div className="text-stone-200 mt-1 font-bold">
+                  INT {robotInt} <span className="text-stone-500 font-normal">/ 基準 {targetInt}</span>
+                </div>
+              </div>
+              <div className="bg-stone-900/90 p-2 rounded-lg border border-stone-800">
+                <div className="text-stone-400 font-sans flex items-center justify-between">
+                  <span>🎯 打鍵精度・強弱 (DEX)</span>
+                  <span className={robotDex >= targetDex ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold'}>
+                    {robotDex >= targetDex ? '適正' : 'ブレあり'}
+                  </span>
+                </div>
+                <div className="text-stone-200 mt-1 font-bold">
+                  DEX {robotDex} <span className="text-stone-500 font-normal">/ 推奨 {targetDex}</span>
+                </div>
+              </div>
+              <div className="bg-stone-900/90 p-2 rounded-lg border border-stone-800">
+                <div className="text-stone-400 font-sans flex items-center justify-between">
+                  <span>⚡ テンポ追従 (AGI)</span>
+                  <span className={robotAgi >= targetAgi ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold'}>
+                    {robotAgi >= targetAgi ? '軽快' : '追従難'}
+                  </span>
+                </div>
+                <div className="text-stone-200 mt-1 font-bold">
+                  AGI {robotAgi} <span className="text-stone-500 font-normal">/ 推奨 {targetAgi}</span>
+                </div>
+              </div>
+              <div className="bg-stone-900/90 p-2 rounded-lg border border-stone-800">
+                <div className="text-stone-400 font-sans flex items-center justify-between">
+                  <span>🔗 連続音符の連結 (DEX+AGI)</span>
+                  <span className={delayOccurredCount === 0 ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}>
+                    {delayOccurredCount === 0 ? '流麗レガート' : 'ディレイ発生'}
+                  </span>
+                </div>
+                <div className="text-stone-200 mt-1 font-bold">
+                  {delayOccurredCount === 0 ? (
+                    <span className="text-emerald-400">遅延なし (0回)</span>
+                  ) : (
+                    <span className="text-rose-400">反応遅延 {delayOccurredCount}回</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* 特別称号（全EXCELLENT時） */}
           {judgementsCount.excellent === totalNotes && (
             <motion.div 
@@ -995,8 +1127,9 @@ export const PianoGame: React.FC<PianoGameProps> = ({
               <span className="text-xs text-stone-400 font-sans">（{song.composer}）</span>
             </div>
             <div className="text-[11px] text-stone-400 flex gap-2 font-mono flex-wrap">
-              <span className="bg-stone-800 px-2 py-0.5 rounded border border-stone-700">Int: {activeRobot.stats.intelligence}</span>
-              <span className="bg-stone-800 px-2 py-0.5 rounded border border-stone-700">Dex: {activeRobot.stats.dexterity}</span>
+              <span className="bg-stone-800 px-2 py-0.5 rounded border border-stone-700">Int: {activeRobot.stats.intelligence || 10}/{song.targetInt}</span>
+              <span className="bg-stone-800 px-2 py-0.5 rounded border border-stone-700">Dex: {activeRobot.stats.dexterity || 10}/{song.targetDex}</span>
+              <span className="bg-stone-800 px-2 py-0.5 rounded border border-stone-700">Agi: {activeRobot.stats.agility || 10}/{song.targetAgi}</span>
               {combo > 1 && (
                 <span className="bg-amber-900/60 text-amber-300 font-bold px-2 py-0.5 rounded border border-amber-500/50 animate-pulse">
                   {combo} COMBO
@@ -1169,8 +1302,13 @@ export const PianoGame: React.FC<PianoGameProps> = ({
                   </span>
                 )}
               </div>
+              {judgement.isSmooth && !judgement.isLagging && (
+                <div className="text-teal-300 text-xs font-bold font-mono tracking-wide drop-shadow-md mt-0.5">
+                  ✨ 流麗レガート (SMOOTH)
+                </div>
+              )}
               {judgement.combo > 1 && (
-                <div className="text-amber-300 text-sm font-bold tracking-wider drop-shadow-md">
+                <div className="text-amber-300 text-sm font-bold tracking-wider drop-shadow-md mt-0.5">
                   {judgement.combo} COMBO!
                 </div>
               )}
