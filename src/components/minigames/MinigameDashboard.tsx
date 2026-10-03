@@ -47,13 +47,14 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
   {
     id: 'puzzle',
     name: 'パズル・頭脳戦',
-    desc: '思考力と先読みのボードゲーム',
-    icon: <Gi.GiChessKing />,
+    desc: '思考力と先読みのボード＆融合パズル',
+    icon: <Gi.GiBrain />,
     color: 'from-amber-600 to-yellow-700',
     badgeBg: 'bg-amber-100 text-amber-900 border-amber-300',
     games: [
       { id: 'othello', name: 'リバーシ演習', icon: <Gi.GiInvertedDice3 />, desc: '挟んで裏返す定番ボードゲーム' },
-      { id: 'chess', name: 'チェス演習', icon: <Gi.GiChessRook />, desc: '王手を狙う本格頭脳勝負' }
+      { id: 'puzzle2048', name: '2048自動対戦', icon: <Gi.GiAtom />, desc: '自機とライバルAIが自動合体でスコア勝負' },
+      { id: 'falling_puzzle', name: '落下パズル対戦', icon: <Gi.GiBrickWall />, desc: '2画面で自動ライン消去のスコア勝負' }
     ]
   },
   {

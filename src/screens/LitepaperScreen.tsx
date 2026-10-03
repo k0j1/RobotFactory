@@ -25,7 +25,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
         title="ポンコツロボット工房 公式仕様書"
         badge={
           <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300 font-mono font-bold px-1.5 py-0.2 rounded">
-            v0.1.159 (DB v0.21)
+            v0.1.168 (DB v0.23)
           </span>
         }
         rightElement={
@@ -275,7 +275,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                     <li><strong>新人技師初回ボーナス:</strong> 初期ユーザー向けに、ロボット1体を即座に組み立てられる☆1素材セット（全24個・すべて☆1ランクのみ）をプレゼント。ヘッド・ボディ・アーム・レッグの4部位（各5個＝計20個必要）を余すことなく組み立て可能です。初回登録時に確実に受取カードが表示され受け取ることができます。</li>
                     <li><strong>図鑑登録・パーツ基準値一覧 &amp; 素材シルエット図鑑:</strong> 完成した新機体は自動的に図鑑へ記録されます。また、パーツ図鑑タブではすべてのパーツ形状と、耐久力(HP)・攻撃力(POW)・探索力(DEX)などの「基準値ステータス」を便利なテーブル（表）形式で一覧表示し、比較することができます。さらに「素材・出現パーツ図鑑」タブでは、未獲得の素材を影絵シルエットおよびマスク名称（？？？？？）でミステリアスに表示し、主な入手先となる遠征地や解放条件（必要工房名声など）のヒントを表示するコレクション機能を搭載。獲得状況（すべて・獲得済み・未獲得）や属性・レア度別の絞り込みフィルター、および素材収集率プログレスバーを完備しています。</li>
                     <li><strong>Google AdSense リワード広告時短:</strong> パーツ製造およびロボット組立の進行中に動画広告を視聴することで、完了までの所要時間を<strong>1回につき30分短縮</strong>できます。残り時間が30分以内の場合は即座に完成します。</li>
-                    <li><strong>Googleアカウント連携 &amp; クラウドデータ同期 (DB v0.21):</strong> Googleアカウントでログインした場合、オンライン上にゲームデータ（工房ステータス、所持機体、パーツ、遠征、ミニゲーム成績・宝箱数等）が自動的に保存・同期されます。<code>users</code>テーブルの<code>google_id</code>を親キーとして、全22テーブル（<code>user_item</code>, <code>user_material</code>, <code>user_minigame_status</code>, <code>user_parts</code>, <code>user_robots</code>, <code>user_workshop_status</code>, <code>user_save_data</code>, <code>stats_minigame_rankings</code>, <code>complete_daily_minigame</code>, <code>complete_part_crafts</code>, <code>complete_robot_assemblies</code>等の各種active/completeテーブル）の<code>user_id</code>に厳格な外部キー制約（CASCADE）が設定され、データの参照整合性と安全性が保証されています（旧<code>complete_parts</code>, 旧<code>completed_robots</code>テーブルに続き、旧<code>completed_daily_minigame</code>テーブルも正規化名称<code>complete_daily_minigame</code>へ刷新・全レコード初期化）。さらに、<code>complete_daily_minigame</code>テーブルの<code>robot_id</code>カラムには所持機体テーブル（<code>user_robots</code>の<code>id</code>）への外部キー制約（CASCADE）が厳格に設定され、機体削除時にもデイリー制限レコードが安全かつ自動的に連動クリーンアップされます。所持素材テーブル（<code>user_material</code>）および所持機体テーブル（<code>user_robots</code>）では、従来実行されていたユーザー単位の一括削除（DELETE）を完全に撤廃し、獲得・消費・換装・ステータス変動によって変更が生じた機体・素材レコードのみを特定して差分更新（UPSERT / 解体・売却・全消費時のみ特定レコードDELETE）する最適化を実施。数量や構成に変動のない他機体・他素材レコードの<code>updated_at</code>更新や意図しない全行書き換えを完全に防止し、機体・素材ごとの正確な<code>created_at</code>作成日時や外部キー制約（<code>complete_daily_minigame</code>等）を恒久保護しています。所持パーツテーブル（<code>user_parts</code>）やミニゲーム進捗（<code>user_minigame_status</code>）も同様に個別差分更新により構造化管理され、保存時に未装備パーツ（<code>is_equipped = 0</code>）や既存レコードの<code>created_at</code>作成日時が安全に保護され、余計な一括削除や意図しない日時の上書きが発生しないよう最適化されています。パーツ製造完了・受取時には、<code>active_part_crafts</code>の削除、<code>complete_part_crafts</code>への製造パーツ情報（<code>result_part_data</code>）付き履歴追加、および<code>user_parts</code>テーブルへの新パーツ追加が単一トランザクション内で不可分に実行されます。この際、同一の<code>part_id</code>や同一の<code>start_time</code>かつ<code>end_time</code>を持つレコードが既に<code>complete_part_crafts</code>テーブルに存在する場合は、多重登録を防止しつつ、パーツの所持確定および進行中クラフト（<code>active_part_crafts</code>）の削除クリーンアップを自動実行して安全に受取完了へと同期されます。また、バトル演習専用武装（ビームサーベル・ビームシールド）の強化ランク（★1〜★5）および有効化状態は<code>user_item</code>テーブルの<code>battle_item</code>カラムに確実なオブジェクト構造（辞書型）として保存・復元され、データ同期時の型不整合やランク蒸発を完全に防止して永続化されます。ミニゲーム/演習クリア制限テーブル（<code>complete_daily_minigame</code>）により機体・ゲーム・難易度ごとのクリア状況が記録され、毎朝9:00（JST）のデイリーリセットを迎えるまで同機体の再クリアが制限されます。前日以前の期限切れレコードのみを対象ユーザー限定で安全にクリーンアップし、既存レコードの<code>created_at</code>初回到達日時を恒久保護します。</li>
+                    <li><strong>Googleアカウント連携 &amp; クラウドデータ同期 (DB v0.23 / 納品単一トランザクション &amp; 完全サーバーDB永続化):</strong> Googleアカウントでログインした場合、オンライン上にゲームデータ（工房ステータス、所持機体、パーツ、遠征、ミニゲーム成績・宝箱数等）が自動的に保存・同期されます。サーバーデータベースに保持するゲームデータはローカルストレージ（localStorage）には一切保存・読み込みを行わず、常にCoreServerのMySQL各テーブル（全22テーブル）を唯一の信頼できるデータソース（Single Source of Truth）として直接読み書きします。<code>users</code>テーブルの<code>google_id</code>を親キーとして、全22テーブル（<code>user_item</code>, <code>user_material</code>, <code>user_minigame_status</code>, <code>user_parts</code>, <code>user_robots</code>, <code>user_workshop_status</code>, <code>user_save_data</code>, <code>stats_minigame_rankings</code>, <code>complete_daily_minigame</code>, <code>complete_part_crafts</code>, <code>complete_robot_assemblies</code>等の各種active/completeテーブル）の<code>user_id</code>に厳格な外部キー制約（CASCADE）が設定され、データの参照整合性と安全性が保証されています（旧<code>complete_parts</code>, 旧<code>completed_robots</code>テーブルに続き、旧<code>complete_daily_minigame</code>テーブルも正規化名称<code>complete_daily_minigame</code>へ刷新・全レコード初期化）。さらに、<code>complete_daily_minigame</code>テーブルの<code>robot_id</code>カラムには所持機体テーブル（<code>user_robots</code>の<code>id</code>）への外部キー制約（CASCADE）が厳格に設定され、機体削除時にもデイリー制限レコードが安全かつ自動的に連動クリーンアップされます。所持素材テーブル（<code>user_material</code>）および所持機体テーブル（<code>user_robots</code>）では、従来実行されていたユーザー単位の一括削除（DELETE）を完全に撤廃し、獲得・消費・換装・ステータス変動によって変更が生じた機体・素材レコードのみを特定して差分更新（UPSERT / 解体・売却・全消費時のみ特定レコードDELETE）する最適化を実施。数量や構成に変動のない他機体・他素材レコードの<code>updated_at</code>更新や意図しない全行書き換えを完全に防止し、機体・素材ごとの正確な<code>created_at</code>作成日時や外部キー制約（<code>complete_daily_minigame</code>等）を恒久保護しています。所持パーツテーブル（<code>user_parts</code>）やミニゲーム進捗（<code>user_minigame_status</code>）も同様に個別差分更新により構造化管理され、保存時に未装備パーツ（<code>is_equipped = 0</code>）や既存レコードの<code>created_at</code>作成日時が安全に保護され、余計な一括削除や意図しない日時の上書きが発生しないよう最適化されています。パーツ製造完了・受取時には、<code>active_part_crafts</code>の削除、<code>complete_part_crafts</code>への製造パーツ情報（<code>result_part_data</code>）付き履歴追加、および<code>user_parts</code>テーブルへの新パーツ追加が単一トランザクション内で不可分に実行されます。この際、同一の<code>part_id</code>や同一の<code>start_time</code>かつ<code>end_time</code>を持つレコードが既に<code>complete_part_crafts</code>テーブルに存在する場合は、多重登録を防止しつつ、パーツの所持確定および進行中クラフト（<code>active_part_crafts</code>）の削除クリーンアップを自動実行して安全に受取完了へと同期されます。また、依頼納品完了時には、<code>user_robots</code>からの納品機体削除、装備されていた構成パーツ（全4部位）の<code>user_parts</code>からの完全削除、進行中依頼（<code>active_requests</code>）の削除、納品履歴（<code>complete_requests</code>）の追加、および工房ステータス（<code>user_workshop_status</code>）へのゴールド・名声・納品累計数加算が、単一トランザクション内で不可分（アトミック）に一括実行されます。万が一途中で通信障害等が生じた場合も全変更が安全にロールバックされ、パーツの消滅や報酬の二重受取・不整合が恒久保護されます。また、バトル演習専用武装（ビームサーベル・ビームシールド）の強化ランク（★1〜★5）および有効化状態は<code>user_item</code>テーブルの<code>battle_item</code>カラムに確実なオブジェクト構造（辞書型）として保存・復元され、データ同期時の型不整合やランク蒸発を完全に防止して永続化されます。ミニゲーム/演習クリア制限テーブル（<code>complete_daily_minigame</code>）により機体・ゲーム・難易度ごとのクリア状況が記録され、毎朝9:00（JST）のデイリーリセットを迎えるまで同機体の再クリアが制限されます。前日以前の期限切れレコードのみを対象ユーザー限定で安全にクリーンアップし、既存レコードの<code>created_at</code>初回到達日時を恒久保護します。</li>
                     <li><strong>他プレイヤーのリアルタイム組立状況表示:</strong> active_robot_assembliesテーブルを参照し、現在他のプレイヤーがロボットを組み立てている場合、組立タブや作業ドックに「他の工房で〇〇人組立中」バッジがリアルタイムに表示されます。</li>
                     <li><strong>PWA &amp; モバイル「ホーム画面に追加」完全対応 (Android / iOS):</strong> Android（Chrome, Samsung Internet等）やiOS（Safari）のブラウザから、ワンタップでホーム画面にアプリアイコンを追加（PWAインストール）できます。アドレスバーのない快適なフルスクリーン表示、オフラインアセットの高速キャッシュ、専用マスカブルアイコン（Safe Zone最適化済み高解像度アイコン）、およびタイトル画面・工房ダッシュボード・ヘッダー内のインストール案内UIを完備しています。</li>
                     <li><strong>GSAPモーションスタジオ:</strong> 漆黒のグランドピアノによる華麗なピアノ協奏曲演奏や大迫力の必殺奥義・アクロバットをはじめ、喜怒哀楽・がっかりため息・地団駄プンプン・号泣スプラッシュ・照れ笑い・ドヤ顔・驚愕硬直・拍手喝采・首振り拒否・居眠り舟漕ぎ・甘えん坊ハグ・ガッツポーズ・大爆笑・バイバイ・るんるんスキップ・困惑頭ポリポリ・電球閃き・冷や汗タラリ・胸キュン鼓動・闘志全開・忍び足など、多彩な感情表現・仕草モーション（全26種）と専用SVGパーティクルエフェクトを組み込んだロボットの生き生きとした表現を鑑賞・動作検証できます。</li>
@@ -484,7 +484,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                 <p className="text-[10px] text-stone-500 font-sans">
                   ※ 各カテゴリーカードで次ランク昇格までの残り必要勝利数がリアルタイムに表示されます。
                   <br />
-                  ※ <strong>挑戦回数・クリア制限ルール:</strong> すべてのバトル（戦闘演習・リバーシ・チェス・弾幕よけ・ピアノ演奏・拠点防衛戦）は、<strong>未勝利であれば1日何回でも再挑戦可能</strong>です。勝利（クリア）したバトル・項目・レベルはロボットごとに「本日クリア済」として自動記録され、翌朝9:00のリセットまで出撃ボタンが無効化されます。また、全ミニゲーム・演習での<strong>エレメント獲得量は獲得名声量と同一</strong>に設定されており、ミニゲーム選択画面でも獲得可能な名声とエレメントが分かりやすく明記されています。各ミニゲームの成績・宝箱数（<code>chests_count</code>）は<code>user_minigame_status</code>テーブルへ、獲得したエレメントや宝箱の所持実数は<code>user_item</code>テーブルへリアルタイムで自動記録・同期されます。
+                  ※ <strong>挑戦回数・クリア制限ルール:</strong> すべてのバトル（戦闘演習・リバーシ・2048対戦・落下パズル対戦・弾幕よけ・ピアノ演奏・拠点防衛戦）は、<strong>未勝利であれば1日何回でも再挑戦可能</strong>です。勝利（クリア）したバトル・項目・レベルはロボットごとに「本日クリア済」として自動記録され、翌朝9:00のリセットまで出撃ボタンが無効化されます。また、全ミニゲーム・演習での<strong>エレメント獲得量は獲得名声量と同一</strong>に設定されており、ミニゲーム選択画面でも獲得可能な名声とエレメントが分かりやすく明記されています。各ミニゲームの成績・宝箱数（<code>chests_count</code>）は<code>user_minigame_status</code>テーブルへ、獲得したエレメントや宝箱の所持実数は<code>user_item</code>テーブルへリアルタイムで自動記録・同期されます。
                 </p>
               </div>
 
@@ -551,13 +551,47 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                   </p>
                 </div>
 
-                <div className="bg-white p-2.5 rounded-lg border border-stone-200 sm:col-span-2">
-                  <strong className="text-stone-900 block font-bold mb-1">♟️ クラシック頭脳対戦 (リバーシ / チェス / 五目並べ / 三目並べ)</strong>
+                <div className="bg-white p-2.5 rounded-lg border border-stone-200">
+                  <strong className="text-stone-900 block font-bold mb-1">⚛️ 2048自動対戦 (2048 Auto Battle)</strong>
                   <p className="text-stone-600">
-                    ロボットの知力(INT)や思考ロジックを試すボードゲーム集。<strong>リバーシおよびチェスでは勝利時に専用の宝箱がドロップ</strong>し、回収可能！対局相手のレベルに応じた素材・ゴールド・工房名声および同数のバトルエレメント（Lv.4以上で名声と同数）を獲得できます。未勝利時は1日何回でも繰り返し挑戦できます。
+                    自機ロボットとライバルAIが2つの画面で並列対戦を行うリアルタイム自動パズルバトル。4x4グリッドの高圧融合炉内で、両機のAIが自律思考によってスライド操作を行い、同種の動力コア（鉄［2］〜超次元［8192］）を合体・融合させていきます。
                     <br />
-                    <strong>🎲 動的思考ルーチン＆手数バリエーション機構（オセロ・チェス・五目並べ）:</strong>
-                    同じ機体・同じ知力(INT)の対戦相手であっても、毎回まったく同じ手順・同じ勝敗結果（完全固定化・千日手）にならないよう、各盤面評価値をもとに上位の有力候補手群から知性に応じた温度パラメータ（Temperature）による重み付け確率選択（ソフトマックス分布）と微小な思考ゆらぎを適用。チェスではピース・スクエア・テーブル（PST）による駒の位置価値や中央支配も加味され、初手オープニング（e4, d4, c4, Nf3等）から終盤まで、対戦するたびに毎回異なる多彩な棋譜とドラマチックな攻防が展開されます。
+                    <strong>🧠 機体能力値連動思考ルーチン (INT / DEX / AGI):</strong>
+                    <br />
+                    ・<strong>知力(INT)による最適手選択率:</strong> INTが高いほど盤面の単調性・平坦度・四隅キープを評価するヒューリスティック関数から最善の手を正確に選択します。
+                    <br />
+                    ・<strong>器用さ(DEX)によるスコア乗算:</strong> DEXが高いほどコア融合時に獲得できるスコアに倍率ボーナス（1 + DEX × 0.8%）が付与されます。
+                    <br />
+                    ・<strong>敏捷性(AGI)によるスライド速度:</strong> AGIが高いほど次のスライドまでの演算インターバルが短縮され、高速でコアを融合できます。
+                    <br />
+                    <strong>対戦相手選択と勝敗判定:</strong> オセロ（リバーシ）演習と同様に全10段階（Lv.1〜Lv.10）の対戦相手から選択。制限時間45秒または両者手詰まり時点で<strong>「相手より高いスコアを獲得」していれば見事勝利</strong>！Lv.4以上の相手に勝利すると、レベルに応じた<strong>工房名声（Lv.4: 1 〜 Lv.10: 100）および同数のバトルエレメント（1 E 〜 100 E）、専用のクリア宝箱</strong>を獲得できます。
+                  </p>
+                </div>
+
+                <div className="bg-white p-2.5 rounded-lg border border-stone-200">
+                  <strong className="text-stone-900 block font-bold mb-1">🧱 落下パズル対戦 (Falling Block Puzzle Auto Battle)</strong>
+                  <p className="text-stone-600">
+                    自機ロボットとライバルAIが2画面で競い合うリアルタイム自動落下パズル対戦。10x20の演習フィールドに降下する7種類のテトロミノ（I, O, T, S, Z, J, L）を両機のAIが最適配置アルゴリズム（着地高度、消去ライン数、穴の少なさ、表面起伏を総合判定）に基づいて自動で回転・移動・ドロップします。
+                    <br />
+                    <strong>⚡ 機体能力値連動AIアルゴリズム (INT / DEX / AGI):</strong>
+                    <br />
+                    ・<strong>知力(INT)による最善手探索:</strong> INTが高いほど盤面の穴を避け平坦に積み上げる最善の配置候補を選択する確率が向上します。
+                    <br />
+                    ・<strong>敏捷性(AGI)による落下・着地速度:</strong> AGIが高いほどピースのドロップインターバルが短縮され、素早く次々とラインを消去できます。
+                    <br />
+                    ・<strong>器用さ(DEX)による消去スコア倍率:</strong> DEXが高いほどライン消去時の獲得スコアにボーナス倍率（1 + DEX × 1.2%）が付与され、高得点を叩き出します。
+                    <br />
+                    <strong>対戦相手選択と勝敗判定:</strong> オセロと同様にLv.1〜Lv.10のライバルAIから対戦相手を選択。制限時間50秒または両者窒息時点で<strong>「相手より高いスコアを獲得」していれば勝利</strong>！Lv.4以上の勝利で<strong>工房名声（Lv.4: 1 〜 Lv.10: 100）および同数のバトルエレメント（1 E 〜 100 E）、専用クリア宝箱</strong>を獲得できます。
+                  </p>
+                </div>
+
+                <div className="bg-white p-2.5 rounded-lg border border-stone-200 sm:col-span-2">
+                  <strong className="text-stone-900 block font-bold mb-1">♟️ リバーシ演習 (Reversi / 挟み撃ち頭脳戦)</strong>
+                  <p className="text-stone-600">
+                    ロボットの知力(INT)や思考ルーチンを競う定番ボードゲーム。相手石を挟んで裏返し、最終的な獲得石数で勝敗を決定します。勝利時に<strong>専用の宝箱がドロップ</strong>し回収可能！対局相手のレベルに応じた素材・ゴールド・工房名声および同数のバトルエレメント（Lv.4以上で名声と同数）を獲得できます。未勝利時は1日何回でも繰り返し挑戦できます。
+                    <br />
+                    <strong>🎲 動的思考ルーチン＆手数バリエーション機構:</strong>
+                    同じ機体・同じ知力(INT)の対戦相手であっても、毎回まったく同じ手順・同じ勝敗結果（完全固定化）にならないよう、各盤面評価値をもとに上位の有力候補手群から知性に応じた温度パラメータ（Temperature）による重み付け確率選択（ソフトマックス分布）と微小な思考ゆらぎを適用。
                     <br />
                     <strong>🧠 リバーシ専用 戦術メモリ（思考ルーチン制御）システム:</strong>
                     リバーシでは、バトル勝利などで集めた<strong>エレメント（各150 E）を消費して「戦術メモリ」を購入・アンロック</strong>し、機体選択画面で<strong>最大3つまで装備</strong>することが可能です。装備したスロット順（優先度1 → 優先度2 → 優先度3）に候補手が段階的にフィルタリングされ、ロボットの着手AIの思考ルーチンを自由にカスタマイズ・最適化できます。

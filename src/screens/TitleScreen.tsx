@@ -248,7 +248,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onStart, engine }) => 
               variant="secondary" 
               className="px-8 mt-2 opacity-80"
             >
-              ログインせずに始める（端末ローカル保存）
+              ログインせずに始める（ゲストモード）
             </Button>
           </div>
         )}
@@ -281,7 +281,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onStart, engine }) => 
           </div>
         )}
 
-        <p className="mt-8 text-stone-400">v0.1.159</p>
+        <p className="mt-8 text-stone-400">v0.1.168</p>
       </div>
       
       {/* Decorative background elements */}

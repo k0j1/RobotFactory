@@ -624,10 +624,310 @@ export function getDefenseDailyResetInfo(lastVictoryTime?: number, now: number =
 export function getDailyResetDateKey(now: number = Date.now()): string {
   const d = new Date(now);
   const today9am = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 9, 0, 0, 0).getTime();
-  const resetBaseDate = now >= today9am ? d : new Date(now - 24 * 60 * 60 * 1000);
-  const y = resetBaseDate.getFullYear();
-  const m = String(resetBaseDate.getMonth() + 1).padStart(2, '0');
-  const day = String(resetBaseDate.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
+  const targetDate = now >= today9am ? d : new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1);
+  const year = targetDate.getFullYear();
+  const month = String(targetDate.getMonth() + 1).padStart(2, '0');
+  const day = String(targetDate.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
+
+/**
+ * 2048コア融合パズルの難易度定義
+ */
+export interface Puzzle2048DifficultyConfig {
+  id: string;
+  level: number;
+  name: string;
+  label: string;
+  subLabel: string;
+  targetTile: number;
+  targetScore: number;
+  desc: string;
+  rewardFame: number;
+  rewardElements: number;
+  badgeClass: string;
+}
+
+export const PUZZLE_2048_DIFFICULTIES: Puzzle2048DifficultyConfig[] = [
+  {
+    id: 'lvl1',
+    level: 1,
+    name: 'レベル1 (試作炉)',
+    label: 'Lv.1 試作炉',
+    subLabel: '目標: 128コア / 500点',
+    targetTile: 128,
+    targetScore: 500,
+    desc: '4x4グリッドの入門ステージ。同種コアを合体させて128コア融合または500点を目指す。',
+    rewardFame: 0,
+    rewardElements: 0,
+    badgeClass: 'bg-stone-100 text-stone-800 border-stone-300',
+  },
+  {
+    id: 'lvl2',
+    level: 2,
+    name: 'レベル2 (初級炉)',
+    label: 'Lv.2 初級炉',
+    subLabel: '目標: 256コア / 1,200点',
+    targetTile: 256,
+    targetScore: 1200,
+    desc: '基本の合体手順を習得する炉。256コアまたは1,200点を達成してクリア。',
+    rewardFame: 0,
+    rewardElements: 0,
+    badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+  },
+  {
+    id: 'lvl3',
+    level: 3,
+    name: 'レベル3 (中級炉)',
+    label: 'Lv.3 中級炉',
+    subLabel: '目標: 512コア / 2,500点',
+    targetTile: 512,
+    targetScore: 2500,
+    desc: '盤面の整列が試される中級炉。512コアまたは2,500点を目指す。',
+    rewardFame: 0,
+    rewardElements: 0,
+    badgeClass: 'bg-teal-100 text-teal-800 border-teal-300',
+  },
+  {
+    id: 'lvl4',
+    level: 4,
+    name: 'レベル4 (上級炉)',
+    label: 'Lv.4 上級炉',
+    subLabel: '目標: 1024コア / 5,000点',
+    targetTile: 1024,
+    targetScore: 5000,
+    desc: '1024コアの融合に挑戦。ここから名声・エレメントとクリア宝箱を獲得可能！',
+    rewardFame: 1,
+    rewardElements: 1,
+    badgeClass: 'bg-blue-100 text-blue-800 border-blue-300',
+  },
+  {
+    id: 'lvl5',
+    level: 5,
+    name: 'レベル5 (特級炉)',
+    label: 'Lv.5 特級炉',
+    subLabel: '目標: 2048コア / 10,000点',
+    targetTile: 2048,
+    targetScore: 10000,
+    desc: '伝説の2048オメガコア融合炉！2048コアまたは10,000点突破で合格。',
+    rewardFame: 3,
+    rewardElements: 3,
+    badgeClass: 'bg-indigo-100 text-indigo-800 border-indigo-300',
+  },
+  {
+    id: 'lvl6',
+    level: 6,
+    name: 'レベル6 (超伝導)',
+    label: 'Lv.6 超伝導',
+    subLabel: '目標: 2048コア / 20,000点',
+    targetTile: 2048,
+    targetScore: 20000,
+    desc: '高スコア連続融合が求められる高圧炉。スコア20,000点以上を目指す。',
+    rewardFame: 6,
+    rewardElements: 6,
+    badgeClass: 'bg-violet-100 text-violet-800 border-violet-300',
+  },
+  {
+    id: 'lvl7',
+    level: 7,
+    name: 'レベル7 (陽子炉)',
+    label: 'Lv.7 陽子炉',
+    subLabel: '目標: 4096コア / 35,000点',
+    targetTile: 4096,
+    targetScore: 35000,
+    desc: '限界を超える4096特異点コアへの挑戦！高度な端寄せキープ戦略が必須。',
+    rewardFame: 10,
+    rewardElements: 10,
+    badgeClass: 'bg-amber-100 text-amber-800 border-amber-300',
+  },
+  {
+    id: 'lvl8',
+    level: 8,
+    name: 'レベル8 (反物質)',
+    label: 'Lv.8 反物質',
+    subLabel: '目標: 4096コア / 60,000点',
+    targetTile: 4096,
+    targetScore: 60000,
+    desc: '膨大なエネルギーが凝縮する反物質炉。60,000点の高密度融合を要求。',
+    rewardFame: 20,
+    rewardElements: 20,
+    badgeClass: 'bg-orange-100 text-orange-800 border-orange-300',
+  },
+  {
+    id: 'lvl9',
+    level: 9,
+    name: 'レベル9 (星核炉)',
+    label: 'Lv.9 星核炉',
+    subLabel: '目標: 8192コア / 90,000点',
+    targetTile: 8192,
+    targetScore: 90000,
+    desc: '恒星の中心圧を模した星核炉。8192コアまたは90,000点の超絶技巧領域。',
+    rewardFame: 50,
+    rewardElements: 50,
+    badgeClass: 'bg-rose-100 text-rose-800 border-rose-300',
+  },
+  {
+    id: 'lvl10',
+    level: 10,
+    name: 'レベル10 (究極特異点)',
+    label: 'Lv.10 究極特異点',
+    subLabel: '目標: 8192コア / 150,000点',
+    targetTile: 8192,
+    targetScore: 150000,
+    desc: '物理法則の限界に迫る究極のパズル演習。150,000点突破で最大名声を獲得！',
+    rewardFame: 100,
+    rewardElements: 100,
+    badgeClass: 'bg-purple-100 text-purple-900 border-purple-400 font-black',
+  },
+];
+
+/**
+ * 落下型ブロックパズル（テトラフォール）の難易度定義
+ */
+export interface FallingPuzzleDifficultyConfig {
+  id: string;
+  level: number;
+  name: string;
+  label: string;
+  subLabel: string;
+  targetLines: number;
+  dropIntervalMs: number;
+  desc: string;
+  rewardFame: number;
+  rewardElements: number;
+  badgeClass: string;
+}
+
+export const FALLING_PUZZLE_DIFFICULTIES: FallingPuzzleDifficultyConfig[] = [
+  {
+    id: 'lvl1',
+    level: 1,
+    name: 'レベル1 (入門)',
+    label: 'Lv.1 入門',
+    subLabel: '目標: 5ライン / 落下1.0s',
+    targetLines: 5,
+    dropIntervalMs: 1000,
+    desc: 'ゆったりとした落下速度で、回転・横移動・ライン消去の基本を学ぶ入門ステージ。',
+    rewardFame: 0,
+    rewardElements: 0,
+    badgeClass: 'bg-stone-100 text-stone-800 border-stone-300',
+  },
+  {
+    id: 'lvl2',
+    level: 2,
+    name: 'レベル2 (初級)',
+    label: 'Lv.2 初級',
+    subLabel: '目標: 8ライン / 落下0.85s',
+    targetLines: 8,
+    dropIntervalMs: 850,
+    desc: '穏やかなスピードでブロックの平積みを練習する初級ステージ。',
+    rewardFame: 0,
+    rewardElements: 0,
+    badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+  },
+  {
+    id: 'lvl3',
+    level: 3,
+    name: 'レベル3 (中級)',
+    label: 'Lv.3 中級',
+    subLabel: '目標: 12ライン / 落下0.70s',
+    targetLines: 12,
+    dropIntervalMs: 700,
+    desc: '標準的なテンポで12ライン消去を目指すステップアップステージ。',
+    rewardFame: 0,
+    rewardElements: 0,
+    badgeClass: 'bg-teal-100 text-teal-800 border-teal-300',
+  },
+  {
+    id: 'lvl4',
+    level: 4,
+    name: 'レベル4 (上級)',
+    label: 'Lv.4 上級',
+    subLabel: '目標: 16ライン / 落下0.56s',
+    targetLines: 16,
+    dropIntervalMs: 560,
+    desc: 'やや早めの落下速度。ここから名声・エレメントとクリア宝箱を獲得可能！',
+    rewardFame: 1,
+    rewardElements: 1,
+    badgeClass: 'bg-blue-100 text-blue-800 border-blue-300',
+  },
+  {
+    id: 'lvl5',
+    level: 5,
+    name: 'レベル5 (熟練)',
+    label: 'Lv.5 熟練',
+    subLabel: '目標: 20ライン / 落下0.45s',
+    targetLines: 20,
+    dropIntervalMs: 450,
+    desc: 'テンポよくブロックが迫る熟練ステージ。ホールドとハードドロップを活用せよ。',
+    rewardFame: 3,
+    rewardElements: 3,
+    badgeClass: 'bg-indigo-100 text-indigo-800 border-indigo-300',
+  },
+  {
+    id: 'lvl6',
+    level: 6,
+    name: 'レベル6 (達人)',
+    label: 'Lv.6 達人',
+    subLabel: '目標: 25ライン / 落下0.35s',
+    targetLines: 25,
+    dropIntervalMs: 350,
+    desc: '高速化するブロックを正確に捌く達人ステージ。25ライン消去でクリア。',
+    rewardFame: 6,
+    rewardElements: 6,
+    badgeClass: 'bg-violet-100 text-violet-800 border-violet-300',
+  },
+  {
+    id: 'lvl7',
+    level: 7,
+    name: 'レベル7 (師範)',
+    label: 'Lv.7 師範',
+    subLabel: '目標: 30ライン / 落下0.28s',
+    targetLines: 30,
+    dropIntervalMs: 280,
+    desc: '瞬時の状況判断が求められる師範領域。連鎖や複数ライン同時消しが有効。',
+    rewardFame: 10,
+    rewardElements: 10,
+    badgeClass: 'bg-amber-100 text-amber-800 border-amber-300',
+  },
+  {
+    id: 'lvl8',
+    level: 8,
+    name: 'レベル8 (達眼)',
+    label: 'Lv.8 達眼',
+    subLabel: '目標: 35ライン / 落下0.22s',
+    targetLines: 35,
+    dropIntervalMs: 220,
+    desc: '猛烈な落下速度。先読みと壁キック回転を駆使して35ラインをクリアせよ。',
+    rewardFame: 20,
+    rewardElements: 20,
+    badgeClass: 'bg-orange-100 text-orange-800 border-orange-300',
+  },
+  {
+    id: 'lvl9',
+    level: 9,
+    name: 'レベル9 (超絶)',
+    label: 'Lv.9 超絶',
+    subLabel: '目標: 40ライン / 落下0.16s',
+    targetLines: 40,
+    dropIntervalMs: 160,
+    desc: '息つく暇もない超高速落下！機体の敏捷性(Agi)による操作猶予が生命線。',
+    rewardFame: 50,
+    rewardElements: 50,
+    badgeClass: 'bg-rose-100 text-rose-800 border-rose-300',
+  },
+  {
+    id: 'lvl10',
+    level: 10,
+    name: 'レベル10 (神業)',
+    label: 'Lv.10 神業',
+    subLabel: '目標: 50ライン / 落下0.10s',
+    targetLines: 50,
+    dropIntervalMs: 100,
+    desc: '音速で降り注ぐテトラブロック。50ラインを完全消去して神話の栄誉を掴め！',
+    rewardFame: 100,
+    rewardElements: 100,
+    badgeClass: 'bg-purple-100 text-purple-900 border-purple-400 font-black',
+  },
+];
 

@@ -50,8 +50,6 @@ const INITIAL_STATE: GameState = {
   activeCombatEquipments: {},
 };
 
-const STORAGE_KEY = 'ponkotsu_robot_save';
-
 export class GameEngine {
   private state: GameState;
   private onStateChange: (state: GameState) => void;
@@ -61,28 +59,38 @@ export class GameEngine {
 
   constructor(onStateChange: (state: GameState) => void, initialUserId?: string | null) {
     this.onStateChange = onStateChange;
+
+    // サーバーDBに持つデータはローカルストレージには一切保存も読み込みもしない
+    // 過去の古いローカルストレージデータが残留している場合は安全に破棄
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        localStorage.removeItem('ponkotsu_robot_save');
+        localStorage.removeItem('robot_factory_save_v1');
+      } catch {}
+    }
+
     if (initialUserId) {
-      // Googleログインユーザーの場合: ローカルストレージのデータは一切使用しない
+      // Googleログインユーザーの場合: クラウドDBからのみ読み込み
       this.userId = initialUserId;
       this.isCloudAccount = true;
       this.isCloudLoaded = false;
       this.state = JSON.parse(JSON.stringify(INITIAL_STATE));
-      console.log(`[GameEngine] Googleユーザー (${initialUserId}) として初期化。ローカルストレージは使用しません。クラウドデータ受信待機中...`);
+      console.log(`[GameEngine] Googleユーザー (${initialUserId}) として初期化。ローカルストレージは一切使用しません。クラウドデータ受信待機中...`);
     } else {
-      // ゲストユーザーの場合のみローカルストレージから読み込み
+      // ゲストユーザーの場合もローカルストレージは使わずメモリ上の初期ステートで起動
       this.userId = null;
       this.isCloudAccount = false;
       this.isCloudLoaded = true;
-      this.state = this.loadLocalStorageState();
+      this.state = JSON.parse(JSON.stringify(INITIAL_STATE));
     }
     this.update();
   }
 
   /**
-   * 現在ローカルストレージを使用しているかどうか（Googleログイン時はfalse）
+   * 現在ローカルストレージを使用しているかどうか（常にfalse: サーバーデータはローカルストレージを使用しない）
    */
   public isUsingLocalStorage(): boolean {
-    return !this.isCloudAccount;
+    return false;
   }
 
   /**
@@ -160,13 +168,14 @@ export class GameEngine {
   }
 
   /**
-   * ゲストアカウントへ切り替え（ローカルストレージのデータを使用）
+   * ゲストアカウントへ切り替え（ローカルストレージは使用せずメモリ上で稼働）
    */
   public switchToGuest(): void {
     this.userId = null;
     this.isCloudAccount = false;
-    console.log('[GameEngine] ゲストアカウントへ切り替えました。ローカルストレージのデータを使用します。');
-    this.state = this.loadLocalStorageState();
+    this.isCloudLoaded = true;
+    console.log('[GameEngine] ゲストアカウントへ切り替えました（ローカルストレージは使用せず初期ステートを適用）。');
+    this.state = JSON.parse(JSON.stringify(INITIAL_STATE));
     this.onStateChange(JSON.parse(JSON.stringify(this.state)));
   }
 
@@ -250,24 +259,7 @@ export class GameEngine {
   }
 
   /**
-   * ゲスト用のローカルストレージデータを読み込み
-   */
-  private loadLocalStorageState(): GameState {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        return this.sanitizeAndMigrateState(parsed);
-      } catch (e) {
-        console.warn('[GameEngine] ローカルストレージデータのパースエラー:', e);
-        return { ...INITIAL_STATE };
-      }
-    }
-    return { ...INITIAL_STATE };
-  }
-
-  /**
-   * セーブデータ（ローカル・クラウド共通）のサニタイズ・マイグレーション処理
+   * セーブデータのサニタイズ・マイグレーション処理
    */
   public sanitizeAndMigrateState(parsed: any): GameState {
     if (!parsed || typeof parsed !== 'object') {
@@ -472,14 +464,12 @@ export class GameEngine {
         console.warn('[GameEngine] クラウドデータの初回ロードが完了していないため、サーバーDBへの自動保存を一時保留します。');
         return;
       }
-      // Googleログイン時はローカルストレージを使用・保存せず、サーバーの各テーブルへ自動同期
+      // サーバーDBの各テーブルへ自動同期（ローカルストレージには一切保存しない）
       AuthApiService.getInstance().saveAllDataToTables(this.userId, this.state).catch((err) => {
         console.warn('[GameEngine] サーバーDBテーブル同期エラー:', err);
       });
-    } else {
-      // ゲストユーザー時のみローカルストレージへ保存
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
     }
+    // サーバーDBに持つデータはローカルストレージには一切保存しない
   }
 
   public getState() {
@@ -2073,8 +2063,15 @@ export class GameEngine {
       stats: { ...robot.stats },
       parts: { ...robot.parts }
     });
-    const partIds = [robot.parts.head.id, robot.parts.body.id, robot.parts.arms.id, robot.parts.legs.id];
-    this.state.parts = this.state.parts.filter(p => !partIds.includes(p.id));
+    const partIds = [
+      robot.parts?.head?.id,
+      robot.parts?.body?.id,
+      robot.parts?.arms?.id,
+      robot.parts?.legs?.id
+    ].filter(Boolean) as string[];
+
+    // 1. 所持パーツ一覧 (state.parts) から納品機体の全構成パーツを確実に除外・消去
+    this.state.parts = (this.state.parts || []).filter(p => !partIds.includes(p.id));
     this.state.robots.splice(robotIdx, 1);
     this.state.deliveredRobotsCount += 1;
 
@@ -2096,10 +2093,20 @@ export class GameEngine {
     this.generateRequestsIfNeeded(); // Instantly replenish the board
     this.saveState();
 
-    // 依頼完了時は即座にサーバーDBと同期して獲得Gおよび名声を確実に永続化
+    // 依頼納品完了時は、単一の不可分なトランザクションとしてサーバーDBの全関連テーブル（user_robots, user_parts, active_requests, complete_requests, user_workshop_status, user_save_data）を一括更新
     if (this.isCloudAccount && this.userId && this.isCloudLoaded) {
-      this.syncToDatabaseNow().catch((err) => {
-        console.warn('[GameEngine] 納品完了時の即時同期警告:', err);
+      AuthApiService.getInstance().deliverRobotTransaction({
+        userId: this.userId,
+        robotId: robot.id,
+        partIds,
+        requestId: req.id,
+        rank: req.rank,
+        rewardG,
+        rewardFame: totalFame,
+        deadline: req.deadline,
+        state: this.state
+      }).catch((err) => {
+        console.warn('[GameEngine] 納品単一トランザクション同期警告:', err);
       });
     }
 

@@ -781,6 +781,88 @@ try {
         }
     }
 
+    // 明示的に指定された削除パーツIDの完全削除（依頼納品、売却、パーツリサイクル等）
+    if (!empty($data['deletedPartIds']) && is_array($data['deletedPartIds'])) {
+        $delPartExplicitStmt = $pdo->prepare("DELETE FROM user_parts WHERE user_id = :user_id AND id = :part_id");
+        foreach ($data['deletedPartIds'] as $delPId) {
+            if (!empty($delPId)) {
+                $delPartExplicitStmt->execute([
+                    ':user_id' => $actualUserId,
+                    ':part_id' => (string)$delPId
+                ]);
+            }
+        }
+    }
+
+    // 明示的に指定された削除ロボットIDの完全削除（依頼納品、機体解体、売却等）
+    if (!empty($data['deletedRobotIds']) && is_array($data['deletedRobotIds'])) {
+        $delRobotsExplicitStmt = $pdo->prepare("DELETE FROM user_robots WHERE user_id = :user_id AND id = :robot_id");
+        foreach ($data['deletedRobotIds'] as $delRId) {
+            if (!empty($delRId)) {
+                $delRobotsExplicitStmt->execute([
+                    ':user_id' => $actualUserId,
+                    ':robot_id' => (string)$delRId
+                ]);
+            }
+        }
+    }
+
+    // 依頼納品単一トランザクション（deliveryTransaction）の完全一括処理
+    if (!empty($data['deliveryTransaction']) && is_array($data['deliveryTransaction'])) {
+        $dt = $data['deliveryTransaction'];
+        $dtRobotId = !empty($dt['robotId']) ? (string)$dt['robotId'] : null;
+        $dtPartIds = !empty($dt['partIds']) && is_array($dt['partIds']) ? $dt['partIds'] : [];
+        $dtReqId = !empty($dt['requestId']) ? (string)$dt['requestId'] : '';
+        $dtRank = !empty($dt['rank']) ? (string)$dt['rank'] : 'OldMan';
+        $dtRewardG = isset($dt['rewardG']) ? (int)$dt['rewardG'] : 0;
+        $dtRewardFame = isset($dt['rewardFame']) ? (int)$dt['rewardFame'] : 0;
+        $dtDeadline = isset($dt['deadline']) ? (int)$dt['deadline'] : 0;
+
+        // 1. user_robots テーブルから納品機体を完全削除
+        if (!empty($dtRobotId)) {
+            $delDtRobot = $pdo->prepare("DELETE FROM user_robots WHERE user_id = :user_id AND id = :robot_id");
+            $delDtRobot->execute([':user_id' => $actualUserId, ':robot_id' => $dtRobotId]);
+        }
+
+        // 2. user_parts テーブルから納品機体の構成パーツ（全4部位）を完全削除
+        if (!empty($dtPartIds)) {
+            $delDtParts = $pdo->prepare("DELETE FROM user_parts WHERE user_id = :user_id AND id = :part_id");
+            foreach ($dtPartIds as $dtPId) {
+                if (!empty($dtPId)) {
+                    $delDtParts->execute([':user_id' => $actualUserId, ':part_id' => (string)$dtPId]);
+                }
+            }
+        }
+
+        // 3. active_requests テーブルから進行中依頼レコードを削除
+        $delDtReq = $pdo->prepare("DELETE FROM active_requests WHERE user_id = :user_id");
+        $delDtReq->execute([':user_id' => $actualUserId]);
+
+        // 4. complete_requests テーブルに納品履歴レコードを追加（重複防止付き）
+        if (!empty($dtReqId)) {
+            $insDtComp = $pdo->prepare("
+                INSERT INTO complete_requests (user_id, request_id, rank, reward_g, deadline, delivered_robot_id, request_data)
+                SELECT :user_id, :request_id, :rank, :reward_g, :deadline, :delivered_robot_id, :request_data
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM complete_requests
+                    WHERE user_id = :chk_user_id AND request_id = :chk_request_id AND deadline = :chk_deadline
+                )
+            ");
+            $insDtComp->execute([
+                ':user_id' => $actualUserId,
+                ':request_id' => $dtReqId,
+                ':rank' => $dtRank,
+                ':reward_g' => $dtRewardG,
+                ':deadline' => $dtDeadline,
+                ':delivered_robot_id' => $dtRobotId,
+                ':request_data' => json_encode($dt, JSON_UNESCAPED_UNICODE),
+                ':chk_user_id' => $actualUserId,
+                ':chk_request_id' => $dtReqId,
+                ':chk_deadline' => $dtDeadline
+            ]);
+        }
+    }
+
     // =========================================================================
     // 5. user_robots テーブルの同期（所持ロボット機体）:
     // 既存ロボットの一括削除（DELETE FROM user_robots WHERE user_id = :user_id）を完全撤廃！

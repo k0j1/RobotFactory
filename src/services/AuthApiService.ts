@@ -55,6 +55,18 @@ export interface ActiveCountsData {
   playingUsers?: number;
 }
 
+export interface DeliverRobotTransactionParams {
+  userId: string;
+  robotId: string;
+  partIds: string[];
+  requestId: string;
+  rank: string;
+  rewardG: number;
+  rewardFame: number;
+  deadline: number;
+  state: GameState;
+}
+
 export class AuthApiService {
   private static instance: AuthApiService | null = null;
   private readonly defaultBaseUrl: string;
@@ -508,6 +520,154 @@ export class AuthApiService {
   }
 
   /**
+   * 納品・解体等で消費されたパーツを user_parts テーブルから確実に削除
+   */
+  public async deleteUserParts(userId: string, partIds: string[]): Promise<void> {
+    if (!userId || !partIds || partIds.length === 0) return;
+    const endpoints = Array.from(new Set([
+      `${this.defaultBaseUrl}/api/save.php`,
+      'https://robotfactory.k0j1.v2002.coreserver.jp/api/save.php',
+      '/api/save.php'
+    ])).filter(Boolean);
+
+    for (const endpoint of endpoints) {
+      try {
+        await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({
+            userId,
+            action: 'delete_parts',
+            deletedPartIds: partIds
+          })
+        });
+      } catch (e) {
+        console.warn(`[AuthApiService] deleteUserParts warning (${endpoint}):`, e);
+      }
+    }
+  }
+
+  /**
+   * 納品等で手放した機体を user_robots テーブルから確実に削除
+   */
+  public async deleteUserRobots(userId: string, robotIds: string[]): Promise<void> {
+    if (!userId || !robotIds || robotIds.length === 0) return;
+    const endpoints = Array.from(new Set([
+      `${this.defaultBaseUrl}/api/save.php`,
+      'https://robotfactory.k0j1.v2002.coreserver.jp/api/save.php',
+      '/api/save.php'
+    ])).filter(Boolean);
+
+    for (const endpoint of endpoints) {
+      try {
+        await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({
+            userId,
+            action: 'delete_robots',
+            deletedRobotIds: robotIds
+          })
+        });
+      } catch (e) {
+        console.warn(`[AuthApiService] deleteUserRobots warning (${endpoint}):`, e);
+      }
+    }
+  }
+
+  /**
+   * 依頼納品完了時の一連のDB処理（user_robots削除、user_parts削除、active_requests削除、complete_requests追加、user_workshop_status加算更新、user_save_data保存）を単一の不可分なトランザクションとして一括実行
+   */
+  public async deliverRobotTransaction(params: DeliverRobotTransactionParams): Promise<AuthApiResponse> {
+    if (VersionCheckService.isMismatch()) {
+      console.warn("[AuthApiService] Version mismatch detected. Saving is blocked.");
+      return { success: false, error: "バージョン不一致のため保存をブロックしました" };
+    }
+    if (!params.userId) {
+      throw new Error('userIdが指定されていません。');
+    }
+
+    console.log(`[AuthApiService] user_id: ${params.userId} の依頼納品単一トランザクションを実行中 (機体: ${params.robotId}, パーツ数: ${params.partIds.length})...`);
+
+    const endpoints = Array.from(new Set([
+      `${this.defaultBaseUrl}/api/save.php`,
+      'https://robotfactory.k0j1.v2002.coreserver.jp/api/save.php',
+      '/api/save.php'
+    ])).filter(Boolean);
+
+    let lastError: Error | null = null;
+    let lastSyncError: DatabaseSyncError | null = null;
+
+    for (const endpoint of endpoints) {
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({
+            userId: params.userId,
+            action: 'deliver_robot_transaction',
+            deliveryTransaction: {
+              robotId: params.robotId,
+              partIds: params.partIds,
+              requestId: params.requestId,
+              rank: params.rank,
+              rewardG: params.rewardG,
+              rewardFame: params.rewardFame,
+              deadline: params.deadline
+            },
+            deletedRobotIds: [params.robotId],
+            deletedPartIds: params.partIds,
+            gameData: params.state
+          })
+        });
+
+        const rawText = await response.text();
+        if (rawText.trim().startsWith('<?php')) {
+          throw new Error('PHPが未実行です。');
+        }
+
+        let parsed: any = null;
+        try {
+          parsed = JSON.parse(rawText);
+        } catch (_) {
+          if (!response.ok) {
+            throw new Error(`サーバー通信エラー (HTTP ${response.status})`);
+          }
+        }
+
+        if (!response.ok || (parsed && !parsed.success)) {
+          const errMsg = parsed?.error || `データベース納品トランザクションエラー (HTTP ${response.status})`;
+          const isRolledBack = Boolean(parsed?.rolledBack);
+          const syncErr: DatabaseSyncError = {
+            message: errMsg,
+            rolledBack: isRolledBack,
+            timestamp: Date.now()
+          };
+          lastSyncError = syncErr;
+          throw new Error(errMsg);
+        }
+
+        console.log(`[AuthApiService] 依頼納品単一トランザクション保存成功 (${endpoint}):`, parsed);
+        return parsed;
+      } catch (err: any) {
+        console.warn(`[AuthApiService] 納品トランザクション通信失敗 (${endpoint}):`, err.message);
+        lastError = err;
+      }
+    }
+
+    const finalError = lastSyncError || {
+      message: lastError?.message || '納品完了トランザクションの通信に失敗しました。',
+      rolledBack: lastSyncError?.rolledBack ?? false,
+      timestamp: Date.now()
+    };
+    this.notifySyncError(finalError);
+    throw lastError || new Error('納品完了トランザクションの通信に失敗しました。');
+  }
+
+  /**
    * データベース（save_dataおよび各テーブル）からユーザーのセーブデータを読み込み
    * @param userId usersテーブルのgoogle_idまたはid
    */
@@ -551,14 +711,106 @@ export class AuthApiService {
                 ? Number(parsed.user.received_initial_bonus)
                 : 0);
 
-          let loadedData: Partial<GameState> = parsed.data || {};
-          // user_materialテーブル由来の素材データを最優先反映
-          if (parsed.materials && typeof parsed.materials === 'object') {
-            loadedData.materials = {
-              ...(loadedData.materials || {}),
-              ...parsed.materials
-            };
+          let loadedData: Partial<GameState> = { ...(parsed.data || {}) };
+
+          // 1. 工房ステータス (user_workshop_status)
+          if (parsed.workshop_status) {
+            const ws = parsed.workshop_status;
+            if (ws.gold !== undefined) loadedData.gold = Number(ws.gold);
+            if (ws.fame !== undefined) loadedData.fame = Number(ws.fame);
+            if (ws.consumed_gold !== undefined || ws.consumedGold !== undefined) {
+              loadedData.consumedGold = Number(ws.consumed_gold ?? ws.consumedGold);
+            }
+            if (ws.delivered_count !== undefined || ws.deliveredRobotsCount !== undefined) {
+              loadedData.deliveredRobotsCount = Number(ws.delivered_count ?? ws.deliveredRobotsCount);
+            }
+            if (ws.request_earned_gold !== undefined || ws.requestEarnedGold !== undefined) {
+              loadedData.requestEarnedGold = Number(ws.request_earned_gold ?? ws.requestEarnedGold);
+            }
+            if (ws.storage_limit !== undefined || ws.storageSize !== undefined) {
+              loadedData.storageSize = Number(ws.storage_limit ?? ws.storageSize);
+            }
+            if (ws.unlocked_expeditions) {
+              try {
+                const unExp = typeof ws.unlocked_expeditions === 'string' 
+                  ? JSON.parse(ws.unlocked_expeditions) 
+                  : ws.unlocked_expeditions;
+                if (Array.isArray(unExp)) loadedData.unlockedLocations = unExp;
+              } catch {}
+            }
           }
+
+          // 2. 所持素材 (user_material)
+          if (parsed.materials) {
+            const matObj: Record<string, number> = { ...(loadedData.materials || {}) };
+            if (Array.isArray(parsed.materials)) {
+              parsed.materials.forEach((m: any) => {
+                const mId = m.material_id || m.id || String(m);
+                matObj[mId] = Number(m.count ?? m.amount ?? 0);
+              });
+            } else if (typeof parsed.materials === 'object') {
+              Object.entries(parsed.materials).forEach(([mId, count]) => {
+                matObj[mId] = typeof count === 'number' ? count : Number((count as any)?.count ?? 0);
+              });
+            }
+            loadedData.materials = matObj;
+          }
+
+          // 3. 所持パーツ (user_parts)
+          if (parsed.parts && Array.isArray(parsed.parts) && parsed.parts.length > 0) {
+            loadedData.parts = parsed.parts;
+          }
+
+          // 4. 所持機体 (user_robots)
+          if (parsed.robots && Array.isArray(parsed.robots) && parsed.robots.length > 0) {
+            loadedData.robots = parsed.robots;
+          }
+
+          // 5. バトル武装・装備・ランク (user_item / battle_item)
+          if (parsed.combatEquipments && typeof parsed.combatEquipments === 'object') {
+            loadedData.combatEquipments = { ...(loadedData.combatEquipments || {}), ...parsed.combatEquipments };
+          }
+          if (parsed.combatEquipmentRanks && typeof parsed.combatEquipmentRanks === 'object') {
+            loadedData.combatEquipmentRanks = { ...(loadedData.combatEquipmentRanks || {}), ...parsed.combatEquipmentRanks };
+          }
+          if (parsed.activeCombatEquipments && typeof parsed.activeCombatEquipments === 'object') {
+            loadedData.activeCombatEquipments = { ...(loadedData.activeCombatEquipments || {}), ...parsed.activeCombatEquipments };
+          }
+
+          // 6. リバーシ記憶・オセロ装備 (user_item / reversi_item)
+          if (parsed.reversiPurchasedMemories || parsed.othelloPurchasedMemories) {
+            loadedData.reversiPurchasedMemories = parsed.reversiPurchasedMemories || parsed.othelloPurchasedMemories || loadedData.reversiPurchasedMemories;
+          }
+          if (parsed.reversiEquippedMemories || parsed.othelloEquippedMemories) {
+            loadedData.reversiEquippedMemories = parsed.reversiEquippedMemories || parsed.othelloEquippedMemories || loadedData.reversiEquippedMemories;
+          }
+
+          // 7. アイテム・宝箱・エレメント (user_item)
+          if (parsed.repairKits !== undefined) loadedData.repairKits = Number(parsed.repairKits);
+          if (parsed.unopenedChests && typeof parsed.unopenedChests === 'object') {
+            loadedData.unopenedChests = { ...(loadedData.unopenedChests || {}), ...parsed.unopenedChests };
+          }
+          if (parsed.battleElements !== undefined) loadedData.battleElements = Number(parsed.battleElements);
+
+          // 8. ミニゲーム進捗 (user_minigame_status)
+          if (parsed.minigameRecords && typeof parsed.minigameRecords === 'object') {
+            loadedData.minigameRecords = { ...(loadedData.minigameRecords || {}), ...parsed.minigameRecords };
+          }
+
+          // 9. デイリー制限 (complete_daily_minigame)
+          if (parsed.dailyBattleLimits && typeof parsed.dailyBattleLimits === 'object') {
+            loadedData.dailyBattleLimits = { ...(loadedData.dailyBattleLimits || {}), ...parsed.dailyBattleLimits };
+          }
+
+          // 10. 納品履歴 (complete_requests)
+          if (parsed.deliveredLogs && Array.isArray(parsed.deliveredLogs) && parsed.deliveredLogs.length > 0) {
+            loadedData.deliveredLogs = parsed.deliveredLogs;
+          }
+
+          // 11. 進行中タスク (active_expeditions, active_robot_assemblies, active_part_crafts)
+          if (parsed.activeQuest !== undefined) loadedData.activeQuest = parsed.activeQuest;
+          if (parsed.activeRobotAssembly !== undefined) loadedData.activeRobotAssembly = parsed.activeRobotAssembly;
+          if (parsed.activePartCraft !== undefined) loadedData.activePartCraft = parsed.activePartCraft;
 
           const userObj = parsed.user ? {
             ...parsed.user,

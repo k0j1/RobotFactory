@@ -3,10 +3,21 @@ import { GameState } from '../core/models';
 import { GameEngine } from '../core/GameEngine';
 import { theme } from '../styles/theme';
 import { Card, Button, Badge } from '../components/ui/core';
-import { OPPONENTS, DanmakuDifficulty, DANMAKU_DIFFICULTIES, PianoSong, PIANO_SONGS, DefenseStage, DEFENSE_STAGES, getDefenseDailyResetInfo, DefenseResetInfo } from '../components/minigames/Shared';
+import { 
+  OPPONENTS, 
+  DanmakuDifficulty, 
+  DANMAKU_DIFFICULTIES, 
+  PianoSong, 
+  PIANO_SONGS, 
+  DefenseStage, 
+  DEFENSE_STAGES, 
+  getDefenseDailyResetInfo, 
+  DefenseResetInfo
+} from '../components/minigames/Shared';
 import { getPianoBestScores, PianoBestScore } from '../core/pianoScoreManager';
 import { OthelloGame } from '../components/minigames/OthelloGame';
-import { ChessGame } from '../components/minigames/ChessGame';
+import { Puzzle2048Game } from '../components/minigames/Puzzle2048Game';
+import { FallingPuzzleGame } from '../components/minigames/FallingPuzzleGame';
 import { DanmakuSurvivalGame } from '../components/minigames/DanmakuSurvivalGame';
 import { PianoGame } from '../components/minigames/PianoGame';
 import { CombatGame } from '../components/minigames/CombatGame';
@@ -43,7 +54,7 @@ interface GameDef {
 
 const CATEGORIES: CategoryDef[] = [
   { id: 'battle', name: '戦闘', icon: <Gi.GiCrossedSwords className="inline text-red-600" /> },
-  { id: 'puzzle', name: 'パズル', icon: <Gi.GiChessPawn className="inline text-stone-600" /> },
+  { id: 'puzzle', name: 'パズル', icon: <Gi.GiBrain className="inline text-amber-600" /> },
   { id: 'shooting', name: '射撃', icon: <Gi.GiLightningTrio className="inline text-amber-500" /> },
   { id: 'music', name: '音楽', icon: <Gi.GiMusicalNotes className="inline text-blue-500" /> }
 ];
@@ -77,12 +88,21 @@ const GAMES: GameDef[] = [
     requiresOpponent: true 
   },
   { 
-    id: 'chess', 
+    id: 'puzzle2048', 
     category: 'puzzle', 
-    name: 'チェス演習', 
-    desc: 'キャスリング無しの頭脳勝負（Int重視）', 
+    name: '2048自動対戦', 
+    desc: '4x4の炉内で自動合体！制限時間内に相手より高スコアを稼げば勝利（Int/Dex/Agi重視）', 
     rewardText: '勝利報酬: 名声 +0〜100 ＆ エレメント +0〜100 E (Lv.4〜)',
-    icon: <Gi.GiChessKing className="inline text-stone-800" />, 
+    icon: <Gi.GiAtom className="inline text-amber-600" />, 
+    requiresOpponent: true 
+  },
+  { 
+    id: 'falling_puzzle', 
+    category: 'puzzle', 
+    name: '落下パズル対戦', 
+    desc: 'テトロミノをAIが自動配置！制限時間内に相手よりラインを消して高スコアで勝利（Dex/Agi/Int重視）', 
+    rewardText: '勝利報酬: 名声 +0〜100 ＆ エレメント +0〜100 E (Lv.4〜)',
+    icon: <Gi.GiBrickWall className="inline text-cyan-600" />, 
     requiresOpponent: true 
   },
   { 
@@ -199,7 +219,6 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
   const activePianoSong = PIANO_SONGS.find(s => s.id === pianoSongId) || PIANO_SONGS[0];
   const activeDefenseStage = DEFENSE_STAGES.find(s => s.id === defenseStageId) || DEFENSE_STAGES[0];
   
-  
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const handlePointerDownReset = () => {
@@ -271,6 +290,62 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
     return Math.max(1, Math.min(99, Math.round(rate)));
   };
 
+  const getEstimatedCombatWinRate = (opponent: any, robot: any) => {
+    if (!robot || !opponent) return '--';
+    const rPow = robot.stats?.power || 10;
+    const rDef = robot.stats?.defense || 10;
+    const rHp = (robot.stats?.hp || 10) * 1000;
+    const rAgi = robot.stats?.agility || 10;
+    const rDex = robot.stats?.dexterity || 10;
+    const rScore = rPow * 1.5 + rDef * 1.2 + (rHp / 1000) * 1.0 + rAgi * 1.1 + rDex * 0.8;
+
+    const oPow = opponent.power || 20;
+    const oDef = opponent.defense || 20;
+    const oHp = (opponent.hp || 10) * 1000;
+    const oAgi = opponent.agi || 20;
+    const oDex = opponent.dex || 20;
+    const oScore = oPow * 1.5 + oDef * 1.2 + (oHp / 1000) * 1.0 + oAgi * 1.1 + oDex * 0.8;
+
+    const diff = rScore - oScore;
+    const rate = 50 + diff * 0.8;
+    return Math.max(1, Math.min(99, Math.round(rate)));
+  };
+
+  const getEstimatedOthelloWinRate = (opponent: any, robot: any) => {
+    if (!robot || !opponent) return '--';
+    const rInt = robot.stats?.intelligence || 10;
+    const oInt = opponent.int || 20;
+    const diff = rInt - oInt;
+    const rate = 50 + diff * 1.4;
+    return Math.max(1, Math.min(99, Math.round(rate)));
+  };
+
+  const getEstimatedPuzzle2048WinRate = (opponent: any, robot: any) => {
+    if (!robot || !opponent) return '--';
+    const rInt = robot.stats?.intelligence || 10;
+    const rDex = robot.stats?.dexterity || 10;
+    const rAgi = robot.stats?.agility || 10;
+    const rScore = (rInt * 1.3) + (rDex * 1.0) + (rAgi * 0.7);
+
+    const oScore = ((opponent.int || 20) * 1.3) + ((opponent.dex || 20) * 1.0) + ((opponent.agi || 20) * 0.7);
+    const diff = rScore - oScore;
+    const rate = 50 + diff * 1.2;
+    return Math.max(1, Math.min(99, Math.round(rate)));
+  };
+
+  const getEstimatedFallingPuzzleWinRate = (opponent: any, robot: any) => {
+    if (!robot || !opponent) return '--';
+    const rInt = robot.stats?.intelligence || 10;
+    const rDex = robot.stats?.dexterity || 10;
+    const rAgi = robot.stats?.agility || 10;
+    const rScore = (rDex * 1.3) + (rAgi * 1.0) + (rInt * 0.7);
+
+    const oScore = ((opponent.dex || 20) * 1.3) + ((opponent.agi || 20) * 1.0) + ((opponent.int || 20) * 0.7);
+    const diff = rScore - oScore;
+    const rate = 50 + diff * 1.2;
+    return Math.max(1, Math.min(99, Math.round(rate)));
+  };
+
   const selectedGameDef = GAMES.find(g => g.id === selectedGame);
   const requiresOpponent = selectedGameDef?.requiresOpponent ?? true;
 
@@ -307,7 +382,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
     if (result === 'win') {
       // 勝利時：本日のクリア制限を記録
       if (activeRobot) {
-        if (selectedGame === 'combat' || selectedGame === 'othello' || selectedGame === 'chess') {
+        if (selectedGame === 'combat' || selectedGame === 'othello' || selectedGame === 'puzzle2048' || selectedGame === 'falling_puzzle') {
           if (activeOpponent) {
             (engine as any).recordDailyBattleLimit(activeRobot.id, selectedGame, activeOpponent.level);
           }
@@ -327,7 +402,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
       let chestTitle = '古びた鉄の宝箱';
       let stageName = '演習';
 
-      if ((selectedGame === 'combat' || selectedGame === 'othello' || selectedGame === 'chess') && activeOpponent) {
+      if ((selectedGame === 'combat' || selectedGame === 'othello' || selectedGame === 'puzzle2048' || selectedGame === 'falling_puzzle') && activeOpponent) {
         stageName = `${activeOpponent.name} 戦`;
         const lvl = activeOpponent.level;
         if (lvl <= 2) { chestTier = 'bronze'; chestTitle = '古びた鉄の宝箱'; }
@@ -340,7 +415,8 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
         obtainedElements = earnedFame;
 
         if (earnedFame > 0) {
-          (engine as any).addFame(earnedFame, `${selectedGame === 'othello' ? 'リバーシ' : selectedGame === 'chess' ? 'チェス' : '演習'}勝利: ${activeOpponent.name}`);
+          const gameTitle = selectedGame === 'othello' ? 'リバーシ' : selectedGame === 'puzzle2048' ? '2048対戦' : selectedGame === 'falling_puzzle' ? '落下パズル' : '演習';
+          (engine as any).addFame(earnedFame, `${gameTitle}勝利: ${activeOpponent.name}`);
         }
       } else if (selectedGame === 'defense') {
         stageName = activeDefenseStage.name;
@@ -545,7 +621,40 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
           othelloEquippedMemories={activeRobot.othelloEquippedMemories || state.othelloEquippedMemories || []}
         />
       );
-      case 'chess': return <ChessGame activeRobot={activeRobot} activeOpponent={opponent} onFinish={handleFinish} speed={speed} isPaused={isPaused} isFinished={battleResult !== null} battleResult={battleResult} />;
+      case 'puzzle2048': return (
+        <Puzzle2048Game 
+          activeRobot={activeRobot} 
+          activeOpponent={opponent}
+          onFinish={handleFinish} 
+          speed={speed} 
+          isPaused={isPaused} 
+          isFinished={battleResult !== null} 
+          battleResult={battleResult} 
+          onTogglePause={() => setIsPaused(!isPaused)}
+          onSetSpeed={(s) => setSpeed(s)}
+          onExit={() => {
+            setIsBattleActive(false);
+            setBattleResult(null);
+          }}
+        />
+      );
+      case 'falling_puzzle': return (
+        <FallingPuzzleGame 
+          activeRobot={activeRobot} 
+          activeOpponent={opponent}
+          onFinish={handleFinish} 
+          speed={speed} 
+          isPaused={isPaused} 
+          isFinished={battleResult !== null} 
+          battleResult={battleResult} 
+          onTogglePause={() => setIsPaused(!isPaused)}
+          onSetSpeed={(s) => setSpeed(s)}
+          onExit={() => {
+            setIsBattleActive(false);
+            setBattleResult(null);
+          }}
+        />
+      );
       case 'danmaku': return <DanmakuSurvivalGame activeRobot={activeRobot} activeOpponent={opponent} onFinish={handleFinish} speed={speed} isPaused={isPaused} isFinished={battleResult !== null} battleResult={battleResult} difficulty={danmakuDifficulty} />;
       case 'piano': return (
         <PianoGame 
@@ -634,17 +743,14 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                 const isGameClearedToday = (() => {
                   if (g.id === 'defense') return defenseResetInfo.isCompletedToday;
                   if (!activeRobot) return false;
-                  if (g.id === 'combat') {
-                    return selectedOpponentId ? (engine as any).checkDailyBattleLimit(activeRobot.id, 'combat', activeOpponent?.level || 1, currentTimestamp) : false;
+                  if (g.id === 'combat' || g.id === 'othello' || g.id === 'puzzle2048' || g.id === 'falling_puzzle') {
+                    return selectedOpponentId ? (engine as any).checkDailyBattleLimit(activeRobot.id, g.id, activeOpponent?.level || 1, currentTimestamp) : false;
                   }
                   if (g.id === 'danmaku') {
                     return (engine as any).checkDailyBattleLimit(activeRobot.id, 'danmaku', danmakuDifficulty, currentTimestamp);
                   }
                   if (g.id === 'piano') {
                     return (engine as any).checkDailyBattleLimit(activeRobot.id, 'piano', pianoSongId, currentTimestamp);
-                  }
-                  if (g.id === 'othello' || g.id === 'chess') {
-                    return selectedOpponentId ? (engine as any).checkDailyBattleLimit(activeRobot.id, g.id, activeOpponent?.level || 1, currentTimestamp) : false;
                   }
                   return false;
                 })();
@@ -1251,7 +1357,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
               </div>
             )}
 
-            {/* 対戦相手選択カード（リバーシ・チェス） */}
+            {/* 対戦相手選択カード（バトル演習・リバーシ・2048対戦・落下パズル対戦） */}
             {requiresOpponent && (
               <Card className="bg-stone-50 border-2 border-stone-300 p-4 shadow-sm flex flex-col justify-between">
                 <div>
@@ -1267,6 +1373,16 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                     {OPPONENTS.map(o => {
                       const isSelected = selectedOpponentId === o.id;
                       const isCleared = activeRobot ? (engine as any).checkDailyBattleLimit(activeRobot.id, selectedGame, o.level, currentTimestamp) : false;
+                      const winRate = activeRobot ? (
+                        selectedGame === 'puzzle2048'
+                          ? getEstimatedPuzzle2048WinRate(o, activeRobot)
+                          : selectedGame === 'falling_puzzle'
+                          ? getEstimatedFallingPuzzleWinRate(o, activeRobot)
+                          : selectedGame === 'othello'
+                          ? getEstimatedOthelloWinRate(o, activeRobot)
+                          : getEstimatedCombatWinRate(o, activeRobot)
+                      ) : '--';
+
                       return (
                         <button
                           key={o.id}
@@ -1280,11 +1396,23 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                           }`}
                         >
                           <div>
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1.5 flex-wrap">
                               <span className="font-bold text-stone-900 text-sm">{o.name}</span>
+                              <span className="text-[10px] bg-stone-100 text-stone-700 font-mono px-1.5 py-0.2 rounded border border-stone-200">
+                                Lv.{o.level}
+                              </span>
                               {isCleared && (
                                 <span className="text-[10px] bg-emerald-600 text-white border border-emerald-400 font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5 font-mono shadow-xs">
                                   <Gi.GiCheckMark className="text-[8px]" /> 本日クリア済
+                                </span>
+                              )}
+                              {activeRobot && (
+                                <span className={`text-[10px] font-mono font-bold px-1.5 py-0.2 rounded border ${
+                                  winRate !== '--' && (winRate as number) >= 50
+                                    ? 'text-emerald-800 bg-emerald-50 border-emerald-300'
+                                    : 'text-rose-700 bg-rose-50 border-rose-200'
+                                }`}>
+                                  予想勝率 {winRate !== '--' ? `約${winRate}%` : '--%'}
                                 </span>
                               )}
                             </div>
@@ -1313,9 +1441,39 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                                   </span>
                                 </div>
                               </div>
+                            ) : selectedGame === 'puzzle2048' ? (
+                              <div className="flex gap-1.5 text-[10px] font-mono mt-1">
+                                <span className="flex items-center gap-1 px-1.5 py-0.5 rounded border font-bold text-purple-900 bg-purple-50 border-purple-200" title="思考先読み (Int)">
+                                  <Gi.GiInspiration className="text-purple-600 text-xs" />
+                                  <span>Int {o.int} (思考)</span>
+                                </span>
+                                <span className="flex items-center gap-1 px-1.5 py-0.5 rounded border text-emerald-900 bg-emerald-50 border-emerald-200 font-bold" title="融合スコア倍率 (Dex)">
+                                  <Gi.GiCrosshair className="text-emerald-600 text-xs" />
+                                  <span>Dex {o.dex} (倍率)</span>
+                                </span>
+                                <span className="flex items-center gap-1 px-1.5 py-0.5 rounded border text-amber-900 bg-amber-50 border-amber-200 font-bold" title="スライド速度 (Agi)">
+                                  <Gi.GiSpeedometer className="text-amber-500 text-xs" />
+                                  <span>Agi {o.agi} (速度)</span>
+                                </span>
+                              </div>
+                            ) : selectedGame === 'falling_puzzle' ? (
+                              <div className="flex gap-1.5 text-[10px] font-mono mt-1">
+                                <span className="flex items-center gap-1 px-1.5 py-0.5 rounded border text-emerald-900 bg-emerald-50 border-emerald-200 font-bold" title="ライン消去得点倍率 (Dex)">
+                                  <Gi.GiCrosshair className="text-emerald-600 text-xs" />
+                                  <span>Dex {o.dex} (得点)</span>
+                                </span>
+                                <span className="flex items-center gap-1 px-1.5 py-0.5 rounded border text-amber-900 bg-amber-50 border-amber-200 font-bold" title="落下速度 (Agi)">
+                                  <Gi.GiSpeedometer className="text-amber-500 text-xs" />
+                                  <span>Agi {o.agi} (速度)</span>
+                                </span>
+                                <span className="flex items-center gap-1 px-1.5 py-0.5 rounded border font-bold text-purple-900 bg-purple-50 border-purple-200" title="最適配置探索 (Int)">
+                                  <Gi.GiInspiration className="text-purple-600 text-xs" />
+                                  <span>Int {o.int} (探索)</span>
+                                </span>
+                              </div>
                             ) : (
                               <div className="flex gap-1.5 text-[10px] font-mono mt-1">
-                                <span className={`flex items-center gap-1 px-1.5 py-0.5 rounded border font-bold ${selectedCategory === 'puzzle' ? 'text-blue-900 bg-blue-100 border-blue-300' : 'text-purple-900 bg-purple-50 border-purple-200'}`} title="知性 (Int)">
+                                <span className="flex items-center gap-1 px-1.5 py-0.5 rounded border font-bold text-blue-900 bg-blue-100 border-blue-300" title="知性 (Int)">
                                   <Gi.GiInspiration className="text-purple-600 text-xs" />
                                   <span>Int {o.int}</span>
                                 </span>
@@ -1323,7 +1481,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                                   <Gi.GiSpeedometer className="text-amber-500 text-xs" />
                                   <span>Agi {o.agi}</span>
                                 </span>
-                                <span className={`flex items-center gap-1 px-1.5 py-0.5 rounded border font-bold ${selectedCategory === 'shooting' ? 'text-emerald-900 bg-emerald-100 border-emerald-300' : 'text-emerald-900 bg-emerald-50 border-emerald-200'}`} title="回避・操作 (Dex)">
+                                <span className="flex items-center gap-1 px-1.5 py-0.5 rounded border font-bold text-emerald-900 bg-emerald-50 border-emerald-200" title="回避・操作 (Dex)">
                                   <Gi.GiCrosshair className="text-emerald-600 text-xs" />
                                   <span>Dex {o.dex}</span>
                                 </span>
@@ -1561,10 +1719,16 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                     `演習開始！ (${activeDanmakuDiff.label})`
                   ) : selectedGame === 'piano' ? (
                     `演奏開始！ (${activePianoSong.title})`
+                  ) : selectedGame === 'puzzle2048' ? (
+                    activeOpponent ? `2048対戦開始！ (vs ${activeOpponent.name} Lv.${activeOpponent.level})` : '2048対戦開始！'
+                  ) : selectedGame === 'falling_puzzle' ? (
+                    activeOpponent ? `落下パズル対戦開始！ (vs ${activeOpponent.name} Lv.${activeOpponent.level})` : '落下パズル対戦開始！'
+                  ) : selectedGame === 'othello' ? (
+                    activeOpponent ? `リバーシ対戦開始！ (vs ${activeOpponent.name} Lv.${activeOpponent.level})` : '対戦開始！'
                   ) : selectedGame === 'defense' ? (
                     `拠点防衛開始！ (${activeDefenseStage.name})`
                   ) : (
-                    'バトル演習開始！'
+                    activeOpponent ? `バトル演習開始！ (vs ${activeOpponent.name} Lv.${activeOpponent.level})` : 'バトル演習開始！'
                   )}
                 </Button>
               </div>
@@ -1636,7 +1800,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
                       ) : (
                         <>
                           <Gi.GiCrossedSwords className="text-base" />
-                          {selectedGame === 'danmaku' ? `演習開始 (${activeDanmakuDiff.label})` : selectedGame === 'piano' ? `演奏開始` : selectedGame === 'defense' ? `防衛開始` : 'バトル開始！'}
+                          {selectedGame === 'danmaku' ? `演習開始 (${activeDanmakuDiff.label})` : selectedGame === 'piano' ? `演奏開始` : selectedGame === 'puzzle2048' ? (activeOpponent ? `2048対戦 (vs ${activeOpponent.name})` : '2048対戦') : selectedGame === 'falling_puzzle' ? (activeOpponent ? `落下パズル (vs ${activeOpponent.name})` : '落下パズル') : selectedGame === 'defense' ? `防衛開始` : (activeOpponent ? `対戦開始 (vs ${activeOpponent.name})` : 'バトル開始！')}
                         </>
                       )}
                     </Button>
@@ -1653,7 +1817,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
             {renderGame()}
           </div>
           
-          {isBattleActive && !battleResult && selectedGame !== 'danmaku' && selectedGame !== 'combat' && (
+          {isBattleActive && !battleResult && (selectedGame === 'othello' || selectedGame === 'defense') && (
             <div className="flex justify-center items-center gap-2 mt-4 mb-4 bg-stone-200/70 p-2 rounded-xl border border-stone-300 max-w-sm mx-auto shadow-inner">
               <Button onClick={() => setIsPaused(!isPaused)} size="sm" className="w-28 text-xs font-bold flex items-center justify-center gap-1">
                 {isPaused ? (
@@ -1678,7 +1842,7 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
             {!battleResult ? (
               <p className="text-base font-bold text-stone-700 animate-pulse flex items-center justify-center gap-2">
                 <Gi.GiSpanner className="animate-spin text-amber-600" />
-                <span>{selectedGame === 'danmaku' ? '演習シミュレーション進行中...' : selectedGame === 'piano' ? 'ピアノ演奏演習進行中...' : '演習バトル進行中...'}</span>
+                <span>{selectedGame === 'danmaku' ? '演習シミュレーション進行中...' : selectedGame === 'piano' ? 'ピアノ演奏演習進行中...' : selectedGame === 'puzzle2048' ? '2048自動対戦進行中...' : selectedGame === 'falling_puzzle' ? '落下パズル自動対戦進行中...' : '演習バトル進行中...'}</span>
               </p>
             ) : selectedGame === 'piano' ? null : (
               <div className="space-y-4 flex flex-col items-center relative overflow-visible w-full">
