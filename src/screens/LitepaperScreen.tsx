@@ -25,7 +25,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
         title="ポンコツロボット工房 公式仕様書"
         badge={
           <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300 font-mono font-bold px-1.5 py-0.2 rounded">
-            v0.1.168 (DB v0.23)
+            v0.1.169 (DB v0.23)
           </span>
         }
         rightElement={
@@ -554,7 +554,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                 <div className="bg-white p-2.5 rounded-lg border border-stone-200">
                   <strong className="text-stone-900 block font-bold mb-1">⚛️ 2048自動対戦 (2048 Auto Battle)</strong>
                   <p className="text-stone-600">
-                    自機ロボットとライバルAIが2つの画面で並列対戦を行うリアルタイム自動パズルバトル。4x4グリッドの高圧融合炉内で、両機のAIが自律思考によってスライド操作を行い、同種の動力コア（鉄［2］〜超次元［8192］）を合体・融合させていきます。
+                    自機ロボットとライバルAIがスマホ縦画面でも左右2つの画面で横並び並列対戦を行うリアルタイム自動パズルバトル。4x4グリッドの高圧融合炉内で、両機のAIが自律思考によってスライド操作を行い、2つの同種動力コア（鉄［2］〜超次元［8192］）がスライドして衝突・合体する融合アニメーション演出とともに高次コアへと進化させていきます。
                     <br />
                     <strong>🧠 機体能力値連動思考ルーチン (INT / DEX / AGI):</strong>
                     <br />
@@ -571,7 +571,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                 <div className="bg-white p-2.5 rounded-lg border border-stone-200">
                   <strong className="text-stone-900 block font-bold mb-1">🧱 落下パズル対戦 (Falling Block Puzzle Auto Battle)</strong>
                   <p className="text-stone-600">
-                    自機ロボットとライバルAIが2画面で競い合うリアルタイム自動落下パズル対戦。10x20の演習フィールドに降下する7種類のテトロミノ（I, O, T, S, Z, J, L）を両機のAIが最適配置アルゴリズム（着地高度、消去ライン数、穴の少なさ、表面起伏を総合判定）に基づいて自動で回転・移動・ドロップします。
+                    自機ロボットとライバルAIがスマホ縦画面でも左右2画面横並びで競い合うリアルタイム自動落下パズル対戦。10x20の演習フィールドに降下する7種類のテトロミノ（I, O, T, S, Z, J, L）を両機のAIが最適配置アルゴリズム（着地高度、消去ライン数、穴の少なさ、表面起伏を総合判定）に基づいて自動で回転・移動・ドロップします。
                     <br />
                     <strong>⚡ 機体能力値連動AIアルゴリズム (INT / DEX / AGI):</strong>
                     <br />

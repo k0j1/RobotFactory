@@ -1812,8 +1812,8 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
         </div>
       ) : (
         /* バトル実行中・結果表示カード（工房テストモニター風） */
-        <Card className={`${selectedGame === 'defense' ? 'p-1.5 sm:p-3 bg-stone-900/90 border-stone-700' : 'bg-stone-100 border-2 border-stone-300 p-4 sm:p-6'} shadow-md rounded-2xl relative overflow-hidden`}>
-          <div className={selectedGame === 'defense' ? 'mb-2 w-full' : 'mb-4'}>
+        <Card className={`${selectedGame === 'defense' ? 'p-1.5 sm:p-3 bg-stone-900/90 border-stone-700' : (selectedGame === 'puzzle2048' || selectedGame === 'falling_puzzle') ? 'bg-stone-100 border-2 border-stone-300 p-2 sm:p-5' : 'bg-stone-100 border-2 border-stone-300 p-4 sm:p-6'} shadow-md rounded-2xl relative overflow-hidden`}>
+          <div className={selectedGame === 'defense' || selectedGame === 'puzzle2048' || selectedGame === 'falling_puzzle' ? 'mb-2 w-full' : 'mb-4'}>
             {renderGame()}
           </div>
           

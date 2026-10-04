@@ -146,3 +146,135 @@
   animation: shimmer-slide 2s ease-in-out infinite;
 }
 
+/* ===================================================
+   2048 パズル スライド＆2ブロック合体アニメーション
+   =================================================== */
+
+/* 速度倍率ごとの基準アニメーション時間 */
+.dur-2048-1x { --anim-2048-dur: 260ms; }
+.dur-2048-2x { --anim-2048-dur: 175ms; }
+.dur-2048-3x { --anim-2048-dur: 125ms; }
+
+/* 4x4グリッド上のスライド開始位置オフセット（移動先セルを基準とした相対%） */
+.tile-from-x--3 { --tile-dx: -300%; --tile-dy: 0%; }
+.tile-from-x--2 { --tile-dx: -200%; --tile-dy: 0%; }
+.tile-from-x--1 { --tile-dx: -100%; --tile-dy: 0%; }
+.tile-from-x-0  { --tile-dx: 0%;    --tile-dy: 0%; }
+.tile-from-x-1  { --tile-dx: 100%;  --tile-dy: 0%; }
+.tile-from-x-2  { --tile-dx: 200%;  --tile-dy: 0%; }
+.tile-from-x-3  { --tile-dx: 300%;  --tile-dy: 0%; }
+
+.tile-from-y--3 { --tile-dx: 0%; --tile-dy: -300%; }
+.tile-from-y--2 { --tile-dx: 0%; --tile-dy: -200%; }
+.tile-from-y--1 { --tile-dx: 0%; --tile-dy: -100%; }
+.tile-from-y-0  { --tile-dx: 0%; --tile-dy: 0%; }
+.tile-from-y-1  { --tile-dx: 0%; --tile-dy: 100%; }
+.tile-from-y-2  { --tile-dx: 0%; --tile-dy: 200%; }
+.tile-from-y-3  { --tile-dx: 0%; --tile-dy: 300%; }
+
+/* 1. 通常スライド（合体しないブロックの滑らかな移動） */
+@keyframes tile-2048-slide {
+  0% {
+    transform: translate3d(var(--tile-dx, 0%), var(--tile-dy, 0%), 0);
+  }
+  100% {
+    transform: translate3d(0%, 0%, 0);
+  }
+}
+
+.animate-2048-slide {
+  animation: tile-2048-slide calc(var(--anim-2048-dur, 260ms) * 0.56) cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* 2. 合体元となる2つのブロックがスライドして衝突・融合するアニメーション */
+@keyframes tile-2048-merge-source {
+  0% {
+    transform: translate3d(var(--tile-dx, 0%), var(--tile-dy, 0%), 0) scale(1);
+    opacity: 1;
+  }
+  52% {
+    transform: translate3d(0%, 0%, 0) scale(1.06);
+    opacity: 1;
+  }
+  70% {
+    transform: translate3d(0%, 0%, 0) scale(0.72);
+    opacity: 0;
+  }
+  100% {
+    transform: translate3d(0%, 0%, 0) scale(0.72);
+    opacity: 0;
+  }
+}
+
+.animate-2048-merge-source {
+  animation: tile-2048-merge-source var(--anim-2048-dur, 260ms) cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* 3. 2つのブロックが衝突した瞬間に合体後の数値ブロックが弾け出るアニメーション */
+@keyframes tile-2048-merge-pop {
+  0%, 46% {
+    transform: scale(0.42);
+    opacity: 0;
+  }
+  66% {
+    transform: scale(1.24);
+    opacity: 1;
+    filter: brightness(1.35);
+  }
+  84% {
+    transform: scale(0.94);
+    opacity: 1;
+    filter: brightness(1.08);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+    filter: brightness(1);
+  }
+}
+
+.animate-2048-merge-pop {
+  animation: tile-2048-merge-pop var(--anim-2048-dur, 260ms) cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* 4. 合体瞬間のエネルギー波紋リング演出 */
+@keyframes tile-2048-merge-ring {
+  0%, 46% {
+    transform: scale(0.55);
+    opacity: 0;
+  }
+  58% {
+    transform: scale(0.95);
+    opacity: 0.95;
+  }
+  100% {
+    transform: scale(1.42);
+    opacity: 0;
+  }
+}
+
+.animate-2048-merge-ring {
+  animation: tile-2048-merge-ring var(--anim-2048-dur, 260ms) ease-out forwards;
+}
+
+/* 5. スライド後に新しく出現するブロックのポップイン */
+@keyframes tile-2048-spawn {
+  0%, 54% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  82% {
+    transform: scale(1.12);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-2048-spawn {
+  animation: tile-2048-spawn var(--anim-2048-dur, 260ms) cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+

@@ -526,7 +526,7 @@ export const FallingPuzzleGame: React.FC<FallingPuzzleGameProps> = ({
 
   // 10x20グリッドの描画
   const renderBoard = (grid: number[][]) => (
-    <div className="bg-stone-950 p-1.5 rounded-xl border border-stone-800 shadow-inner w-full max-w-[150px] mx-auto aspect-[10/20] flex flex-col justify-between">
+    <div className="bg-stone-950 p-1 sm:p-1.5 rounded-xl border border-stone-800 shadow-inner w-full max-w-[128px] sm:max-w-[150px] mx-auto aspect-[10/20] flex flex-col justify-between">
       {grid.map((row, r) => (
         <div key={r} className="flex h-[4.8%] w-full">
           {row.map((cell, c) => {
@@ -549,42 +549,42 @@ export const FallingPuzzleGame: React.FC<FallingPuzzleGameProps> = ({
   );
 
   return (
-    <div className="space-y-3 max-w-4xl mx-auto">
+    <div className="space-y-2.5 sm:space-y-3 max-w-4xl mx-auto">
       {/* 上部ヘッダー：VSゲージ＆タイマー */}
-      <div className="bg-stone-900 border-2 border-cyan-500/80 rounded-2xl p-3 shadow-md text-white">
-        <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+      <div className="bg-stone-900 border-2 border-cyan-500/80 rounded-2xl p-2.5 sm:p-3 shadow-md text-white">
+        <div className="flex items-center justify-between gap-1 sm:gap-2 mb-2">
           {/* 自機スコア */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-cyan-400 font-mono">YOU</span>
-            <span className="text-xl sm:text-2xl font-black font-mono text-cyan-300">
+          <div className="flex items-center gap-1 sm:gap-2 min-w-0">
+            <span className="text-[10px] sm:text-xs font-bold text-cyan-400 font-mono shrink-0">YOU</span>
+            <span className="text-base sm:text-2xl font-black font-mono text-cyan-300 truncate">
               {score1.toLocaleString()}
             </span>
             {scoreDiff > 0 && (
-              <span className="text-[10px] bg-emerald-500 text-white font-black px-1.5 py-0.5 rounded animate-pulse">
+              <span className="hidden sm:inline-block text-[10px] bg-emerald-500 text-white font-black px-1.5 py-0.5 rounded animate-pulse">
                 +{scoreDiff.toLocaleString()} LEAD!
               </span>
             )}
           </div>
 
           {/* タイマー中央表示 */}
-          <div className="flex items-center gap-1.5 bg-stone-800 px-3 py-1 rounded-full border border-stone-700">
-            <Clock size={14} className={timeLeft <= 10 ? 'text-rose-400 animate-spin' : 'text-cyan-400'} />
-            <span className={`font-mono font-bold text-sm sm:text-base ${timeLeft <= 10 ? 'text-rose-400 animate-pulse' : 'text-stone-200'}`}>
+          <div className="flex items-center gap-1 bg-stone-800 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full border border-stone-700 shrink-0">
+            <Clock size={13} className={timeLeft <= 10 ? 'text-rose-400 animate-spin' : 'text-cyan-400'} />
+            <span className={`font-mono font-bold text-xs sm:text-base ${timeLeft <= 10 ? 'text-rose-400 animate-pulse' : 'text-stone-200'}`}>
               00:{timeLeft < 10 ? `0${timeLeft}` : timeLeft}
             </span>
           </div>
 
           {/* 相手スコア */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 min-w-0 justify-end">
             {scoreDiff < 0 && (
-              <span className="text-[10px] bg-rose-500 text-white font-black px-1.5 py-0.5 rounded animate-pulse">
+              <span className="hidden sm:inline-block text-[10px] bg-rose-500 text-white font-black px-1.5 py-0.5 rounded animate-pulse">
                 {scoreDiff.toLocaleString()}
               </span>
             )}
-            <span className="text-xl sm:text-2xl font-black font-mono text-stone-200">
+            <span className="text-base sm:text-2xl font-black font-mono text-stone-200 truncate">
               {score2.toLocaleString()}
             </span>
-            <span className="text-xs font-bold text-red-400 font-mono">OPPONENT</span>
+            <span className="text-[10px] sm:text-xs font-bold text-red-400 font-mono shrink-0">RIVAL</span>
           </div>
         </div>
 
@@ -600,99 +600,99 @@ export const FallingPuzzleGame: React.FC<FallingPuzzleGameProps> = ({
         </div>
       </div>
 
-      {/* 2画面並列（自機 VS ライバル） */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {/* 2画面並列（スマホ縦画面でも常に左右2画面で横並び） */}
+      <div className="grid grid-cols-2 gap-1.5 sm:gap-3">
         {/* 左側：自機ロボット盤面 */}
-        <div className="bg-stone-950/90 border-2 border-cyan-500/80 rounded-2xl p-3 shadow-sm relative overflow-hidden flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-2 pb-2 border-b border-stone-800">
-            <div className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-lg bg-stone-800 border border-cyan-500/50 flex items-center justify-center shrink-0">
-                <RobotVisual robot={activeRobot} size={32} hideBubble={true} />
+        <div className="bg-stone-950/90 border-2 border-cyan-500/80 rounded-xl sm:rounded-2xl p-2 sm:p-3 shadow-sm relative overflow-hidden flex flex-col justify-between min-w-0">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1.5 sm:mb-2 pb-1.5 sm:pb-2 border-b border-stone-800">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-lg bg-stone-800 border border-cyan-500/50 flex items-center justify-center shrink-0">
+                <RobotVisual robot={activeRobot} size={24} hideBubble={true} />
               </div>
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <span className="font-bold text-xs sm:text-sm text-stone-100">{activeRobot.name}</span>
-                  <span className="text-[9px] bg-cyan-500/20 text-cyan-300 px-1 py-0.2 rounded border border-cyan-500/40 font-mono">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1">
+                  <span className="font-bold text-[11px] sm:text-sm text-stone-100 truncate">{activeRobot.name}</span>
+                  <span className="text-[8px] sm:text-[9px] bg-cyan-500/20 text-cyan-300 px-1 py-0.2 rounded border border-cyan-500/40 font-mono shrink-0">
                     YOU
                   </span>
                 </div>
-                <div className="text-[10px] text-stone-400 font-mono flex items-center gap-2 mt-0.5">
-                  <span>Int {p1Int}</span>
-                  <span>Dex {p1Dex}</span>
-                  <span>Agi {p1Agi}</span>
+                <div className="text-[8px] sm:text-[10px] text-stone-400 font-mono flex items-center gap-1 sm:gap-2 mt-0.5">
+                  <span>I:{p1Int}</span>
+                  <span>D:{p1Dex}</span>
+                  <span>A:{p1Agi}</span>
                 </div>
               </div>
             </div>
 
-            <div className="text-right">
-              <span className="text-[10px] text-stone-400 block font-mono">消去ライン</span>
-              <span className="text-xs font-black font-mono px-2 py-0.5 rounded bg-stone-800 border border-cyan-400 text-cyan-300">
+            <div className="flex sm:block items-center justify-between bg-stone-900/80 sm:bg-transparent px-1.5 py-0.5 sm:p-0 rounded sm:text-right shrink-0">
+              <span className="text-[8px] sm:text-[10px] text-stone-400 font-mono">消去ライン</span>
+              <span className="text-[10px] sm:text-xs font-black font-mono px-1.5 py-0.2 sm:px-2 sm:py-0.5 rounded bg-stone-800 border border-cyan-400 text-cyan-300">
                 {lines1} LINES
               </span>
             </div>
           </div>
 
           {/* 10x20 盤面 */}
-          <div className="relative my-1">
+          <div className="relative my-0.5 sm:my-1">
             {renderBoard(grid1)}
             {isDead1 && (
               <div className="absolute inset-0 bg-stone-950/80 backdrop-blur-2xs rounded-xl flex flex-col items-center justify-center text-rose-400 font-bold text-xs">
-                <Gi.GiHazardSign className="text-2xl mb-1" />
-                <span>窒息（スコア確定）</span>
+                <Gi.GiHazardSign className="text-xl sm:text-2xl mb-1" />
+                <span>窒息</span>
               </div>
             )}
           </div>
 
-          <div className="mt-2 text-center text-[10px] text-stone-400 font-mono flex items-center justify-center gap-2">
-            <Zap size={11} className="text-cyan-400 animate-pulse" />
-            <span>自機思考AI: 自動落下＆配置中 [NEXT: {nextPiece1}]</span>
+          <div className="mt-1.5 sm:mt-2 text-center text-[9px] sm:text-[10px] text-stone-400 font-mono flex items-center justify-center gap-1 truncate">
+            <Zap size={10} className="text-cyan-400 animate-pulse shrink-0" />
+            <span className="truncate">AI落下中 [NEXT:{nextPiece1}]</span>
           </div>
         </div>
 
         {/* 右側：ライバル対戦相手盤面 */}
-        <div className="bg-stone-950/90 border-2 border-stone-700 rounded-2xl p-3 shadow-sm relative overflow-hidden flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-2 pb-2 border-b border-stone-800">
-            <div className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-lg bg-stone-800 border border-stone-700 flex items-center justify-center shrink-0 text-red-400 text-lg">
+        <div className="bg-stone-950/90 border-2 border-stone-700 rounded-xl sm:rounded-2xl p-2 sm:p-3 shadow-sm relative overflow-hidden flex flex-col justify-between min-w-0">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1.5 sm:mb-2 pb-1.5 sm:pb-2 border-b border-stone-800">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-lg bg-stone-800 border border-stone-700 flex items-center justify-center shrink-0 text-red-400 text-sm sm:text-lg">
                 <Gi.GiRobotAntennas />
               </div>
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <span className="font-bold text-xs sm:text-sm text-stone-100">{opponentObj.name}</span>
-                  <span className="text-[9px] bg-red-950 text-red-300 px-1 py-0.2 rounded border border-red-800 font-mono">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1">
+                  <span className="font-bold text-[11px] sm:text-sm text-stone-100 truncate">{opponentObj.name}</span>
+                  <span className="text-[8px] sm:text-[9px] bg-red-950 text-red-300 px-1 py-0.2 rounded border border-red-800 font-mono shrink-0">
                     Lv.{opponentObj.level}
                   </span>
                 </div>
-                <div className="text-[10px] text-stone-400 font-mono flex items-center gap-2 mt-0.5">
-                  <span>Int {p2Int}</span>
-                  <span>Dex {p2Dex}</span>
-                  <span>Agi {p2Agi}</span>
+                <div className="text-[8px] sm:text-[10px] text-stone-400 font-mono flex items-center gap-1 sm:gap-2 mt-0.5">
+                  <span>I:{p2Int}</span>
+                  <span>D:{p2Dex}</span>
+                  <span>A:{p2Agi}</span>
                 </div>
               </div>
             </div>
 
-            <div className="text-right">
-              <span className="text-[10px] text-stone-400 block font-mono">消去ライン</span>
-              <span className="text-xs font-black font-mono px-2 py-0.5 rounded bg-stone-800 border border-stone-600 text-stone-200">
+            <div className="flex sm:block items-center justify-between bg-stone-900/80 sm:bg-transparent px-1.5 py-0.5 sm:p-0 rounded sm:text-right shrink-0">
+              <span className="text-[8px] sm:text-[10px] text-stone-400 font-mono">消去ライン</span>
+              <span className="text-[10px] sm:text-xs font-black font-mono px-1.5 py-0.2 sm:px-2 sm:py-0.5 rounded bg-stone-800 border border-stone-600 text-stone-200">
                 {lines2} LINES
               </span>
             </div>
           </div>
 
           {/* 10x20 盤面 */}
-          <div className="relative my-1">
+          <div className="relative my-0.5 sm:my-1">
             {renderBoard(grid2)}
             {isDead2 && (
               <div className="absolute inset-0 bg-stone-950/80 backdrop-blur-2xs rounded-xl flex flex-col items-center justify-center text-rose-400 font-bold text-xs">
-                <Gi.GiHazardSign className="text-2xl mb-1" />
-                <span>窒息（スコア確定）</span>
+                <Gi.GiHazardSign className="text-xl sm:text-2xl mb-1" />
+                <span>窒息</span>
               </div>
             )}
           </div>
 
-          <div className="mt-2 text-center text-[10px] text-stone-400 font-mono flex items-center justify-center gap-2">
-            <Zap size={11} className="text-red-400 animate-pulse" />
-            <span>相手思考AI: 自動落下＆配置中 [NEXT: {nextPiece2}]</span>
+          <div className="mt-1.5 sm:mt-2 text-center text-[9px] sm:text-[10px] text-stone-400 font-mono flex items-center justify-center gap-1 truncate">
+            <Zap size={10} className="text-red-400 animate-pulse shrink-0" />
+            <span className="truncate">AI落下中 [NEXT:{nextPiece2}]</span>
           </div>
         </div>
       </div>
