@@ -5,6 +5,7 @@ import { AttributeColors } from './models';
 import { getDefenseDailyResetInfo, DefenseResetInfo, getDailyResetDateKey } from '../components/minigames/Shared';
 import { CombatEquipmentType, CombatEquipmentRank, COMBAT_EQUIPMENT_RANKS, getNextEquipmentRank } from './combatEquipmentData';
 import { OTHELLO_MEMORIES, OthelloMemoryId } from './othelloStrategyData';
+import { DANMAKU_ITEMS, DanmakuItemId } from './danmakuItemData';
 import { AuthApiService } from '../services/AuthApiService';
 import { findMasterPartData } from '../data/partsMaster';
 
@@ -44,6 +45,8 @@ const INITIAL_STATE: GameState = {
   minigameDashboardMode: 'compact',
   othelloPurchasedMemories: [],
   othelloEquippedMemories: [],
+  danmakuItems: {},
+  activeDanmakuItems: { barrier: null, life: null },
   battleElements: 0,
   combatEquipments: {},
   combatEquipmentRanks: {},
@@ -2506,6 +2509,135 @@ export class GameEngine {
       }
       this.saveState();
     }
+  }
+
+  /**
+   * 弾幕よけ専用アイテムの所持数を追加（宝箱ドロップ等）
+   */
+  public addDanmakuItem(itemId: DanmakuItemId, amount: number = 1) {
+    if (!DANMAKU_ITEMS[itemId] || amount <= 0) return;
+    if (!this.state.danmakuItems || typeof this.state.danmakuItems !== 'object') {
+      this.state.danmakuItems = {};
+    }
+    this.state.danmakuItems = {
+      ...this.state.danmakuItems,
+      [itemId]: (this.state.danmakuItems[itemId] || 0) + amount,
+    };
+
+    // 初回獲得時にそのカテゴリが未選択なら自動でセットしてすぐ使えるようにする
+    const def = DANMAKU_ITEMS[itemId];
+    if (!this.state.activeDanmakuItems) {
+      this.state.activeDanmakuItems = { barrier: null, life: null };
+    }
+    const curSelected = this.state.activeDanmakuItems[def.category];
+    if (!curSelected || (this.state.danmakuItems[curSelected] || 0) <= 0) {
+      this.state.activeDanmakuItems = {
+        ...this.state.activeDanmakuItems,
+        [def.category]: itemId as any,
+      };
+    }
+
+    this.saveState();
+  }
+
+  /**
+   * 弾幕よけ専用アイテムをエレメントで購入
+   */
+  public buyDanmakuItem(itemId: DanmakuItemId, count: number = 1): boolean {
+    const itemDef = DANMAKU_ITEMS[itemId];
+    if (!itemDef || count <= 0) return false;
+
+    const totalCost = itemDef.cost * count;
+    const currentElements = this.state.battleElements || 0;
+    if (currentElements < totalCost) {
+      return false; // エレメント不足
+    }
+
+    this.state.battleElements = currentElements - totalCost;
+    if (!this.state.danmakuItems || typeof this.state.danmakuItems !== 'object') {
+      this.state.danmakuItems = {};
+    }
+    this.state.danmakuItems = {
+      ...this.state.danmakuItems,
+      [itemId]: (this.state.danmakuItems[itemId] || 0) + count,
+    };
+
+    // 購入したアイテムを出撃時使用アイテムとして自動選択
+    if (!this.state.activeDanmakuItems) {
+      this.state.activeDanmakuItems = { barrier: null, life: null };
+    }
+    this.state.activeDanmakuItems = {
+      ...this.state.activeDanmakuItems,
+      [itemDef.category]: itemId as any,
+    };
+
+    this.saveState();
+    return true;
+  }
+
+  /**
+   * 弾幕よけ出撃時に使用するアイテムを選択・解除
+   */
+  public toggleActiveDanmakuItem(category: 'barrier' | 'life', itemId: DanmakuItemId | null) {
+    if (!this.state.activeDanmakuItems) {
+      this.state.activeDanmakuItems = { barrier: null, life: null };
+    }
+    if (itemId && (this.state.danmakuItems?.[itemId] || 0) <= 0) {
+      return;
+    }
+    const current = this.state.activeDanmakuItems[category];
+    this.state.activeDanmakuItems = {
+      ...this.state.activeDanmakuItems,
+      [category]: current === itemId ? null : (itemId as any),
+    };
+    this.saveState();
+  }
+
+  /**
+   * 弾幕よけミッション開始時に選択中のアイテムを1個ずつ消費し、発動効果を返す
+   */
+  public consumeActiveDanmakuItems(): { barrierCharges: number; bonusLife: number; usedBarrierId: DanmakuItemId | null; usedLifeId: DanmakuItemId | null } {
+    let barrierCharges = 0;
+    let bonusLife = 0;
+    let usedBarrierId: DanmakuItemId | null = null;
+    let usedLifeId: DanmakuItemId | null = null;
+
+    if (!this.state.danmakuItems) {
+      this.state.danmakuItems = {};
+    }
+    if (!this.state.activeDanmakuItems) {
+      this.state.activeDanmakuItems = { barrier: null, life: null };
+    }
+
+    const bId = this.state.activeDanmakuItems.barrier;
+    if (bId && DANMAKU_ITEMS[bId] && (this.state.danmakuItems[bId] || 0) > 0) {
+      this.state.danmakuItems[bId] -= 1;
+      barrierCharges = DANMAKU_ITEMS[bId].effectValue;
+      usedBarrierId = bId;
+      if (this.state.danmakuItems[bId] <= 0) {
+        this.state.activeDanmakuItems.barrier = null;
+      }
+    } else if (bId) {
+      this.state.activeDanmakuItems.barrier = null;
+    }
+
+    const lId = this.state.activeDanmakuItems.life;
+    if (lId && DANMAKU_ITEMS[lId] && (this.state.danmakuItems[lId] || 0) > 0) {
+      this.state.danmakuItems[lId] -= 1;
+      bonusLife = DANMAKU_ITEMS[lId].effectValue;
+      usedLifeId = lId;
+      if (this.state.danmakuItems[lId] <= 0) {
+        this.state.activeDanmakuItems.life = null;
+      }
+    } else if (lId) {
+      this.state.activeDanmakuItems.life = null;
+    }
+
+    this.state.danmakuItems = { ...this.state.danmakuItems };
+    this.state.activeDanmakuItems = { ...this.state.activeDanmakuItems };
+    this.saveState();
+
+    return { barrierCharges, bonusLife, usedBarrierId, usedLifeId };
   }
 }
 

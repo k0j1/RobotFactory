@@ -785,6 +785,14 @@ export class AuthApiService {
             loadedData.reversiEquippedMemories = parsed.reversiEquippedMemories || parsed.othelloEquippedMemories || loadedData.reversiEquippedMemories;
           }
 
+          // 6.5 弾幕よけアイテム (user_item / danmaku_item)
+          if (parsed.danmakuItems && typeof parsed.danmakuItems === 'object') {
+            loadedData.danmakuItems = { ...(loadedData.danmakuItems || {}), ...parsed.danmakuItems };
+          }
+          if (parsed.activeDanmakuItems && typeof parsed.activeDanmakuItems === 'object') {
+            loadedData.activeDanmakuItems = { ...(loadedData.activeDanmakuItems || {}), ...parsed.activeDanmakuItems };
+          }
+
           // 7. アイテム・宝箱・エレメント (user_item)
           if (parsed.repairKits !== undefined) loadedData.repairKits = Number(parsed.repairKits);
           if (parsed.unopenedChests && typeof parsed.unopenedChests === 'object') {

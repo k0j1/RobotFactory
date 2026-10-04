@@ -1,6 +1,7 @@
 import * as Gi from 'react-icons/gi';
 import React, { useState, useEffect, useRef } from 'react';
 import { MinigameProps, DanmakuDifficulty, DANMAKU_DIFFICULTIES } from './Shared';
+import { DANMAKU_ITEMS, DanmakuItemId } from '../../core/danmakuItemData';
 import { RobotVisual } from '../robot/RobotVisual';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -16,6 +17,15 @@ interface DanmakuBullet {
 
 interface DanmakuProps extends Omit<MinigameProps, 'activeOpponent'> {
   difficulty?: DanmakuDifficulty;
+  selectedBarrierId?: DanmakuItemId | null;
+  selectedLifeId?: DanmakuItemId | null;
+  danmakuItems?: Record<string, number>;
+  onConsumeActiveItems?: () => {
+    barrierCharges: number;
+    bonusLife: number;
+    usedBarrierId: DanmakuItemId | null;
+    usedLifeId: DanmakuItemId | null;
+  };
 }
 
 export const DanmakuSurvivalGame: React.FC<DanmakuProps> = ({ 
@@ -25,10 +35,18 @@ export const DanmakuSurvivalGame: React.FC<DanmakuProps> = ({
   isPaused, 
   isFinished, 
   battleResult,
-  difficulty = 'normal'
+  difficulty = 'normal',
+  selectedBarrierId = null,
+  selectedLifeId = null,
+  danmakuItems = {},
+  onConsumeActiveItems
 }) => {
   const [hasStarted, setHasStarted] = useState(false);
+  const [maxHp, setMaxHp] = useState(5);
   const [hp, setHp] = useState(5);
+  const [maxBarrier, setMaxBarrier] = useState(0);
+  const [barrierCharges, setBarrierCharges] = useState(0);
+  const [barrierBlockEffect, setBarrierBlockEffect] = useState(false);
   const [timeMs, setTimeMs] = useState(0);
   const [bullets, setBullets] = useState<DanmakuBullet[]>([]);
   const [hitEffect, setHitEffect] = useState<boolean>(false);
@@ -41,6 +59,8 @@ export const DanmakuSurvivalGame: React.FC<DanmakuProps> = ({
   const [bankAngle, setBankAngle] = useState(0);
   
   const hpRef = useRef(hp);
+  const maxHpRef = useRef(5);
+  const barrierChargesRef = useRef(0);
   const timeMsRef = useRef(timeMs);
   const bulletsRef = useRef<DanmakuBullet[]>([]);
   const playerPosRef = useRef({ x: 50, y: 80 });
@@ -70,23 +90,59 @@ export const DanmakuSurvivalGame: React.FC<DanmakuProps> = ({
   }, [hasStarted]);
 
   useEffect(() => {
-    if (!battleResult) {
-      hpRef.current = 5;
+    if (!battleResult && !hasStarted) {
+      const previewLifeDef = selectedLifeId && (danmakuItems[selectedLifeId] || 0) > 0 ? DANMAKU_ITEMS[selectedLifeId] : null;
+      const previewBarrierDef = selectedBarrierId && (danmakuItems[selectedBarrierId] || 0) > 0 ? DANMAKU_ITEMS[selectedBarrierId] : null;
+      const initHp = 5 + (previewLifeDef ? previewLifeDef.effectValue : 0);
+      const initBarrier = previewBarrierDef ? previewBarrierDef.effectValue : 0;
+
+      maxHpRef.current = initHp;
+      hpRef.current = initHp;
+      barrierChargesRef.current = initBarrier;
       timeMsRef.current = 0;
       bulletsRef.current = [];
       playerPosRef.current = { x: 50, y: 80 };
       bulletIdCounterRef.current = 1;
       frameCountRef.current = 0;
-      setHp(hpRef.current);
-      setTimeMs(timeMsRef.current);
-      setBullets(bulletsRef.current);
+      setMaxHp(initHp);
+      setHp(initHp);
+      setMaxBarrier(initBarrier);
+      setBarrierCharges(initBarrier);
+      setTimeMs(0);
+      setBullets([]);
       setPlayerPos(playerPosRef.current);
       setKnockback(0);
       setHitFlash(false);
-      setHitEffect(null);
+      setHitEffect(false);
+      setBarrierBlockEffect(false);
       setGrazeCount(0);
     }
-  }, [activeRobot, battleResult]);
+  }, [activeRobot, battleResult, hasStarted, selectedBarrierId, selectedLifeId, danmakuItems]);
+
+  const handleStartMission = () => {
+    let initBarrier = 0;
+    let initBonusLife = 0;
+    if (onConsumeActiveItems) {
+      const consumed = onConsumeActiveItems();
+      initBarrier = consumed.barrierCharges;
+      initBonusLife = consumed.bonusLife;
+    } else {
+      const bDef = selectedBarrierId && (danmakuItems[selectedBarrierId] || 0) > 0 ? DANMAKU_ITEMS[selectedBarrierId] : null;
+      const lDef = selectedLifeId && (danmakuItems[selectedLifeId] || 0) > 0 ? DANMAKU_ITEMS[selectedLifeId] : null;
+      initBarrier = bDef ? bDef.effectValue : 0;
+      initBonusLife = lDef ? lDef.effectValue : 0;
+    }
+
+    const totalHp = 5 + initBonusLife;
+    maxHpRef.current = totalHp;
+    hpRef.current = totalHp;
+    barrierChargesRef.current = initBarrier;
+    setMaxHp(totalHp);
+    setHp(totalHp);
+    setMaxBarrier(initBarrier);
+    setBarrierCharges(initBarrier);
+    setHasStarted(true);
+  };
 
   useEffect(() => {
     if (!hasStarted || isFinished || battleResult) return;
@@ -105,6 +161,7 @@ export const DanmakuSurvivalGame: React.FC<DanmakuProps> = ({
       }
 
       let hitPlayer = false;
+      let blockedByBarrier = false;
       let grazePlayer = false;
       const currentAgi = agi;
       const currentDex = dex;
@@ -135,8 +192,13 @@ export const DanmakuSurvivalGame: React.FC<DanmakuProps> = ({
 
         // 1. Exact Hitbox Collision (100% physically triggered when overlapping robot shape)
         if (normalizedDistSq <= 1.0) {
-          hpRef.current -= 1;
-          hitPlayer = true;
+          if (barrierChargesRef.current > 0) {
+            barrierChargesRef.current -= 1;
+            blockedByBarrier = true;
+          } else {
+            hpRef.current -= 1;
+            hitPlayer = true;
+          }
           // Consume collided bullet
           return;
         }
@@ -263,7 +325,15 @@ export const DanmakuSurvivalGame: React.FC<DanmakuProps> = ({
       playerPosRef.current.x = Math.max(8, Math.min(92, px + actualDx));
       playerPosRef.current.y = Math.max(18, Math.min(92, py + actualDy));
 
-      if (hitPlayer) {
+      if (blockedByBarrier) {
+        setBarrierFlash(true);
+        setBarrierCharges(Math.max(0, barrierChargesRef.current));
+        setScreenShake('graze');
+        setTimeout(() => {
+          setBarrierFlash(false);
+          setScreenShake(null);
+        }, 180);
+      } else if (hitPlayer) {
         setHitEffect(true);
         setHitFlash(true);
         setRobotBlink(true);
@@ -523,11 +593,27 @@ export const DanmakuSurvivalGame: React.FC<DanmakuProps> = ({
         </div>
         <h3 className="text-2xl font-black text-yellow-400 mb-2">MISSION: 弾幕よけ</h3>
         <p className="text-xs text-stone-400 mb-4">{currentDiffConfig.desc}</p>
-        <p className="text-stone-300 mb-6 leading-relaxed text-sm">
+        <p className="text-stone-300 mb-4 leading-relaxed text-sm">
           隙間なく降り注ぐ敵の連続弾幕を回避せよ！<br/>
           <span className="text-emerald-400 font-bold">10秒間</span>生き残れば<span className="text-yellow-400">勝利</span>。<br/>
-          自機の<span className="text-cyan-300 font-bold">装甲耐久度(HP: 5)</span>が0になると<span className="text-red-400">敗北</span>。
+          自機の<span className="text-cyan-300 font-bold">装甲耐久度(HP: {maxHp}{bonusLifeValue > 0 ? ` [基本5+${bonusLifeValue}]` : ''})</span>が0になると<span className="text-red-400">敗北</span>。
         </p>
+        {(initialBarrierValue > 0 || bonusLifeValue > 0) && (
+          <div className="flex justify-center gap-2 mb-5 flex-wrap">
+            {initialBarrierValue > 0 && (
+              <div className="bg-cyan-950/90 text-cyan-200 border border-cyan-500/70 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm">
+                <Gi.GiCheckedShield className="text-cyan-400 text-base" />
+                <span>バリア装備中: 被弾を <strong className="text-white">{initialBarrierValue}回</strong> 無効化</span>
+              </div>
+            )}
+            {bonusLifeValue > 0 && (
+              <div className="bg-rose-950/90 text-rose-200 border border-rose-500/70 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm">
+                <Gi.GiHeartPlus className="text-rose-400 text-base" />
+                <span>増加装甲装備中: 初期ライフ <strong className="text-white">+{bonusLifeValue}</strong> (最大HP {maxHp})</span>
+              </div>
+            )}
+          </div>
+        )}
         <div className="flex justify-center gap-3 mb-8 text-xs sm:text-sm flex-wrap">
            <div className="bg-stone-800 p-2 rounded border border-stone-600 flex items-center gap-1"><Gi.GiSprint className="inline text-stone-400" /> 敏捷: 移動速度↑</div>
            <div className="bg-stone-800 p-2 rounded border border-stone-600 flex items-center gap-1"><Gi.GiBullseye className="inline text-emerald-500" /> 器用: 回避ルート精度↑</div>
@@ -535,7 +621,7 @@ export const DanmakuSurvivalGame: React.FC<DanmakuProps> = ({
         </div>
         <button 
           onClick={() => setHasStarted(true)}
-          className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-transform active:scale-95 text-lg"
+          className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-transform active:scale-95 text-lg cursor-pointer"
         >
           ミッション開始！
         </button>
@@ -545,7 +631,7 @@ export const DanmakuSurvivalGame: React.FC<DanmakuProps> = ({
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center bg-stone-900 p-4 rounded-lg shadow-inner">
+      <div className="flex justify-between items-center bg-stone-900 p-4 rounded-lg shadow-inner flex-wrap gap-2">
         <div className="flex gap-4 items-center">
           <div className="bg-white p-1 rounded-lg border border-stone-700">
              <RobotVisual 
@@ -559,32 +645,57 @@ export const DanmakuSurvivalGame: React.FC<DanmakuProps> = ({
              />
           </div>
           <div className="text-white font-mono text-sm">
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
               <span className="text-xs font-bold text-cyan-300"><Gi.GiShield className="inline text-blue-500" />️ 装甲HP</span>
               <span className={`text-xs font-black px-1.5 py-0.2 rounded ${
                 hp <= 1 ? "bg-red-500/30 text-red-400 border border-red-500/50 animate-pulse" : 
                 hp <= 2 ? "bg-amber-500/30 text-amber-300 border border-amber-500/50" : 
                 "bg-emerald-500/30 text-emerald-300 border border-emerald-500/50"
               }`}>
-                {hp} / 5
+                {hp} / {maxHp}
               </span>
+              {initialBarrierValue > 0 && (
+                <span className={`text-xs font-black px-1.5 py-0.2 rounded flex items-center gap-1 ${
+                  barrierCharges > 0
+                    ? "bg-cyan-500/30 text-cyan-300 border border-cyan-400/60"
+                    : "bg-stone-800 text-stone-500 border border-stone-700"
+                }`}>
+                  <Gi.GiCheckedShield className="inline text-cyan-300" /> バリア {barrierCharges}/{initialBarrierValue}
+                </span>
+              )}
             </div>
-            {/* Mechanized Armor HP Segments */}
-            <div className="flex items-center gap-1">
-              {Array.from({ length: 5 }).map((_, i) => (
+            {/* Mechanized Armor HP & Barrier Segments */}
+            <div className="flex items-center gap-1 flex-wrap">
+              {Array.from({ length: maxHp }).map((_, i) => (
                 <div
-                  key={i}
-                  className={`w-4 h-2 rounded-xs border transition-all duration-75 ${
+                  key={`hp-${i}`}
+                  className={`w-3.5 h-2 rounded-xs border transition-all duration-75 ${
                     i < hp
                       ? hp <= 1
                         ? "bg-red-500 border-red-300 shadow-[0_0_6px_rgba(239,68,68,0.8)] animate-pulse"
                         : hp <= 2
                         ? "bg-amber-400 border-amber-200 shadow-[0_0_6px_rgba(251,191,36,0.7)]"
+                        : i >= 5
+                        ? "bg-rose-400 border-rose-200 shadow-[0_0_6px_rgba(251,113,133,0.8)]"
                         : "bg-emerald-400 border-emerald-200 shadow-[0_0_6px_rgba(52,211,153,0.7)]"
                       : "bg-stone-900/80 border-stone-700/60 opacity-30"
                   }`}
                 />
               ))}
+              {initialBarrierValue > 0 && (
+                <div className="flex items-center gap-1 ml-1 pl-1.5 border-l border-stone-700">
+                  {Array.from({ length: initialBarrierValue }).map((_, i) => (
+                    <div
+                      key={`barrier-${i}`}
+                      className={`w-3.5 h-2 rounded-xs border transition-all duration-75 ${
+                        i < barrierCharges
+                          ? "bg-cyan-400 border-cyan-200 shadow-[0_0_8px_rgba(34,211,238,0.9)]"
+                          : "bg-stone-900/80 border-stone-700/60 opacity-30"
+                      }`}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
             <div className="text-stone-400 text-[10px] leading-tight mt-1.5 flex gap-2">
                 <span>Agi:{agi}</span><span>Dex:{dex}</span><span>Int:{int}</span>
@@ -629,7 +740,7 @@ export const DanmakuSurvivalGame: React.FC<DanmakuProps> = ({
         {/* Dynamic Glow Aura in Background */}
         <div className="absolute inset-0 bg-gradient-to-b from-purple-950/20 via-transparent to-blue-950/30 pointer-events-none" />
 
-        {/* Hit Flash */}
+        {/* Hit / Barrier Flash */}
         <AnimatePresence>
             {hitFlash && (
                 <motion.div 
@@ -637,6 +748,14 @@ export const DanmakuSurvivalGame: React.FC<DanmakuProps> = ({
                     animate={{ opacity: 0 }}
                     exit={{ opacity: 0 }}
                     className="absolute inset-0 bg-red-600 z-10 pointer-events-none"
+                />
+            )}
+            {barrierFlash && (
+                <motion.div 
+                    initial={{ opacity: 0.55 }}
+                    animate={{ opacity: 0 }}
+                    exit={{ opacity: 0 }}
+                    className="absolute inset-0 bg-cyan-400 z-10 pointer-events-none"
                 />
             )}
         </AnimatePresence>
@@ -670,8 +789,11 @@ export const DanmakuSurvivalGame: React.FC<DanmakuProps> = ({
               duration: robotBlink ? 0.2 : 0.1,
               ease: "easeOut"
             }}
-            className="relative"
+            className="relative flex items-center justify-center"
           >
+            {barrierCharges > 0 && (
+              <div className="absolute -inset-2.5 rounded-full border-2 border-cyan-400/90 bg-cyan-500/15 shadow-[0_0_16px_rgba(34,211,238,0.85)] animate-pulse pointer-events-none z-10" />
+            )}
             <RobotVisual 
               robot={activeRobot} 
               size={46} 
@@ -690,6 +812,16 @@ export const DanmakuSurvivalGame: React.FC<DanmakuProps> = ({
                   className="absolute -top-4 -right-4 text-3xl font-bold z-50 drop-shadow-md pointer-events-none select-none"
                 >
                   <Gi.GiSpikyExplosion className="text-orange-500" />
+                </motion.div>
+              )}
+              {barrierFlash && (
+                <motion.div 
+                  initial={{ opacity: 1, scale: 0.6, y: 0 }}
+                  animate={{ opacity: 0, scale: 1.8, y: -16 }}
+                  exit={{ opacity: 0 }}
+                  className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs font-black text-cyan-200 bg-cyan-950/90 border border-cyan-400 px-1.5 py-0.5 rounded z-50 drop-shadow-md pointer-events-none select-none whitespace-nowrap"
+                >
+                  SHIELD BLOCK!
                 </motion.div>
               )}
             </AnimatePresence>

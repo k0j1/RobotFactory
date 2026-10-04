@@ -399,10 +399,12 @@ export const BattleChestRewardModal: React.FC<BattleChestRewardModalProps> = ({
                                   : item.rarity === 2
                                   ? 'bg-sky-950/80 border-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.2)]'
                                   : 'bg-stone-900/90 border-stone-600'
+                                : item.type === 'danmakuItem'
+                                ? item.danmakuItem?.category === 'barrier'
+                                  ? 'bg-cyan-950/85 border-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.25)]'
+                                  : 'bg-emerald-950/85 border-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.25)]'
                                 : item.type === 'repairKit'
                                 ? 'bg-amber-950/80 border-amber-500/80'
-                                : item.type === 'gold'
-                                ? 'bg-yellow-950/80 border-yellow-500/80'
                                 : item.type === 'element'
                                 ? 'bg-blue-950/80 border-blue-400'
                                 : 'bg-purple-950/80 border-purple-400'
@@ -414,14 +416,18 @@ export const BattleChestRewardModal: React.FC<BattleChestRewardModalProps> = ({
                                 {item.type === 'repairKit' && (
                                   <Gi.GiSpanner className="text-xl text-amber-400" />
                                 )}
-                                {item.type === 'gold' && (
-                                  <Gi.GiGoldBar className="text-xl text-yellow-300" />
-                                )}
                                 {item.type === 'element' && (
                                   <Gi.GiCrystalBars className="text-xl text-blue-400 animate-pulse" />
                                 )}
                                 {item.type === 'fame' && (
                                   <Gi.GiTrophyCup className="text-xl text-amber-400" />
+                                )}
+                                {item.type === 'danmakuItem' && (
+                                  item.danmakuItem?.category === 'barrier' ? (
+                                    <Gi.GiShieldEchoes className="text-xl text-cyan-400 animate-pulse" />
+                                  ) : (
+                                    <Gi.GiHeartPlus className="text-xl text-emerald-400 animate-pulse" />
+                                  )
                                 )}
                                 {item.type === 'material' && item.material && (
                                   <span 

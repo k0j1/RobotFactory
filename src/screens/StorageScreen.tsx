@@ -15,6 +15,7 @@ import { PartBaselineModal } from '../components/part/PartBaselineModal';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { RobotPart } from '../core/models';
 import { COMBAT_EQUIPMENT_RANKS, getEquipmentBonus, CombatEquipmentRank } from '../core/combatEquipmentData';
+import { DANMAKU_ITEMS, DANMAKU_ITEM_LIST, DanmakuItemId } from '../core/danmakuItemData';
 import { RewardAdShortenButton } from '../components/ads/RewardAdShortenButton';
 import * as Gi from 'react-icons/gi';
 
@@ -178,6 +179,13 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
           }
           if (result.elements > 0) {
             engine.addBattleElements(result.elements);
+          }
+          if (result.danmakuItems && Array.isArray(result.danmakuItems)) {
+            for (const dItem of result.danmakuItems) {
+              if (dItem && dItem.itemId) {
+                engine.addDanmakuItem(dItem.itemId, dItem.count || 1);
+              }
+            }
           }
           if (result.materials && Array.isArray(result.materials)) {
             for (const mat of result.materials) {
@@ -1056,10 +1064,10 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
-                { tier: 'bronze', name: '銅の宝箱', color: 'text-amber-700', bg: 'bg-amber-50', border: 'border-amber-200', desc: '初級素材・ゴールド・エレメント' },
-                { tier: 'silver', name: '銀の宝箱', color: 'text-slate-500', bg: 'bg-slate-50', border: 'border-slate-200', desc: '中級素材・ゴールド・エレメント' },
-                { tier: 'gold', name: '金の宝箱', color: 'text-amber-500', bg: 'bg-amber-50/50', border: 'border-amber-300', desc: '上級素材・高額ゴールド・エレメント' },
-                { tier: 'mythic', name: '神話の宝箱', color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-200', desc: '最高峰レア素材・大量エレメント' },
+                { tier: 'bronze', name: '銅の宝箱', color: 'text-amber-700', bg: 'bg-amber-50', border: 'border-amber-200', desc: '初級素材・弾幕アイテム・エレメント' },
+                { tier: 'silver', name: '銀の宝箱', color: 'text-slate-500', bg: 'bg-slate-50', border: 'border-slate-200', desc: '中級素材・弾幕アイテム・エレメント' },
+                { tier: 'gold', name: '金の宝箱', color: 'text-amber-500', bg: 'bg-amber-50/50', border: 'border-amber-300', desc: '上級素材・弾幕アイテム・エレメント' },
+                { tier: 'mythic', name: '神話の宝箱', color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-200', desc: '最高峰レア素材・上級弾幕アイテム・エレメント' },
               ].map(item => {
                 const count = state.unopenedChests?.[item.tier] || 0;
                 return (
@@ -1289,6 +1297,86 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
               })()}
             </div>
           </div>
+
+          {/* 4. 弾幕サバイバル専用アイテム（バリア・増加装甲）保管状況セクション */}
+          <div className="bg-stone-50 p-4 rounded-xl border border-stone-300 shadow-xs space-y-3">
+            <div className="flex justify-between items-center flex-wrap gap-2">
+              <h3 className="font-bold text-stone-800 flex items-center text-sm sm:text-base">
+                <Gi.GiCheckedShield className="mr-2 text-xl text-cyan-600" />
+                弾幕よけ専用アイテム (バリア・増加装甲)
+              </h3>
+              <span className="text-[11px] text-stone-500 font-bold">
+                ※宝箱または弾幕よけ準備画面（エレメント交換）で入手可能
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+              {DANMAKU_ITEM_LIST.map(item => {
+                const count = state.danmakuItems?.[item.id] || 0;
+                const isEquipped =
+                  (item.category === 'barrier' && state.activeDanmakuItems?.barrier === item.id) ||
+                  (item.category === 'life' && state.activeDanmakuItems?.life === item.id);
+                const isBarrier = item.category === 'barrier';
+
+                return (
+                  <Card
+                    key={item.id}
+                    className={`p-3 bg-white border transition-all ${
+                      count > 0
+                        ? isBarrier
+                          ? 'border-cyan-200 ring-1 ring-cyan-100'
+                          : 'border-rose-200 ring-1 ring-rose-100'
+                        : 'border-stone-200 opacity-75'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2 mb-1.5">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-lg shrink-0 border ${
+                          isBarrier
+                            ? 'bg-cyan-50 text-cyan-600 border-cyan-200'
+                            : 'bg-rose-50 text-rose-600 border-rose-200'
+                        }`}>
+                          {isBarrier ? <Gi.GiCheckedShield /> : <Gi.GiHeartPlus />}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="font-bold text-xs text-stone-800 truncate">{item.name}</div>
+                          <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded border inline-block ${item.badgeClass}`}>
+                            {item.shortLabel}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className={`font-mono font-black text-sm px-2 py-0.5 rounded border ${
+                          count > 0
+                            ? 'bg-amber-50 text-amber-900 border-amber-300'
+                            : 'bg-stone-100 text-stone-400 border-stone-200'
+                        }`}>
+                          x{count}
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-stone-500 leading-snug mb-2">
+                      {item.desc}
+                    </p>
+                    {count > 0 && (
+                      <div className="flex justify-end">
+                        <Button
+                          size="sm"
+                          variant={isEquipped ? 'primary' : 'secondary'}
+                          onClick={() => engine.toggleEquipDanmakuItem(item.id)}
+                          className={`text-[10px] py-1 px-2.5 font-bold cursor-pointer ${
+                            isEquipped ? 'bg-amber-600 text-white' : ''
+                          }`}
+                        >
+                          {isEquipped ? '✓ 次回出撃にセット中' : '出撃用にセットする'}
+                        </Button>
+                      </div>
+                    )}
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
 
@@ -1510,6 +1598,11 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
 
                         <div className="w-12 h-12 flex-shrink-0 flex items-center justify-center bg-stone-800/90 rounded-lg border border-stone-700 shadow-inner">
                           {item.type === 'repairKit' && <Gi.GiSpanner className="text-3xl text-emerald-400 drop-shadow" />}
+                          {item.type === 'danmakuItem' && (
+                            item.danmakuItem?.category === 'barrier'
+                              ? <Gi.GiCheckedShield className="text-3xl text-cyan-400 drop-shadow" />
+                              : <Gi.GiHeartPlus className="text-3xl text-rose-400 drop-shadow" />
+                          )}
                           {item.type === 'gold' && <Gi.GiCoins className="text-3xl text-yellow-400 drop-shadow" />}
                           {item.type === 'element' && <Gi.GiCrystalGrowth className="text-3xl text-cyan-400 drop-shadow" />}
                           {item.type === 'material' && (

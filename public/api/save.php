@@ -260,6 +260,7 @@ try {
             element INT DEFAULT 0,
             battle_item JSON NULL,
             reversi_item JSON NULL,
+            danmaku_item JSON NULL,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -305,6 +306,9 @@ try {
     } catch (PDOException $e) {}
     try {
         $pdo->exec("ALTER TABLE user_item ADD COLUMN reversi_item JSON NULL AFTER battle_item");
+    } catch (PDOException $e) {}
+    try {
+        $pdo->exec("ALTER TABLE user_item ADD COLUMN danmaku_item JSON NULL AFTER reversi_item");
     } catch (PDOException $e) {}
 
     try {
@@ -495,6 +499,8 @@ try {
     unset($saveDataSnapshot['othelloEquippedMemories']);  // user_item (reversi_item)
     unset($saveDataSnapshot['reversiPurchasedMemories']); // user_item (reversi_item)
     unset($saveDataSnapshot['reversiEquippedMemories']);  // user_item (reversi_item)
+    unset($saveDataSnapshot['danmakuItems']);             // user_item (danmaku_item)
+    unset($saveDataSnapshot['activeDanmakuItems']);       // user_item (danmaku_item)
     unset($saveDataSnapshot['dailyBattleLimits']);        // completed_daily_minigame
 
     $jsonGameData = json_encode($saveDataSnapshot, JSON_UNESCAPED_UNICODE);
@@ -1077,12 +1083,13 @@ try {
     $mythicChestCount = isset($rawChests['mythic']) ? (int)$rawChests['mythic'] : 0;
     $elementCount = isset($gameData['battleElements']) ? (int)$gameData['battleElements'] : 0;
 
-    $existingItemStmt = $pdo->prepare("SELECT battle_item, reversi_item FROM user_item WHERE user_id = :uid LIMIT 1");
+    $existingItemStmt = $pdo->prepare("SELECT battle_item, reversi_item, danmaku_item FROM user_item WHERE user_id = :uid LIMIT 1");
     $existingItemStmt->execute([':uid' => $actualUserId]);
     $existingItemRow = $existingItemStmt->fetch(PDO::FETCH_ASSOC);
 
     $hasBattleInput = isset($gameData['combatEquipments']) || isset($gameData['combatEquipmentRanks']) || isset($gameData['activeCombatEquipments']);
     $hasReversiInput = isset($gameData['reversiPurchasedMemories']) || isset($gameData['othelloPurchasedMemories']) || isset($gameData['reversiEquippedMemories']) || isset($gameData['othelloEquippedMemories']);
+    $hasDanmakuInput = isset($gameData['danmakuItems']) || isset($gameData['activeDanmakuItems']);
 
     $battleItemJson = null;
     if ($hasBattleInput) {
@@ -1121,9 +1128,28 @@ try {
         $reversiItemJson = $existingItemRow['reversi_item'];
     }
 
+    $danmakuItemJson = null;
+    if ($hasDanmakuInput) {
+        $dCounts = $gameData['danmakuItems'] ?? [];
+        if (is_array($dCounts) && empty($dCounts)) {
+            $dCounts = (object)[];
+        }
+        $dActive = $gameData['activeDanmakuItems'] ?? ['barrier' => null, 'life' => null];
+        if (is_array($dActive) && empty($dActive)) {
+            $dActive = (object)['barrier' => null, 'life' => null];
+        }
+        $danmakuItem = [
+            'counts' => $dCounts,
+            'active' => $dActive
+        ];
+        $danmakuItemJson = json_encode($danmakuItem, JSON_UNESCAPED_UNICODE);
+    } elseif ($existingItemRow && !empty($existingItemRow['danmaku_item'])) {
+        $danmakuItemJson = $existingItemRow['danmaku_item'];
+    }
+
     $stmtItem = $pdo->prepare("
-        INSERT INTO user_item (user_id, repair_kit, bronze_chest, silver_chest, gold_chest, mythic_chest, element, battle_item, reversi_item)
-        VALUES (:user_id, :repair_kit, :bronze_chest, :silver_chest, :gold_chest, :mythic_chest, :element, :battle_item, :reversi_item)
+        INSERT INTO user_item (user_id, repair_kit, bronze_chest, silver_chest, gold_chest, mythic_chest, element, battle_item, reversi_item, danmaku_item)
+        VALUES (:user_id, :repair_kit, :bronze_chest, :silver_chest, :gold_chest, :mythic_chest, :element, :battle_item, :reversi_item, :danmaku_item)
         ON DUPLICATE KEY UPDATE
             repair_kit = :repair_kit_up,
             bronze_chest = :bronze_chest_up,
@@ -1132,7 +1158,8 @@ try {
             mythic_chest = :mythic_chest_up,
             element = :element_up,
             battle_item = COALESCE(:battle_item_up, user_item.battle_item),
-            reversi_item = COALESCE(:reversi_item_up, user_item.reversi_item)
+            reversi_item = COALESCE(:reversi_item_up, user_item.reversi_item),
+            danmaku_item = COALESCE(:danmaku_item_up, user_item.danmaku_item)
     ");
     $stmtItem->execute([
         ':user_id' => $actualUserId,
@@ -1144,6 +1171,7 @@ try {
         ':element' => $elementCount,
         ':battle_item' => $battleItemJson,
         ':reversi_item' => $reversiItemJson,
+        ':danmaku_item' => $danmakuItemJson,
         ':repair_kit_up' => $repairKitCount,
         ':bronze_chest_up' => $bronzeChestCount,
         ':silver_chest_up' => $silverChestCount,
@@ -1151,7 +1179,8 @@ try {
         ':mythic_chest_up' => $mythicChestCount,
         ':element_up' => $elementCount,
         ':battle_item_up' => $battleItemJson,
-        ':reversi_item_up' => $reversiItemJson
+        ':reversi_item_up' => $reversiItemJson,
+        ':danmaku_item_up' => $danmakuItemJson
     ]);
 
     if (!empty($gameData['deliveredLogs']) && is_array($gameData['deliveredLogs'])) {

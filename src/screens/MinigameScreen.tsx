@@ -25,6 +25,8 @@ import { CombatSetupCard } from '../components/minigames/combat/CombatSetupCard'
 import { CombatVictoryRewardEffect } from '../components/minigames/combat/CombatVictoryRewardEffect';
 import { OthelloStrategyMemoryCard } from '../components/minigames/othello/OthelloStrategyMemoryCard';
 import { OTHELLO_MEMORIES, OthelloMemoryId } from '../core/othelloStrategyData';
+import { DanmakuItemShopCard } from '../components/minigames/DanmakuItemShopCard';
+import { DANMAKU_ITEMS, DanmakuItemId } from '../core/danmakuItemData';
 import { DefenseGame } from '../components/minigames/DefenseGame';
 import { MinigameDashboard } from '../components/minigames/MinigameDashboard';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
@@ -140,6 +142,10 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
   const [danmakuDifficulty, setDanmakuDifficulty] = useState<DanmakuDifficulty>('lvl4');
   const [pianoSongId, setPianoSongId] = useState<string>(PIANO_SONGS[0]?.id || 'fur_elise');
   const [pianoBestScores, setPianoBestScores] = useState<Record<string, PianoBestScore>>(() => getPianoBestScores());
+  const [consumedDanmakuItemsForCurrentRun, setConsumedDanmakuItemsForCurrentRun] = useState<{
+    barrier?: DanmakuItemId | null;
+    life?: DanmakuItemId | null;
+  } | null>(null);
   const [isBattleActive, setIsBattleActive] = useState(false);
   const [acquiredChestInfo, setAcquiredChestInfo] = useState<{ tier: 'bronze' | 'silver' | 'gold' | 'mythic'; title: string; stageName: string } | null>(null);
   const [victoryRewards, setVictoryRewards] = useState<{ fame: number; elements: number } | null>(null);
@@ -551,10 +557,17 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
       for (const robot of selectedDefenseRobots) {
         (engine as any).consumeRobotHp(robot.id, 1);
       }
+      setConsumedDanmakuItemsForCurrentRun(null);
     } else {
       if (!activeRobot) return;
       if (requiresOpponent && !activeOpponent) return;
       (engine as any).consumeRobotHp(activeRobot.id, 1);
+      if (selectedGame === 'danmaku') {
+        const consumed = engine.consumeEquippedDanmakuItemsForBattle();
+        setConsumedDanmakuItemsForCurrentRun(consumed);
+      } else {
+        setConsumedDanmakuItemsForCurrentRun(null);
+      }
     }
 
     setIsConfirmModalOpen(false);
@@ -655,7 +668,20 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
           }}
         />
       );
-      case 'danmaku': return <DanmakuSurvivalGame activeRobot={activeRobot} activeOpponent={opponent} onFinish={handleFinish} speed={speed} isPaused={isPaused} isFinished={battleResult !== null} battleResult={battleResult} difficulty={danmakuDifficulty} />;
+      case 'danmaku': return (
+        <DanmakuSurvivalGame
+          activeRobot={activeRobot}
+          activeOpponent={opponent}
+          onFinish={handleFinish}
+          speed={speed}
+          isPaused={isPaused}
+          isFinished={battleResult !== null}
+          battleResult={battleResult}
+          difficulty={danmakuDifficulty}
+          equippedBarrierItem={consumedDanmakuItemsForCurrentRun?.barrier ?? state.activeDanmakuItems?.barrier ?? null}
+          equippedLifeItem={consumedDanmakuItemsForCurrentRun?.life ?? state.activeDanmakuItems?.life ?? null}
+        />
+      );
       case 'piano': return (
         <PianoGame 
           activeRobot={activeRobot} 
@@ -1524,6 +1550,15 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
               onEquipMemory={(memId, slotIndex) => engine.equipOthelloMemory(memId, activeRobot?.id, slotIndex)}
               onUnequipMemory={(memId) => engine.unequipOthelloMemory(memId, activeRobot?.id)}
               onSwapSlots={(fromIdx, toIdx) => engine.swapOthelloMemorySlots(fromIdx, toIdx, activeRobot?.id)}
+            />
+          )}
+
+          {/* 弾幕よけ専用：バリア＆増加装甲（ライフ増加）購入＆装備カード */}
+          {selectedGame === 'danmaku' && (
+            <DanmakuItemShopCard
+              state={state}
+              onBuyItem={(itemId) => engine.buyDanmakuItem(itemId)}
+              onToggleEquipItem={(itemId) => engine.toggleEquipDanmakuItem(itemId)}
             />
           )}
             </>

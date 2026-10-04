@@ -1,17 +1,19 @@
 import { MATERIALS } from '../../core/data';
 import { Material } from '../../core/models';
+import { DANMAKU_ITEMS, DanmakuItemId, DanmakuItemDef } from '../../core/danmakuItemData';
 
 /**
  * 宝箱から獲得可能な報酬アイテムの個別情報
  */
 export interface BattleRewardItem {
   id: string;
-  type: 'repairKit' | 'gold' | 'element' | 'material' | 'fame';
+  type: 'repairKit' | 'element' | 'material' | 'fame' | 'danmakuItem';
   name: string;
   count: number;
-  iconType: 'kit' | 'gold' | 'element' | 'material' | 'fame';
+  iconType: 'kit' | 'element' | 'material' | 'fame' | 'danmakuBarrier' | 'danmakuLife';
   rarity?: number;
   material?: Material;
+  danmakuItem?: DanmakuItemDef;
   desc?: string;
 }
 
@@ -25,9 +27,10 @@ export interface BattleChestDropResult {
   chestTier: 'bronze' | 'silver' | 'gold' | 'mythic';
   chestTitle: string;
   repairKits: number;
-  gold: number;
+  gold: number; // 互換性維持のためフィールド残存（常に0）
   elements: number;
   materials: { material: Material; count: number }[];
+  danmakuItems: { item: DanmakuItemDef; count: number }[];
   fame: number;
   items: BattleRewardItem[];
 }
@@ -51,17 +54,56 @@ function pickRandomMaterial(rarity: 1 | 2 | 3): Material | null {
 }
 
 /**
+ * レベルに応じた弾幕よけアイテム（バリアI〜III / ライフ増加+1〜+3）を抽選
+ * ※高ランクの出現率を控えめに設定
+ */
+function pickRandomDanmakuItemByLevel(level: number): DanmakuItemDef {
+  let pool: DanmakuItemId[] = ['barrier_1', 'life_1'];
+  if (level <= 2) {
+    pool = ['barrier_1', 'life_1'];
+  } else if (level <= 4) {
+    // ランク1が85%、ランク2が15%
+    pool = checkRate(85) ? ['barrier_1', 'life_1'] : ['barrier_2', 'life_2'];
+  } else if (level <= 7) {
+    // ランク1が60%、ランク2が35%、ランク3が5%
+    const r = Math.random() * 100;
+    if (r < 60) pool = ['barrier_1', 'life_1'];
+    else if (r < 95) pool = ['barrier_2', 'life_2'];
+    else pool = ['barrier_3', 'life_3'];
+  } else {
+    // Lv.8〜10: ランク1が30%、ランク2が50%、ランク3が20%
+    const r = Math.random() * 100;
+    if (r < 30) pool = ['barrier_1', 'life_1'];
+    else if (r < 80) pool = ['barrier_2', 'life_2'];
+    else pool = ['barrier_3', 'life_3'];
+  }
+  const chosenId = pool[Math.floor(Math.random() * pool.length)];
+  return DANMAKU_ITEMS[chosenId];
+}
+
+function addDanmakuDrop(list: { item: DanmakuItemDef; count: number }[], itemDef: DanmakuItemDef, count: number = 1) {
+  const existing = list.find(d => d.item.id === itemDef.id);
+  if (existing) {
+    existing.count += count;
+  } else {
+    list.push({ item: itemDef, count });
+  }
+}
+
+/**
  * バトル勝利宝箱 報酬生成サービスクラス (OOP原則)
  */
 export class BattleChestRewardService {
   /**
-   * バトル演習 (1on1 Combat) の勝利宝箱抽選
+   * バトル演習 (1on1 Combat) 等の勝利宝箱抽選
+   * ※宝箱からはゴールドは一切出現せず、代わりに弾幕よけ専用アイテム（バリア・ライフ増加）が低確率で出現します
    */
   public static rollCombatChest(level: number, stageName: string, baseFame: number): BattleChestDropResult {
     let repairKits = 0;
-    let gold = 0;
+    const gold = 0;
     let elements = 0;
     const materials: { material: Material; count: number }[] = [];
+    const danmakuItems: { item: DanmakuItemDef; count: number }[] = [];
     const items: BattleRewardItem[] = [];
 
     // レベル別の宝箱グレード決定
@@ -82,82 +124,82 @@ export class BattleChestRewardService {
       chestTitle = '神話のプリズム宝箱';
     }
 
-    // 仕様通りの確率ドロップ抽選（Lv.4以下はいずれか1つの報酬が必ず出現）
+    // 仕様通りの確率ドロップ抽選（ゴールドの代わりに弾幕よけ専用アイテムが低確率で出現）
     switch (level) {
       case 1: {
-        // 修理キット1個10%、☆1素材80%、1〜5G10%（いずれか1つの報酬が必ず出現）
+        // 修理キット1個10%、☆1素材85%、弾幕よけアイテム5%（いずれか1つの報酬が必ず出現）
         const roll1 = Math.random() * 100;
         if (roll1 < 10) {
           repairKits += 1;
-        } else if (roll1 < 90) {
+        } else if (roll1 < 95) {
           const mat = pickRandomMaterial(1);
           if (mat) {
             materials.push({ material: mat, count: 1 });
           } else {
-            gold += randomInt(1, 5);
+            addDanmakuDrop(danmakuItems, pickRandomDanmakuItemByLevel(1), 1);
           }
         } else {
-          gold += randomInt(1, 5);
+          addDanmakuDrop(danmakuItems, pickRandomDanmakuItemByLevel(1), 1);
         }
         break;
       }
 
       case 2: {
-        // 修理キット1個30%、☆1素材70%、2〜7G10%（重み比率 30:70:10 でいずれか1つの報酬が必ず出現）
-        const roll2 = Math.random() * (30 + 70 + 10);
+        // 修理キット1個30%、☆1素材65%、弾幕よけアイテム5%
+        const roll2 = Math.random() * 100;
         if (roll2 < 30) {
           repairKits += 1;
-        } else if (roll2 < 30 + 70) {
+        } else if (roll2 < 95) {
           const mat = pickRandomMaterial(1);
           if (mat) {
             materials.push({ material: mat, count: 1 });
           } else {
-            gold += randomInt(2, 7);
+            addDanmakuDrop(danmakuItems, pickRandomDanmakuItemByLevel(2), 1);
           }
         } else {
-          gold += randomInt(2, 7);
+          addDanmakuDrop(danmakuItems, pickRandomDanmakuItemByLevel(2), 1);
         }
         break;
       }
 
       case 3: {
-        // 修理キット1個50%、☆1素材40%、3〜9G10%（いずれか1つの報酬が必ず出現）
+        // 修理キット1個50%、☆1素材42%、弾幕よけアイテム8%
         const roll3 = Math.random() * 100;
         if (roll3 < 50) {
           repairKits += 1;
-        } else if (roll3 < 90) {
+        } else if (roll3 < 92) {
           const mat = pickRandomMaterial(1);
           if (mat) {
             materials.push({ material: mat, count: 1 });
           } else {
-            gold += randomInt(3, 9);
+            addDanmakuDrop(danmakuItems, pickRandomDanmakuItemByLevel(3), 1);
           }
         } else {
-          gold += randomInt(3, 9);
+          addDanmakuDrop(danmakuItems, pickRandomDanmakuItemByLevel(3), 1);
         }
         break;
       }
 
       case 4: {
-        // 修理キット1個75%、☆1素材20%、4〜11G10%（重み比率 75:20:10 でいずれか1つの報酬が必ず出現）
-        const roll4 = Math.random() * (75 + 20 + 10);
-        if (roll4 < 75) {
+        // 修理キット1個65%、☆1素材27%、弾幕よけアイテム8%
+        const roll4 = Math.random() * 100;
+        if (roll4 < 65) {
           repairKits += 1;
-        } else if (roll4 < 75 + 20) {
+        } else if (roll4 < 92) {
           const mat = pickRandomMaterial(1);
           if (mat) {
             materials.push({ material: mat, count: 1 });
           } else {
-            gold += randomInt(4, 11);
+            addDanmakuDrop(danmakuItems, pickRandomDanmakuItemByLevel(4), 1);
           }
         } else {
-          gold += randomInt(4, 11);
+          addDanmakuDrop(danmakuItems, pickRandomDanmakuItemByLevel(4), 1);
         }
         break;
       }
 
       case 5:
-        // 修理キット1個は必ず出現、プラス次のものが確率で出現、☆1素材50%、☆2素材10%、エレメント1〜5個50%、5〜13G10%
+        // 修理キット1個は必ず出現、プラス次のものが確率で出現、☆1素材50%、☆2素材10%、エレメント1〜5個50%、弾幕よけアイテム10%
         repairKits += 1;
         if (checkRate(50)) {
           const mat1 = pickRandomMaterial(1);
@@ -168,11 +210,11 @@ export class BattleChestRewardService {
           if (mat2) materials.push({ material: mat2, count: 1 });
         }
         if (checkRate(50)) elements += randomInt(1, 5);
-        if (checkRate(10)) gold += randomInt(5, 13);
+        if (checkRate(10)) addDanmakuDrop(danmakuItems, pickRandomDanmakuItemByLevel(5), 1);
         break;
 
       case 6:
-        // 修理キット1個は必ず出現、プラス次のものが確率で出現、☆1素材75%、☆2素材25%、エレメント5〜10個50%、6〜15G10%
+        // 修理キット1個は必ず出現、プラス☆1素材75%、☆2素材25%、エレメント5〜10個50%、弾幕よけアイテム12%
         repairKits += 1;
         if (checkRate(75)) {
           const mat1 = pickRandomMaterial(1);
@@ -183,11 +225,11 @@ export class BattleChestRewardService {
           if (mat2) materials.push({ material: mat2, count: 1 });
         }
         if (checkRate(50)) elements += randomInt(5, 10);
-        if (checkRate(10)) gold += randomInt(6, 15);
+        if (checkRate(12)) addDanmakuDrop(danmakuItems, pickRandomDanmakuItemByLevel(6), 1);
         break;
 
       case 7:
-        // 修理キット1個は必ず出現、プラス次のものが確率で出現、☆1素材75%、☆2素材40%、☆3素材10%、エレメント10〜15個50%、7〜18G10%
+        // 修理キット1個は必ず出現、プラス☆1素材75%、☆2素材40%、☆3素材10%、エレメント10〜15個50%、弾幕よけアイテム15%
         repairKits += 1;
         if (checkRate(75)) {
           const mat1 = pickRandomMaterial(1);
@@ -202,11 +244,11 @@ export class BattleChestRewardService {
           if (mat3) materials.push({ material: mat3, count: 1 });
         }
         if (checkRate(50)) elements += randomInt(10, 15);
-        if (checkRate(10)) gold += randomInt(7, 18);
+        if (checkRate(15)) addDanmakuDrop(danmakuItems, pickRandomDanmakuItemByLevel(7), 1);
         break;
 
       case 8:
-        // 修理キット1個は必ず出現、プラス次のものが確率で出現、☆1素材75%、☆2素材75%、☆3素材30%、エレメント15〜30個50%、8〜21G10%
+        // 修理キット1個は必ず出現、プラス☆1素材75%、☆2素材75%、☆3素材30%、エレメント15〜30個50%、弾幕よけアイテム18%
         repairKits += 1;
         if (checkRate(75)) {
           const mat1 = pickRandomMaterial(1);
@@ -221,11 +263,11 @@ export class BattleChestRewardService {
           if (mat3) materials.push({ material: mat3, count: 1 });
         }
         if (checkRate(50)) elements += randomInt(15, 30);
-        if (checkRate(10)) gold += randomInt(8, 21);
+        if (checkRate(18)) addDanmakuDrop(danmakuItems, pickRandomDanmakuItemByLevel(8), 1);
         break;
 
       case 9:
-        // 修理キット1個は必ず出現、プラス次のものが確率で出現、☆1素材75%、☆2素材75%、☆3素材50%、エレメント30〜60個50%、9〜25G10%
+        // 修理キット1個は必ず出現、プラス☆1素材75%、☆2素材75%、☆3素材50%、エレメント30〜60個50%、弾幕よけアイテム20%
         repairKits += 1;
         if (checkRate(75)) {
           const mat1 = pickRandomMaterial(1);
@@ -240,12 +282,12 @@ export class BattleChestRewardService {
           if (mat3) materials.push({ material: mat3, count: 1 });
         }
         if (checkRate(50)) elements += randomInt(30, 60);
-        if (checkRate(10)) gold += randomInt(9, 25);
+        if (checkRate(20)) addDanmakuDrop(danmakuItems, pickRandomDanmakuItemByLevel(9), 1);
         break;
 
       case 10:
       default:
-        // 修理キット1個は必ず出現、プラス次のものが確率で出現、☆1素材75%、☆2素材75%、☆3素材75%、エレメント60〜120個50%、10〜30G10%
+        // 修理キット1個は必ず出現、プラス☆1素材75%、☆2素材75%、☆3素材75%、エレメント60〜120個50%、弾幕よけアイテム25%
         repairKits += 1;
         if (checkRate(75)) {
           const mat1 = pickRandomMaterial(1);
@@ -260,12 +302,19 @@ export class BattleChestRewardService {
           if (mat3) materials.push({ material: mat3, count: 1 });
         }
         if (checkRate(50)) elements += randomInt(60, 120);
-        if (checkRate(10)) gold += randomInt(10, 30);
+        if (checkRate(25)) addDanmakuDrop(danmakuItems, pickRandomDanmakuItemByLevel(10), 1);
         break;
     }
 
-    // レベル4以下で万が一報酬が0個だった場合の最低保証ガード（いずれか1つの報酬を確実に保証）
-    if (level <= 4 && gold === 0 && materials.length === 0) { gold = randomInt(5, 10); }
+    // レベル4以下で万が一報酬が0個だった場合の最低保証ガード（☆1素材または修理キットを優先保証）
+    if (level <= 4 && repairKits === 0 && materials.length === 0 && danmakuItems.length === 0) {
+      const mat = pickRandomMaterial(1);
+      if (mat) {
+        materials.push({ material: mat, count: 1 });
+      } else {
+        repairKits += 1;
+      }
+    }
 
     // items 配列の構築
     if (repairKits > 0) {
@@ -279,17 +328,6 @@ export class BattleChestRewardService {
       });
     }
 
-    if (gold > 0) {
-      items.push({
-        id: 'gold',
-        type: 'gold',
-        name: 'ゴールド (G)',
-        count: gold,
-        iconType: 'gold',
-        desc: '工房の運転資金'
-      });
-    }
-
     if (elements > 0) {
       items.push({
         id: 'element',
@@ -297,7 +335,22 @@ export class BattleChestRewardService {
         name: 'バトルエレメント',
         count: elements,
         iconType: 'element',
-        desc: '戦闘装備交換に使用する高密度エネルギー結晶'
+        desc: '戦闘装備や弾幕よけアイテム交換に使用する高密度エネルギー結晶'
+      });
+    }
+
+    for (let i = 0; i < danmakuItems.length; i++) {
+      const entry = danmakuItems[i];
+      if (!entry || !entry.item) continue;
+      items.push({
+        id: `danmaku_${entry.item.id}_${i}`,
+        type: 'danmakuItem',
+        name: entry.item.name,
+        count: entry.count,
+        iconType: entry.item.category === 'barrier' ? 'danmakuBarrier' : 'danmakuLife',
+        rarity: entry.item.rank,
+        danmakuItem: entry.item,
+        desc: entry.item.desc
       });
     }
 
@@ -316,7 +369,7 @@ export class BattleChestRewardService {
       });
     }
 
-    // 名声の獲得（今のまま）
+    // 名声の獲得
     if (baseFame > 0) {
       items.push({
         id: 'fame',
@@ -338,6 +391,7 @@ export class BattleChestRewardService {
       gold,
       elements,
       materials,
+      danmakuItems,
       fame: baseFame,
       items
     };
@@ -345,12 +399,14 @@ export class BattleChestRewardService {
 
   /**
    * 拠点防衛戦 (Defense) の勝利宝箱抽選
+   * ※ゴールドは出現せず、代わりに弾幕よけ専用アイテムが出現します
    */
   public static rollDefenseChest(level: number, stageName: string): BattleChestDropResult {
     let repairKits = 0; // 全レベル修理キット1個100%確定
-    let gold = 0;
+    const gold = 0;
     let elements = 0;
     const materials: { material: Material; count: number }[] = [];
+    const danmakuItems: { item: DanmakuItemDef; count: number }[] = [];
     const items: BattleRewardItem[] = [];
 
     // 防衛戦の名声: レベル3で+5、レベル4で+10、レベル5で+15 (Lv1,2は0)
@@ -364,27 +420,30 @@ export class BattleChestRewardService {
 
     switch (level) {
       case 1:
-        // レベル1:修理キット1個100%
+        // レベル1: 修理キット1個100%、弾幕よけアイテム8%
         chestTier = 'bronze';
         chestTitle = '防衛戦 初級補給コンテナ';
         repairKits = 1;
+        if (checkRate(8)) {
+          addDanmakuDrop(danmakuItems, pickRandomDanmakuItemByLevel(2), 1);
+        }
         break;
 
       case 2:
-        // レベル2:修理キット1個100%、プラス次のものが確率で出現、修理キット1個50%、5〜10G10%
+        // レベル2: 修理キット1個100%、プラス修理キット1個50%、弾幕よけアイテム12%
         chestTier = 'silver';
         chestTitle = '前線警戒 補給コンテナ';
         repairKits = 1;
         if (checkRate(50)) {
           repairKits += 1;
         }
-        if (checkRate(10)) {
-          gold += randomInt(5, 10);
+        if (checkRate(12)) {
+          addDanmakuDrop(danmakuItems, pickRandomDanmakuItemByLevel(4), 1);
         }
         break;
 
       case 3:
-        // レベル3:修理キット1個100%、プラス次のものが確率で出現、修理キット1〜2個50%、エレメント1〜10個50%、10〜15G10%
+        // レベル3: 修理キット1個100%、プラス修理キット1〜2個50%、エレメント1〜10個50%、弾幕よけアイテム15%
         chestTier = 'silver';
         chestTitle = '要衝防衛 作戦資材コンテナ';
         repairKits = 1;
@@ -394,13 +453,13 @@ export class BattleChestRewardService {
         if (checkRate(50)) {
           elements += randomInt(1, 10);
         }
-        if (checkRate(10)) {
-          gold += randomInt(10, 15);
+        if (checkRate(15)) {
+          addDanmakuDrop(danmakuItems, pickRandomDanmakuItemByLevel(6), 1);
         }
         break;
 
       case 4:
-        // レベル4:修理キット1個100%、プラス次のものが確率で出現、修理キット1〜3個50%、エレメント10〜30個50%、15〜30G10%
+        // レベル4: 修理キット1個100%、プラス修理キット1〜3個50%、エレメント10〜30個50%、弾幕よけアイテム20%
         chestTier = 'gold';
         chestTitle = '激戦ライン 司令官補給箱';
         repairKits = 1;
@@ -410,14 +469,14 @@ export class BattleChestRewardService {
         if (checkRate(50)) {
           elements += randomInt(10, 30);
         }
-        if (checkRate(10)) {
-          gold += randomInt(15, 30);
+        if (checkRate(20)) {
+          addDanmakuDrop(danmakuItems, pickRandomDanmakuItemByLevel(8), 1);
         }
         break;
 
       case 5:
       default:
-        // レベル5:修理キット1個100%、プラス次のものが確率で出現、修理キット1〜4個50%、エレメント30〜120個50%、30〜120G10%
+        // レベル5: 修理キット1個100%、プラス修理キット1〜4個50%、エレメント30〜120個50%、弾幕よけアイテム25%
         chestTier = 'mythic';
         chestTitle = '終焉防壁 至高の軍需コンテナ';
         repairKits = 1;
@@ -427,8 +486,8 @@ export class BattleChestRewardService {
         if (checkRate(50)) {
           elements += randomInt(30, 120);
         }
-        if (checkRate(10)) {
-          gold += randomInt(30, 120);
+        if (checkRate(25)) {
+          addDanmakuDrop(danmakuItems, pickRandomDanmakuItemByLevel(10), 1);
         }
         break;
     }
@@ -444,17 +503,6 @@ export class BattleChestRewardService {
       });
     }
 
-    if (gold > 0) {
-      items.push({
-        id: 'gold',
-        type: 'gold',
-        name: 'ゴールド (G)',
-        count: gold,
-        iconType: 'gold',
-        desc: '防衛報奨金'
-      });
-    }
-
     if (elements > 0) {
       items.push({
         id: 'element',
@@ -462,7 +510,22 @@ export class BattleChestRewardService {
         name: 'バトルエレメント',
         count: elements,
         iconType: 'element',
-        desc: '戦闘装備交換に使用する高密度エネルギー結晶'
+        desc: '戦闘装備や弾幕よけアイテム交換に使用する高密度エネルギー結晶'
+      });
+    }
+
+    for (let i = 0; i < danmakuItems.length; i++) {
+      const entry = danmakuItems[i];
+      if (!entry || !entry.item) continue;
+      items.push({
+        id: `danmaku_${entry.item.id}_${i}`,
+        type: 'danmakuItem',
+        name: entry.item.name,
+        count: entry.count,
+        iconType: entry.item.category === 'barrier' ? 'danmakuBarrier' : 'danmakuLife',
+        rarity: entry.item.rank,
+        danmakuItem: entry.item,
+        desc: entry.item.desc
       });
     }
 
@@ -487,6 +550,7 @@ export class BattleChestRewardService {
       gold,
       elements,
       materials,
+      danmakuItems,
       fame,
       items
     };
@@ -494,16 +558,17 @@ export class BattleChestRewardService {
 
   /**
    * 弾幕サバイバル (Danmaku Survival) のクリア宝箱抽選
-   * （名声は獲得なし・難易度に応じた修理キット、ゴールド、素材、エレメント等の宝箱ドロップ）
+   * ※ゴールドは出現せず、代わりに弾幕よけ専用アイテムが出現します
    */
   public static rollDanmakuChest(
     difficulty: 'easy' | 'normal' | 'hard',
     difficultyName: string
   ): BattleChestDropResult {
     let repairKits = 0;
-    let gold = 0;
+    const gold = 0;
     let elements = 0;
     const materials: { material: Material; count: number }[] = [];
+    const danmakuItems: { item: DanmakuItemDef; count: number }[] = [];
     const items: BattleRewardItem[] = [];
 
     let level = 1;
@@ -515,9 +580,9 @@ export class BattleChestRewardService {
         level = 1;
         chestTier = 'bronze';
         chestTitle = '回避訓練 初級コンテナ';
-        // 修理キット1個100%、1〜5G (50%)、☆1素材 (40%)
+        // 修理キット1個100%、弾幕よけアイテム (10%)、☆1素材 (40%)
         repairKits = 1;
-        if (checkRate(50)) gold += randomInt(1, 5);
+        if (checkRate(10)) addDanmakuDrop(danmakuItems, pickRandomDanmakuItemByLevel(2), 1);
         if (checkRate(40)) {
           const mat = pickRandomMaterial(1);
           if (mat) materials.push({ material: mat, count: 1 });
@@ -528,12 +593,12 @@ export class BattleChestRewardService {
         level = 2;
         chestTier = 'silver';
         chestTitle = '弾幕突破 中級コンテナ';
-        // 修理キット1個100%、プラス修理キット1個 (30%)、3〜8G (60%)、☆1素材 (70%)、☆2素材 (30%)
+        // 修理キット1個100%、プラス修理キット1個 (30%)、弾幕よけアイテム (18%)、☆1素材 (70%)、☆2素材 (30%)
         repairKits = 1;
         if (checkRate(30)) {
           repairKits += 1;
         }
-        if (checkRate(60)) gold += randomInt(3, 8);
+        if (checkRate(18)) addDanmakuDrop(danmakuItems, pickRandomDanmakuItemByLevel(5), 1);
         if (checkRate(70)) {
           const mat1 = pickRandomMaterial(1);
           if (mat1) materials.push({ material: mat1, count: 1 });
@@ -549,12 +614,12 @@ export class BattleChestRewardService {
         level = 3;
         chestTier = 'gold';
         chestTitle = '極限弾幕 上級プレミアムコンテナ';
-        // 修理キット2個100%、プラス修理キット1〜2個 (50%)、10〜25G (70%)、☆2素材 (75%)、☆3素材 (35%)、エレメント10〜20個 (50%)
+        // 修理キット2個100%、プラス修理キット1〜2個 (50%)、弾幕よけアイテム (25%)、☆2素材 (75%)、☆3素材 (35%)、エレメント10〜20個 (50%)
         repairKits = 2;
         if (checkRate(50)) {
           repairKits += randomInt(1, 2);
         }
-        if (checkRate(70)) gold += randomInt(10, 25);
+        if (checkRate(25)) addDanmakuDrop(danmakuItems, pickRandomDanmakuItemByLevel(9), 1);
         if (checkRate(75)) {
           const mat2 = pickRandomMaterial(2);
           if (mat2) materials.push({ material: mat2, count: 1 });
@@ -578,17 +643,6 @@ export class BattleChestRewardService {
       });
     }
 
-    if (gold > 0) {
-      items.push({
-        id: 'gold',
-        type: 'gold',
-        name: 'ゴールド (G)',
-        count: gold,
-        iconType: 'gold',
-        desc: '弾幕サバイバル報奨金'
-      });
-    }
-
     if (elements > 0) {
       items.push({
         id: 'element',
@@ -596,7 +650,22 @@ export class BattleChestRewardService {
         name: 'バトルエレメント',
         count: elements,
         iconType: 'element',
-        desc: '戦闘装備交換に使用する高密度エネルギー結晶'
+        desc: '戦闘装備や弾幕よけアイテム交換に使用する高密度エネルギー結晶'
+      });
+    }
+
+    for (let i = 0; i < danmakuItems.length; i++) {
+      const entry = danmakuItems[i];
+      if (!entry || !entry.item) continue;
+      items.push({
+        id: `danmaku_${entry.item.id}_${i}`,
+        type: 'danmakuItem',
+        name: entry.item.name,
+        count: entry.count,
+        iconType: entry.item.category === 'barrier' ? 'danmakuBarrier' : 'danmakuLife',
+        rarity: entry.item.rank,
+        danmakuItem: entry.item,
+        desc: entry.item.desc
       });
     }
 
@@ -625,6 +694,7 @@ export class BattleChestRewardService {
       gold,
       elements,
       materials,
+      danmakuItems,
       fame: 0, // 弾幕よけは名声獲得なし
       items
     };
@@ -674,6 +744,7 @@ export class BattleChestRewardService {
       gold: 0,
       elements: 0,
       materials: [],
+      danmakuItems: [],
       fame,
       items
     };

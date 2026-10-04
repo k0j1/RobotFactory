@@ -286,6 +286,8 @@ export interface GameState {
   othelloEquippedMemories?: string[]; // 装備中のリバーシ（オセロ）戦略メモリID一覧 (最大3個)
   reversiPurchasedMemories?: string[]; // 購入済みのリバーシ戦術メモリID一覧 (user_item.reversi_item 同期)
   reversiEquippedMemories?: string[]; // 装備中のリバーシ戦術メモリID一覧 (user_item.reversi_item 同期)
+  danmakuItems?: Record<string, number>; // 弾幕よけ専用アイテム所持数 (user_item.danmaku_item 同期)
+  activeDanmakuItems?: { barrier?: 'barrier_1' | 'barrier_2' | 'barrier_3' | null; life?: 'life_1' | 'life_2' | 'life_3' | null }; // 弾幕よけ出撃時に使用する選択中アイテム
 }
 
 export interface FameRankInfo {

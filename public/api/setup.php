@@ -85,6 +85,7 @@ try {
         element INT DEFAULT 0,
         battle_item JSON NULL,
         reversi_item JSON NULL,
+        danmaku_item JSON NULL,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -447,12 +448,15 @@ try {
     try { $pdo->exec("ALTER TABLE complete_part_crafts ADD COLUMN result_part_data JSON NULL"); } catch (PDOException $e) {}
     try { $pdo->exec("ALTER TABLE complete_part_crafts MODIFY COLUMN sub_material_id VARCHAR(255) NULL DEFAULT ''"); } catch (PDOException $e) {}
 
-    // 既存の user_item テーブルに battle_item, reversi_item カラムを追加（マイグレーション）
+    // 既存の user_item テーブルに battle_item, reversi_item, danmaku_item カラムを追加（マイグレーション）
     try {
         $pdo->exec("ALTER TABLE user_item ADD COLUMN battle_item JSON NULL AFTER element");
     } catch (PDOException $e) {}
     try {
         $pdo->exec("ALTER TABLE user_item ADD COLUMN reversi_item JSON NULL AFTER battle_item");
+    } catch (PDOException $e) {}
+    try {
+        $pdo->exec("ALTER TABLE user_item ADD COLUMN danmaku_item JSON NULL AFTER reversi_item");
     } catch (PDOException $e) {}
 
     // active_requests テーブルの request_data からテーブルで保持している重複カラム（id, rank, rewardG, deadline 等）を削除・クリーンアップ
