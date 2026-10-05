@@ -725,14 +725,9 @@ try {
         ");
     } catch (PDOException $e) {}
 
-    // activeテーブルと対となるcompleteテーブルの互換性用ビュー（completed_*）
+    // 旧completed_*互換ビューが存在する場合は削除（complete_*テーブルへ完全統一）
     try {
-        $pdo->exec("CREATE OR REPLACE VIEW completed_expeditions AS SELECT * FROM complete_expeditions");
-        $pdo->exec("CREATE OR REPLACE VIEW completed_part_crafts AS SELECT * FROM complete_part_crafts");
-        $pdo->exec("CREATE OR REPLACE VIEW completed_robot_assemblies AS SELECT * FROM complete_robot_assemblies");
-        $pdo->exec("CREATE OR REPLACE VIEW completed_requests AS SELECT * FROM complete_requests");
-        $pdo->exec("CREATE OR REPLACE VIEW completed_robot_disassemblies AS SELECT * FROM complete_robot_disassemblies");
-        $pdo->exec("CREATE OR REPLACE VIEW completed_part_recycles AS SELECT * FROM complete_part_recycles");
+        $pdo->exec("DROP VIEW IF EXISTS completed_expeditions, completed_part_crafts, completed_robot_assemblies, completed_requests, completed_robot_disassemblies, completed_part_recycles");
     } catch (PDOException $e) {}
 
     // active_robot_assemblies テーブルの個別カラム化＆外部キー化マイグレーション

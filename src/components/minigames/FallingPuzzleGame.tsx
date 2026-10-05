@@ -12,7 +12,7 @@ export interface FallingPuzzleGameProps extends MinigameProps {
 
 const BOARD_WIDTH = 10;
 const BOARD_HEIGHT = 20;
-const MATCH_DURATION_SEC = 50; // 50秒の制限時間対戦
+const MATCH_DURATION_SEC = 30; // 30秒の制限時間対戦
 
 type TetrominoType = 'I' | 'O' | 'T' | 'S' | 'Z' | 'J' | 'L';
 

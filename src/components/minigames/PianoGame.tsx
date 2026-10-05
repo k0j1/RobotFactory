@@ -9,9 +9,14 @@ import { GSAPRobotCanvas } from '../robot/GSAPRobotCanvas';
 import { savePianoScore, getPianoBestScore, PianoBestScore } from '../../core/pianoScoreManager';
 import * as Gi from 'react-icons/gi';
 
+import { Button } from '../ui/core';
+import { Play, Pause } from 'lucide-react';
+
 interface PianoGameProps extends Omit<MinigameProps, 'activeOpponent'> {
   songId: string;
   onExit?: () => void;
+  onTogglePause?: () => void;
+  onSetSpeed?: (speed: number) => void;
 }
 
 // 40白鍵 (A1: 33 〜 E7: 100)
@@ -129,12 +134,14 @@ const playSynthesizedPiano = (
 export const PianoGame: React.FC<PianoGameProps> = ({ 
   activeRobot, 
   onFinish, 
-  speed, 
-  isPaused, 
+  speed = 1, 
+  isPaused = false, 
   isFinished, 
   battleResult,
   songId,
-  onExit
+  onExit,
+  onTogglePause,
+  onSetSpeed
 }) => {
   const [progress, setProgress] = useState(0);
   const [score, setScore] = useState(0);
@@ -337,6 +344,9 @@ export const PianoGame: React.FC<PianoGameProps> = ({
     const ctx = audioCtxRef.current;
     if (ctx.state === 'suspended') ctx.resume().catch(() => {});
     
+    // 倍速再生時は音の長さをスピードに応じてスケール
+    const scaledDurationMs = durationMs / Math.max(1, speed);
+
     // マスターゲイン接続ノード (masterGain -> compressor -> destination)
     const destNode = masterGainRef.current || ctx.destination;
 
@@ -351,7 +361,7 @@ export const PianoGame: React.FC<PianoGameProps> = ({
         const dynamicGain = Math.max(0.12, Math.min(8.0, baseGain * pianoVolume));
 
         instrument.play(pitchName || midi, ctx.currentTime, {
-          duration: durationMs / 1000,
+          duration: scaledDurationMs / 1000,
           gain: dynamicGain
         });
         return;
@@ -360,7 +370,7 @@ export const PianoGame: React.FC<PianoGameProps> = ({
       }
     }
 
-    playSynthesizedPiano(ctx, destNode, midi, durationMs, velocity, hand);
+    playSynthesizedPiano(ctx, destNode, midi, scaledDurationMs, velocity, hand);
   };
 
   // メインゲームループ (タイマー駆動)
@@ -1370,6 +1380,71 @@ export const PianoGame: React.FC<PianoGameProps> = ({
           className="absolute bottom-0 left-0 h-1.5 bg-gradient-to-r from-amber-500 to-amber-300 z-30 transition-all duration-100" 
           style={{ width: `${progress}%` }} 
         />
+      </div>
+
+      {/* 演奏コントロールバー（一時停止・1〜3倍速・中断） */}
+      <div className="flex justify-between items-center bg-stone-900 border border-stone-800 p-2 sm:p-2.5 rounded-xl text-xs text-white">
+        <div className="flex items-center gap-2">
+          {onTogglePause && (
+            <Button 
+              size="sm" 
+              onClick={onTogglePause} 
+              variant="secondary" 
+              className="px-3 py-1 font-bold text-xs flex items-center gap-1.5 bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-600 cursor-pointer"
+            >
+              {isPaused ? <Play size={12} className="text-emerald-400" /> : <Pause size={12} className="text-amber-400" />}
+              <span>{isPaused ? '演奏再開' : '一時停止'}</span>
+            </Button>
+          )}
+          {onSetSpeed && (
+            <div className="flex items-center gap-1 bg-stone-800/90 p-1 rounded-lg border border-stone-700">
+              <Button 
+                size="sm" 
+                onClick={() => onSetSpeed(1)} 
+                className={`px-2.5 py-0.5 text-[11px] font-mono font-bold cursor-pointer transition-all ${
+                  speed === 1 
+                    ? 'bg-amber-600 text-white shadow-xs' 
+                    : 'bg-transparent text-stone-400 hover:text-stone-200'
+                }`}
+              >
+                1x
+              </Button>
+              <Button 
+                size="sm" 
+                onClick={() => onSetSpeed(2)} 
+                className={`px-2.5 py-0.5 text-[11px] font-mono font-bold cursor-pointer transition-all ${
+                  speed === 2 
+                    ? 'bg-amber-600 text-white shadow-xs' 
+                    : 'bg-transparent text-stone-400 hover:text-stone-200'
+                }`}
+              >
+                2x
+              </Button>
+              <Button 
+                size="sm" 
+                onClick={() => onSetSpeed(3)} 
+                className={`px-2.5 py-0.5 text-[11px] font-mono font-bold cursor-pointer transition-all ${
+                  speed === 3 
+                    ? 'bg-amber-600 text-white shadow-xs' 
+                    : 'bg-transparent text-stone-400 hover:text-stone-200'
+                }`}
+              >
+                3x
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {onExit && (
+          <Button 
+            size="sm" 
+            onClick={onExit} 
+            variant="secondary" 
+            className="px-3 py-1 text-xs font-bold text-stone-400 hover:text-stone-200 bg-stone-800/80 hover:bg-stone-700 border border-stone-700 cursor-pointer"
+          >
+            演奏を中断
+          </Button>
+        )}
       </div>
     </div>
   );

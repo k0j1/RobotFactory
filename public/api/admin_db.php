@@ -26,6 +26,11 @@ if (!$pdo) {
 
 // データベース内の全テーブルを取得（BASE TABLEおよびVIEW）
 function getAllDatabaseTables(PDO $pdo): array {
+    // 旧completed_*互換ビューが存在する場合は削除してcomplete_*のみに統一
+    try {
+        $pdo->exec("DROP VIEW IF EXISTS completed_expeditions, completed_part_crafts, completed_robot_assemblies, completed_requests, completed_robot_disassemblies, completed_part_recycles");
+    } catch (Exception $e) {}
+
     $tables = [];
     try {
         $stmt = $pdo->query("SHOW FULL TABLES");
@@ -55,8 +60,13 @@ function getAllDatabaseTables(PDO $pdo): array {
         'active_part_crafts',
         'active_robot_disassemblies',
         'active_part_recycles',
+        'complete_expeditions',
         'complete_robot_assemblies',
         'complete_deliveries',
+        'complete_requests',
+        'complete_part_crafts',
+        'complete_robot_disassemblies',
+        'complete_part_recycles',
         'master_parts',
         'user_minigame_status',
         'stats_minigame_rankings',
@@ -67,16 +77,15 @@ function getAllDatabaseTables(PDO $pdo): array {
     $validTables = [];
     $excludedTables = [
         'complete_parts',
-        'completed_parts',
-        'complete_expeditions',
-        'complete_part_crafts',
-        'complete_part_recycles',
-        'complete_requests',
-        'complete_robot_disassemblies'
+        'completed_parts'
     ];
     foreach ($merged as $t) {
         $tClean = strtolower(trim($t));
-        if (preg_match('/^[a-z0-9_]+$/', $tClean) && !in_array($tClean, $excludedTables, true)) {
+        if (
+            preg_match('/^[a-z0-9_]+$/', $tClean) &&
+            !in_array($tClean, $excludedTables, true) &&
+            strpos($tClean, 'completed_') !== 0
+        ) {
             $validTables[] = $tClean;
         }
     }
@@ -994,12 +1003,8 @@ try {
                 $dcmStmt->execute($candidateIds);
                 $dcmList = $dcmStmt->fetchAll();
                 $result['complete_daily_minigame'] = $dcmList;
-                $result['completed_daily_minigame'] = $dcmList; // 後方互換用キー補完
-                $result['daily_cleared_minigame'] = $dcmList; // 後方互換用キー補完
             } catch (Throwable $e) {
                 $result['complete_daily_minigame'] = [];
-                $result['completed_daily_minigame'] = [];
-                $result['daily_cleared_minigame'] = [];
             }
 
             echo json_encode([

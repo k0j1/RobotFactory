@@ -1455,7 +1455,6 @@ try {
             "received_initial_bonus" => $receivedBonusVal,
             "materials" => $dbMaterials,
             "complete_daily_minigame" => $dbCompletedDailyRecords,
-            "completed_daily_minigame" => $dbCompletedDailyRecords,
             "user" => $userRecord,
             "userId" => $actualUserId
         ]);
@@ -1506,7 +1505,6 @@ try {
             "received_initial_bonus" => $receivedBonusVal,
             "materials" => $dbMaterials,
             "complete_daily_minigame" => $dbCompletedDailyRecords,
-            "completed_daily_minigame" => $dbCompletedDailyRecords,
             "user" => $userRecord,
             "userId" => $actualUserId
         ]);

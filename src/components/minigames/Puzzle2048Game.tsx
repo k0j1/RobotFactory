@@ -10,7 +10,7 @@ export interface Puzzle2048GameProps extends MinigameProps {
 }
 
 const GRID_SIZE = 4;
-const MATCH_DURATION_SEC = 45; // 45秒の制限時間対戦
+const MATCH_DURATION_SEC = 60; // 60秒の制限時間対戦
 
 type Board = number[][];
 

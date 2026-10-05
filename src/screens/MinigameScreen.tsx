@@ -691,6 +691,8 @@ export const MinigameScreen: React.FC<MinigameScreenProps> = ({ state, engine })
           isFinished={battleResult !== null} 
           battleResult={battleResult} 
           songId={pianoSongId}
+          onTogglePause={() => setIsPaused(!isPaused)}
+          onSetSpeed={(s) => setSpeed(s)}
           onExit={() => {
             setIsBattleActive(false);
             setBattleResult(null);
