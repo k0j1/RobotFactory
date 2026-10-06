@@ -16,9 +16,12 @@ interface DanmakuBullet {
 }
 
 interface DanmakuProps extends Omit<MinigameProps, 'activeOpponent'> {
+  activeOpponent?: any;
   difficulty?: DanmakuDifficulty;
   selectedBarrierId?: DanmakuItemId | null;
   selectedLifeId?: DanmakuItemId | null;
+  equippedBarrierItem?: DanmakuItemId | null;
+  equippedLifeItem?: DanmakuItemId | null;
   danmakuItems?: Record<string, number>;
   onConsumeActiveItems?: () => {
     barrierCharges: number;
@@ -38,15 +41,24 @@ export const DanmakuSurvivalGame: React.FC<DanmakuProps> = ({
   difficulty = 'normal',
   selectedBarrierId = null,
   selectedLifeId = null,
+  equippedBarrierItem = null,
+  equippedLifeItem = null,
   danmakuItems = {},
   onConsumeActiveItems
 }) => {
+  const effectiveBarrierId = equippedBarrierItem ?? selectedBarrierId;
+  const effectiveLifeId = equippedLifeItem ?? selectedLifeId;
+  const barrierDef = effectiveBarrierId ? DANMAKU_ITEMS[effectiveBarrierId] : null;
+  const lifeDef = effectiveLifeId ? DANMAKU_ITEMS[effectiveLifeId] : null;
+  const initialBarrierValue = barrierDef ? barrierDef.effectValue : 0;
+  const bonusLifeValue = lifeDef ? lifeDef.effectValue : 0;
+
   const [hasStarted, setHasStarted] = useState(false);
-  const [maxHp, setMaxHp] = useState(5);
-  const [hp, setHp] = useState(5);
-  const [maxBarrier, setMaxBarrier] = useState(0);
-  const [barrierCharges, setBarrierCharges] = useState(0);
-  const [barrierBlockEffect, setBarrierBlockEffect] = useState(false);
+  const [maxHp, setMaxHp] = useState(5 + bonusLifeValue);
+  const [hp, setHp] = useState(5 + bonusLifeValue);
+  const [maxBarrier, setMaxBarrier] = useState(initialBarrierValue);
+  const [barrierCharges, setBarrierCharges] = useState(initialBarrierValue);
+  const [barrierFlash, setBarrierFlash] = useState(false);
   const [timeMs, setTimeMs] = useState(0);
   const [bullets, setBullets] = useState<DanmakuBullet[]>([]);
   const [hitEffect, setHitEffect] = useState<boolean>(false);
@@ -91,10 +103,8 @@ export const DanmakuSurvivalGame: React.FC<DanmakuProps> = ({
 
   useEffect(() => {
     if (!battleResult && !hasStarted) {
-      const previewLifeDef = selectedLifeId && (danmakuItems[selectedLifeId] || 0) > 0 ? DANMAKU_ITEMS[selectedLifeId] : null;
-      const previewBarrierDef = selectedBarrierId && (danmakuItems[selectedBarrierId] || 0) > 0 ? DANMAKU_ITEMS[selectedBarrierId] : null;
-      const initHp = 5 + (previewLifeDef ? previewLifeDef.effectValue : 0);
-      const initBarrier = previewBarrierDef ? previewBarrierDef.effectValue : 0;
+      const initHp = 5 + bonusLifeValue;
+      const initBarrier = initialBarrierValue;
 
       maxHpRef.current = initHp;
       hpRef.current = initHp;
@@ -114,23 +124,18 @@ export const DanmakuSurvivalGame: React.FC<DanmakuProps> = ({
       setKnockback(0);
       setHitFlash(false);
       setHitEffect(false);
-      setBarrierBlockEffect(false);
+      setBarrierFlash(false);
       setGrazeCount(0);
     }
-  }, [activeRobot, battleResult, hasStarted, selectedBarrierId, selectedLifeId, danmakuItems]);
+  }, [activeRobot, battleResult, hasStarted, bonusLifeValue, initialBarrierValue]);
 
   const handleStartMission = () => {
-    let initBarrier = 0;
-    let initBonusLife = 0;
+    let initBarrier = initialBarrierValue;
+    let initBonusLife = bonusLifeValue;
     if (onConsumeActiveItems) {
       const consumed = onConsumeActiveItems();
       initBarrier = consumed.barrierCharges;
       initBonusLife = consumed.bonusLife;
-    } else {
-      const bDef = selectedBarrierId && (danmakuItems[selectedBarrierId] || 0) > 0 ? DANMAKU_ITEMS[selectedBarrierId] : null;
-      const lDef = selectedLifeId && (danmakuItems[selectedLifeId] || 0) > 0 ? DANMAKU_ITEMS[selectedLifeId] : null;
-      initBarrier = bDef ? bDef.effectValue : 0;
-      initBonusLife = lDef ? lDef.effectValue : 0;
     }
 
     const totalHp = 5 + initBonusLife;
@@ -620,7 +625,7 @@ export const DanmakuSurvivalGame: React.FC<DanmakuProps> = ({
            <div className="bg-stone-800 p-2 rounded border border-stone-600 flex items-center gap-1"><Gi.GiBrain className="inline text-purple-400" /> 賢さ: 弾幕予測範囲↑</div>
         </div>
         <button 
-          onClick={() => setHasStarted(true)}
+          onClick={handleStartMission}
           className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-transform active:scale-95 text-lg cursor-pointer"
         >
           ミッション開始！

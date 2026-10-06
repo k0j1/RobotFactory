@@ -2594,6 +2594,26 @@ export class GameEngine {
   }
 
   /**
+   * アイテムID単体指定での装備トグル（StorageScreen / MinigameScreen 互換用）
+   */
+  public toggleEquipDanmakuItem(itemId: DanmakuItemId) {
+    const def = DANMAKU_ITEMS[itemId];
+    if (!def) return;
+    this.toggleActiveDanmakuItem(def.category, itemId);
+  }
+
+  /**
+   * 弾幕よけバトル開始時に選択中アイテムを1個ずつ消費し、消費したアイテムIDを返す
+   */
+  public consumeEquippedDanmakuItemsForBattle(): { barrier: DanmakuItemId | null; life: DanmakuItemId | null } {
+    const res = this.consumeActiveDanmakuItems();
+    return {
+      barrier: res.usedBarrierId,
+      life: res.usedLifeId,
+    };
+  }
+
+  /**
    * 弾幕よけミッション開始時に選択中のアイテムを1個ずつ消費し、発動効果を返す
    */
   public consumeActiveDanmakuItems(): { barrierCharges: number; bonusLife: number; usedBarrierId: DanmakuItemId | null; usedLifeId: DanmakuItemId | null } {

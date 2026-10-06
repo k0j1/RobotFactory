@@ -1,34 +1,38 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import { PlatformService } from '../services/PlatformService';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
 }
 
+/**
+ * @file usePWAInstall.ts
+ * @description PWAインストールプロンプトおよびオンライン接続状態のカスタムフック
+ * Capacitorネイティブアプリ実行時は自動的にインストール済み扱いとしてインストールボタンを非表示にします。
+ */
 export function usePWAInstall() {
+  const platformService = PlatformService.getInstance();
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [isInstalled, setIsInstalled] = useState(false);
-  const [isIOS, setIsIOS] = useState(false);
-  const [isAndroid, setIsAndroid] = useState(false);
+  const [isInstalled, setIsInstalled] = useState<boolean>(() =>
+    platformService.isRunningAsInstalledApp()
+  );
+  const [isIOS, setIsIOS] = useState<boolean>(() => platformService.isIosDevice());
+  const [isNative, setIsNative] = useState<boolean>(() => platformService.isNativeApp());
 
   useEffect(() => {
-    // Standalone mode check (already installed / launched from home screen)
-    const isStandalone =
-      window.matchMedia('(display-mode: standalone)').matches ||
-      (window.navigator as unknown as { standalone?: boolean }).standalone === true;
-    setIsInstalled(isStandalone);
-
-    // Device detection
-    const userAgent = window.navigator.userAgent.toLowerCase();
-    const isIOSDevice = /iphone|ipad|ipod/.test(userAgent);
-    const isAndroidDevice = /android/.test(userAgent);
-    setIsIOS(isIOSDevice);
-    setIsAndroid(isAndroidDevice);
+    const checkStatus = () => {
+      setIsInstalled(platformService.isRunningAsInstalledApp());
+      setIsIOS(platformService.isIosDevice());
+      setIsNative(platformService.isNativeApp());
+    };
+    checkStatus();
 
     const handleBeforeInstallPrompt = (e: Event) => {
-      // Prevent browser default mini-infobar on mobile Chrome
       e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
+      if (!platformService.isNativeApp()) {
+        setDeferredPrompt(e as BeforeInstallPromptEvent);
+      }
     };
 
     const handleAppInstalled = () => {
@@ -43,29 +47,49 @@ export function usePWAInstall() {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
     };
-  }, []);
+  }, [platformService]);
 
-  const install = async (): Promise<boolean> => {
+  const install = useCallback(async () => {
     if (!deferredPrompt) return false;
-    try {
-      await deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        setIsInstalled(true);
-        setDeferredPrompt(null);
-        return true;
-      }
-    } catch (err) {
-      console.warn('PWA install prompt error:', err);
+    await deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setIsInstalled(true);
+      setDeferredPrompt(null);
+      return true;
     }
     return false;
-  };
+  }, [deferredPrompt]);
 
   return {
-    isInstallable: !!deferredPrompt,
+    isInstallable: !isNative && !!deferredPrompt,
     isInstalled,
-    isIOS,
-    isAndroid,
+    isIOS: !isNative && isIOS,
+    isNative,
     install,
   };
+}
+
+/**
+ * オンライン・オフライン接続状態を監視するカスタムフック
+ */
+export function useOnlineStatus() {
+  const [isOnline, setIsOnline] = useState<boolean>(() =>
+    typeof navigator !== 'undefined' ? navigator.onLine : true
+  );
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  return isOnline;
 }

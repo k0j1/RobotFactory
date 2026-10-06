@@ -9,6 +9,7 @@ import { jwtDecode } from 'jwt-decode';
 import { useAuth } from '../contexts/AuthContext';
 import { AuthApiService } from '../services/AuthApiService';
 import { GameEngine } from '../core/GameEngine';
+import { PWAInstallButton } from '../components/ui/PWAInstallButton';
 
 /**
  * Google AI Studio プレビュー実行環境判定
@@ -253,6 +254,11 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onStart, engine }) => 
           </div>
         )}
 
+        {/* PWAインストールボタン / Androidネイティブバッジ */}
+        <div className="mt-5">
+          <PWAInstallButton variant="title" />
+        </div>
+
         {/* Google AI Studio限定 管理メニュー */}
         {isAiStudio && (
           <div className="mt-6 flex flex-wrap items-center justify-center gap-2 max-w-md">
@@ -281,7 +287,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onStart, engine }) => 
           </div>
         )}
 
-        <p className="mt-8 text-stone-400">v0.1.174</p>
+        <p className="mt-8 text-stone-400">v0.1.178</p>
       </div>
       
       {/* Decorative background elements */}

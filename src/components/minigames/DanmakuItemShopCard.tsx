@@ -14,15 +14,29 @@ import {
 interface DanmakuItemShopCardProps {
   state: GameState;
   onBuyItem: (itemId: DanmakuItemId, count?: number) => boolean;
-  onToggleActiveItem: (category: 'barrier' | 'life', itemId: DanmakuItemId | null) => void;
+  onToggleActiveItem?: (category: 'barrier' | 'life', itemId: DanmakuItemId | null) => void;
+  onToggleEquipItem?: (itemId: DanmakuItemId) => void;
 }
 
 export const DanmakuItemShopCard: React.FC<DanmakuItemShopCardProps> = ({
   state,
   onBuyItem,
   onToggleActiveItem,
+  onToggleEquipItem,
 }) => {
-  const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
+  const handleToggleItem = (category: 'barrier' | 'life', itemId: DanmakuItemId | null) => {
+    if (onToggleActiveItem) {
+      onToggleActiveItem(category, itemId);
+    } else if (onToggleEquipItem) {
+      if (itemId) {
+        onToggleEquipItem(itemId);
+      } else {
+        const curId = state.activeDanmakuItems?.[category];
+        if (curId) onToggleEquipItem(curId);
+      }
+    }
+  };
+  const [isCollapsed, setIsCollapsed] = useState<boolean>(true);
   const elements = state.battleElements || 0;
   const danmakuItems = state.danmakuItems || {};
   const activeBarrierId = state.activeDanmakuItems?.barrier || null;
@@ -95,7 +109,7 @@ export const DanmakuItemShopCard: React.FC<DanmakuItemShopCardProps> = ({
             size="sm"
             variant={isEquipped ? 'primary' : 'secondary'}
             disabled={ownedCount <= 0}
-            onClick={() => onToggleActiveItem(item.category, item.id)}
+            onClick={() => handleToggleItem(item.category, item.id)}
             className={`flex-1 text-[11px] font-bold py-1.5 ${
               isEquipped
                 ? 'bg-amber-600 hover:bg-amber-500 text-white'
@@ -134,7 +148,7 @@ export const DanmakuItemShopCard: React.FC<DanmakuItemShopCardProps> = ({
         <div className="flex items-center gap-2">
           <Gi.GiShieldEchoes className="text-cyan-600 text-xl" />
           <h3 className={`${theme.typography.h3} text-stone-800`}>
-            弾幕よけ専用サポートアイテム（バリア ＆ 増加ライフ）
+            弾幕よけ専用サポートアイテム
           </h3>
         </div>
 
@@ -196,7 +210,7 @@ export const DanmakuItemShopCard: React.FC<DanmakuItemShopCardProps> = ({
               </span>
               {activeBarrierId && (
                 <button
-                  onClick={() => onToggleActiveItem('barrier', null)}
+                  onClick={() => handleToggleItem('barrier', null)}
                   className="text-[10px] text-stone-500 hover:text-rose-600 font-bold underline cursor-pointer"
                 >
                   バリア使用を解除
@@ -217,7 +231,7 @@ export const DanmakuItemShopCard: React.FC<DanmakuItemShopCardProps> = ({
               </span>
               {activeLifeId && (
                 <button
-                  onClick={() => onToggleActiveItem('life', null)}
+                  onClick={() => handleToggleItem('life', null)}
                   className="text-[10px] text-stone-500 hover:text-rose-600 font-bold underline cursor-pointer"
                 >
                   ライフ増加使用を解除

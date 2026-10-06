@@ -21,6 +21,7 @@ import { AssetCacheService } from './core/AssetCacheService';
 import robotsWorkshopBg from './assets/images/robots_workshop_bg_1788411232885.jpg';
 import { useAuth } from './contexts/AuthContext';
 import { fetchPartsMaster } from './data/partsMaster';
+import { PlatformService } from './services/PlatformService';
 
 export default function App() {
   const { user } = useAuth();
@@ -36,6 +37,9 @@ export default function App() {
       robotsWorkshopBg
     ]).catch((err) => {
       console.warn('[App] Background images preload notice:', err);
+    }).finally(() => {
+      // Capacitor Androidアプリ起動時は初期アセット準備完了後にスプラッシュスクリーンをフェードアウト
+      PlatformService.getInstance().hideNativeSplashScreen().catch(() => {});
     });
   }, []);
 

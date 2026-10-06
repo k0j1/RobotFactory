@@ -105,6 +105,15 @@ export const theme = {
     ledGreen: "w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]",
     ledRed: "w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_#f43f5e]",
   },
+  pwa: {
+    installBtnHeader: "flex items-center gap-1 bg-amber-600 hover:bg-amber-500 text-white border border-amber-400/80 px-2.5 py-1 rounded-full shadow-xs text-xs font-bold transition cursor-pointer",
+    installBtnTitle: "flex items-center gap-2 bg-stone-800/90 hover:bg-stone-700 text-amber-300 border border-amber-500/60 px-4 py-2 rounded-full shadow-md text-xs font-bold transition cursor-pointer",
+    nativeBadge: "flex items-center gap-1 bg-emerald-950/90 text-emerald-300 border border-emerald-500/50 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold",
+    offlineBanner: "fixed bottom-16 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-full bg-amber-600/95 border border-amber-300 px-3.5 py-1.5 text-xs font-bold text-white shadow-lg backdrop-blur-xs",
+    modalBackdrop: "fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4 backdrop-blur-xs",
+    modalCard: "w-full max-w-sm rounded-2xl bg-[#faf5ee] border-2 border-[#c29b77] p-5 shadow-xl text-stone-900",
+    stepBadge: "inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-600 text-white text-xs font-bold mr-1.5 shrink-0",
+  },
   spacing: {
     xs: "p-2",
     sm: "p-4",

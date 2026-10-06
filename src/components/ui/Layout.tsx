@@ -4,6 +4,7 @@ import { GameState } from '../../core/models';
 import * as Gi from 'react-icons/gi';
 import { TabBackground } from '../effects/TabBackground';
 import { useAuth } from '../../contexts/AuthContext';
+import { PWAInstallButton, OfflineIndicator } from './PWAInstallButton';
 
 export const Layout: React.FC<{ 
   children: React.ReactNode; 
@@ -70,6 +71,7 @@ export const Layout: React.FC<{
         <div className="max-w-4xl mx-auto flex justify-between items-center">
           <h1 className={theme.typography.h2}>ポンコツロボット工房</h1>
           <div className="flex items-center gap-2">
+            <PWAInstallButton variant="header" />
             {user ? (
               <div 
                 className="flex items-center gap-1.5 bg-stone-900/80 border border-emerald-500/60 px-2 py-0.5 rounded-full shadow-xs text-xs text-emerald-300"
@@ -97,6 +99,8 @@ export const Layout: React.FC<{
       <main className={`flex-1 max-w-4xl w-full mx-auto ${theme.spacing.sm} pb-24 relative z-10`}>
         {children}
       </main>
+
+      <OfflineIndicator />
 
       <nav className={`${theme.colors.surface} ${theme.shadow.lg} border-t ${theme.colors.border} fixed bottom-0 w-full ${theme.zIndex.nav} pb-safe`}>
         <div className="max-w-4xl mx-auto flex justify-around p-1.5 gap-1">

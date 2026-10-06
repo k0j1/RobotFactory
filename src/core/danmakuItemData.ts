@@ -18,6 +18,7 @@ export interface DanmakuItemDef {
   effectValue: number; // バリア回数(1〜3) または 追加ライフ数(1〜3)
   desc: string;
   badgeColor: string;
+  badgeClass: string;
   cardBorder: string;
   cardBg: string;
 }
@@ -33,6 +34,7 @@ export const DANMAKU_ITEMS: Record<DanmakuItemId, DanmakuItemDef> = {
     effectValue: 1,
     desc: '弾幕よけ出撃時に展開。敵弾に当たっても1回だけダメージを完全に無効化しライフが減りません（1回の出撃につき1個消費）。',
     badgeColor: 'bg-sky-100 text-sky-900 border-sky-300',
+    badgeClass: 'bg-sky-100 text-sky-900 border-sky-300',
     cardBorder: 'border-sky-300',
     cardBg: 'bg-sky-50/60',
   },
@@ -46,6 +48,7 @@ export const DANMAKU_ITEMS: Record<DanmakuItemId, DanmakuItemDef> = {
     effectValue: 2,
     desc: '弾幕よけ出撃時に展開。敵弾に当たっても2回までダメージを完全に無効化しライフが減りません（1回の出撃につき1個消費）。',
     badgeColor: 'bg-cyan-100 text-cyan-900 border-cyan-400',
+    badgeClass: 'bg-cyan-100 text-cyan-900 border-cyan-400',
     cardBorder: 'border-cyan-400',
     cardBg: 'bg-cyan-50/70',
   },
@@ -59,6 +62,7 @@ export const DANMAKU_ITEMS: Record<DanmakuItemId, DanmakuItemDef> = {
     effectValue: 3,
     desc: '弾幕よけ出撃時に展開。敵弾に当たっても3回までダメージを完全に無効化しライフが減りません（1回の出撃につき1個消費）。',
     badgeColor: 'bg-indigo-100 text-indigo-950 border-indigo-400',
+    badgeClass: 'bg-indigo-100 text-indigo-950 border-indigo-400',
     cardBorder: 'border-indigo-400',
     cardBg: 'bg-indigo-50/70',
   },
@@ -72,6 +76,7 @@ export const DANMAKU_ITEMS: Record<DanmakuItemId, DanmakuItemDef> = {
     effectValue: 1,
     desc: '弾幕よけ出撃時に自機の初期ライフ（装甲HP）を +1 増加（HP 5 → 6）させます（1回の出撃につき1個消費）。',
     badgeColor: 'bg-emerald-100 text-emerald-900 border-emerald-300',
+    badgeClass: 'bg-emerald-100 text-emerald-900 border-emerald-300',
     cardBorder: 'border-emerald-300',
     cardBg: 'bg-emerald-50/60',
   },
@@ -85,6 +90,7 @@ export const DANMAKU_ITEMS: Record<DanmakuItemId, DanmakuItemDef> = {
     effectValue: 2,
     desc: '弾幕よけ出撃時に自機の初期ライフ（装甲HP）を +2 増加（HP 5 → 7）させます（1回の出撃につき1個消費）。',
     badgeColor: 'bg-teal-100 text-teal-900 border-teal-400',
+    badgeClass: 'bg-teal-100 text-teal-900 border-teal-400',
     cardBorder: 'border-teal-400',
     cardBg: 'bg-teal-50/70',
   },
@@ -98,6 +104,7 @@ export const DANMAKU_ITEMS: Record<DanmakuItemId, DanmakuItemDef> = {
     effectValue: 3,
     desc: '弾幕よけ出撃時に自機の初期ライフ（装甲HP）を +3 増加（HP 5 → 8）させます（1回の出撃につき1個消費）。',
     badgeColor: 'bg-amber-100 text-amber-950 border-amber-400',
+    badgeClass: 'bg-amber-100 text-amber-950 border-amber-400',
     cardBorder: 'border-amber-400',
     cardBg: 'bg-amber-50/70',
   },
