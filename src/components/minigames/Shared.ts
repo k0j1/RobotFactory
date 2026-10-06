@@ -211,6 +211,9 @@ export const midiToKeyInfo = (midi: number): { name: string; isBlack: boolean; l
   };
 };
 
+// 演奏開始直後のオーディオ起動過渡ノイズや急激な大音量を防ぐための1秒間（1000ms）の無音リードイン時間
+export const PIANO_LEAD_IN_MS = 1000;
+
 export const convertRawNoteToPianoData = (n: any, defaultDyn: 'pp' | 'p' | 'mp' | 'mf' | 'f' | 'ff' = 'p', defaultVel: number = 0.85): PianoNoteData => {
   const keyInfos = n.midi.map((m: number) => midiToKeyInfo(m));
   const baseDyn = n.dynamics || defaultDyn;
@@ -260,7 +263,7 @@ export const convertRawNoteToPianoData = (n: any, defaultDyn: 'pp' | 'p' | 'mp' 
   }
 
   return {
-    time: n.time,
+    time: n.time + PIANO_LEAD_IN_MS,
     midi: n.midi,
     lanes: keyInfos.map((k: any) => k.lanePos),
     pitches: keyInfos.map((k: any) => k.name),

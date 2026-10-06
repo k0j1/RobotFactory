@@ -182,8 +182,9 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
           }
           if (result.danmakuItems && Array.isArray(result.danmakuItems)) {
             for (const dItem of result.danmakuItems) {
-              if (dItem && dItem.itemId) {
-                engine.addDanmakuItem(dItem.itemId, dItem.count || 1);
+              const targetItemId = dItem?.itemId || dItem?.item?.id;
+              if (targetItemId) {
+                engine.addDanmakuItem(targetItemId, dItem.count || 1);
               }
             }
           }
@@ -196,6 +197,13 @@ export const StorageScreen: React.FC<{ state: GameState, engine: GameEngine }> =
           }
           if (result.fame > 0) {
             engine.addFame(result.fame, '宝箱開封ボーナス');
+          }
+
+          // 宝箱開封後の全獲得アイテム（弾幕よけアイテム・修理キット・エレメント・素材・宝箱消費）を単一トランザクションで即座にDBへ確定保存
+          if (typeof engine.syncToDatabaseNow === 'function') {
+            engine.syncToDatabaseNow().catch((err: any) => {
+              console.warn('[StorageScreen] 宝箱開封後の即時DB同期警告:', err);
+            });
           }
           
           setOpenedChestResult({ ...result, chestTier });

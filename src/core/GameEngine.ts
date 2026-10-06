@@ -433,6 +433,14 @@ export class GameEngine {
         parsed.activeCombatEquipments = {};
       }
 
+      // 弾幕よけ専用アイテム・選択中アイテムの正規化（PHP json_encodeで [] 配列化する問題を完全に防止し、プレーンオブジェクト {} に統一）
+      if (!parsed.danmakuItems || Array.isArray(parsed.danmakuItems) || typeof parsed.danmakuItems !== 'object') {
+        parsed.danmakuItems = {};
+      }
+      if (!parsed.activeDanmakuItems || Array.isArray(parsed.activeDanmakuItems) || typeof parsed.activeDanmakuItems !== 'object') {
+        parsed.activeDanmakuItems = { barrier: null, life: null };
+      }
+
       // 解放済み装備の初期ランクフォールバック（未設定時はcommonランクを保証）
       if (parsed.combatEquipments.beamSaber && !parsed.combatEquipmentRanks.beamSaber) {
         parsed.combatEquipmentRanks.beamSaber = 'common';
@@ -2516,21 +2524,21 @@ export class GameEngine {
    */
   public addDanmakuItem(itemId: DanmakuItemId, amount: number = 1) {
     if (!DANMAKU_ITEMS[itemId] || amount <= 0) return;
-    if (!this.state.danmakuItems || typeof this.state.danmakuItems !== 'object') {
+    if (!this.state.danmakuItems || Array.isArray(this.state.danmakuItems) || typeof this.state.danmakuItems !== 'object') {
       this.state.danmakuItems = {};
     }
     this.state.danmakuItems = {
       ...this.state.danmakuItems,
-      [itemId]: (this.state.danmakuItems[itemId] || 0) + amount,
+      [itemId]: (Number(this.state.danmakuItems[itemId]) || 0) + amount,
     };
 
     // 初回獲得時にそのカテゴリが未選択なら自動でセットしてすぐ使えるようにする
     const def = DANMAKU_ITEMS[itemId];
-    if (!this.state.activeDanmakuItems) {
+    if (!this.state.activeDanmakuItems || Array.isArray(this.state.activeDanmakuItems) || typeof this.state.activeDanmakuItems !== 'object') {
       this.state.activeDanmakuItems = { barrier: null, life: null };
     }
     const curSelected = this.state.activeDanmakuItems[def.category];
-    if (!curSelected || (this.state.danmakuItems[curSelected] || 0) <= 0) {
+    if (!curSelected || (Number(this.state.danmakuItems[curSelected]) || 0) <= 0) {
       this.state.activeDanmakuItems = {
         ...this.state.activeDanmakuItems,
         [def.category]: itemId as any,
@@ -2538,6 +2546,11 @@ export class GameEngine {
     }
 
     this.saveState();
+    if (this.isCloudAccount && this.userId && this.isCloudLoaded) {
+      AuthApiService.getInstance().saveAllDataToTables(this.userId, this.state, true).catch((err) => {
+        console.warn('[GameEngine] addDanmakuItem 即時DB同期エラー:', err);
+      });
+    }
   }
 
   /**
@@ -2554,16 +2567,16 @@ export class GameEngine {
     }
 
     this.state.battleElements = currentElements - totalCost;
-    if (!this.state.danmakuItems || typeof this.state.danmakuItems !== 'object') {
+    if (!this.state.danmakuItems || Array.isArray(this.state.danmakuItems) || typeof this.state.danmakuItems !== 'object') {
       this.state.danmakuItems = {};
     }
     this.state.danmakuItems = {
       ...this.state.danmakuItems,
-      [itemId]: (this.state.danmakuItems[itemId] || 0) + count,
+      [itemId]: (Number(this.state.danmakuItems[itemId]) || 0) + count,
     };
 
     // 購入したアイテムを出撃時使用アイテムとして自動選択
-    if (!this.state.activeDanmakuItems) {
+    if (!this.state.activeDanmakuItems || Array.isArray(this.state.activeDanmakuItems) || typeof this.state.activeDanmakuItems !== 'object') {
       this.state.activeDanmakuItems = { barrier: null, life: null };
     }
     this.state.activeDanmakuItems = {
@@ -2572,6 +2585,11 @@ export class GameEngine {
     };
 
     this.saveState();
+    if (this.isCloudAccount && this.userId && this.isCloudLoaded) {
+      AuthApiService.getInstance().saveAllDataToTables(this.userId, this.state, true).catch((err) => {
+        console.warn('[GameEngine] buyDanmakuItem 即時DB同期エラー:', err);
+      });
+    }
     return true;
   }
 
@@ -2579,10 +2597,10 @@ export class GameEngine {
    * 弾幕よけ出撃時に使用するアイテムを選択・解除
    */
   public toggleActiveDanmakuItem(category: 'barrier' | 'life', itemId: DanmakuItemId | null) {
-    if (!this.state.activeDanmakuItems) {
+    if (!this.state.activeDanmakuItems || Array.isArray(this.state.activeDanmakuItems) || typeof this.state.activeDanmakuItems !== 'object') {
       this.state.activeDanmakuItems = { barrier: null, life: null };
     }
-    if (itemId && (this.state.danmakuItems?.[itemId] || 0) <= 0) {
+    if (itemId && (Number(this.state.danmakuItems?.[itemId]) || 0) <= 0) {
       return;
     }
     const current = this.state.activeDanmakuItems[category];
@@ -2591,6 +2609,11 @@ export class GameEngine {
       [category]: current === itemId ? null : (itemId as any),
     };
     this.saveState();
+    if (this.isCloudAccount && this.userId && this.isCloudLoaded) {
+      AuthApiService.getInstance().saveAllDataToTables(this.userId, this.state, true).catch((err) => {
+        console.warn('[GameEngine] toggleActiveDanmakuItem 即時DB同期エラー:', err);
+      });
+    }
   }
 
   /**
@@ -2656,6 +2679,11 @@ export class GameEngine {
     this.state.danmakuItems = { ...this.state.danmakuItems };
     this.state.activeDanmakuItems = { ...this.state.activeDanmakuItems };
     this.saveState();
+    if (this.isCloudAccount && this.userId && this.isCloudLoaded) {
+      AuthApiService.getInstance().saveAllDataToTables(this.userId, this.state, true).catch((err) => {
+        console.warn('[GameEngine] consumeActiveDanmakuItems 即時DB同期エラー:', err);
+      });
+    }
 
     return { barrierCharges, bonusLife, usedBarrierId, usedLifeId };
   }

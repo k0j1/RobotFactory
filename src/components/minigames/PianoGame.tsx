@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 // @ts-ignore
 import Soundfont from 'soundfont-player';
 import { Robot } from '../../core/models';
-import { MinigameProps, PIANO_SONGS, PianoNoteData, canRobotMemorizePianoScore } from './Shared';
+import { MinigameProps, PIANO_SONGS, PianoNoteData, PIANO_LEAD_IN_MS, canRobotMemorizePianoScore } from './Shared';
 import { RobotVisual } from '../robot/RobotVisual';
 import { GSAPRobotCanvas } from '../robot/GSAPRobotCanvas';
 import { savePianoScore, getPianoBestScore, PianoBestScore } from '../../core/pianoScoreManager';
@@ -213,6 +213,7 @@ export const PianoGame: React.FC<PianoGameProps> = ({
   const audioCtxRef = useRef<AudioContext | null>(null);
   const masterGainRef = useRef<GainNode | null>(null);
   const compressorRef = useRef<DynamicsCompressorNode | null>(null);
+  const playbackStartMsRef = useRef<number>(Date.now());
 
   // ピアノ音量ステート (初期値: 1.0 = 100%、0%〜150%で調整可能、永続化)
   const [pianoVolume, setPianoVolume] = useState<number>(() => {
@@ -232,8 +233,18 @@ export const PianoGame: React.FC<PianoGameProps> = ({
     } catch {}
     if (audioCtxRef.current && masterGainRef.current) {
       const now = audioCtxRef.current.currentTime;
-      // 基準ゲイン 1.6倍 にスケーリングして十分な音圧を供給
-      masterGainRef.current.gain.setTargetAtTime(clamped * 1.6, now, 0.05);
+      const elapsedSinceStart = Date.now() - playbackStartMsRef.current;
+      // 開始後1秒間の無音待機中は0を維持し、1秒経過後に設定音量へスムーズに反映
+      if (elapsedSinceStart >= PIANO_LEAD_IN_MS) {
+        masterGainRef.current.gain.cancelScheduledValues(now);
+        masterGainRef.current.gain.setTargetAtTime(clamped * 1.5, now, 0.05);
+      } else {
+        const remainingSilentSec = Math.max(0.05, (PIANO_LEAD_IN_MS - elapsedSinceStart) / 1000);
+        masterGainRef.current.gain.cancelScheduledValues(now);
+        masterGainRef.current.gain.setValueAtTime(0, now);
+        masterGainRef.current.gain.setValueAtTime(0, now + Math.max(0, remainingSilentSec - 0.15));
+        masterGainRef.current.gain.linearRampToValueAtTime(clamped * 1.5, now + remainingSilentSec);
+      }
     }
   };
 
@@ -277,6 +288,7 @@ export const PianoGame: React.FC<PianoGameProps> = ({
     });
 
     // AudioContext の初期化 (即座に再生可能な環境を構築)
+    playbackStartMsRef.current = Date.now();
     const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
     if (AudioContextClass) {
       const ctx = (window as any).globalAudioCtx || new AudioContextClass();
@@ -301,16 +313,31 @@ export const PianoGame: React.FC<PianoGameProps> = ({
         }
       }
 
-      // マスターゲインの構築 (実音量に合わせた高音圧設定)
+      // マスターゲインの構築 (演奏開始直後の爆音・ポップノイズを防ぐため、最初の約1秒間は無音から滑らかに立ち上げる)
       if (!masterGainRef.current) {
         try {
           const mg = ctx.createGain();
           const targetNode = compressorRef.current || ctx.destination;
-          mg.gain.setValueAtTime(pianoVolume * 1.5, ctx.currentTime);
+          mg.gain.setValueAtTime(0, ctx.currentTime);
           mg.connect(targetNode);
           masterGainRef.current = mg;
         } catch (e) {
           console.warn('Master gain setup error:', e);
+        }
+      }
+
+      if (masterGainRef.current) {
+        try {
+          const now = ctx.currentTime;
+          const targetVol = pianoVolume * 1.5;
+          const leadInSec = PIANO_LEAD_IN_MS / 1000; // 1.0秒
+          masterGainRef.current.gain.cancelScheduledValues(now);
+          // 演奏開始から0.85秒間は完全無音(0)を維持し、1.0秒目にかけて滑らかに規定音量へフェードイン
+          masterGainRef.current.gain.setValueAtTime(0, now);
+          masterGainRef.current.gain.setValueAtTime(0, now + Math.max(0, leadInSec - 0.15));
+          masterGainRef.current.gain.linearRampToValueAtTime(targetVol, now + leadInSec);
+        } catch (e) {
+          console.warn('Master gain ramp error:', e);
         }
       }
       
@@ -341,6 +368,10 @@ export const PianoGame: React.FC<PianoGameProps> = ({
     hand: 'RH' | 'LH' = 'RH'
   ) => {
     if (!audioCtxRef.current) return;
+    // 演奏開始から1秒間（PIANO_LEAD_IN_MS）は完全に無音状態を保つ（鍵盤クリック時も含め初期爆音・過渡ノイズを防止）
+    if (elapsedRef.current < PIANO_LEAD_IN_MS && (Date.now() - playbackStartMsRef.current) < PIANO_LEAD_IN_MS) {
+      return;
+    }
     const ctx = audioCtxRef.current;
     if (ctx.state === 'suspended') ctx.resume().catch(() => {});
     

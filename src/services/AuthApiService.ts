@@ -763,10 +763,10 @@ export class AuthApiService {
           }
 
           // 6.5 弾幕よけアイテム (user_item / danmaku_item)
-          if (parsed.danmakuItems && typeof parsed.danmakuItems === 'object') {
+          if (parsed.danmakuItems && typeof parsed.danmakuItems === 'object' && !Array.isArray(parsed.danmakuItems)) {
             loadedData.danmakuItems = { ...(loadedData.danmakuItems || {}), ...parsed.danmakuItems };
           }
-          if (parsed.activeDanmakuItems && typeof parsed.activeDanmakuItems === 'object') {
+          if (parsed.activeDanmakuItems && typeof parsed.activeDanmakuItems === 'object' && !Array.isArray(parsed.activeDanmakuItems)) {
             loadedData.activeDanmakuItems = { ...(loadedData.activeDanmakuItems || {}), ...parsed.activeDanmakuItems };
           }
 

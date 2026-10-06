@@ -30,7 +30,7 @@ export interface BattleChestDropResult {
   gold: number; // 互換性維持のためフィールド残存（常に0）
   elements: number;
   materials: { material: Material; count: number }[];
-  danmakuItems: { item: DanmakuItemDef; count: number }[];
+  danmakuItems: { itemId: DanmakuItemId; item: DanmakuItemDef; count: number }[];
   fame: number;
   items: BattleRewardItem[];
 }
@@ -81,12 +81,12 @@ function pickRandomDanmakuItemByLevel(level: number): DanmakuItemDef {
   return DANMAKU_ITEMS[chosenId];
 }
 
-function addDanmakuDrop(list: { item: DanmakuItemDef; count: number }[], itemDef: DanmakuItemDef, count: number = 1) {
-  const existing = list.find(d => d.item.id === itemDef.id);
+function addDanmakuDrop(list: { itemId: DanmakuItemId; item: DanmakuItemDef; count: number }[], itemDef: DanmakuItemDef, count: number = 1) {
+  const existing = list.find(d => d.item.id === itemDef.id || d.itemId === itemDef.id);
   if (existing) {
     existing.count += count;
   } else {
-    list.push({ item: itemDef, count });
+    list.push({ itemId: itemDef.id, item: itemDef, count });
   }
 }
 
@@ -103,7 +103,7 @@ export class BattleChestRewardService {
     const gold = 0;
     let elements = 0;
     const materials: { material: Material; count: number }[] = [];
-    const danmakuItems: { item: DanmakuItemDef; count: number }[] = [];
+    const danmakuItems: { itemId: DanmakuItemId; item: DanmakuItemDef; count: number }[] = [];
     const items: BattleRewardItem[] = [];
 
     // レベル別の宝箱グレード決定
@@ -406,7 +406,7 @@ export class BattleChestRewardService {
     const gold = 0;
     let elements = 0;
     const materials: { material: Material; count: number }[] = [];
-    const danmakuItems: { item: DanmakuItemDef; count: number }[] = [];
+    const danmakuItems: { itemId: DanmakuItemId; item: DanmakuItemDef; count: number }[] = [];
     const items: BattleRewardItem[] = [];
 
     // 防衛戦の名声: レベル3で+5、レベル4で+10、レベル5で+15 (Lv1,2は0)
@@ -568,7 +568,7 @@ export class BattleChestRewardService {
     const gold = 0;
     let elements = 0;
     const materials: { material: Material; count: number }[] = [];
-    const danmakuItems: { item: DanmakuItemDef; count: number }[] = [];
+    const danmakuItems: { itemId: DanmakuItemId; item: DanmakuItemDef; count: number }[] = [];
     const items: BattleRewardItem[] = [];
 
     let level = 1;
