@@ -103,7 +103,12 @@ export class PlatformService {
       return;
     }
 
-    // Web / PWA ブラウザ環境では vite-plugin-pwa の Service Worker を自動更新モードで登録
+    // 開発サーバー（Vite DEV）実行時はHMR無効環境でのWebSocket競合（[vite] send was called before connect）を防ぐためSW登録をスキップ
+    if (import.meta.env.DEV) {
+      return;
+    }
+
+    // Web / PWA 本番環境では vite-plugin-pwa の Service Worker を自動更新モードで登録
     try {
       const { registerSW } = await import('virtual:pwa-register');
       registerSW({

@@ -25,6 +25,28 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
+      # 毎回異なる署名鍵でAPKが生成されて上書き更新（アップデート）に失敗するのを防ぐため、
+      # 固定の署名キーストア（assets/ponkotsu-consistent.keystore）をGitHub Actionsキャッシュで永続化・共有します。
+      - name: Cache Persistent Android Signing Keystore
+        uses: actions/cache@v4
+        with:
+          path: assets/ponkotsu-consistent.keystore
+          key: ponkotsu-android-signing-keystore-v1
+
+      - name: Ensure Persistent Keystore Exists
+        run: |
+          if [ ! -f "assets/ponkotsu-consistent.keystore" ]; then
+            keytool -genkeypair -v \
+              -keystore assets/ponkotsu-consistent.keystore \
+              -storepass android \
+              -alias androiddebugkey \
+              -keypass android \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -dname "CN=Ponkotsu Robot Factory,O=RobotFactory,C=JP"
+          fi
+
       - name: Install Dependencies
         run: npm install
 
