@@ -10,17 +10,23 @@ const config: CapacitorConfig = {
   appName: 'ポンコツロボット工房',
   webDir: 'dist',
   server: {
+    // Google OAuth の「承認済みの JavaScript 生成元」と一致させ、オリジン不一致エラーを防ぐ設定
+    hostname: 'robotfactory.k0j1.v2002.coreserver.jp',
     androidScheme: 'https',
     allowNavigation: [
       'robotfactory.k0j1.v2002.coreserver.jp',
       '*.coreserver.jp',
       'accounts.google.com',
+      '*.google.com',
       '*.googleusercontent.com',
     ],
   },
   android: {
     allowMixedContent: true,
     backgroundColor: '#1c1917',
+    // Android WebView のデフォルトUAに含まれる "; wv" による Google OAuth (403 disallowed_useragent) ブロックを回避
+    overrideUserAgent:
+      'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36',
   },
   plugins: {
     SplashScreen: {

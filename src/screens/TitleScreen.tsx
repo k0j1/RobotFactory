@@ -10,12 +10,16 @@ import { useAuth } from '../contexts/AuthContext';
 import { AuthApiService } from '../services/AuthApiService';
 import { GameEngine } from '../core/GameEngine';
 import { PWAInstallButton } from '../components/ui/PWAInstallButton';
+import { PlatformService } from '../services/PlatformService';
 
 /**
  * Google AI Studio プレビュー実行環境判定
+ * ※ Capacitor ネイティブアプリ（Android APK等）では window.location.hostname が 'localhost' になるため、
+ *    isNativeApp() が true の場合は本番Webと同様に false（管理画面非表示）とします。
  */
 function checkIsAiStudio(): boolean {
   if (typeof window === 'undefined') return false;
+  if (PlatformService.getInstance().isNativeApp()) return false;
   try {
     const host = window.location.hostname;
     const params = new URLSearchParams(window.location.search);
@@ -287,7 +291,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onStart, engine }) => 
           </div>
         )}
 
-        <p className="mt-8 text-stone-400">v0.1.179</p>
+        <p className="mt-8 text-stone-400">v0.1.180</p>
       </div>
       
       {/* Decorative background elements */}

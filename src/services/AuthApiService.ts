@@ -1,4 +1,5 @@
 import { VersionCheckService } from "../services/VersionCheckService";
+import { PlatformService } from "../services/PlatformService";
 /**
  * @file AuthApiService.ts
  * @description Googleログイン連携およびusersテーブルへのユーザー情報保存・同期を担当するサービスクラス
@@ -77,11 +78,15 @@ export class AuthApiService {
     const envBaseUrl = import.meta.env.VITE_API_BASE_URL;
     if (envBaseUrl) {
       this.defaultBaseUrl = envBaseUrl.replace(/\/+$/, '');
-    } else if (typeof window !== 'undefined' && window.location.hostname.includes('coreserver.jp')) {
-      // CoreServer上でホストされている場合は同オリジン相対パス
+    } else if (
+      typeof window !== 'undefined' &&
+      !PlatformService.getInstance().isNativeApp() &&
+      window.location.hostname.includes('coreserver.jp')
+    ) {
+      // CoreServer上でWebブラウザからホストされている場合は同オリジン相対パス
       this.defaultBaseUrl = '';
     } else {
-      // 開発環境、プレビュー環境等では直接CoreServerのAPIサーバーに接続（CORS許可済み）
+      // Capacitorネイティブアプリ環境・開発環境・プレビュー環境では直接CoreServerのAPIサーバーにフルURLで接続（CORS許可済み）
       this.defaultBaseUrl = 'https://robotfactory.k0j1.v2002.coreserver.jp';
     }
   }
