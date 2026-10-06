@@ -44,6 +44,7 @@ jobs:
         run: |
           node scripts/generate-capacitor-assets.mjs
           npx capacitor-assets generate --android --iconBackgroundColor '#1c1917' --iconBackgroundColorDark '#0c0a09' --splashBackgroundColor '#1c1917' --splashBackgroundColorDark '#0c0a09'
+          node scripts/configure-android-deeplink.mjs
 
       - name: Grant Execute Permission for Gradlew
         working-directory: ./android

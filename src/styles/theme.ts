@@ -108,6 +108,7 @@ export const theme = {
   pwa: {
     installBtnHeader: "flex items-center gap-1 bg-amber-600 hover:bg-amber-500 text-white border border-amber-400/80 px-2.5 py-1 rounded-full shadow-xs text-xs font-bold transition cursor-pointer",
     installBtnTitle: "flex items-center gap-2 bg-stone-800/90 hover:bg-stone-700 text-amber-300 border border-amber-500/60 px-4 py-2 rounded-full shadow-md text-xs font-bold transition cursor-pointer",
+    googleSignInBtn: "flex items-center justify-center gap-3 bg-white hover:bg-stone-100 text-stone-800 font-sans font-semibold text-sm px-6 py-2.5 rounded-full shadow-md border border-stone-300 transition active:scale-95 cursor-pointer",
     nativeBadge: "flex items-center gap-1 bg-emerald-950/90 text-emerald-300 border border-emerald-500/50 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold",
     offlineBanner: "fixed bottom-16 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-full bg-amber-600/95 border border-amber-300 px-3.5 py-1.5 text-xs font-bold text-white shadow-lg backdrop-blur-xs",
     modalBackdrop: "fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4 backdrop-blur-xs",
