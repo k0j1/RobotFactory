@@ -10,8 +10,10 @@ const config: CapacitorConfig = {
   appName: 'ポンコツロボット工房',
   webDir: 'dist',
   server: {
-    // Google OAuth の「承認済みの JavaScript 生成元」と一致させ、オリジン不一致エラーを防ぐ設定
-    hostname: 'robotfactory.k0j1.v2002.coreserver.jp',
+    // ⚠️ 重要: hostname を本番の coreserver.jp と同じにすると、Android WebView の WebViewAssetLoader が
+    // https://robotfactory.k0j1.v2002.coreserver.jp/api/*.php への通信までアプリ内の静的 dist/api/*.php から返してしまい、
+    // PHPが実行されずソースコードがそのまま返却されるため、ローカルホスト（app.localhost）に分離します。
+    hostname: 'localhost',
     androidScheme: 'https',
     allowNavigation: [
       'robotfactory.k0j1.v2002.coreserver.jp',

@@ -57,6 +57,8 @@ jobs:
 
       - name: Add or Sync Capacitor Android Platform
         run: |
+          # Android APK内に生のPHPファイル（dist/api/*.php）が同梱されるのを防止（APIは常にCoreServerへ通信）
+          rm -rf dist/api
           if [ ! -d "android" ]; then
             npx cap add android
           fi

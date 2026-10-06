@@ -110,9 +110,17 @@ export class AuthApiService {
 
   /**
    * 指定したAPIパスの試行先エンドポイントリストを取得
+   * ※ Capacitorネイティブアプリ（Android APK等）ではローカルバンドルへのフォールバックを防ぐため、常にCoreServerの絶対URLのみを使用します。
    */
   private getAllEndpoints(path: string): string[] {
     const cleanPath = path.startsWith('/') ? path : `/${path}`;
+    const isNative = PlatformService.getInstance().isNativeApp();
+    if (isNative) {
+      return Array.from(new Set([
+        `${this.defaultBaseUrl}${cleanPath}`,
+        `https://robotfactory.k0j1.v2002.coreserver.jp${cleanPath}`,
+      ])).filter(Boolean);
+    }
     return Array.from(new Set([
       `${this.defaultBaseUrl}${cleanPath}`,
       `https://robotfactory.k0j1.v2002.coreserver.jp${cleanPath}`,
@@ -137,11 +145,7 @@ export class AuthApiService {
     });
 
     // 接続試行先のエンドポイントリスト（プロキシまたは直接接続）
-    const endpoints = Array.from(new Set([
-      `${this.defaultBaseUrl}/api/login.php`,
-      'https://robotfactory.k0j1.v2002.coreserver.jp/api/login.php',
-      '/api/login.php'
-    ])).filter(Boolean);
+    const endpoints = this.getAllEndpoints('/api/login.php');
 
     let lastError: Error | null = null;
 
@@ -205,11 +209,7 @@ export class AuthApiService {
       throw new Error('google_idが指定されていません。');
     }
 
-    const endpoints = Array.from(new Set([
-      `${this.defaultBaseUrl}/api/claim_bonus.php`,
-      'https://robotfactory.k0j1.v2002.coreserver.jp/api/claim_bonus.php',
-      '/api/claim_bonus.php'
-    ])).filter(Boolean);
+    const endpoints = this.getAllEndpoints('/api/claim_bonus.php');
 
     let lastError: Error | null = null;
 
@@ -260,11 +260,7 @@ export class AuthApiService {
       return { success: false, error: 'Invalid parameters' };
     }
 
-    const endpoints = Array.from(new Set([
-      `${this.defaultBaseUrl}/api/add_material.php`,
-      'https://robotfactory.k0j1.v2002.coreserver.jp/api/add_material.php',
-      '/api/add_material.php'
-    ])).filter(Boolean);
+    const endpoints = this.getAllEndpoints('/api/add_material.php');
 
     let lastError: Error | null = null;
 
@@ -316,11 +312,7 @@ export class AuthApiService {
       return { success: false, error: 'Invalid parameters' };
     }
 
-    const endpoints = Array.from(new Set([
-      `${this.defaultBaseUrl}/api/add_material.php`,
-      'https://robotfactory.k0j1.v2002.coreserver.jp/api/add_material.php',
-      '/api/add_material.php'
-    ])).filter(Boolean);
+    const endpoints = this.getAllEndpoints('/api/add_material.php');
 
     let lastError: Error | null = null;
 
@@ -431,11 +423,7 @@ export class AuthApiService {
     this.isSyncing = true;
     console.log(`[AuthApiService] user_id: ${userId} の全データを適切なテーブルへ保存中...`);
 
-    const endpoints = Array.from(new Set([
-      `${this.defaultBaseUrl}/api/save.php`,
-      'https://robotfactory.k0j1.v2002.coreserver.jp/api/save.php',
-      '/api/save.php'
-    ])).filter(Boolean);
+    const endpoints = this.getAllEndpoints('/api/save.php');
 
     let lastError: Error | null = null;
     let lastSyncError: DatabaseSyncError | null = null;
@@ -529,11 +517,7 @@ export class AuthApiService {
    */
   public async deleteUserParts(userId: string, partIds: string[]): Promise<void> {
     if (!userId || !partIds || partIds.length === 0) return;
-    const endpoints = Array.from(new Set([
-      `${this.defaultBaseUrl}/api/save.php`,
-      'https://robotfactory.k0j1.v2002.coreserver.jp/api/save.php',
-      '/api/save.php'
-    ])).filter(Boolean);
+    const endpoints = this.getAllEndpoints('/api/save.php');
 
     for (const endpoint of endpoints) {
       try {
@@ -557,11 +541,7 @@ export class AuthApiService {
    */
   public async deleteUserRobots(userId: string, robotIds: string[]): Promise<void> {
     if (!userId || !robotIds || robotIds.length === 0) return;
-    const endpoints = Array.from(new Set([
-      `${this.defaultBaseUrl}/api/save.php`,
-      'https://robotfactory.k0j1.v2002.coreserver.jp/api/save.php',
-      '/api/save.php'
-    ])).filter(Boolean);
+    const endpoints = this.getAllEndpoints('/api/save.php');
 
     for (const endpoint of endpoints) {
       try {
@@ -594,11 +574,7 @@ export class AuthApiService {
 
     console.log(`[AuthApiService] user_id: ${params.userId} の依頼納品単一トランザクションを実行中 (機体: ${params.robotId}, パーツ数: ${params.partIds.length})...`);
 
-    const endpoints = Array.from(new Set([
-      `${this.defaultBaseUrl}/api/save.php`,
-      'https://robotfactory.k0j1.v2002.coreserver.jp/api/save.php',
-      '/api/save.php'
-    ])).filter(Boolean);
+    const endpoints = this.getAllEndpoints('/api/save.php');
 
     let lastError: Error | null = null;
     let lastSyncError: DatabaseSyncError | null = null;
@@ -683,11 +659,7 @@ export class AuthApiService {
 
     console.log(`[AuthApiService] user_id: ${userId} のセーブデータを読み込み中...`);
 
-    const endpoints = Array.from(new Set([
-      `${this.defaultBaseUrl}/api/load.php?userId=${encodeURIComponent(userId)}`,
-      `https://robotfactory.k0j1.v2002.coreserver.jp/api/load.php?userId=${encodeURIComponent(userId)}`,
-      `/api/load.php?userId=${encodeURIComponent(userId)}`
-    ])).filter(Boolean);
+    const endpoints = this.getAllEndpoints(`/api/load.php?userId=${encodeURIComponent(userId)}`);
 
     for (const endpoint of endpoints) {
       try {
@@ -853,11 +825,7 @@ export class AuthApiService {
       return { success: false, error: 'userId is required' };
     }
 
-    const endpoints = Array.from(new Set([
-      `${this.defaultBaseUrl}/api/get_materials.php?userId=${encodeURIComponent(userId)}`,
-      `https://robotfactory.k0j1.v2002.coreserver.jp/api/get_materials.php?userId=${encodeURIComponent(userId)}`,
-      `/api/get_materials.php?userId=${encodeURIComponent(userId)}`
-    ])).filter(Boolean);
+    const endpoints = this.getAllEndpoints(`/api/get_materials.php?userId=${encodeURIComponent(userId)}`);
 
     let lastError: Error | null = null;
 
@@ -903,11 +871,7 @@ export class AuthApiService {
    */
   public async getActiveCounts(userId?: string): Promise<AuthApiResponse<ActiveCountsData>> {
     const queryParam = userId ? `?user_id=${encodeURIComponent(userId)}` : '';
-    const endpoints = Array.from(new Set([
-      `${this.defaultBaseUrl}/api/active_counts.php${queryParam}`,
-      `https://robotfactory.k0j1.v2002.coreserver.jp/api/active_counts.php${queryParam}`,
-      `/api/active_counts.php${queryParam}`
-    ])).filter(Boolean);
+    const endpoints = this.getAllEndpoints(`/api/active_counts.php${queryParam}`);
 
     let lastError: Error | null = null;
 

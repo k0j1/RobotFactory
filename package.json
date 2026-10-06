@@ -11,7 +11,7 @@
     "lint": "tsc --noEmit",
     "cap:assets": "node scripts/generate-capacitor-assets.mjs && capacitor-assets generate --android --iconBackgroundColor '#1c1917' --iconBackgroundColorDark '#0c0a09' --splashBackgroundColor '#1c1917' --splashBackgroundColorDark '#0c0a09'",
     "cap:add:android": "cap add android && node scripts/configure-android-deeplink.mjs",
-    "cap:sync": "vite build && cap sync android && node scripts/configure-android-deeplink.mjs",
+    "cap:sync": "vite build && rm -rf dist/api && cap sync android && node scripts/configure-android-deeplink.mjs",
     "cap:open:android": "cap open android"
   },
   "dependencies": {

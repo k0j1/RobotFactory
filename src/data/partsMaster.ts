@@ -1,4 +1,5 @@
 import { PartType } from '../core/models';
+import { PlatformService } from '../services/PlatformService';
 
 export interface PartMasterData {
   id: string;
@@ -95,7 +96,10 @@ let masterCache: PartMasterData[] = DEFAULT_PARTS_MASTER;
  */
 export async function fetchPartsMaster(): Promise<PartMasterData[]> {
   try {
-    const response = await fetch('/api/parts-master.php');
+    const apiUrl = PlatformService.getInstance().isNativeApp()
+      ? 'https://robotfactory.k0j1.v2002.coreserver.jp/api/parts-master.php'
+      : '/api/parts-master.php';
+    const response = await fetch(apiUrl);
     if (response.ok) {
       const data = await response.json();
       if (Array.isArray(data) && data.length > 0) {
