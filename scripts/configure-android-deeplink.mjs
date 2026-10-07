@@ -1,8 +1,9 @@
 /**
  * @file scripts/configure-android-deeplink.mjs
  * @description Capacitor Android プロジェクトに対して以下の設定を自動適用するスクリプト（冪等）:
- * 1. AndroidManifest.xml に Google OAuth 用カスタムURLスキーム (jp.coreserver.robotfactory.app://oauth-callback) を登録
- * 2. 毎回異なる署名鍵でビルドされて「上書きインストール（更新）に失敗する」問題を防ぐため、
+ * 1. AndroidManifest.xml に Google OAuth 用カスタムURLスキーム (com.takaharabooks.robotfactory://oauth-callback) を登録
+ * 2. 毎回異なる署名鍵でビルドされて「上書きインストール（更新）に失敗する」問題を防ぎ、
+ *    かつアプリ公開用の署名鍵（SHA-1 / SHA-256 / 公開鍵）を固定するため、
  *    固定の署名キーストア (ponkotsu-consistent.keystore) と build.gradle の versionCode / versionName 自動更新を設定
  */
 
@@ -27,7 +28,8 @@ if (!fs.existsSync(manifestPath)) {
 // 1. AndroidManifest.xml にカスタムURLスキーム (Deep Link) を追加
 // ============================================================================
 let content = fs.readFileSync(manifestPath, 'utf-8');
-const customScheme = 'jp.coreserver.robotfactory.app';
+const customScheme = 'com.takaharabooks.robotfactory';
+const legacyScheme = 'jp.coreserver.robotfactory.app';
 
 if (!content.includes(`android:scheme="${customScheme}"`)) {
   const intentFilterXml = `
@@ -36,6 +38,7 @@ if (!content.includes(`android:scheme="${customScheme}"`)) {
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="${customScheme}" android:host="oauth-callback" />
+                <data android:scheme="${legacyScheme}" android:host="oauth-callback" />
             </intent-filter>
         </activity>`;
 
@@ -49,14 +52,14 @@ if (!content.includes(`android:scheme="${customScheme}"`)) {
 }
 
 // ============================================================================
-// 2. 固定キーストアと versionCode / versionName の設定（上書きアップデート対応）
+// 2. 固定キーストアと versionCode / versionName の設定（上書きアップデート＆リリース署名対応）
 // ============================================================================
 if (fs.existsSync(buildGradlePath)) {
   let gradleContent = fs.readFileSync(buildGradlePath, 'utf-8');
 
-  // TitleScreen.tsx から現在のアプリバージョン (例: v0.1.182 -> 0.1.182, patch=182) を取得
-  let appVersionName = '0.1.182';
-  let basePatch = 182;
+  // TitleScreen.tsx から現在のアプリバージョン (例: v0.1.187 -> 0.1.187, patch=187) を取得
+  let appVersionName = '0.1.187';
+  let basePatch = 187;
   try {
     const titlePath = path.join(rootDir, 'src', 'screens', 'TitleScreen.tsx');
     if (fs.existsSync(titlePath)) {
@@ -64,7 +67,7 @@ if (fs.existsSync(buildGradlePath)) {
       const m = titleSrc.match(/v(\d+)\.(\d+)\.(\d+)/);
       if (m) {
         appVersionName = `${m[1]}.${m[2]}.${m[3]}`;
-        basePatch = parseInt(m[3], 10) || 182;
+        basePatch = parseInt(m[3], 10) || 187;
       }
     }
   } catch {}
@@ -76,16 +79,19 @@ if (fs.existsSync(buildGradlePath)) {
   gradleContent = gradleContent.replace(/versionCode\s+\d+/, `versionCode ${computedVersionCode}`);
   gradleContent = gradleContent.replace(/versionName\s+"[^"]*"/, `versionName "${appVersionName}"`);
 
-  // 固定の署名用キーストア (ponkotsu-consistent.keystore) を参照設定
+  // GitHub Secrets（環境変数）からキーストアと認証情報を読み込んで署名設定（未設定時はローカル開発用フォールバック）
   const fixedKeystorePath = path.join(rootDir, 'assets', 'ponkotsu-consistent.keystore');
   const targetKeystoreInApp = path.join(androidAppDir, 'ponkotsu-consistent.keystore');
+  const storePassword = process.env.ANDROID_KEYSTORE_PASSWORD || 'android';
+  const keyAlias = process.env.ANDROID_KEY_ALIAS || 'androiddebugkey';
+  const keyPassword = process.env.ANDROID_KEY_PASSWORD || storePassword;
 
   if (fs.existsSync(fixedKeystorePath)) {
     fs.copyFileSync(fixedKeystorePath, targetKeystoreInApp);
   } else if (!fs.existsSync(targetKeystoreInApp)) {
     try {
       execSync(
-        `keytool -genkeypair -v -keystore "${targetKeystoreInApp}" -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"`,
+        `keytool -genkeypair -v -keystore "${targetKeystoreInApp}" -storepass "${storePassword}" -alias "${keyAlias}" -keypass "${keyPassword}" -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Ponkotsu Robot Factory,OU=Mobile,O=TakaharaBooks,L=Tokyo,ST=Tokyo,C=JP"`,
         { stdio: 'ignore' }
       );
     } catch (e) {
@@ -98,17 +104,27 @@ if (fs.existsSync(buildGradlePath)) {
     signingConfigs {
         debug {
             storeFile file('ponkotsu-consistent.keystore')
-            storePassword 'android'
-            keyAlias 'androiddebugkey'
-            keyPassword 'android'
+            storePassword System.getenv('ANDROID_KEYSTORE_PASSWORD') ?: '${storePassword}'
+            keyAlias System.getenv('ANDROID_KEY_ALIAS') ?: '${keyAlias}'
+            keyPassword System.getenv('ANDROID_KEY_PASSWORD') ?: '${keyPassword}'
+        }
+        release {
+            storeFile file('ponkotsu-consistent.keystore')
+            storePassword System.getenv('ANDROID_KEYSTORE_PASSWORD') ?: '${storePassword}'
+            keyAlias System.getenv('ANDROID_KEY_ALIAS') ?: '${keyAlias}'
+            keyPassword System.getenv('ANDROID_KEY_PASSWORD') ?: '${keyPassword}'
         }
     }
     defaultConfig {`;
 
     gradleContent = gradleContent.replace('defaultConfig {', signingConfigBlock);
+    gradleContent = gradleContent.replace(
+      /buildTypes\s*\{\s*release\s*\{/,
+      `buildTypes {\n        release {\n            signingConfig signingConfigs.release`
+    );
     fs.writeFileSync(buildGradlePath, gradleContent, 'utf-8');
     console.log(
-      `[Android Config] Configured consistent keystore & versionCode=${computedVersionCode} (v${appVersionName}) in build.gradle.`
+      `[Android Config] Configured GitHub Secrets keystore (debug & release) & versionCode=${computedVersionCode} (v${appVersionName}) in build.gradle.`
     );
   } else {
     fs.writeFileSync(buildGradlePath, gradleContent, 'utf-8');

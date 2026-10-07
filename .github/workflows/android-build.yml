@@ -25,26 +25,27 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      # 毎回異なる署名鍵でAPKが生成されて上書き更新（アップデート）に失敗するのを防ぐため、
-      # 固定の署名キーストア（assets/ponkotsu-consistent.keystore）をGitHub Actionsキャッシュで永続化・共有します。
-      - name: Cache Persistent Android Signing Keystore
-        uses: actions/cache@v4
-        with:
-          path: assets/ponkotsu-consistent.keystore
-          key: ponkotsu-android-signing-keystore-v1
-
-      - name: Ensure Persistent Keystore Exists
+      - name: Restore Signing Keystore from GitHub Secrets
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          if [ ! -f "assets/ponkotsu-consistent.keystore" ]; then
+          if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "Restoring Android Signing Keystore from GitHub Secrets..."
+            echo "$ANDROID_KEYSTORE_BASE64" | tr -d ' \n\r' | base64 -d > assets/ponkotsu-consistent.keystore
+          else
+            echo "Notice: ANDROID_KEYSTORE_BASE64 secret is not set. Generating fallback keystore..."
             keytool -genkeypair -v \
               -keystore assets/ponkotsu-consistent.keystore \
-              -storepass android \
-              -alias androiddebugkey \
-              -keypass android \
+              -storepass "${ANDROID_KEYSTORE_PASSWORD:-android}" \
+              -alias "${ANDROID_KEY_ALIAS:-androiddebugkey}" \
+              -keypass "${ANDROID_KEY_PASSWORD:-android}" \
               -keyalg RSA \
               -keysize 2048 \
               -validity 10000 \
-              -dname "CN=Ponkotsu Robot Factory,O=RobotFactory,C=JP"
+              -dname "CN=Ponkotsu Robot Factory,OU=Mobile,O=TakaharaBooks,L=Tokyo,ST=Tokyo,C=JP"
           fi
 
       - name: Install Dependencies
@@ -65,6 +66,10 @@ jobs:
           npx cap sync android
 
       - name: Generate Android Native Icons & Splash Screens
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           node scripts/generate-capacitor-assets.mjs
           npx capacitor-assets generate --android --iconBackgroundColor '#1c1917' --iconBackgroundColorDark '#0c0a09' --splashBackgroundColor '#1c1917' --splashBackgroundColorDark '#0c0a09'
@@ -74,13 +79,32 @@ jobs:
         working-directory: ./android
         run: chmod +x gradlew
 
-      - name: Build Debug APK
+      - name: Build Debug & Release APK / AAB
         working-directory: ./android
-        run: ./gradlew assembleDebug
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: ./gradlew assembleDebug assembleRelease bundleRelease
+
+      - name: Clean Up Temporary Keystore Files
+        if: always()
+        run: |
+          rm -f assets/ponkotsu-consistent.keystore
+          rm -f android/app/ponkotsu-consistent.keystore
 
       - name: Upload Android Debug APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: ponkotsu-robot-factory-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
+
+      - name: Upload Android Release APK & AAB Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ponkotsu-robot-factory-release-bundle
+          path: |
+            android/app/build/outputs/apk/release/*.apk
+            android/app/build/outputs/bundle/release/*.aab
           retention-days: 30

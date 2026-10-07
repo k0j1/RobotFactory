@@ -6,7 +6,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
  * Web / PWA ビルド成果物 (dist/) をそのまま Android ネイティブアプリへバンドルします。
  */
 const config: CapacitorConfig = {
-  appId: 'jp.coreserver.robotfactory.app',
+  appId: 'com.takaharabooks.robotfactory',
   appName: 'ポンコツロボット工房',
   webDir: 'dist',
   server: {

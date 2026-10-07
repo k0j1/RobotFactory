@@ -25,7 +25,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
         title="ポンコツロボット工房 公式仕様書"
         badge={
           <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300 font-mono font-bold px-1.5 py-0.2 rounded">
-            v0.1.186 (DB v0.24)
+            v0.1.189 (DB v0.24)
           </span>
         }
         rightElement={
@@ -666,7 +666,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                 <div className="bg-white p-2.5 rounded-lg border border-stone-200">
                   <strong className="text-stone-900 block font-bold mb-1">📱 マルチプラットフォーム（PWA ＆ Capacitor Android）</strong>
                   <p className="text-stone-600">
-                    単一コードベースでWebブラウザ、PWA（ホーム画面インストール＆オフラインキャッシュ対応）、およびCapacitorによるAndroidネイティブアプリ（APK自動ビルド対応）のすべてに対応。<code>PlatformService</code>により実行環境を自動判別し、Web/PWAとAndroidアプリ間で同一のクラウドセーブデータをシームレスに共有します。また、<code>assets/</code>配下の原画と<code>@capacitor/assets</code>・<code>@capacitor/splash-screen</code>により、Android Adaptive Icon（前景・背景分離）および起動時スプラッシュスクリーンが自動生成・制御されます。
+                    単一コードベースでWebブラウザ、PWA（ホーム画面インストール＆オフラインキャッシュ対応）、およびCapacitorによるAndroidネイティブアプリ（パッケージ名: <code>com.takaharabooks.robotfactory</code> / APK・AAB自動ビルド＆GitHub Secretsによる安全なキーストア署名対応）のすべてに対応。<code>PlatformService</code>により実行環境を自動判別し、Web/PWAとAndroidアプリ間で同一のクラウドセーブデータをシームレスに共有します。また、<code>assets/</code>配下の原画と<code>@capacitor/assets</code>・<code>@capacitor/splash-screen</code>により、Android Adaptive Icon（前景・背景分離）および起動時スプラッシュスクリーンが自動生成・制御されます。
                   </p>
                 </div>
               </div>

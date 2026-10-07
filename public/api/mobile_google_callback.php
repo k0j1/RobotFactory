@@ -64,7 +64,7 @@ header("Content-Type: text/html; charset=UTF-8");
   <div class="card">
     <h1>Google認証が完了しました</h1>
     <p id="msg">アプリ「ポンコツロボット工房」へ戻っています...</p>
-    <a id="returnBtn" class="btn" href="jp.coreserver.robotfactory.app://oauth-callback">アプリに戻る</a>
+    <a id="returnBtn" class="btn" href="com.takaharabooks.robotfactory://oauth-callback">アプリに戻る</a>
   </div>
   <script>
     (function() {
@@ -76,7 +76,7 @@ header("Content-Type: text/html; charset=UTF-8");
       } else if (search.length > 1) {
         query = search;
       }
-      var targetSchemeUrl = 'jp.coreserver.robotfactory.app://oauth-callback' + query;
+      var targetSchemeUrl = 'com.takaharabooks.robotfactory://oauth-callback' + query;
       var btn = document.getElementById('returnBtn');
       if (btn) {
         btn.setAttribute('href', targetSchemeUrl);

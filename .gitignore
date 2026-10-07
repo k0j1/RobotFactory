@@ -11,3 +11,10 @@ coverage/
 # Google AI Studio Admin Tools (管理画面用ソース・GitHub非公開)
 src/admin/
 public/api/admin/
+
+# Android Signing Keystore & Private Keys (GitHub非公開・GitHub Secretsで管理)
+*.keystore
+*.jks
+*.p12
+*.key
+android/
