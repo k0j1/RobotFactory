@@ -27,6 +27,11 @@ export default function App() {
   const { user } = useAuth();
   const { state, engine } = useGameState(user?.google_id);
   const [view, setView] = useState('title');
+  const handleNavigate = React.useCallback((nextView: string) => {
+    React.startTransition(() => {
+      setView(nextView);
+    });
+  }, []);
 
   // アプリ起動時に背景画像をプリロード & parts-masterからmaster_parts基準値をフェッチ
   useEffect(() => {
@@ -70,19 +75,19 @@ export default function App() {
       <SyncErrorBanner engine={engine} />
       <VersionGuard />
       {view === 'title' ? (
-        <TitleScreen onStart={() => setView('dashboard')} engine={engine} />
+        <TitleScreen onStart={() => handleNavigate('dashboard')} engine={engine} />
       ) : (
-        <Layout activeView={view} onNavigate={setView} interiorBg={interiorBg} state={state}>
-          {view === 'dashboard' && <Dashboard state={state} engine={engine} onNavigate={setView} />}
-          {view === 'quest' && <QuestScreen state={state} engine={engine} onNavigate={setView} />}
+        <Layout activeView={view} onNavigate={handleNavigate} interiorBg={interiorBg} state={state}>
+          {view === 'dashboard' && <Dashboard state={state} engine={engine} onNavigate={handleNavigate} />}
+          {view === 'quest' && <QuestScreen state={state} engine={engine} onNavigate={handleNavigate} />}
           {view === 'craft' && <CraftScreen state={state} engine={engine} />}
-          {view === 'requests' && <RequestScreen state={state} engine={engine} onNavigate={setView} />}
+          {view === 'requests' && <RequestScreen state={state} engine={engine} onNavigate={handleNavigate} />}
           {view === 'storage' && <StorageScreen state={state} engine={engine} />}
           {view === 'minigame' && <MinigameScreen state={state} engine={engine} />}
-          {view === 'shop' && <ShopScreen state={state} engine={engine} onBack={() => setView('dashboard')} />}
-          {view === 'encyclopedia' && <EncyclopediaScreen state={state} onBack={() => setView('dashboard')} />}
-          {view === 'litepaper' && <LitepaperScreen onBack={() => setView('dashboard')} />}
-          {view === 'delivery_history' && <DeliveryHistoryScreen state={state} onBack={() => setView('requests')} />}
+          {view === 'shop' && <ShopScreen state={state} engine={engine} onBack={() => handleNavigate('dashboard')} />}
+          {view === 'encyclopedia' && <EncyclopediaScreen state={state} onBack={() => handleNavigate('dashboard')} />}
+          {view === 'litepaper' && <LitepaperScreen onBack={() => handleNavigate('dashboard')} />}
+          {view === 'delivery_history' && <DeliveryHistoryScreen state={state} onBack={() => handleNavigate('requests')} />}
           <RewardAdModal />
         </Layout>
       )}

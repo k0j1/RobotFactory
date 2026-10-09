@@ -92,7 +92,7 @@
       <script>(window.adsbyimobile=window.adsbyimobile||[]).push({pid:15130,mid:596860,asid:1946562,type:"banner",display:"inline",elementid:"im-2f882e2740bc445482d3e1e6b87415db"})</script>
     </div>
 
-    <!-- 視聴完了後に元の画面やゲームに戻るためのボタン -->
+    <!-- 視聴完了後に元の画面やゲームに戻るためのボタン（モーダル内表示時は非表示） -->
     <!-- 視聴前はオファーウォールのオーバーレイで隠れるため押せません -->
     <a href="javascript:handleBackClick()" class="back-btn" id="backBtn">元の画面に戻る</a>
   </div>
@@ -102,6 +102,15 @@
     // 視聴完了時（ページ読み込み時）にローカルストレージやサーバーへ報酬付与フラグを記録する処理を記述
     const urlParams = new URLSearchParams(window.location.search);
     const rewardType = urlParams.get('type') || 'shorten_30m';
+    const isInAppModal = urlParams.get('inapp') === '1' || (window.parent && window.parent !== window);
+
+    // モーダル内で表示される場合は「元の画面に戻る」ボタンをDOMから削除
+    if (isInAppModal) {
+      const backBtnEl = document.getElementById('backBtn');
+      if (backBtnEl) {
+        backBtnEl.remove();
+      }
+    }
 
     function notifyRewardGranted(isClosing) {
       const payload = {

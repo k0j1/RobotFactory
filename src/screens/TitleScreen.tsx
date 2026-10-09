@@ -224,8 +224,10 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onStart, engine }) => 
               <p className="text-stone-300 font-bold pr-2">おかえりなさい、{user.name}さん！</p>
             </div>
             <Button size="lg" onClick={async () => {
-              if (user && engine) {
+              if (user && engine && !engine.isCloudDataLoaded()) {
                 try {
+                  setLoading(true);
+                  setStatusMessage('工房データを読み込み中...');
                   const targetId = user.google_id || String((user as any).id);
                   const res = await AuthApiService.getInstance().loadUserData(targetId);
                   const bonusVal = res.received_initial_bonus ?? (res.user?.received_initial_bonus !== undefined ? Number(res.user.received_initial_bonus) : 0);
@@ -237,6 +239,8 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onStart, engine }) => 
                   await engine.switchToGoogleUser(targetId, res.data);
                 } catch (e) {
                   console.warn('[TitleScreen] onStart loadUserData error:', e);
+                } finally {
+                  setLoading(false);
                 }
               }
               onStart();
@@ -337,7 +341,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onStart, engine }) => 
           </div>
         )}
 
-        <p className="mt-8 text-stone-400">v0.1.191</p>
+        <p className="mt-8 text-stone-400">v0.1.192</p>
       </div>
       
       {/* Decorative background elements */}

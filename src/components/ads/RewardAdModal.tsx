@@ -3,59 +3,25 @@ import { adRewardService, AdRewardRequest } from '../../services/AdRewardService
 import { Card, Button, Badge } from '../ui/core';
 import * as Gi from 'react-icons/gi';
 
+const REWARD_DISPLAY_SECONDS = 10;
+
 export const RewardAdModal: React.FC = () => {
   const [request, setRequest] = useState<AdRewardRequest | null>(null);
-  const [secondsLeft, setSecondsLeft] = useState<number>(5);
+  const [secondsLeft, setSecondsLeft] = useState<number>(REWARD_DISPLAY_SECONDS);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [isCompleted, setIsCompleted] = useState<boolean>(false);
-  const [confirmingCancel, setConfirmingCancel] = useState<boolean>(false);
 
   useEffect(() => {
     const unsubscribe = adRewardService.subscribe((req) => {
       setRequest(req);
       if (req) {
-        setSecondsLeft(5);
+        setSecondsLeft(REWARD_DISPLAY_SECONDS);
         setIsPlaying(true);
         setIsCompleted(false);
-        setConfirmingCancel(false);
       }
     });
     return () => unsubscribe();
   }, []);
-
-  useEffect(() => {
-    if (!request) return;
-
-    // アプリ内iframeの reward-page.html からの完了通知（postMessage / localStorage）を受信
-    const handleMessage = (event: MessageEvent) => {
-      if (!event.data || typeof event.data !== 'object') return;
-      if (event.data.type === 'REWARD_AD_COMPLETED' && event.data.closeModal) {
-        request.onSuccess();
-      } else if (event.data.type === 'ROBOTFACTORY_REWARD_GRANTED') {
-        if (event.data.closeModal) {
-          request.onSuccess();
-        }
-      }
-    };
-
-    const handleStorage = (event: StorageEvent) => {
-      if (event.key === 'robotfactory_reward_granted' && event.newValue) {
-        try {
-          const parsed = JSON.parse(event.newValue);
-          if (parsed && parsed.closeModal) {
-            request.onSuccess();
-          }
-        } catch {}
-      }
-    };
-
-    window.addEventListener('message', handleMessage);
-    window.addEventListener('storage', handleStorage);
-    return () => {
-      window.removeEventListener('message', handleMessage);
-      window.removeEventListener('storage', handleStorage);
-    };
-  }, [request]);
 
   useEffect(() => {
     if (!request || !isPlaying || isCompleted) return;
@@ -75,33 +41,32 @@ export const RewardAdModal: React.FC = () => {
 
   if (!request) return null;
 
-  const handleClaimReward = () => {
+  const handleCloseAndClaim = () => {
+    if (!isCompleted) return;
     request.onSuccess();
   };
 
-  const handleCancelClick = () => {
-    if (isCompleted) {
-      request.onSuccess();
-      return;
-    }
-    if (!confirmingCancel) {
-      setConfirmingCancel(true);
-      return;
-    }
-    request.onCancel?.();
-  };
-
   const progressWidthClass =
-    secondsLeft >= 5
+    secondsLeft >= 10
       ? 'w-0'
-      : secondsLeft === 4
+      : secondsLeft === 9
+      ? 'w-[10%]'
+      : secondsLeft === 8
       ? 'w-1/5'
-      : secondsLeft === 3
+      : secondsLeft === 7
+      ? 'w-[30%]'
+      : secondsLeft === 6
       ? 'w-2/5'
-      : secondsLeft === 2
+      : secondsLeft === 5
+      ? 'w-1/2'
+      : secondsLeft === 4
       ? 'w-3/5'
-      : secondsLeft === 1
+      : secondsLeft === 3
+      ? 'w-[70%]'
+      : secondsLeft === 2
       ? 'w-4/5'
+      : secondsLeft === 1
+      ? 'w-[90%]'
       : 'w-full';
 
   return (
@@ -119,7 +84,7 @@ export const RewardAdModal: React.FC = () => {
           <div className="flex items-center gap-2 shrink-0">
             {isCompleted ? (
               <Badge className="bg-emerald-600 text-white font-bold text-[10px] px-2 py-0.5">
-                <Gi.GiSparkles className="inline mr-1" /> 視聴完了
+                <Gi.GiSparkles className="inline mr-1" /> 10秒経過・受取可能
               </Badge>
             ) : (
               <span className="bg-black/80 text-amber-400 border border-amber-500/50 font-mono text-[11px] px-2 py-0.5 rounded-full flex items-center gap-1">
@@ -129,36 +94,18 @@ export const RewardAdModal: React.FC = () => {
             )}
             <button
               type="button"
-              onClick={handleCancelClick}
-              className="text-stone-300 hover:text-white text-xs px-2.5 py-1 rounded bg-stone-700/70 hover:bg-stone-700 transition-colors cursor-pointer"
+              disabled={!isCompleted}
+              onClick={handleCloseAndClaim}
+              className={`text-xs px-2.5 py-1 rounded font-bold transition-colors ${
+                isCompleted
+                  ? 'bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer shadow-xs'
+                  : 'bg-stone-800 text-stone-500 border border-stone-700 cursor-not-allowed opacity-60'
+              }`}
             >
-              {isCompleted ? '✕ 閉じる' : confirmingCancel ? '本当に中断する' : '✕ 中断'}
+              {isCompleted ? '✕ 閉じる' : `閉じる (${secondsLeft}秒)`}
             </button>
           </div>
         </div>
-
-        {/* 中断確認バー */}
-        {confirmingCancel && !isCompleted && (
-          <div className="bg-rose-950/90 border-b border-rose-700 px-3 py-2 flex items-center justify-between gap-2 text-xs text-rose-200 shrink-0">
-            <span>途中で閉じると30分短縮ボーナスは適用されません。</span>
-            <div className="flex items-center gap-1.5 shrink-0">
-              <button
-                type="button"
-                onClick={() => setConfirmingCancel(false)}
-                className="px-2 py-0.5 rounded bg-stone-800 text-stone-200 hover:bg-stone-700 text-[11px] cursor-pointer"
-              >
-                視聴を続ける
-              </button>
-              <button
-                type="button"
-                onClick={() => request.onCancel?.()}
-                className="px-2 py-0.5 rounded bg-rose-700 text-white hover:bg-rose-600 font-bold text-[11px] cursor-pointer"
-              >
-                終了する
-              </button>
-            </div>
-          </div>
-        )}
 
         {/* プログレスバー */}
         <div className="h-1.5 bg-stone-800 w-full shrink-0 overflow-hidden">
@@ -185,24 +132,32 @@ export const RewardAdModal: React.FC = () => {
               報酬: <strong className="text-amber-300">{request.rewardDescription}</strong>
             </span>
             <span className="text-[11px] text-stone-400">
-              ※ページ内の「元の画面に戻る」でも適用されます
+              {isCompleted ? '閉じるボタンで30分短縮が適用されます' : '10秒間表示後に閉じるボタンが押せます'}
             </span>
           </div>
 
-          {isCompleted ? (
-            <Button
-              variant="primary"
-              size="lg"
-              onClick={handleClaimReward}
-              className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-lg flex items-center justify-center gap-2"
-            >
-              <Gi.GiCheckMark /> 30分短縮を適用して元の画面に戻る
-            </Button>
-          ) : (
-            <div className="text-center py-1.5 text-xs text-stone-400 bg-stone-800/60 rounded border border-stone-700/60">
-              広告画面を表示中です（あと {secondsLeft} 秒で完了ボタンが有効になります）
-            </div>
-          )}
+          <Button
+            variant="primary"
+            size="lg"
+            disabled={!isCompleted}
+            onClick={handleCloseAndClaim}
+            className={`w-full py-2.5 font-bold text-sm shadow-lg flex items-center justify-center gap-2 ${
+              isCompleted
+                ? 'bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer'
+                : 'bg-stone-800 text-stone-500 border border-stone-700 cursor-not-allowed opacity-60'
+            }`}
+          >
+            {isCompleted ? (
+              <>
+                <Gi.GiCheckMark /> 30分短縮を適用して閉じる
+              </>
+            ) : (
+              <>
+                <Gi.GiHourglass className="animate-spin text-amber-400" />
+                広告を表示中...（あと {secondsLeft} 秒で閉じられます）
+              </>
+            )}
+          </Button>
         </div>
       </Card>
     </div>

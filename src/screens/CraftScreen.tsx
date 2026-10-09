@@ -127,15 +127,11 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
     });
   };
 
-  // Animation & Timer tick
+  // Animation & Timer tick (1秒間隔に最適化して画面全体の再レンダリング負荷を軽減)
   useEffect(() => {
     const interval = setInterval(() => {
       setTick(Date.now());
-    }, 100);
-    // 製造画面表示時にuser_materialテーブルから最新素材情報をロード
-    engine.refreshMaterialsFromDatabase().catch((err) => {
-      console.warn('[CraftScreen] 素材テーブルロードエラー:', err);
-    });
+    }, 1000);
     return () => clearInterval(interval);
   }, []);
 
@@ -145,7 +141,7 @@ export const CraftScreen: React.FC<{ state: GameState, engine: GameEngine }> = (
         console.warn('[CraftScreen] パーツ製造タブ切替時ロードエラー:', err);
       });
     }
-  }, [tab]);
+  }, [tab, engine]);
 
   const triggerConfetti = () => {
     confetti({

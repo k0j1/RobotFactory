@@ -237,34 +237,38 @@ export const EncyclopediaScreen: React.FC<{ state: GameState, onBack: () => void
   };
 
   React.useEffect(() => {
-    fetch('/api/parts-master.php')
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.success && Array.isArray(data.parts) && data.parts.length > 0) {
-          const fetchedCatalog: CatalogPartItem[] = data.parts.map((p: any) => ({
+    let isMounted = true;
+    import('../data/partsMaster').then(({ fetchPartsMaster }) => {
+      fetchPartsMaster()
+        .then(parts => {
+          if (!isMounted || !Array.isArray(parts) || parts.length === 0) return;
+          const fetchedCatalog: CatalogPartItem[] = parts.map((p: any) => ({
             id: p.id,
-            type: p.part_type,
+            type: p.type,
             rarity: Number(p.rarity),
-            visualIndex: Number(p.visual_index ?? 0),
+            visualIndex: Number(p.visualIndex ?? 0),
             name: p.name,
             isNew: p.rarity >= 2
           }));
           const statsMap: Record<string, any> = {};
-          data.parts.forEach((p: any) => {
+          parts.forEach((p: any) => {
             statsMap[p.id] = {
-              hp: Number(p.base_hp || 0),
-              power: Number(p.base_power || 0),
-              defense: Number(p.base_defense || 0),
-              agility: Number(p.base_agility || 0),
-              dexterity: Number(p.base_dexterity || 0),
-              intelligence: Number(p.base_int || 0)
+              hp: Number(p.stats?.hp || 0),
+              power: Number(p.stats?.power || 0),
+              defense: Number(p.stats?.defense || 0),
+              agility: Number(p.stats?.agility || 0),
+              dexterity: Number(p.stats?.dexterity || 0),
+              intelligence: Number(p.stats?.intelligence || 0)
             };
           });
           setCatalogParts(fetchedCatalog);
           setDbPartStats(statsMap);
-        }
-      })
-      .catch(err => console.error("Failed to load master_parts:", err));
+        })
+        .catch(err => console.error("Failed to load master_parts:", err));
+    });
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // GSAP モーションスタジオのモーダル状態

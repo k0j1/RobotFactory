@@ -125,34 +125,41 @@ export class GameEngine {
     // ロード完了フラグを立てて自動保存を解禁
     this.isCloudLoaded = true;
 
-    // user_materialテーブルから最新素材情報をロードして確実にマージ
-    try {
-      const matRes = await AuthApiService.getInstance().getMaterials(userId);
-      if (matRes && matRes.success && matRes.data) {
-        if (!this.state.materials) {
-          this.state.materials = {};
+    // load.php で既に user_material が統合されて返却されている場合は追加通信を省略し、空の場合のみフォールバック取得
+    if (!this.state.materials || Object.keys(this.state.materials).length === 0) {
+      try {
+        const matRes = await AuthApiService.getInstance().getMaterials(userId);
+        if (matRes && matRes.success && matRes.data) {
+          this.state.materials = { ...(this.state.materials || {}), ...matRes.data };
         }
-        this.state.materials = { ...this.state.materials, ...matRes.data };
+      } catch (e) {
+        console.warn('[GameEngine] user_material読み込み警告:', e);
       }
-    } catch (e) {
-      console.warn('[GameEngine] user_material読み込み警告:', e);
     }
 
-    // UIへ反映（ローカルストレージへは一切保存しない）
-    this.onStateChange(JSON.parse(JSON.stringify(this.state)));
+    // UIへ即時反映（ローカルストレージへは一切保存しない）
+    this.onStateChange({ ...this.state });
+  }
 
-    // 既存のクラウドセーブデータがあった場合のみ、同期状態の微調整を保存
-    // セーブデータが存在しない（または取得失敗）の場合は、初期空データでDBの既存レコードをゼロ上書きするのを防ぐため即時保存は行わない
-    if (hasExistingCloudData) {
-      await this.syncToDatabaseNow();
-    }
+  /**
+   * クラウドデータの初回読み込みが完了しているかを返す
+   */
+  public isCloudDataLoaded(): boolean {
+    return this.isCloudLoaded;
   }
 
   /**
    * user_materialテーブルから最新の素材情報を再読み込みしてステートおよびUIに反映
    */
-  public async refreshMaterialsFromDatabase(): Promise<Record<string, number> | null> {
+  private lastMaterialRefreshAt: number = 0;
+  public async refreshMaterialsFromDatabase(force: boolean = false): Promise<Record<string, number> | null> {
     if (!this.userId) return null;
+    const now = Date.now();
+    // 画面遷移ごとの過剰な通信によるレンダリング遅延を防ぐため、10秒以内の再取得はスキップ
+    if (!force && now - this.lastMaterialRefreshAt < 10000 && this.state.materials && Object.keys(this.state.materials).length > 0) {
+      return this.state.materials;
+    }
+    this.lastMaterialRefreshAt = now;
     try {
       const apiService = AuthApiService.getInstance();
       const res = await apiService.getMaterials(this.userId);
@@ -161,7 +168,7 @@ export class GameEngine {
           this.state.materials = {};
         }
         this.state.materials = { ...this.state.materials, ...res.data };
-        this.onStateChange(JSON.parse(JSON.stringify(this.state)));
+        this.onStateChange({ ...this.state });
         return res.data;
       }
     } catch (err) {
@@ -203,25 +210,46 @@ export class GameEngine {
 
   /**
    * active_expeditions, active_robot_assemblies, active_requests テーブルから他のユーザーのアクティブ人数を取得
+   * タブ切り替え時の遅延を防止するため、メモリキャッシュ（10秒TTL）と進行中リクエストの統合を行う
    */
-  public async getActiveCounts() {
-    try {
-      const apiService = AuthApiService.getInstance();
-      const res = await apiService.getActiveCounts(this.userId || undefined);
-      if (res && res.success && res.data) {
-        return res.data;
-      }
-    } catch (err) {
-      console.warn('[GameEngine] getActiveCounts error:', err);
+  private cachedActiveCounts: import('../services/AuthApiService').ActiveCountsData | null = null;
+  private lastActiveCountsFetchedAt: number = 0;
+  private activeCountsPromise: Promise<import('../services/AuthApiService').ActiveCountsData> | null = null;
+
+  public async getActiveCounts(force: boolean = false) {
+    const now = Date.now();
+    if (!force && this.cachedActiveCounts && now - this.lastActiveCountsFetchedAt < 10000) {
+      return this.cachedActiveCounts;
     }
-    return {
-      expeditions: {},
-      robotAssemblies: 0,
-      robotDisassemblies: 0,
-      requests: {},
-      requestsByRank: {},
-      playingUsers: 0
-    };
+    if (this.activeCountsPromise) {
+      return this.activeCountsPromise;
+    }
+
+    this.activeCountsPromise = (async () => {
+      try {
+        const apiService = AuthApiService.getInstance();
+        const res = await apiService.getActiveCounts(this.userId || undefined);
+        if (res && res.success && res.data) {
+          this.cachedActiveCounts = res.data;
+          this.lastActiveCountsFetchedAt = Date.now();
+          return res.data;
+        }
+      } catch (err) {
+        console.warn('[GameEngine] getActiveCounts error:', err);
+      } finally {
+        this.activeCountsPromise = null;
+      }
+      return this.cachedActiveCounts || {
+        expeditions: {},
+        robotAssemblies: 0,
+        robotDisassemblies: 0,
+        requests: {},
+        requestsByRank: {},
+        playingUsers: 0
+      };
+    })();
+
+    return this.activeCountsPromise;
   }
 
   /**
