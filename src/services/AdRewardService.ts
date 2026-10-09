@@ -7,6 +7,8 @@ export interface AdRewardRequest {
   id: string;
   title: string;
   rewardDescription: string;
+  taskType: string;
+  rewardPageUrl: string;
   onSuccess: () => void;
   onCancel?: () => void;
 }
@@ -14,6 +16,7 @@ export interface AdRewardRequest {
 export type AdRewardListener = (request: AdRewardRequest | null) => void;
 
 export const REWARD_PAGE_URL = 'https://takahara-books.com/game/robotfactory/reward-page.html';
+export const LOCAL_REWARD_PAGE_PATH = '/reward-page.html';
 
 class AdRewardService {
   private static instance: AdRewardService;
@@ -54,7 +57,25 @@ class AdRewardService {
   }
 
   /**
-   * ポップアップ全画面でリワード広告ページを開き、視聴完了後にリワードを付与する
+   * 実行環境に最適な reward-page.html のURLを取得する
+   * （外部ブラウザは起動せず、アプリ内モーダルのWebViewフレームに表示する）
+   */
+  public resolveRewardPageUrl(taskType: string = 'shorten_30m'): string {
+    const query = `?type=${encodeURIComponent(taskType)}&inapp=1&t=${Date.now()}`;
+    if (typeof window !== 'undefined') {
+      const host = window.location.hostname || '';
+      // takahara-books.com 上で稼働している場合は同一オリジンのパスを参照
+      if (host.includes('takahara-books.com')) {
+        return `${REWARD_PAGE_URL}${query}`;
+      }
+    }
+    // Capacitor Androidアプリまたは他環境ではアプリ内バンドル済みの /reward-page.html を優先表示
+    return `${LOCAL_REWARD_PAGE_PATH}${query}`;
+  }
+
+  /**
+   * 外部ブラウザを起動せず、アプリ内の全画面リワード広告モーダルで reward-page.html を表示し、
+   * 視聴完了後にリワードを付与する
    */
   public requestRewardAd(options: {
     title: string;
@@ -63,103 +84,27 @@ class AdRewardService {
   }): Promise<boolean> {
     return new Promise((resolve) => {
       const { title, rewardDescription, taskType = 'shorten_30m' } = options;
-
-      // 画面の利用可能サイズを取得して全画面ポップアップを設定
-      const screenWidth = typeof window !== 'undefined' ? (window.screen.availWidth || window.screen.width || window.innerWidth || 1024) : 1024;
-      const screenHeight = typeof window !== 'undefined' ? (window.screen.availHeight || window.screen.height || window.innerHeight || 768) : 768;
-      const windowFeatures = `width=${screenWidth},height=${screenHeight},left=0,top=0,fullscreen=yes,menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=yes`;
-
-      const targetUrl = `${REWARD_PAGE_URL}?type=${encodeURIComponent(taskType)}&t=${Date.now()}`;
-      
-      let popup: Window | null = null;
-      try {
-        popup = window.open(targetUrl, 'RobotFactoryRewardAd', windowFeatures);
-        if (popup) {
-          popup.focus();
-        }
-      } catch (e) {
-        console.warn('[AdRewardService] Failed to open popup directly:', e);
-      }
+      const rewardPageUrl = this.resolveRewardPageUrl(taskType);
 
       let isResolved = false;
-      let checkTimer: ReturnType<typeof setInterval> | null = null;
-
-      const cleanup = () => {
-        if (checkTimer) {
-          clearInterval(checkTimer);
-          checkTimer = null;
-        }
-        window.removeEventListener('message', handleMessage);
-        window.removeEventListener('storage', handleStorage);
-      };
-
       const finish = (rewarded: boolean) => {
         if (isResolved) return;
         isResolved = true;
-        cleanup();
         resolve(rewarded);
       };
 
-      // 1. postMessage による完了通知を受信
-      const handleMessage = (event: MessageEvent) => {
-        if (event.data && (event.data.type === 'ROBOTFACTORY_REWARD_GRANTED' || event.data.type === 'REWARD_AD_COMPLETED')) {
-          console.log('[AdRewardService] Received reward grant message from popup');
-          finish(true);
-        }
-      };
-      window.addEventListener('message', handleMessage);
-
-      // 2. localStorage による完了通知を受信
-      const handleStorage = (event: StorageEvent) => {
-        if (event.key === 'robotfactory_reward_granted') {
-          console.log('[AdRewardService] Received reward grant via localStorage');
-          finish(true);
-        }
-      };
-      window.addEventListener('storage', handleStorage);
-
-      // 3. ポップアップが閉じられたかをポーリング監視
-      if (popup) {
-        checkTimer = setInterval(() => {
-          try {
-            if (popup.closed) {
-              console.log('[AdRewardService] Reward popup was closed by user');
-              // ポップアップが閉じられたらリワード付与完了とする
-              finish(true);
-            }
-          } catch (e) {
-            // cross-origin restrictions might throw on access, ignore
-          }
-        }, 500);
-      } else {
-        // ポップアップブロッカー等で開けなかった場合のフォールバック（別タブで開く試行、またはゲーム内シミュレーション）
-        console.warn('[AdRewardService] Popup blocked or failed to open. Trying new tab or in-app modal.');
-        try {
-          const fallbackTab = window.open(targetUrl, '_blank');
-          if (fallbackTab) {
-            fallbackTab.focus();
-            checkTimer = setInterval(() => {
-              try {
-                if (fallbackTab.closed) {
-                  finish(true);
-                }
-              } catch (e) {}
-            }, 500);
-            return;
-          }
-        } catch (e) {}
-
-        this.openSimulationModal(title, rewardDescription, finish);
-      }
+      this.openInAppRewardModal(title, rewardDescription, taskType, rewardPageUrl, finish);
     });
   }
 
   /**
-   * フォールバック用シミュレーション広告モーダルを開く
+   * アプリ内リワード広告モーダルを開く
    */
-  private openSimulationModal(
+  private openInAppRewardModal(
     title: string,
     rewardDescription: string,
+    taskType: string,
+    rewardPageUrl: string,
     resolve: (rewarded: boolean) => void
   ): void {
     const requestId = `ad_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
@@ -167,6 +112,8 @@ class AdRewardService {
       id: requestId,
       title,
       rewardDescription,
+      taskType,
+      rewardPageUrl,
       onSuccess: () => {
         this.currentRequest = null;
         this.notifyListeners();

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { adRewardService, AdRewardRequest } from '../../services/AdRewardService';
-import { theme } from '../../styles/theme';
 import { Card, Button, Badge } from '../ui/core';
 import * as Gi from 'react-icons/gi';
 
@@ -9,6 +8,7 @@ export const RewardAdModal: React.FC = () => {
   const [secondsLeft, setSecondsLeft] = useState<number>(5);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [isCompleted, setIsCompleted] = useState<boolean>(false);
+  const [confirmingCancel, setConfirmingCancel] = useState<boolean>(false);
 
   useEffect(() => {
     const unsubscribe = adRewardService.subscribe((req) => {
@@ -17,10 +17,45 @@ export const RewardAdModal: React.FC = () => {
         setSecondsLeft(5);
         setIsPlaying(true);
         setIsCompleted(false);
+        setConfirmingCancel(false);
       }
     });
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!request) return;
+
+    // アプリ内iframeの reward-page.html からの完了通知（postMessage / localStorage）を受信
+    const handleMessage = (event: MessageEvent) => {
+      if (!event.data || typeof event.data !== 'object') return;
+      if (event.data.type === 'REWARD_AD_COMPLETED' && event.data.closeModal) {
+        request.onSuccess();
+      } else if (event.data.type === 'ROBOTFACTORY_REWARD_GRANTED') {
+        if (event.data.closeModal) {
+          request.onSuccess();
+        }
+      }
+    };
+
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === 'robotfactory_reward_granted' && event.newValue) {
+        try {
+          const parsed = JSON.parse(event.newValue);
+          if (parsed && parsed.closeModal) {
+            request.onSuccess();
+          }
+        } catch {}
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    window.addEventListener('storage', handleStorage);
+    return () => {
+      window.removeEventListener('message', handleMessage);
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, [request]);
 
   useEffect(() => {
     if (!request || !isPlaying || isCompleted) return;
@@ -41,106 +76,131 @@ export const RewardAdModal: React.FC = () => {
   if (!request) return null;
 
   const handleClaimReward = () => {
-    if (isCompleted) {
-      request.onSuccess();
-    }
+    request.onSuccess();
   };
 
-  const handleCancel = () => {
-    if (!isCompleted) {
-      const confirmCancel = window.confirm("動画広告の視聴を途中で終了すると、30分短縮ボーナスは受け取れません。終了しますか？");
-      if (!confirmCancel) return;
+  const handleCancelClick = () => {
+    if (isCompleted) {
+      request.onSuccess();
+      return;
+    }
+    if (!confirmingCancel) {
+      setConfirmingCancel(true);
+      return;
     }
     request.onCancel?.();
   };
 
-  const progressPercent = Math.min(100, Math.round(((5 - secondsLeft) / 5) * 100));
+  const progressWidthClass =
+    secondsLeft >= 5
+      ? 'w-0'
+      : secondsLeft === 4
+      ? 'w-1/5'
+      : secondsLeft === 3
+      ? 'w-2/5'
+      : secondsLeft === 2
+      ? 'w-3/5'
+      : secondsLeft === 1
+      ? 'w-4/5'
+      : 'w-full';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-xs p-4 animate-fade-in font-['DotGothic16',_sans-serif]">
-      <Card className="w-full max-w-md bg-stone-900 border-2 border-amber-500/80 text-stone-100 shadow-2xl overflow-hidden p-0 relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-xs p-2 sm:p-4 animate-fade-in font-['DotGothic16',_sans-serif]">
+      <Card className="w-full max-w-lg max-h-[94vh] flex flex-col bg-stone-900 border-2 border-amber-500/80 text-stone-100 shadow-2xl overflow-hidden p-0 relative">
         {/* ヘッダー */}
-        <div className="bg-stone-800/95 px-4 py-3 border-b border-stone-700 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="bg-amber-500/20 text-amber-400 border border-amber-500/50 text-[10px] px-2 py-0.5 rounded font-bold">
-              Google AdSense オファーウォール / リワード
+        <div className="bg-stone-800/95 px-3 sm:px-4 py-2.5 border-b border-stone-700 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="bg-amber-500/20 text-amber-400 border border-amber-500/50 text-[10px] px-2 py-0.5 rounded font-bold shrink-0">
+              アプリ内リワード画面
             </span>
-            <span className="text-xs font-bold text-stone-300">スポンサー提供</span>
-          </div>
-          <button
-            onClick={handleCancel}
-            className="text-stone-400 hover:text-stone-200 text-xs px-2 py-1 rounded bg-stone-700/50 hover:bg-stone-700 transition-colors"
-          >
-            ✕ 中断
-          </button>
-        </div>
-
-        {/* 広告動画プレイヤー風シミュレーション領域 */}
-        <div className="relative bg-stone-950 aspect-video flex flex-col items-center justify-center p-6 text-center overflow-hidden">
-          {/* 背景の幾何学・メカ装飾 */}
-          <div className="absolute inset-0 opacity-10 flex items-center justify-center pointer-events-none select-none">
-            <Gi.GiGears className="text-9xl text-amber-500 animate-spin-slow" />
+            <span className="text-xs font-bold text-stone-200 truncate">{request.title}</span>
           </div>
 
-          {/* 広告内容コンテンツ */}
-          <div className="relative z-10 space-y-3 max-w-xs">
-            <div className="inline-flex p-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 mb-1">
-              <Gi.GiRobotAntennas className="text-4xl animate-bounce" />
-            </div>
-
-            <div className="space-y-1">
-              <h4 className="text-sm font-bold text-amber-300">
-                『ポンコツロボット工房』スポンサー動画
-              </h4>
-              <p className="text-xs text-stone-300 leading-relaxed">
-                {request.title}
-              </p>
-            </div>
-
-            {/* 短縮リワード表示 */}
-            <div className="bg-stone-800/90 border border-amber-500/40 rounded-lg p-2 text-xs text-amber-300 flex items-center justify-center gap-1.5 shadow-inner">
-              <Gi.GiFastForwardButton className="text-amber-400 text-sm" />
-              <span>報酬: <strong>{request.rewardDescription}</strong></span>
-            </div>
-          </div>
-
-          {/* 右上のカウントダウンバッジ */}
-          <div className="absolute top-3 right-3 z-20">
+          <div className="flex items-center gap-2 shrink-0">
             {isCompleted ? (
-              <Badge className="bg-emerald-600 text-white font-bold text-xs px-2.5 py-1">
-                <Gi.GiSparkles className="inline mr-1" /> 視聴完了！
+              <Badge className="bg-emerald-600 text-white font-bold text-[10px] px-2 py-0.5">
+                <Gi.GiSparkles className="inline mr-1" /> 視聴完了
               </Badge>
             ) : (
-              <span className="bg-black/80 text-amber-400 border border-amber-500/50 font-mono text-xs px-2.5 py-1 rounded-full flex items-center gap-1">
+              <span className="bg-black/80 text-amber-400 border border-amber-500/50 font-mono text-[11px] px-2 py-0.5 rounded-full flex items-center gap-1">
                 <Gi.GiHourglass className="animate-spin text-amber-400" />
                 あと {secondsLeft} 秒
               </span>
             )}
-          </div>
-
-          {/* シークバー */}
-          <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-stone-800">
-            <div
-              className="h-full bg-amber-500 transition-all duration-1000 ease-linear"
-              style={{ width: `${progressPercent}%` }}
-            />
+            <button
+              type="button"
+              onClick={handleCancelClick}
+              className="text-stone-300 hover:text-white text-xs px-2.5 py-1 rounded bg-stone-700/70 hover:bg-stone-700 transition-colors cursor-pointer"
+            >
+              {isCompleted ? '✕ 閉じる' : confirmingCancel ? '本当に中断する' : '✕ 中断'}
+            </button>
           </div>
         </div>
 
+        {/* 中断確認バー */}
+        {confirmingCancel && !isCompleted && (
+          <div className="bg-rose-950/90 border-b border-rose-700 px-3 py-2 flex items-center justify-between gap-2 text-xs text-rose-200 shrink-0">
+            <span>途中で閉じると30分短縮ボーナスは適用されません。</span>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                type="button"
+                onClick={() => setConfirmingCancel(false)}
+                className="px-2 py-0.5 rounded bg-stone-800 text-stone-200 hover:bg-stone-700 text-[11px] cursor-pointer"
+              >
+                視聴を続ける
+              </button>
+              <button
+                type="button"
+                onClick={() => request.onCancel?.()}
+                className="px-2 py-0.5 rounded bg-rose-700 text-white hover:bg-rose-600 font-bold text-[11px] cursor-pointer"
+              >
+                終了する
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* プログレスバー */}
+        <div className="h-1.5 bg-stone-800 w-full shrink-0 overflow-hidden">
+          <div
+            className={`h-full bg-amber-500 transition-all duration-700 ease-linear ${progressWidthClass}`}
+          />
+        </div>
+
+        {/* アプリ内埋め込み reward-page.html (iframe) */}
+        <div className="relative bg-stone-950 flex-1 min-h-[380px] sm:min-h-[440px] flex flex-col overflow-hidden">
+          <iframe
+            src={request.rewardPageUrl}
+            title="リワード獲得 - 広告表示画面"
+            className="w-full flex-1 min-h-[380px] sm:min-h-[440px] border-0 bg-white"
+            allow="autoplay; encrypted-media; fullscreen"
+          />
+        </div>
+
         {/* フッターアクション */}
-        <div className="p-4 bg-stone-900 border-t border-stone-800 flex flex-col gap-2">
+        <div className="p-3 bg-stone-900 border-t border-stone-800 flex flex-col gap-2 shrink-0">
+          <div className="flex items-center justify-between text-xs px-1">
+            <span className="text-stone-400 flex items-center gap-1">
+              <Gi.GiFastForwardButton className="text-amber-400" />
+              報酬: <strong className="text-amber-300">{request.rewardDescription}</strong>
+            </span>
+            <span className="text-[11px] text-stone-400">
+              ※ページ内の「元の画面に戻る」でも適用されます
+            </span>
+          </div>
+
           {isCompleted ? (
             <Button
               variant="primary"
               size="lg"
               onClick={handleClaimReward}
-              className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-lg flex items-center justify-center gap-2 animate-bounce"
+              className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-lg flex items-center justify-center gap-2"
             >
-              <Gi.GiCheckMark /> 30分短縮を適用して完了！
+              <Gi.GiCheckMark /> 30分短縮を適用して元の画面に戻る
             </Button>
           ) : (
-            <div className="text-center py-2 text-xs text-stone-400">
-              ※ 動画広告を最後まで視聴すると、30分短縮ボーナスが即時適用されます
+            <div className="text-center py-1.5 text-xs text-stone-400 bg-stone-800/60 rounded border border-stone-700/60">
+              広告画面を表示中です（あと {secondsLeft} 秒で完了ボタンが有効になります）
             </div>
           )}
         </div>

@@ -70,6 +70,22 @@
       画面上の案内（オファーウォール）に従って動画を最後まで視聴すると、ロックが解除されてリワード（報酬）を獲得できます。
     </p>
 
+    <!-- Google AdSense 広告ユニット (takahara-books) -->
+    <div style="margin-bottom: 20px;">
+      <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2980262928639137"
+           crossorigin="anonymous"></script>
+      <!-- takahara-books -->
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-2980262928639137"
+           data-ad-slot="9685636805"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+           (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </div>
+
     <!-- i-mobile 広告バナータグ -->
     <div id="im-2f882e2740bc445482d3e1e6b87415db" style="margin-bottom: 20px;">
       <script async src="https://imp-adedge.i-mobile.co.jp/script/v1/spot.js?20220104"></script>
@@ -87,25 +103,38 @@
     const urlParams = new URLSearchParams(window.location.search);
     const rewardType = urlParams.get('type') || 'shorten_30m';
 
-    function notifyRewardGranted() {
+    function notifyRewardGranted(isClosing) {
+      const payload = {
+        type: isClosing ? 'REWARD_AD_COMPLETED' : 'ROBOTFACTORY_REWARD_GRANTED',
+        rewardType: rewardType,
+        closeModal: Boolean(isClosing)
+      };
       try {
-        if (window.opener && !window.opener.closed) {
-          window.opener.postMessage({ type: 'ROBOTFACTORY_REWARD_GRANTED', rewardType: rewardType }, '*');
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage(payload, '*');
         }
       } catch (e) {}
       try {
-        localStorage.setItem('robotfactory_reward_granted', JSON.stringify({ type: rewardType, timestamp: Date.now() }));
+        if (window.opener && !window.opener.closed) {
+          window.opener.postMessage(payload, '*');
+        }
+      } catch (e) {}
+      try {
+        localStorage.setItem('robotfactory_reward_granted', JSON.stringify({ type: rewardType, timestamp: Date.now(), closeModal: Boolean(isClosing) }));
       } catch (e) {}
     }
 
     if (rewardType) {
       // 例: 視聴完了後にこのページが表示された（ロックが解除された）タイミングで報酬付与処理を実行
       // localStorage.setItem('reward_granted', 'true');
-      notifyRewardGranted();
+      notifyRewardGranted(false);
     }
 
     function handleBackClick() {
-      notifyRewardGranted();
+      notifyRewardGranted(true);
+      if (window.parent && window.parent !== window) {
+        return;
+      }
       if (window.opener && !window.opener.closed) {
         window.close();
       } else {
