@@ -409,6 +409,37 @@ export class GameEngine {
         parsed.parts = [];
       }
 
+      // 所持ロボットおよび組立中ロボットの構成パーツが state.parts に必ず存在し、かつ isEquipped = true になるよう整合性を保証
+      const ensureRobotPartInState = (rp: any) => {
+        if (!rp || !rp.id || String(rp.id).startsWith('dummy_')) return;
+        rp.isEquipped = true;
+        const existingPart = parsed.parts.find((p: any) => p && p.id === rp.id);
+        if (existingPart) {
+          existingPart.isEquipped = true;
+        } else {
+          parsed.parts.push({ ...rp, isEquipped: true });
+        }
+      };
+
+      if (parsed.robots && Array.isArray(parsed.robots)) {
+        parsed.robots.forEach((r: any) => {
+          if (r && r.parts) {
+            ensureRobotPartInState(r.parts.head);
+            ensureRobotPartInState(r.parts.body);
+            ensureRobotPartInState(r.parts.arms);
+            ensureRobotPartInState(r.parts.legs);
+          }
+        });
+      }
+
+      if (parsed.activeRobotAssembly && parsed.activeRobotAssembly.resultRobot?.parts) {
+        const ap = parsed.activeRobotAssembly.resultRobot.parts;
+        ensureRobotPartInState(ap.head);
+        ensureRobotPartInState(ap.body);
+        ensureRobotPartInState(ap.arms);
+        ensureRobotPartInState(ap.legs);
+      }
+
       // Clear craftedRobots to not keep/display past or unowned robots
       parsed.craftedRobots = [];
 
@@ -1589,6 +1620,12 @@ export class GameEngine {
     };
 
     this.saveState();
+    // クラウドログイン時は組立開始と同時に user_parts(is_equipped=1) および active_robot_assemblies を単一トランザクションで即時DB同期
+    if (this.isCloudAccount && this.userId && this.isCloudLoaded) {
+      AuthApiService.getInstance().saveAllDataToTables(this.userId, this.state, true).catch((err) => {
+        console.warn('[GameEngine] ロボット組立開始時の即時DB同期エラー:', err);
+      });
+    }
     return this.state.activeRobotAssembly;
   }
 
@@ -1605,8 +1642,28 @@ export class GameEngine {
     const prevCompleteAssembly = this.state.completeRobotAssembly;
     const prevCompletedAssembly = this.state.completedRobotAssembly;
     const prevRobots = [...this.state.robots];
+    const prevParts = this.state.parts.map(p => ({ ...p }));
 
     const assembledRobot = target.resultRobot;
+
+    // ロボットを構成する4部位パーツが this.state.parts に確実に残り、かつ isEquipped = true（装備中）となるよう保証
+    if (assembledRobot && assembledRobot.parts) {
+      (['head', 'body', 'arms', 'legs'] as const).forEach((slot) => {
+        const rp = assembledRobot.parts[slot];
+        if (!rp || !rp.id) return;
+        rp.isEquipped = true;
+        const existingIdx = this.state.parts.findIndex(p => p.id === rp.id);
+        if (existingIdx >= 0) {
+          this.state.parts[existingIdx].isEquipped = true;
+          assembledRobot.parts[slot] = this.state.parts[existingIdx];
+        } else {
+          const restoredPart = { ...rp, isEquipped: true };
+          this.state.parts.push(restoredPart);
+          assembledRobot.parts[slot] = restoredPart;
+        }
+      });
+    }
+
     if (!this.state.robots.some(r => r.id === assembledRobot.id)) {
       this.state.robots.push(assembledRobot);
     }
@@ -1615,6 +1672,7 @@ export class GameEngine {
     // active_robot_assemblies から complete_robot_assemblies への移行
     const compAss: import('./models').CompleteRobotAssembly = {
       ...target,
+      resultRobot: assembledRobot,
       completedAt: Date.now()
     };
     this.state.completeRobotAssembly = compAss;
@@ -1630,12 +1688,17 @@ export class GameEngine {
         if (!res || res.success === false) {
           throw new Error(res?.error || "データベース保存に失敗しました");
         }
+        // DB保存成功後、受取完了した一時ステートをクリア
+        this.state.completeRobotAssembly = null;
+        this.state.completedRobotAssembly = null;
+        this.saveState();
       } catch (err: any) {
         console.error("[GameEngine] complete_robot_assembliesへの即時保存エラー:", err);
         this.state.activeRobotAssembly = prevActiveAssembly;
         this.state.completeRobotAssembly = prevCompleteAssembly;
         this.state.completedRobotAssembly = prevCompletedAssembly;
         this.state.robots = prevRobots;
+        this.state.parts = prevParts;
         this.notifyStateChange();
         this.update();
         throw err;

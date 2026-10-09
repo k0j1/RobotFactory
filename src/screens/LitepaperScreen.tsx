@@ -25,7 +25,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
         title="ポンコツロボット工房 公式仕様書"
         badge={
           <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300 font-mono font-bold px-1.5 py-0.2 rounded">
-            v0.1.192 (DB v0.24)
+            v0.1.193 (DB v0.24)
           </span>
         }
         rightElement={
@@ -634,7 +634,7 @@ export const LitepaperScreen: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                 <div className="bg-white p-2.5 rounded-lg border border-stone-200">
                   <strong className="text-stone-900 block font-bold mb-1">☁️ クラウド同期と単一トランザクション保護</strong>
                   <p className="text-stone-600">
-                    Googleログイン時はサーバーとリアルタイムに自動同期。進行中（active）および完了（complete）テーブルを含む関連全テーブルの更新は完全な単一トランザクションで実行され、万が一更新エラーが発生した場合は即座に全変更がロールバックされ、画面上に通知と再試行案内が表示されます。
+                    Googleログイン時はサーバーとリアルタイムに自動同期。進行中（active）および完了（complete）テーブルを含む関連全テーブルの更新は完全な単一トランザクションで実行され、万が一更新エラーが発生した場合は即座に全変更がロールバックされ、画面上に通知と再試行案内が表示されます。ロボット組立開始・受取完了時には構成4部位パーツが <code>user_parts</code> テーブルに <code>is_equipped = 1</code>（装備中）として単一トランザクションで永続保持され、機体解体時にのみ未装備（<code>is_equipped = 0</code>）へ戻り、依頼納品時にのみ機体と共に削除されます。
                   </p>
                 </div>
                 <div className="bg-white p-2.5 rounded-lg border border-stone-200">

@@ -524,6 +524,78 @@ try {
         ];
     }
 
+    // 4.5. user_parts テーブルから所持パーツ一覧を先に取得（active_robot_assemblies / user_robots のパーツ参照および装備状態整合性のため）
+    $partsStmt = $pdo->prepare("
+        SELECT * 
+        FROM user_parts 
+        WHERE user_id IN ($inPlaceholders)
+        ORDER BY created_at ASC
+    ");
+    $partsStmt->execute(array_values($candidateUserIds));
+    $dbParts = [];
+    while ($pRow = $partsStmt->fetch(PDO::FETCH_ASSOC)) {
+        $partId = $pRow['id'];
+        $pType = !empty($pRow['part_type']) ? $pRow['part_type'] : 'head';
+        $pName = !empty($pRow['name']) ? $pRow['name'] : ($pRow['master_part_id'] ?? $partId);
+        $pAttr = !empty($pRow['attribute']) ? $pRow['attribute'] : 'Fire';
+        $pRarity = isset($pRow['rarity']) ? (int)$pRow['rarity'] : 1;
+        $pVis = isset($pRow['visual_index']) ? (int)$pRow['visual_index'] : 0;
+        $isEquipped = !empty($pRow['is_equipped']);
+
+        $stats = [
+            'hp' => isset($pRow['vitality']) ? (int)$pRow['vitality'] : (isset($pRow['hp']) ? (int)$pRow['hp'] : 0),
+            'power' => isset($pRow['power']) ? (int)$pRow['power'] : 0,
+            'defense' => isset($pRow['defense']) ? (int)$pRow['defense'] : 0,
+            'agility' => isset($pRow['agility']) ? (int)$pRow['agility'] : 0,
+            'dexterity' => isset($pRow['dexterity']) ? (int)$pRow['dexterity'] : 0,
+            'intelligence' => isset($pRow['intelligence']) ? (int)$pRow['intelligence'] : 0,
+        ];
+
+        $battleStats = [
+            'matches' => 0,
+            'wins' => 0,
+            'losses' => 0,
+            'draws' => 0,
+        ];
+
+        if (!empty($pRow['part_data'])) {
+            $legacy = json_decode($pRow['part_data'], true);
+            if (is_array($legacy)) {
+                if (empty($pRow['name']) && !empty($legacy['name'])) $pName = $legacy['name'];
+                if (empty($pRow['attribute']) && !empty($legacy['attribute'])) $pAttr = $legacy['attribute'];
+                if (empty($pRow['part_type']) && !empty($legacy['type'])) $pType = $legacy['type'];
+                if (isset($legacy['stats']) && is_array($legacy['stats'])) {
+                    foreach (['hp', 'power', 'defense', 'agility', 'dexterity', 'intelligence'] as $stKey) {
+                        if ($stats[$stKey] === 0 && isset($legacy['stats'][$stKey])) {
+                            $stats[$stKey] = (int)$legacy['stats'][$stKey];
+                        }
+                    }
+                }
+            }
+        }
+
+        $reconstructedPart = [
+            'id' => $partId,
+            'type' => $pType,
+            'name' => $pName,
+            'attribute' => $pAttr,
+            'rarity' => $pRarity,
+            'visualIndex' => $pVis,
+            'isEquipped' => $isEquipped,
+            'stats' => $stats,
+            'battleStats' => $battleStats,
+        ];
+
+        if (!empty($pRow['main_material_id'])) {
+            $reconstructedPart['mainMaterialId'] = $pRow['main_material_id'];
+        }
+        if (!empty($pRow['sub_material_id'])) {
+            $reconstructedPart['subMaterialId'] = $pRow['sub_material_id'];
+        }
+
+        $dbParts[] = $reconstructedPart;
+    }
+
     // 5. active_robot_assemblies テーブルから最新のロボット組立進行状態を取得（個別カラム＆user_parts外部キー結合）
     $assStmt = $pdo->prepare("
         SELECT * 
@@ -888,86 +960,147 @@ try {
         $dbDailyCleared[$todayDateKey][] = "{$rId}_{$mId}_{$lvl}";
     }
 
-    // 9. user_parts テーブルから所持パーツ一覧を取得（個別カラムからRobotPartオブジェクトを完全復元）
-    $partsStmt = $pdo->prepare("
-        SELECT * 
-        FROM user_parts 
-        WHERE user_id IN ($inPlaceholders)
-        ORDER BY created_at ASC
-    ");
-    $partsStmt->execute(array_values($candidateUserIds));
-    $dbParts = [];
-    while ($pRow = $partsStmt->fetch(PDO::FETCH_ASSOC)) {
-        $partId = $pRow['id'];
-        $pType = !empty($pRow['part_type']) ? $pRow['part_type'] : 'head';
-        $pName = !empty($pRow['name']) ? $pRow['name'] : ($pRow['master_part_id'] ?? $partId);
-        $pAttr = !empty($pRow['attribute']) ? $pRow['attribute'] : 'Fire';
-        $pRarity = isset($pRow['rarity']) ? (int)$pRow['rarity'] : 1;
-        $pVis = isset($pRow['visual_index']) ? (int)$pRow['visual_index'] : 0;
-        $isEquipped = !empty($pRow['is_equipped']);
+    // 9. user_parts は 4.5 で取得済み。ここから user_robots テーブルの所持ロボット一覧を取得
+    // robot_data カラムは削除されたため、user_robots の各パーツIDをもとに user_parts テーブルの所持パーツと結合し、
+    // currentHp、maxHP、battleStats および合算 stats を持つ完全な Robot オブジェクトを復元
+    // また、user_parts から欠落していたパーツがあれば complete_robot_assemblies / complete_part_crafts 履歴から自己修復してDBへも書き戻す
+    $partsMap = [];
+    foreach ($dbParts as $idx => $p) {
+        if (!empty($p['id'])) {
+            $partsMap[$p['id']] = &$dbParts[$idx];
+        }
+    }
 
-        $stats = [
-            'hp' => isset($pRow['vitality']) ? (int)$pRow['vitality'] : (isset($pRow['hp']) ? (int)$pRow['hp'] : 0),
-            'power' => isset($pRow['power']) ? (int)$pRow['power'] : 0,
-            'defense' => isset($pRow['defense']) ? (int)$pRow['defense'] : 0,
-            'agility' => isset($pRow['agility']) ? (int)$pRow['agility'] : 0,
-            'dexterity' => isset($pRow['dexterity']) ? (int)$pRow['dexterity'] : 0,
-            'intelligence' => isset($pRow['intelligence']) ? (int)$pRow['intelligence'] : 0,
-        ];
-
-        $battleStats = [
-            'matches' => 0,
-            'wins' => 0,
-            'losses' => 0,
-            'draws' => 0,
-        ];
-
-        // 移行期などで万が一 part_data が残っていた場合のフォールバック補完
-        if (!empty($pRow['part_data'])) {
-            $legacy = json_decode($pRow['part_data'], true);
-            if (is_array($legacy)) {
-                if (empty($pRow['name']) && !empty($legacy['name'])) $pName = $legacy['name'];
-                if (empty($pRow['attribute']) && !empty($legacy['attribute'])) $pAttr = $legacy['attribute'];
-                if (empty($pRow['part_type']) && !empty($legacy['type'])) $pType = $legacy['type'];
-                if (isset($legacy['stats']) && is_array($legacy['stats'])) {
-                    foreach (['hp', 'power', 'defense', 'agility', 'dexterity', 'intelligence'] as $stKey) {
-                        if ($stats[$stKey] === 0 && isset($legacy['stats'][$stKey])) {
-                            $stats[$stKey] = (int)$legacy['stats'][$stKey];
+    // 万が一 user_parts に存在しないパーツIDが user_robots 等から参照されている場合の履歴ルックアップマップ
+    $historicalPartsMap = [];
+    try {
+        $histAssStmt = $pdo->prepare("SELECT result_robot_data FROM complete_robot_assemblies WHERE user_id IN ($inPlaceholders) ORDER BY id DESC LIMIT 100");
+        $histAssStmt->execute(array_values($candidateUserIds));
+        while ($haRow = $histAssStmt->fetch(PDO::FETCH_ASSOC)) {
+            if (!empty($haRow['result_robot_data'])) {
+                $rJson = json_decode($haRow['result_robot_data'], true);
+                if (!empty($rJson['parts']) && is_array($rJson['parts'])) {
+                    foreach (['head', 'body', 'arms', 'legs'] as $pk) {
+                        if (!empty($rJson['parts'][$pk]['id'])) {
+                            $hpObj = $rJson['parts'][$pk];
+                            $hpObj['isEquipped'] = true;
+                            $historicalPartsMap[(string)$hpObj['id']] = $hpObj;
                         }
                     }
                 }
             }
         }
+        $histCraftStmt = $pdo->prepare("SELECT result_part_data FROM complete_part_crafts WHERE user_id IN ($inPlaceholders) ORDER BY id DESC LIMIT 200");
+        $histCraftStmt->execute(array_values($candidateUserIds));
+        while ($hcRow = $histCraftStmt->fetch(PDO::FETCH_ASSOC)) {
+            if (!empty($hcRow['result_part_data'])) {
+                $pJson = json_decode($hcRow['result_part_data'], true);
+                if (!empty($pJson['id']) && !isset($historicalPartsMap[(string)$pJson['id']])) {
+                    $historicalPartsMap[(string)$pJson['id']] = $pJson;
+                }
+            }
+        }
+    } catch (Throwable $e) {}
 
-        $reconstructedPart = [
-            'id' => $partId,
-            'type' => $pType,
-            'name' => $pName,
-            'attribute' => $pAttr,
-            'rarity' => $pRarity,
-            'visualIndex' => $pVis,
-            'isEquipped' => $isEquipped,
-            'stats' => $stats,
-            'battleStats' => $battleStats,
+    $selfHealPartStmt = $pdo->prepare("
+        INSERT INTO user_parts (
+            id, user_id, master_part_id, part_type, name, attribute, rarity, visual_index,
+            is_equipped, vitality, power, defense, agility, dexterity, intelligence,
+            main_material_id, sub_material_id
+        ) VALUES (
+            :id, :user_id, :master_id, :part_type, :name, :attribute, :rarity, :visual_index,
+            1, :vitality, :power, :defense, :agility, :dexterity, :intelligence,
+            :main_material_id, :sub_material_id
+        )
+        ON DUPLICATE KEY UPDATE
+            user_id = VALUES(user_id),
+            is_equipped = 1
+    ");
+
+    $ensureEquippedPartInDb = function($partId, $slotType) use (&$dbParts, &$partsMap, $historicalPartsMap, $selfHealPartStmt, $actualUserId) {
+        if (empty($partId)) return null;
+        $partIdStr = (string)$partId;
+        if (isset($partsMap[$partIdStr])) {
+            if (empty($partsMap[$partIdStr]['isEquipped'])) {
+                $partsMap[$partIdStr]['isEquipped'] = true;
+                try {
+                    $p = $partsMap[$partIdStr];
+                    $st = $p['stats'] ?? [];
+                    $selfHealPartStmt->execute([
+                        ':id' => $partIdStr,
+                        ':user_id' => $actualUserId,
+                        ':master_id' => $p['name'] ?? $partIdStr,
+                        ':part_type' => $p['type'] ?? $slotType,
+                        ':name' => $p['name'] ?? 'パーツ',
+                        ':attribute' => $p['attribute'] ?? 'Fire',
+                        ':rarity' => (int)($p['rarity'] ?? 1),
+                        ':visual_index' => (int)($p['visualIndex'] ?? 0),
+                        ':vitality' => (int)($st['hp'] ?? 0),
+                        ':power' => (int)($st['power'] ?? 0),
+                        ':defense' => (int)($st['defense'] ?? 0),
+                        ':agility' => (int)($st['agility'] ?? 0),
+                        ':dexterity' => (int)($st['dexterity'] ?? 0),
+                        ':intelligence' => (int)($st['intelligence'] ?? 0),
+                        ':main_material_id' => $p['mainMaterialId'] ?? null,
+                        ':sub_material_id' => $p['subMaterialId'] ?? null,
+                    ]);
+                } catch (Throwable $e) {}
+            }
+            return $partsMap[$partIdStr];
+        }
+
+        // user_parts テーブルに存在しなかった場合は履歴またはフォールバックから復元してDBにも登録
+        $recovered = $historicalPartsMap[$partIdStr] ?? [
+            'id' => $partIdStr,
+            'type' => $slotType,
+            'name' => 'パーツ(' . $slotType . ')',
+            'attribute' => 'Fire',
+            'rarity' => 1,
+            'visualIndex' => 0,
+            'isEquipped' => true,
+            'stats' => ['hp' => 10, 'power' => 5, 'defense' => 5, 'agility' => 5, 'dexterity' => 5, 'intelligence' => 5]
         ];
+        $recovered['id'] = $partIdStr;
+        $recovered['type'] = $recovered['type'] ?? $slotType;
+        $recovered['isEquipped'] = true;
+        try {
+            $st = $recovered['stats'] ?? [];
+            $selfHealPartStmt->execute([
+                ':id' => $partIdStr,
+                ':user_id' => $actualUserId,
+                ':master_id' => $recovered['name'] ?? $partIdStr,
+                ':part_type' => $recovered['type'] ?? $slotType,
+                ':name' => $recovered['name'] ?? 'パーツ',
+                ':attribute' => $recovered['attribute'] ?? 'Fire',
+                ':rarity' => (int)($recovered['rarity'] ?? 1),
+                ':visual_index' => (int)($recovered['visualIndex'] ?? 0),
+                ':vitality' => (int)($st['hp'] ?? 0),
+                ':power' => (int)($st['power'] ?? 0),
+                ':defense' => (int)($st['defense'] ?? 0),
+                ':agility' => (int)($st['agility'] ?? 0),
+                ':dexterity' => (int)($st['dexterity'] ?? 0),
+                ':intelligence' => (int)($st['intelligence'] ?? 0),
+                ':main_material_id' => $recovered['mainMaterialId'] ?? null,
+                ':sub_material_id' => $recovered['subMaterialId'] ?? null,
+            ]);
+        } catch (Throwable $e) {}
 
-        if (!empty($pRow['main_material_id'])) {
-            $reconstructedPart['mainMaterialId'] = $pRow['main_material_id'];
-        }
-        if (!empty($pRow['sub_material_id'])) {
-            $reconstructedPart['subMaterialId'] = $pRow['sub_material_id'];
-        }
+        $dbParts[] = $recovered;
+        $lastIdx = count($dbParts) - 1;
+        $partsMap[$partIdStr] = &$dbParts[$lastIdx];
+        return $partsMap[$partIdStr];
+    };
 
-        $dbParts[] = $reconstructedPart;
-    }
-
-    // 9. user_robots テーブルから所持ロボット一覧を取得
-    // robot_data カラムは削除されたため、user_robots の各パーツIDをもとに user_parts テーブルの所持パーツと結合し、
-    // currentHp、maxHP、battleStats および合算 stats を持つ完全な Robot オブジェクトを復元
-    $partsMap = [];
-    foreach ($dbParts as $p) {
-        if (!empty($p['id'])) {
-            $partsMap[$p['id']] = $p;
+    // 組立中ロボットがある場合も装備パーツを user_parts に is_equipped=1 で保証
+    if ($activeAssembly && !empty($activeAssembly['resultRobot']['parts'])) {
+        foreach (['head', 'body', 'arms', 'legs'] as $slotKey) {
+            $aPartId = $activeAssembly['resultRobot']['parts'][$slotKey]['id'] ?? null;
+            if ($aPartId && strpos((string)$aPartId, 'dummy_') !== 0) {
+                $ensured = $ensureEquippedPartInDb($aPartId, $slotKey);
+                if ($ensured) {
+                    $activeAssembly['resultRobot']['parts'][$slotKey] = $ensured;
+                }
+            }
         }
     }
 
@@ -983,10 +1116,10 @@ try {
     while ($rRow = $robotsStmt->fetch(PDO::FETCH_ASSOC)) {
         $rId = $rRow['id'];
         $rName = $rRow['name'] ?? '名無しのロボット';
-        $headPart = (!empty($rRow['head_part_id']) && isset($partsMap[$rRow['head_part_id']])) ? $partsMap[$rRow['head_part_id']] : null;
-        $bodyPart = (!empty($rRow['body_part_id']) && isset($partsMap[$rRow['body_part_id']])) ? $partsMap[$rRow['body_part_id']] : null;
-        $armsPart = (!empty($rRow['arms_part_id']) && isset($partsMap[$rRow['arms_part_id']])) ? $partsMap[$rRow['arms_part_id']] : null;
-        $legsPart = (!empty($rRow['legs_part_id']) && isset($partsMap[$rRow['legs_part_id']])) ? $partsMap[$rRow['legs_part_id']] : null;
+        $headPart = !empty($rRow['head_part_id']) ? $ensureEquippedPartInDb($rRow['head_part_id'], 'head') : null;
+        $bodyPart = !empty($rRow['body_part_id']) ? $ensureEquippedPartInDb($rRow['body_part_id'], 'body') : null;
+        $armsPart = !empty($rRow['arms_part_id']) ? $ensureEquippedPartInDb($rRow['arms_part_id'], 'arms') : null;
+        $legsPart = !empty($rRow['legs_part_id']) ? $ensureEquippedPartInDb($rRow['legs_part_id'], 'legs') : null;
 
         // 各パーツのステータス合算
         $calcStats = [

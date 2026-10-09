@@ -738,16 +738,38 @@ try {
     };
 
     if (!empty($gameData['parts']) && is_array($gameData['parts'])) {
-        // 装備中パーツのIDリストを収集
+        // 装備中パーツのIDリストおよびパーツオブジェクトを収集（所持機体・組立中機体・組立完了機体）
         $equippedPartIds = [];
+        $equippedPartObjects = [];
         if (!empty($gameData['robots']) && is_array($gameData['robots'])) {
             foreach ($gameData['robots'] as $r) {
                 if (!empty($r['parts'])) {
                     foreach (['head', 'body', 'arms', 'legs'] as $pKey) {
                         if (!empty($r['parts'][$pKey]['id'])) {
-                            $equippedPartIds[$r['parts'][$pKey]['id']] = true;
+                            $pId = (string)$r['parts'][$pKey]['id'];
+                            $equippedPartIds[$pId] = true;
+                            $equippedPartObjects[$pId] = $r['parts'][$pKey];
                         }
                     }
+                }
+            }
+        }
+        if (!empty($gameData['activeRobotAssembly']['resultRobot']['parts'])) {
+            foreach (['head', 'body', 'arms', 'legs'] as $pKey) {
+                if (!empty($gameData['activeRobotAssembly']['resultRobot']['parts'][$pKey]['id'])) {
+                    $pId = (string)$gameData['activeRobotAssembly']['resultRobot']['parts'][$pKey]['id'];
+                    $equippedPartIds[$pId] = true;
+                    $equippedPartObjects[$pId] = $gameData['activeRobotAssembly']['resultRobot']['parts'][$pKey];
+                }
+            }
+        }
+        $compAssParts = $gameData['completeRobotAssembly']['resultRobot']['parts'] ?? $gameData['completedRobotAssembly']['resultRobot']['parts'] ?? null;
+        if (!empty($compAssParts)) {
+            foreach (['head', 'body', 'arms', 'legs'] as $pKey) {
+                if (!empty($compAssParts[$pKey]['id'])) {
+                    $pId = (string)$compAssParts[$pKey]['id'];
+                    $equippedPartIds[$pId] = true;
+                    $equippedPartObjects[$pId] = $compAssParts[$pKey];
                 }
             }
         }
@@ -762,12 +784,14 @@ try {
             }
         } catch (PDOException $e) {}
 
+        $processedPartIds = [];
         foreach ($gameData['parts'] as $part) {
             if (empty($part['id'])) continue;
             $partIdStr = (string)$part['id'];
+            $processedPartIds[$partIdStr] = true;
 
             // state.parts内ですでにisEquippedが設定されていればそれを優先
-            $isEquipped = (!empty($part['isEquipped']) || !empty($equippedPartIds[$part['id']])) ? 1 : 0;
+            $isEquipped = (!empty($part['isEquipped']) || !empty($equippedPartIds[$partIdStr])) ? 1 : 0;
             
             // 既存パーツと比較し、新規パーツまたは装備状態(is_equipped)等に変動がある場合のみ実行
             $needUpdate = false;
@@ -783,6 +807,16 @@ try {
             if ($needUpdate) {
                 $params = $extractPartParams($part, $actualUserId, $isEquipped);
                 $stmtPart->execute($params);
+                $existingParts[$partIdStr] = ['id' => $partIdStr, 'is_equipped' => $isEquipped];
+            }
+        }
+
+        // 万が一 gameData['parts'] 配列から漏れていた装備中パーツがあれば user_parts に is_equipped=1 で確実に保持・更新
+        foreach ($equippedPartObjects as $eqPartId => $eqPartObj) {
+            if (!isset($processedPartIds[$eqPartId])) {
+                $params = $extractPartParams($eqPartObj, $actualUserId, 1);
+                $stmtPart->execute($params);
+                $existingParts[$eqPartId] = ['id' => $eqPartId, 'is_equipped' => 1];
             }
         }
     }
@@ -1455,6 +1489,16 @@ try {
     // =========================================================================
     $compA = $gameData['completeRobotAssembly'] ?? $gameData['completedRobotAssembly'] ?? null;
     if (!empty($compA) && !empty($compA['startTime'])) {
+        // 0. 組立完了したロボットの各パーツが user_parts に is_equipped = 1 で確実に存在・更新されることを保証（同一トランザクション内）
+        $compRobotParts = $compA['resultRobot']['parts'] ?? [];
+        foreach (['head', 'body', 'arms', 'legs'] as $pKey) {
+            if (!empty($compRobotParts[$pKey]['id']) && isset($extractPartParams) && isset($stmtPart)) {
+                $p = $compRobotParts[$pKey];
+                $params = $extractPartParams($p, $actualUserId, 1);
+                $stmtPart->execute($params);
+            }
+        }
+
         // 1. complete_robot_assemblies テーブルに完了レコードを追加
         $robotId = !empty($compA['resultRobot']['id']) ? (string)$compA['resultRobot']['id'] : '';
         $stmtCompAss = $pdo->prepare("
